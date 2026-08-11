@@ -1,0 +1,16 @@
+.env
+.dart_tool/
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/*.log
+**/build/
+**/.packages
+node_modules/
+test/failures/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/opentui
+!.claude/skills/noir
+.context/

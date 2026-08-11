@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "iterm2-control": {
+      "type": "stdio",
+      "command": "iterm2-control-mcp"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "abiVersion": 2,
+  "assets": {
+    "macos-x64": {
+      "os": "macos",
+      "arch": "x64",
+      "path": "native/macos/x64/libopentui.dylib",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/x64/libopentui.dylib",
+      "archivePath": "",
+      "sha256": "d80970770863f647cca83dbe1ab983039660a3593da01552620f4f0510bd952a"
+    },
+    "macos-arm64": {
+      "os": "macos",
+      "arch": "arm64",
+      "path": "native/macos/arm64/libopentui.dylib",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/arm64/libopentui.dylib",
+      "archivePath": "",
+      "sha256": "0648d6243c43f8780f2e41b66052478a9821a0986385b961f11a0536059053bf"
+    },
+    "linux-x64": {
+      "os": "linux",
+      "arch": "x64",
+      "path": "native/linux/x64/libopentui.so",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/linux/x64/libopentui.so",
+      "archivePath": "",
+      "sha256": "63535b6958c9fad3f59b37b4dcabb231009a83488ff578059cb8e46f31d05e04"
+    },
+    "linux-arm64": {
+      "os": "linux",
+      "arch": "arm64",
+      "path": "native/linux/arm64/libopentui.so",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/linux/arm64/libopentui.so",
+      "archivePath": "",
+      "sha256": "7c13f55f2b30d7da9753b33fd957ac3afbcf9083128707a8bb9d809ebf402bf1"
+    },
+    "windows-x64": {
+      "os": "windows",
+      "arch": "x64",
+      "path": "native/windows/x64/libopentui.dll",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/windows/x64/libopentui.dll",
+      "archivePath": "",
+      "sha256": "221c8acb12da85f279621e13d8d0e45e4718a00bb13d5fcc940f1cb686a715fa"
+    },
+    "windows-arm64": {
+      "os": "windows",
+      "arch": "arm64",
+      "path": "native/windows/arm64/libopentui.dll",
+      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/windows/arm64/libopentui.dll",
+      "archivePath": "",
+      "sha256": "9593cdeab209116de3ef8b58eefb3942bcb133d0a60fd844fdaf0e8c1cb2238e"
+    }
+  }
+}

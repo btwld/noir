@@ -1,0 +1,70 @@
+# noir package - pub ignore rules
+# Excludes development files and build artifacts from the published package.
+
+# Local workspace state
+.claude/
+.context/
+skills-lock.json
+
+# Development and build tools
+.github/
+/scripts/
+/tools/
+
+# Internal Patch Manager implementation is development-only.
+/lib/src/tools/
+
+# External dependencies and submodules
+/external/
+
+# Build artifacts and temporary files
+*.tar.gz
+*.tgz
+*.zip
+build/
+.dart_tool/cache/
+.dart_tool/package_config_subset
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs and debug files
+*.log
+debug.log
+
+# Git specific
+.git/
+.gitmodules
+.gitignore
+
+# Documentation and guides not needed in package
+AGENTS.md
+CLAUDE.md
+CONTRIBUTING.md
+GOALS.md
+tasks/
+docs/development/
+
+# Tests are not part of the published package
+test/
+coverage/
+.lcov
+
+# Platform-specific files that users should not need
+native/.gitkeep
+
+# Keep packaged native binaries and native_manifest.json.
+
+# Development-only executables (not part of the published API)
+bin/parity_compare.dart
+bin/patch_manager.dart
+bin/snapshot_scenes.dart
+
+# Codegen and test configuration (development-only)
+FFIGEN.md
+ffigen_native_assets.yaml
+dart_test.yaml

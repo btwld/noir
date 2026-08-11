@@ -1,0 +1,241 @@
+name: Release Native Binaries
+
+on:
+  push:
+    branches: [master, main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+
+jobs:
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Check formatting
+        run: |
+          echo "Checking code formatting..."
+          dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/
+          echo "All files are properly formatted"
+
+      - name: Run static analysis
+        run: |
+          echo "Running static analysis..."
+          dart analyze --fatal-infos
+          echo "Static analysis passed"
+
+  fetch-binaries:
+    name: Fetch and Bundle Native Binaries
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install Dart dependencies
+        run: dart pub get
+
+      - name: Verify OpenTUI native manifest
+        run: dart run scripts/fetch_opentui_binaries.dart --verify-only --verify-urls
+
+      - name: Verify all binaries exist
+        run: |
+          echo "🔍 Verifying binary files..."
+          expected_files=(
+            "native/macos/x64/libopentui.dylib"
+            "native/macos/arm64/libopentui.dylib"
+            "native/linux/x64/libopentui.so"
+            "native/linux/arm64/libopentui.so"
+            "native/windows/x64/libopentui.dll"
+            "native/windows/arm64/libopentui.dll"
+          )
+
+          missing_files=()
+          for file in "${expected_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              missing_files+=("$file")
+            fi
+          done
+
+          if [[ ${#missing_files[@]} -gt 0 ]]; then
+            echo "❌ Missing binary files:"
+            printf '%s\n' "${missing_files[@]}"
+            exit 1
+          fi
+
+          echo "✅ All 6 binary files present"
+
+      - name: Check binary sizes
+        run: |
+          echo "📊 Binary size summary:"
+          find native -name "*.dylib" -o -name "*.so" -o -name "*.dll" | while read -r file; do
+            size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
+            echo "  $file: $(( size / 1024 ))KB"
+          done
+
+          total_size=$(find native -name "*.dylib" -o -name "*.so" -o -name "*.dll" -exec stat -c%s {} + 2>/dev/null | awk '{sum+=$1} END {print sum}')
+          echo "  Total: $(( total_size / 1024 ))KB (~$(( total_size / 1024 * 30 / 100 ))KB gzipped)"
+
+      - name: Package binaries for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # Create release archive with binaries and manifest metadata
+          tar -czf opentui-binaries-${{ github.ref_name }}.tar.gz native/ native_manifest.json
+
+          echo "📦 Release package created:"
+          ls -lh opentui-binaries-*.tar.gz
+
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opentui-binaries
+          path: |
+            native/
+            native_manifest.json
+            !native/.gitkeep
+          retention-days: 30
+
+      - name: Upload release archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: opentui-binaries-release
+          path: opentui-binaries-*.tar.gz
+
+  test-package:
+    name: Test Package with All Binaries
+    needs: fetch-binaries
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Remove checkout native payload
+        shell: bash
+        run: rm -rf native native_manifest.json
+
+      - name: Download bundled binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: opentui-binaries
+          path: .
+
+      - name: Install Dart dependencies
+        run: dart pub get
+
+      - name: Verify platform binary exists
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Linux)
+              expected_files=(
+                "native/linux/x64/libopentui.so"
+                "native/linux/arm64/libopentui.so"
+              )
+              ;;
+            macOS)
+              expected_files=(
+                "native/macos/x64/libopentui.dylib"
+                "native/macos/arm64/libopentui.dylib"
+              )
+              ;;
+            Windows)
+              expected_files=(
+                "native/windows/x64/libopentui.dll"
+                "native/windows/arm64/libopentui.dll"
+              )
+              ;;
+          esac
+
+          echo "🔍 Checking for platform binaries..."
+          for file in "${expected_files[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✅ Found: $file"
+            else
+              echo "❌ Missing: $file"
+              exit 1
+            fi
+          done
+
+      - name: Run health check
+        run: dart run bin/health_check.dart
+
+      - name: Build and run CLI bundle
+        shell: bash
+        run: |
+          dart build cli -t bin/health_check.dart --output build/health-check
+          case "${{ runner.os }}" in
+            Windows) bundle="build/health-check/bundle/bin/health_check.exe" ;;
+            *) bundle="build/health-check/bundle/bin/health_check" ;;
+          esac
+          "$bundle"
+
+  release:
+    name: Create Release
+    needs: [fetch-binaries, test-package]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download release binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: opentui-binaries-release
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: opentui-binaries-*.tar.gz
+          body: |
+            ## Noir ${{ github.ref_name }}
+
+            This release includes native OpenTUI binaries for all supported platforms:
+            - macOS (x64, arm64)
+            - Linux (x64, arm64)
+            - Windows (x64, arm64)
+
+            The package can be used directly without additional setup:
+            ```bash
+            dart pub add noir
+            dart run example/layout_demo.dart
+            ```
+
+            ### Native Asset Manifest
+            See `native_manifest.json` in the attached archive for source URLs,
+            ABI version, and SHA256 verification data.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

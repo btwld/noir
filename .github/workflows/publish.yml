@@ -1,0 +1,81 @@
+name: Publish to pub.dev
+
+# Tag-driven publishing via pub.dev automated publishing (GitHub Actions OIDC).
+# pub.dev side config (one-time, by a package uploader):
+#   pub.dev -> noir -> Admin -> Automated publishing -> enable GitHub Actions
+#   Repository: leoafarias/cli_ui   Tag pattern: v{{version}}
+# The pubspec `version` MUST equal the pushed tag (without the leading "v").
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'      # stable, e.g. v0.1.0
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # prerelease, e.g. v0.1.0-dev.1
+
+permissions:
+  contents: read
+
+jobs:
+  # Gate the publish on a clean, verifiable working tree. This validates a
+  # checkout we control; it does not run inside the reusable publish workflow,
+  # so `publish` depends on it via `needs`.
+  preflight:
+    name: Pre-publish validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify tag matches pubspec version
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
+          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+([0-9A-Za-z.+-]+)[[:space:]]*$ ]]; then
+            echo "::error::pubspec.yaml must declare exactly one plain version"
+            exit 1
+          fi
+          package_version="${BASH_REMATCH[1]}"
+          expected_tag="v$package_version"
+          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
+            echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
+            exit 1
+          fi
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Verify bundled binaries match native_manifest.json (SHA-256)
+        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/
+
+      - name: Static analysis
+        run: dart analyze --fatal-infos
+
+      - name: Tests (native-asset path)
+        run: dart test --exclude-tags process-spawning --concurrency=1
+
+      - name: Publish dry-run
+        run: dart pub publish --dry-run
+
+  # OIDC publish via the Dart team's reusable workflow (no long-lived secrets).
+  publish:
+    name: Publish to pub.dev
+    needs: preflight
+    permissions:
+      id-token: write   # required: mints the short-lived OIDC token for pub.dev
+      contents: read
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    # Enable if you require a 'pub.dev' environment (adds a manual-approval gate):
+    # with:
+    #   environment: pub.dev
