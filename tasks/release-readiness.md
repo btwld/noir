@@ -7,6 +7,11 @@ not cleared for public pub.dev publication, beta, or stable 1.0. Do not tag,
 publish, create a GitHub release, enable workflows, or refresh native artifacts
 from this checklist; each is a separate authorized operation.
 
+Phase 2 candidate builds are now authorized under the reviewed hybrid method
+in [`2.0-native-build-contract.md`](2.0-native-build-contract.md). The wrapper
+and candidate builds are still pending. This authorization does not permit
+tracked-artifact replacement or any later restricted operation.
+
 ## Alpha gates
 
 - [x] Terminal input is acquired before native capability queries; inherited
