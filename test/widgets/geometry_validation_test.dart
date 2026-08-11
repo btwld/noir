@@ -204,7 +204,7 @@ void main() {
       final result = await Process.run(Platform.resolvedExecutable, [
         'run',
         '--no-enable-asserts',
-        'test/fixtures/p9_016_release_probe.dart',
+        'test/fixtures/geometry_validation_release_probe.dart',
       ], workingDirectory: Directory.current.path);
 
       expect(
@@ -237,7 +237,7 @@ void main() {
       expect(labels.toSet(), expectedLabels);
       expect(labels.length, expectedLabels.length);
     },
-    tags: const ['process-spawning'],
+    tags: const ['safe-process-spawning'],
   );
 }
 

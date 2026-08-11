@@ -1593,8 +1593,8 @@ parse_symbol_preflight_output() {
     return 1
   fi
   close_symbol_preflight_result pass || return 2
-  p9_043_symbol_preflight_passed=true
-  readonly p9_043_symbol_preflight_passed
+  symbol_preflight_passed=true
+  readonly symbol_preflight_passed
   return 0
 }
 
@@ -1717,7 +1717,7 @@ run_selected_artifact_symbol_preflight() {
 run_child_precommands() {
   run_selected_artifact_symbol_preflight || return $?
   [[ "$SYMBOL_PREFLIGHT_RESULT" == pass &&
-     "${p9_043_symbol_preflight_passed:-}" == true ]]
+     "${symbol_preflight_passed:-}" == true ]]
 }
 
 emit_symbol_preflight_diagnostic() {
@@ -1740,13 +1740,13 @@ emit_symbol_preflight_diagnostic() {
       added="${rest#*:}"
       if [[ "$missing" != - && "$added" != - ]]; then
         owned_diagnostic \
-          "OpenTUI symbol preflight failed for $symbol_selected_path: missing native symbol(s): $missing; pending symbol(s) now exported: $added; retire or narrow the shim via tasks/plan.md Task 3."
+          "OpenTUI symbol preflight failed for $symbol_selected_path: missing native symbol(s): $missing; pending symbol(s) now exported: $added; review and narrow the read-only compatibility shim."
       elif [[ "$missing" != - ]]; then
         owned_diagnostic \
           "OpenTUI symbol preflight failed for $symbol_selected_path: missing native symbol(s): $missing."
       elif [[ "$added" != - ]]; then
         owned_diagnostic \
-          "OpenTUI symbol preflight failed for $symbol_selected_path: pending symbol(s) now exported: $added; retire or narrow the shim via tasks/plan.md Task 3."
+          "OpenTUI symbol preflight failed for $symbol_selected_path: pending symbol(s) now exported: $added; review and narrow the read-only compatibility shim."
       else
         return 0
       fi

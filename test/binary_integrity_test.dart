@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:noir/src/ffi/abi_contract.dart';
@@ -37,8 +38,8 @@ void main() {
       if (missingBinaries.isNotEmpty) {
         fail(
           'Missing required binaries:\n${missingBinaries.join('\n')}\n\n'
-          'Run the Phase 8 source build or restore the files recorded in '
-          'native_manifest.json.',
+          'Restore the exact tracked binaries and native_manifest.json from '
+          'the same repository revision.',
         );
       }
     });
@@ -91,6 +92,27 @@ void main() {
       }
     });
 
+    test('manifest deployment metadata matches bundled macOS binaries', () {
+      final manifest =
+          jsonDecode(File('native_manifest.json').readAsStringSync())
+              as Map<String, Object?>;
+      final assets = manifest['assets']! as Map<String, Object?>;
+
+      for (final entry in assets.values.cast<Map<String, Object?>>()) {
+        if (entry['os'] == 'macos') {
+          expect(entry['minimumOsVersion'], '15.0');
+          final path = entry['path']! as String;
+          expect(
+            _readMacOsMinimumVersion(File(path).readAsBytesSync()),
+            entry['minimumOsVersion'],
+            reason: path,
+          );
+        } else {
+          expect(entry, isNot(contains('minimumOsVersion')));
+        }
+      }
+    });
+
     test('manifest hashes match bundled binaries', () {
       final manifest =
           jsonDecode(File('native_manifest.json').readAsStringSync())
@@ -127,7 +149,8 @@ void main() {
       if (mismatches.isNotEmpty) {
         fail(
           'Checksum mismatches detected:\n${mismatches.join('\n')}\n\n'
-          'Update native_manifest.json after rebuilding native assets.',
+          'Restore the exact binary and manifest pair. A native refresh '
+          'requires a separately authorized dependency-strategy decision.',
         );
       }
     });
@@ -277,3 +300,61 @@ Set<String> _parseExportedSymbolNames(
           : name,
     )
     .toSet();
+
+String _readMacOsMinimumVersion(List<int> bytes) {
+  const headerSize = 32;
+  const machO64LittleEndian = 0xfeedfacf;
+  const lcBuildVersion = 0x32;
+  const platformMacOs = 1;
+
+  if (bytes.length < headerSize) {
+    fail('Truncated 64-bit Mach-O header.');
+  }
+  final data = ByteData.sublistView(Uint8List.fromList(bytes));
+  if (data.getUint32(0, Endian.little) != machO64LittleEndian) {
+    fail('Expected a thin 64-bit little-endian Mach-O binary.');
+  }
+
+  final commandCount = data.getUint32(16, Endian.little);
+  final commandBytes = data.getUint32(20, Endian.little);
+  final commandsEnd = headerSize + commandBytes;
+  if (commandsEnd > bytes.length) {
+    fail('Mach-O load-command table is truncated.');
+  }
+
+  var offset = headerSize;
+  final versions = <int>[];
+  for (var index = 0; index < commandCount; index++) {
+    if (offset + 8 > commandsEnd) {
+      fail('Mach-O load command $index is truncated.');
+    }
+    final command = data.getUint32(offset, Endian.little);
+    final commandSize = data.getUint32(offset + 4, Endian.little);
+    if (commandSize < 8 || offset + commandSize > commandsEnd) {
+      fail('Mach-O load command $index has invalid size $commandSize.');
+    }
+    if (command == lcBuildVersion) {
+      if (commandSize < 24) {
+        fail('LC_BUILD_VERSION is truncated.');
+      }
+      final platform = data.getUint32(offset + 8, Endian.little);
+      if (platform != platformMacOs) {
+        fail('LC_BUILD_VERSION targets platform $platform, not macOS.');
+      }
+      versions.add(data.getUint32(offset + 12, Endian.little));
+    }
+    offset += commandSize;
+  }
+  if (offset != commandsEnd) {
+    fail('Mach-O load commands do not match sizeofcmds.');
+  }
+  if (versions.length != 1) {
+    fail('Expected exactly one LC_BUILD_VERSION, found ${versions.length}.');
+  }
+
+  final encoded = versions.single;
+  final major = encoded >> 16;
+  final minor = (encoded >> 8) & 0xff;
+  final patch = encoded & 0xff;
+  return patch == 0 ? '$major.$minor' : '$major.$minor.$patch';
+}

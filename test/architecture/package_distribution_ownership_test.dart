@@ -86,7 +86,7 @@ void main() {
 
     expect(runner.existsSync(), isTrue);
     final source = runner.readAsStringSync();
-    expect(source, contains("@Tags(['process-spawning'])"));
+    expect(source, contains("@Tags(['safe-process-spawning'])"));
     expect(source, contains('Directory.systemTemp.createTemp'));
     expect(source, contains('package_config.json'));
     expect(source, contains('resolveSymbolicLinksSync'));
@@ -105,7 +105,7 @@ void main() {
     expect(source, contains("'--format=machine'"));
   });
 
-  test('public changelog has one entry matching package version 0.1.0', () {
+  test('public changelog has one entry matching the alpha package version', () {
     final pubspec = _read('pubspec.yaml');
     final changelog = _read('CHANGELOG.md');
     final version = RegExp(
@@ -117,8 +117,10 @@ void main() {
       multiLine: true,
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
-    expect(version, '0.1.0');
-    expect(changelogVersions, <String>['0.1.0']);
+    expect(version, '1.0.0-alpha.1');
+    expect(changelogVersions, <String>['1.0.0-alpha.1']);
+    expect(changelog, contains('First 1.0 prerelease'));
+    expect(changelog, isNot(contains('Initial public release')));
     expect(changelog.toLowerCase(), isNot(contains('muse')));
     expect(changelog.toLowerCase(), isNot(contains('pixel')));
   });
@@ -151,14 +153,21 @@ void main() {
         : 'OpenTUI submodule is not materialized in this checkout.',
   );
 
-  test('README installs from pub.dev and includes runnable app samples', () {
+  test('README gives truthful prerelease install and runnable samples', () {
+    final installStart = readme.indexOf('## Install');
     final quickStartIndex = readme.indexOf('## Quick Start');
     final nextSectionIndex = readme.indexOf('\n## ', quickStartIndex + 3);
     final quickStart = readme.substring(quickStartIndex, nextSectionIndex);
-    final command = quickStart.indexOf('dart pub add noir');
+    final install = readme.substring(installStart, quickStartIndex);
 
-    expect(RegExp('dart pub add noir').allMatches(readme), hasLength(1));
-    expect(command, greaterThanOrEqualTo(0));
+    expect(installStart, greaterThanOrEqualTo(0));
+    expect(install, contains('dart pub add noir:^1.0.0-alpha.1'));
+    expect(install, contains('path: ../noir'));
+    expect(
+      _normalized(install),
+      contains('pin an exact commit or release tag'),
+    );
+    expect(readme, contains('`1.0.0-alpha.1` is a prerelease'));
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
       hasLength(2),
@@ -167,8 +176,6 @@ void main() {
     expect(quickStart, contains('class CounterApp extends StatefulWidget'));
     expect(quickStart, contains('setState(() => _count++)'));
     for (final staleClaim in <String>[
-      'not yet published on pub.dev',
-      'Once the first `noir` release is available',
       'Core-framework 1.0',
       'Phase 9',
       'P9-',
@@ -177,6 +184,19 @@ void main() {
     ]) {
       expect(readme, isNot(contains(staleClaim)), reason: staleClaim);
     }
+  });
+
+  test('README documents the packaged headless native health check', () {
+    final readmeFlat = _normalized(readme).toLowerCase();
+
+    expect(readme, contains('dart run noir:health_check'));
+    expect(readmeFlat, contains('native testing mode'));
+    expect(readmeFlat, contains('bundled native asset'));
+    expect(readmeFlat, contains('headless buffer/render lifecycle'));
+    expect(
+      readmeFlat,
+      contains('does not validate real terminal escape rendering'),
+    );
   });
 
   test('README preserves known limitations without internal ticket IDs', () {
@@ -191,12 +211,12 @@ void main() {
       'escape a clipped viewport',
       'low-level native operation failures',
       'main-screen row 1/column 1',
-      'startup ordering window',
-      'high-level corruption has not been reproduced',
+      'absolute build/debug paths',
     ]) {
       expect(limitations, contains(disclosure), reason: disclosure);
     }
     expect(limitations, isNot(contains('P9-')));
+    expect(limitations, isNot(contains('startup ordering window')));
   });
 
   test('shipped lifecycle guidance matches the final TuiApp facade', () {
@@ -303,6 +323,12 @@ void main() {
     );
     expect(
       readme,
+      contains(
+        'The bundled macOS x64 and arm64 libraries require macOS 15.0 or later.',
+      ),
+    );
+    expect(
+      readme,
       isNot(
         matches(
           RegExp(
@@ -351,10 +377,11 @@ void main() {
     },
   );
 
-  test('shipped docs do not point at files excluded from the package', () {
-    final shippedDocs =
-        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md example/README.md'
+  test('development guidance is excluded while examples stay publishable', () {
+    final repositorySkillDocs =
+        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md'
             .split(' ');
+    const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
       'ls-files',
       '--cached',
@@ -362,10 +389,24 @@ void main() {
       '--ignored',
       '--exclude-from=.pubignore',
       '--',
-      ...shippedDocs,
+      ...repositorySkillDocs,
     ]);
     expect(ignored.exitCode, 0, reason: ignored.stderr as String);
-    expect((ignored.stdout as String).trim(), isEmpty);
+    expect(
+      (ignored.stdout as String).trim().split('\n'),
+      unorderedEquals(repositorySkillDocs),
+    );
+    final exampleIgnored = Process.runSync('git', [
+      'ls-files',
+      '--cached',
+      '--others',
+      '--ignored',
+      '--exclude-from=.pubignore',
+      '--',
+      exampleGuidePath,
+    ]);
+    expect(exampleIgnored.exitCode, 0, reason: exampleIgnored.stderr as String);
+    expect((exampleIgnored.stdout as String).trim(), isEmpty);
 
     final barrels = 'lib/noir.dart lib/noir_low_level.dart lib/noir_ffi.dart'
         .split(' ')
@@ -381,9 +422,9 @@ void main() {
         ),
       ),
     );
-    final shippedText = shippedDocs.map(_read).join('\n');
+    final repositorySkillText = repositorySkillDocs.map(_read).join('\n');
     expect(
-      shippedText,
+      repositorySkillText,
       isNot(
         matches(
           RegExp(
@@ -398,7 +439,11 @@ void main() {
       'GOALS.md',
       'CONTRIBUTING.md',
     ]) {
-      expect(shippedText, isNot(contains(excludedFile)), reason: excludedFile);
+      expect(
+        repositorySkillText,
+        isNot(contains(excludedFile)),
+        reason: excludedFile,
+      );
     }
     expect(
       testingGuide,

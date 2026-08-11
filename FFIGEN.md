@@ -1,37 +1,38 @@
-# FFIgen Integration
+# FFI binding generation
 
-OpenTUI bindings are generated from the OpenTUI C header used by the Go package and then wrapped by the higher-level Dart API.
+Noir keeps generated bindings separate from the guarded Dart API.
 
-## Current File Layout
+| Output | Configuration | Input |
+| --- | --- | --- |
+| `lib/src/ffi/generated_bindings.dart` | `ffigen_dynamic.yaml` | `external/opentui/packages/go/opentui.h` |
+| `lib/src/ffi/native_asset_bindings.dart` | `ffigen_native_assets.yaml` | `external/opentui/packages/go/opentui.h` |
 
-- `lib/src/ffi/generated_bindings.dart`: auto-generated low-level FFI bindings
-- `lib/src/ffi/bindings.dart`: high-level wrapper used by the rest of the Dart codebase
-- `lib/src/ffi/library.dart`: dynamic library lookup and loading
-- `lib/src/ffi/types.dart`: Dart-side handle and value types
-- `pubspec.yaml`: generation config under the `ffigen:` section
+`lib/src/ffi/bindings.dart` owns Dart-side validation and error translation.
+`lib/src/ffi/library.dart` owns dynamic-library resolution. Generated files are
+implementation details and must not be edited manually.
 
-There is no separate manual bindings layer in the current repo state.
+## Regeneration
 
-## Source of Truth
+The OpenTUI input is the exact read-only submodule revision recorded by this
+repository. Initialize it before generating:
 
-Bindings are generated from:
+    git submodule update --init --recursive
+    dart pub get
 
-```text
-external/opentui/packages/go/opentui.h
-```
+Generate one surface at a time:
 
-That keeps the Dart surface aligned with the checked-in OpenTUI submodule.
+    dart run ffigen --config ffigen_dynamic.yaml
+    dart run ffigen --config ffigen_native_assets.yaml
 
-## Regenerating Bindings
+Then inspect the generated diff. A normal regeneration must not change the
+submodule, native libraries, ABI version, manifest hashes, or provenance URLs.
 
-```bash
-dart run ffigen
-dart analyze
-dart test
-```
+Verify with:
 
-## Notes
+    dart format --output=none --set-exit-if-changed lib/src/ffi/
+    dart analyze --fatal-infos
+    dart test test/architecture/native_assets_ownership_test.dart --concurrency=1
+    dart test test/ffi_smoke_test.dart test/ffi/abi_test.dart test/core/buffer_validity_test.dart --concurrency=1
 
-- `generated_bindings.dart` should not be edited manually.
-- `bindings.dart` is where Dart-friendly behavior, validation, and convenience wrappers belong.
-- If `dart run ffigen` cannot find `libclang`, set `llvm-path` locally for that run, but do not commit a host-specific path.
+If FFIgen cannot find libclang, provide a local `llvm-path` override without
+committing a host-specific path.

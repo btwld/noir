@@ -65,6 +65,37 @@ void main() {
     expect(renderer.dispose, returnsNormally);
   });
 
+  for (final splitHeight in <int>[-1, 0x100000000]) {
+    test(
+      'invalid splitHeight $splitHeight leaves renderer owned and disposable',
+      () {
+        final renderer = Renderer.create(2, 1, testing: true);
+        addTearDown(renderer.dispose);
+        final buffer = renderer.nextBuffer;
+
+        expect(
+          () => renderer.dispose(splitHeight: splitHeight),
+          throwsA(
+            isA<RangeError>()
+                .having((error) => error.name, 'name', 'splitHeight')
+                .having(
+                  (error) => error.invalidValue,
+                  'invalidValue',
+                  splitHeight,
+                ),
+          ),
+        );
+
+        expect(buffer.isInvalidated, isFalse);
+        expect(renderer.nextBuffer, same(buffer));
+        expect(renderer.handle.address, isNonZero);
+
+        renderer.dispose();
+        expect(() => renderer.handle, _throwsRendererDisposed);
+      },
+    );
+  }
+
   test(
     'Dart-owned auto-flush configuration remains available after dispose',
     () {

@@ -1,5 +1,10 @@
-# Golden snapshots are compared with LF normalization; keep them LF in-tree so
-# they stay byte-identical regardless of the contributor's OS checkout settings.
+* text=auto eol=lf
+
+*.dylib binary
+*.dll binary
+*.so binary
+
+# Golden snapshots are compared with LF normalization.
 test/goldens/** text eol=lf
 # Buffer snapshots intentionally preserve fixed-width terminal padding.
 test/goldens/*.buffer.txt whitespace=-trailing-space

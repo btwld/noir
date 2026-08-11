@@ -7,6 +7,7 @@
       "path": "native/macos/x64/libopentui.dylib",
       "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/x64/libopentui.dylib",
       "archivePath": "",
+      "minimumOsVersion": "15.0",
       "sha256": "d80970770863f647cca83dbe1ab983039660a3593da01552620f4f0510bd952a"
     },
     "macos-arm64": {
@@ -15,6 +16,7 @@
       "path": "native/macos/arm64/libopentui.dylib",
       "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/arm64/libopentui.dylib",
       "archivePath": "",
+      "minimumOsVersion": "15.0",
       "sha256": "0648d6243c43f8780f2e41b66052478a9821a0986385b961f11a0536059053bf"
     },
     "linux-x64": {

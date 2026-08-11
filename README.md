@@ -5,6 +5,9 @@ OpenTUI. It combines declarative widgets, integer-cell layout, stateful
 rebuilds, focus and input routing, animation, and bundled native rendering in
 one package.
 
+`1.0.0-alpha.1` is a prerelease. APIs and platform guarantees may change
+before stable 1.0.
+
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
   and `setState`.
 - Compose layouts with `Row`, `Column`, `Container`, `Padding`, `SizedBox`,
@@ -14,13 +17,22 @@ one package.
 - Drop to supported renderer, buffer, or raw FFI APIs when an application
   needs more control.
 
+## Install
+
+Use the explicitly versioned prerelease after it is available on pub.dev:
+
+    dart pub add noir:^1.0.0-alpha.1
+
+Before publication, clone this repository and use a path dependency:
+
+    dependencies:
+      noir:
+        path: ../noir
+
+Private Git consumers need access to `leoafarias/noir` and should pin an exact
+commit or release tag rather than a moving branch.
+
 ## Quick Start
-
-Add Noir to a Dart application:
-
-```bash
-dart pub add noir
-```
 
 Import `package:noir/noir.dart` and mount a widget tree with `runTuiApp`:
 
@@ -55,7 +67,8 @@ class HelloApp extends StatelessWidget {
 }
 ```
 
-The complete version is available in [the hello example](example/hello.dart).
+The complete version is available in
+[the hello example](https://github.com/leoafarias/noir/blob/master/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state, and check `mounted` before updating from
@@ -99,7 +112,9 @@ class _CounterAppState extends State<CounterApp> {
 }
 ```
 
-See [the counter example](example/counter.dart) for the package version.
+See
+[the counter example](https://github.com/leoafarias/noir/blob/master/example/counter.dart)
+for the package version.
 
 ## Application Lifecycle and API Tiers
 
@@ -129,28 +144,30 @@ backend remain framework-owned; they are not supported package surfaces.
 
 ## Example Apps
 
-- [Hello](example/hello.dart) — a minimal stateless application.
-- [Counter](example/counter.dart) — stateful rebuilds with `setState`.
-- [Layout basics](example/layout_basics.dart) — core layout and flex usage.
-- [Layout demo](example/layout_demo.dart) — alignment, decoration, and richer
+- [Hello](https://github.com/leoafarias/noir/blob/master/example/hello.dart) — a minimal stateless application.
+- [Counter](https://github.com/leoafarias/noir/blob/master/example/counter.dart) — stateful rebuilds with `setState`.
+- [Layout basics](https://github.com/leoafarias/noir/blob/master/example/layout_basics.dart) — core layout and flex usage.
+- [Layout demo](https://github.com/leoafarias/noir/blob/master/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
-- [Inherited state](example/inherited_example.dart) — inherited dependencies
+- [Inherited state](https://github.com/leoafarias/noir/blob/master/example/inherited_example.dart) — inherited dependencies
   and rebuild propagation.
-- [Focus form](example/focus_form.dart) — focus management and text input.
-- [Select](example/select_demo.dart) — keyboard and mouse option selection.
-- [Scroll box](example/scrollbox_demo.dart) — clipped scrolling and
+- [Focus form](https://github.com/leoafarias/noir/blob/master/example/focus_form.dart) — focus management and text input.
+- [Select](https://github.com/leoafarias/noir/blob/master/example/select_demo.dart) — keyboard and mouse option selection.
+- [Scroll box](https://github.com/leoafarias/noir/blob/master/example/scrollbox_demo.dart) — clipped scrolling and
   scrollbars.
-- [Text area](example/textarea_demo.dart) — multiline editing and submission.
-- [Widgets tour](example/widgets_tour.dart) — the interactive widget set.
-- [Chat demo](example/chat_demo.dart) — scrollback, input, asynchronous state,
+- [Text area](https://github.com/leoafarias/noir/blob/master/example/textarea_demo.dart) — multiline editing and submission.
+- [Widgets tour](https://github.com/leoafarias/noir/blob/master/example/widgets_tour.dart) — the interactive widget set.
+- [Chat demo](https://github.com/leoafarias/noir/blob/master/example/chat_demo.dart) — scrollback, input, asynchronous state,
   and animation.
-- [Pulse animation](example/pulse_animation.dart) — `AnimationController` and
+- [Pulse animation](https://github.com/leoafarias/noir/blob/master/example/pulse_animation.dart) — `AnimationController` and
   ticker-driven updates.
-- [Bindings validation](example/bindings_validation.dart) — interactive
+- [Bindings validation](https://github.com/leoafarias/noir/blob/master/example/bindings_validation.dart) — interactive
   advanced renderer/buffer and ABI-unstable FFI validation in a terminal at
   least 120×40 cells.
 
-The [example guide](example/README.md) includes the command for every app.
+The
+[example guide](https://github.com/leoafarias/noir/blob/master/example/README.md)
+includes the command for every app.
 
 ## Supported Keyboard and Mouse Input
 
@@ -185,9 +202,22 @@ package is incomplete or corrupt and the build fails.
 | Linux | `x64`, `arm64` |
 | Windows | `x64`, `arm64` |
 
+The bundled macOS x64 and arm64 libraries require macOS 15.0 or later.
+
+Run the packaged diagnostic to check bundled native asset resolution without
+writing terminal controls:
+
+```bash
+dart run noir:health_check
+```
+
+The diagnostic uses OpenTUI's native testing mode to exercise the bundled
+native asset and headless buffer/render lifecycle. It does not validate real
+terminal escape rendering.
+
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
-license terms.
+[Third-Party Notices](https://github.com/leoafarias/noir/blob/master/THIRD_PARTY_NOTICES.md)
+for OpenTUI provenance and license terms.
 
 The URLs in `native_manifest.json` record immutable provenance for the
 currently bundled artifacts. They are not an update instruction or a runtime
@@ -209,7 +239,7 @@ corrupt package.
   return to main-screen row 1/column 1 instead of the launch cursor and
   overwrite prior shell rows. Callers must still dispose `TuiApp` so all owned
   resources and terminal modes are released.
-- Interactive startup has a startup ordering window: native capability
-  queries currently begin before the stdin driver acquires terminal input.
-  Low-level validation reproduced the underlying canonical/echo mechanism,
-  but high-level corruption has not been reproduced.
+- The current Linux libraries retain absolute build/debug paths. They pass
+  static integrity checks, but are not cleared for public publication or
+  runtime acceptance until an explicitly authorized artifact refresh or
+  provenance decision and a Linux execution pass.

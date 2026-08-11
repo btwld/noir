@@ -397,9 +397,8 @@ class RenderTextInput extends RenderBox {
       final cluster = visibleClusters[i];
       final cw = _obscureText ? 1 : terminalCellWidth(cluster);
       if (paintedCol + cw > width) break;
-      // setCell writes one character into one cell. For wide clusters the
-      // first cell takes the cluster glyph; the second cell is left as the
-      // existing background (terminals handle the overhang).
+      // This scalar-cell path currently records only the cluster's first
+      // scalar. Multi-code-point grapheme painting remains a known limitation.
       canvas.setCell(
         Offset(targetX + paintedCol, targetY),
         cluster,

@@ -2,120 +2,114 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+const _safeProcessTests = <String>[
+  'test/bin/health_check_test.dart',
+  'test/rendering/flex_validation_release_test.dart',
+  'test/rendering/geometry_constraints_test.dart',
+  'test/rendering/paragraph_max_lines_test.dart',
+  'test/rendering/render_setter_invalidation_release_test.dart',
+  'test/source_package_consumer_test.dart',
+  'test/widgets/geometry_validation_test.dart',
+  'test/widgets/text_editing_owner_release_test.dart',
+  'test/widgets/text_max_lines_release_test.dart',
+];
+
 void main() {
-  test('CI runs feature work once and cancels superseded runs', () {
-    final workflow = File(
-      '.github/workflows/ci.yml',
-    ).readAsStringSync().replaceAll('\r\n', '\n');
+  final workflow = _read('.github/workflows/ci.yml');
 
+  test('CI targets master with least privilege and cancellation', () {
+    expect(workflow, contains('branches: [master]'));
+    expect(workflow, isNot(contains('branches: [master, main]')));
+    expect(workflow, contains('permissions:\n  contents: read'));
     expect(
       workflow,
-      contains(
-        'on:\n'
-        '  push:\n'
-        '    branches: [master, main]\n'
-        '  pull_request:\n'
-        '\n'
-        'concurrency:\n'
-        r'  group: ${{ github.workflow }}-${{ github.ref }}'
-        '\n'
-        '  cancel-in-progress: true\n',
-      ),
+      contains(r'group: ${{ github.workflow }}-${{ github.ref }}'),
+    );
+    expect(workflow, contains('cancel-in-progress: true'));
+  });
+
+  test('all workflow actions use immutable full SHA references', () {
+    final actionLines = workflow
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.startsWith('uses:'));
+
+    expect(actionLines, isNotEmpty);
+    for (final line in actionLines) {
+      expect(
+        line,
+        matches(RegExp(r'^uses: [^@ ]+@[0-9a-f]{40}(?: # v[^ ]+)?$')),
+        reason: 'mutable or malformed action reference: $line',
+      );
+    }
+  });
+
+  test('ordinary subprocess tests are distinct from restricted lifecycle', () {
+    for (final path in _safeProcessTests) {
+      final source = _read(path);
+      expect(
+        source,
+        contains('safe-process-spawning'),
+        reason: '$path must use the ordinary subprocess tag',
+      );
+      expect(source, isNot(contains('restricted-process-lifecycle')));
+      expect(source, isNot(matches(RegExp("[\"']process-spawning[\"']"))));
+    }
+
+    const wrapperPath = 'test/parity/go_snapshot_wrapper_test.dart';
+    final wrapper = _read(wrapperPath);
+    expect(wrapper, contains("@Tags(['restricted-process-lifecycle'])"));
+    expect(wrapper, isNot(contains('safe-process-spawning')));
+
+    final restrictedOwners = <String>[];
+    for (final entity in Directory('test').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (entity.path.contains('/architecture/')) continue;
+      if (RegExp(
+        "@Tags\\(\\[[\"']restricted-process-lifecycle[\"']\\]\\)",
+      ).hasMatch(_read(entity.path))) {
+        restrictedOwners.add(entity.path);
+      }
+    }
+    expect(restrictedOwners, [wrapperPath]);
+
+    final config = _read('dart_test.yaml');
+    expect(config, contains('  safe-process-spawning:'));
+    expect(config, contains('  restricted-process-lifecycle:'));
+    expect(
+      config,
+      isNot(matches(RegExp('^  process-spawning:', multiLine: true))),
     );
   });
 
-  test('CI isolates process-spawning tests from native-asset full suite', () {
-    final workflow = File(
-      '.github/workflows/ci.yml',
-    ).readAsStringSync().replaceAll('\r\n', '\n');
-    final parity = _jobSection(workflow, 'parity', 'consumer-smoke');
-    final wrapperTests = File(
-      'test/parity/go_snapshot_wrapper_test.dart',
-    ).readAsStringSync();
-
-    expect(workflow, isNot(contains('lfs: true')));
-    expect(parity, contains('submodules: recursive'));
-    expect(parity, contains('actions/setup-go@v5'));
+  test('CI runs safe tests and selects parity without wrapper lifecycle', () {
     expect(
-      parity,
-      contains('go-version-file: tools/parity/go_snapshot/go.mod'),
+      workflow,
+      contains(
+        'dart test --exclude-tags restricted-process-lifecycle --concurrency=1',
+      ),
     );
-    expect(parity, contains('cache: false'));
-    expect(parity, contains('sudo apt-get install -y pkg-config'));
+    expect(workflow, isNot(contains('test/bin/health_check_test.dart')));
+    expect(workflow, contains('test/parity/primitives_parity_test.dart'));
+    expect(workflow, contains('test/parity/widget_parity_test.dart'));
     expect(
-      parity,
-      contains('dart test test/bin/health_check_test.dart --concurrency=1'),
+      workflow,
+      isNot(contains('test/parity/go_snapshot_wrapper_test.dart')),
     );
     expect(
       workflow,
-      contains('dart test --exclude-tags process-spawning --concurrency=1'),
+      isNot(matches(RegExp(r'dart test[^\n]*test/parity(?:/|\s|$)'))),
     );
-    expect(parity, contains('GO_SNAPSHOT_CMD: ./scripts/run_go_snapshot.sh'));
-    expect(
-      parity,
-      contains(
-        'set +e'
-        '\n'
-        r'          timeout --signal=TERM --kill-after=30s 30m \'
-        '\n'
-        r'            dart test -r expanded test/parity --concurrency=1 \'
-        '\n'
-        r'            >"$parity_log" 2>&1'
-        '\n'
-        r'          parity_status=$?'
-        '\n'
-        '          set -e'
-        '\n'
-        r'          cat "$parity_log"'
-        '\n'
-        r'          exit "$parity_status"',
-      ),
-    );
-    expect(parity, contains(r'parity_log="$RUNNER_TEMP/linux-go-parity.log"'));
-    expect(parity, contains('timeout-minutes: 35'));
-    expect(
-      RegExp(
-        RegExp.escape('GO_SNAPSHOT_CMD: ./scripts/run_go_snapshot.sh'),
-      ).allMatches(workflow),
-      hasLength(1),
-    );
-    expect(
-      RegExp(
-        RegExp.escape('dart test -r expanded test/parity --concurrency=1'),
-      ).allMatches(workflow),
-      hasLength(1),
-    );
-    expect(
-      RegExp(RegExp.escape('timeout-minutes: 35')).allMatches(workflow),
-      hasLength(1),
-    );
-    expect(wrapperTests, contains("@Tags(['process-spawning'])"));
-    expect(workflow, isNot(contains(RegExp(r'run: dart test\s*$'))));
+    expect(workflow, contains('GO_SNAPSHOT_CMD: ./scripts/run_go_snapshot.sh'));
   });
 
-  test('CI renders the full suite on Linux, macOS, and Windows', () {
-    final workflow = File(
-      '.github/workflows/ci.yml',
-    ).readAsStringSync().replaceAll('\r\n', '\n');
-
-    // The render suite must run on all three desktop OSes, not Linux alone.
+  test('CI covers all supported desktop operating systems', () {
     expect(workflow, contains('ubuntu-latest'));
     expect(workflow, contains('macos-latest'));
     expect(workflow, contains('windows-latest'));
-    // Every leg reports independently rather than cancelling its siblings.
     expect(workflow, contains('fail-fast: false'));
-    // The cross-platform legs run the rendering suite, not just FFI smoke.
-    expect(
-      workflow,
-      contains('dart test --exclude-tags process-spawning --concurrency=1'),
-    );
   });
 }
 
-String _jobSection(String workflow, String name, String nextName) {
-  final start = workflow.indexOf('  $name:');
-  final end = workflow.indexOf('  $nextName:', start + 1);
-  expect(start, greaterThan(-1), reason: 'missing $name job');
-  expect(end, greaterThan(start), reason: 'missing $nextName job');
-  return workflow.substring(start, end);
-}
+String _read(String path) =>
+    File(path).readAsStringSync().replaceAll('\r\n', '\n');

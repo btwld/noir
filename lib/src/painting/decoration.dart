@@ -4,10 +4,10 @@ import 'tui_canvas.dart';
 /// A description of a box decoration (a decoration applied to a [Rect]).
 ///
 /// This class presents the abstract interface for all decorations.
-/// See [BoxDecoration] for a concrete subclass that can paint arbitrary
-/// borders, backgrounds, shadows, and gradients.
+/// See [BoxDecoration] for the supported solid background and border
+/// implementation.
 ///
-/// Decorations may have arbitrary size.
+/// Decorations paint within the supplied terminal-cell rectangle.
 abstract class Decoration {
   /// Initializes fields for subclasses.
   const Decoration();

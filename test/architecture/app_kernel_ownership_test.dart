@@ -36,6 +36,39 @@ void main() {
     expect(source, contains(r'\x1b[?1049l\x1b[?25h\x1b[0m'));
     expect(bindingSource, contains('TerminalSession('));
   });
+
+  test('stdin modes have one driver owner and app code stays above FFI', () {
+    final sessionSource = File(
+      'lib/src/app/terminal_session.dart',
+    ).readAsStringSync();
+    final stdinSource = File(
+      'lib/src/core/stdin_input_driver.dart',
+    ).readAsStringSync();
+    final rendererSource = File(
+      'lib/src/core/renderer.dart',
+    ).readAsStringSync();
+
+    for (final forbidden in <String>[
+      'stdinHasTerminal',
+      'stdinLineMode',
+      'stdinEchoMode',
+      'io.stdin',
+      'OpenTuiBindings',
+      '.bindings',
+      '.handle',
+    ]) {
+      expect(sessionSource, isNot(contains(forbidden)), reason: forbidden);
+    }
+    expect(stdinSource, contains('lineMode'));
+    expect(stdinSource, contains('echoMode'));
+    expect(rendererSource, contains('processRendererCapabilityResponse'));
+    expect(
+      rendererSource,
+      contains(
+        'renderer._bindings.processCapabilityResponse(renderer._ptr, response)',
+      ),
+    );
+  });
 }
 
 String _classBody(String source, String className) {

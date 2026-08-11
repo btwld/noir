@@ -1,5 +1,10 @@
 .env
+.env.*
+.mcp.json
 .dart_tool/
+pubspec.lock
+doc/api/
+coverage/
 **/.DS_Store
 **/.idea/
 **/.vscode/
@@ -11,6 +16,5 @@ test/failures/
 .claude/*
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/opentui
 !.claude/skills/noir
 .context/

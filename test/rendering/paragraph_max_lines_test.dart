@@ -221,7 +221,7 @@ void main() {
       'invalid const maxLines fails constant evaluation',
       () async {
         final temp = await Directory.systemTemp.createTemp(
-          'noir-p9-025-const-',
+          'noir-max-lines-const-',
         );
         addTearDown(() => temp.delete(recursive: true));
         final packageConfig =
@@ -257,7 +257,7 @@ void main() { print(value); }
           );
         }
       },
-      tags: const ['process-spawning'],
+      tags: const ['safe-process-spawning'],
     );
   });
 }

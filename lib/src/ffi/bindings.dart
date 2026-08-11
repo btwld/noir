@@ -32,6 +32,12 @@ void _checkSigned32Abi(int value, String name) {
   }
 }
 
+/// Requires [value] to fit the unsigned 32-bit OpenTUI ABI domain.
+@internal
+void validateUnsigned32Abi(int value, String name) {
+  _checkUnsignedAbi(value, 0xFFFFFFFF, name);
+}
+
 Pointer<Uint8> _copyBytes(Allocator alloc, List<int> bytes) {
   final pointer = alloc<Uint8>(bytes.length);
   for (var i = 0; i < bytes.length; i++) {
@@ -55,20 +61,23 @@ int _boxOptionsToNative(BoxOptions options) {
   return packed | ((alignment & 0x3) << 5);
 }
 
-/// Rejects non-positive renderer dimensions before OpenTUI's unsigned extent
-/// boundary.
+/// Requires renderer dimensions between 1 and the unsigned 32-bit maximum.
+///
+/// Non-positive values use [ArgumentError] to preserve the renderer contract;
+/// larger values use [RangeError] before OpenTUI's unsigned extent boundary.
 @internal
 void validateRendererDimensions(int width, int height) {
   if (width <= 0) {
     throw ArgumentError.value(width, 'width', 'must be greater than zero');
   }
+  _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
   if (height <= 0) {
     throw ArgumentError.value(height, 'height', 'must be greater than zero');
   }
+  _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
 }
 
-/// Main OpenTUI bindings class that wraps the generated FFI bindings
-/// with our existing API and error handling.
+/// Guarded Dart wrapper around the generated OpenTUI FFI surface.
 class OpenTuiBindings {
   /// Opens the configured native library for guarded OpenTUI operations.
   OpenTuiBindings() {
@@ -113,8 +122,9 @@ class OpenTuiBindings {
   // Renderer management
   /// Creates a native renderer of [width]×[height] and returns its handle.
   ///
-  /// Throws [ArgumentError] for non-positive dimensions and [FFIException]
-  /// on a null result.
+  /// [width] and [height] must be between 1 and the unsigned 32-bit maximum.
+  /// Non-positive values throw [ArgumentError]; larger values throw a
+  /// pre-invocation [RangeError]. Throws [FFIException] on a null result.
   Pointer<RendererHandle> createRenderer(
     int width,
     int height, {
@@ -131,12 +141,15 @@ class OpenTuiBindings {
   }
 
   /// Destroys [renderer], optionally restoring the main screen and reserving
-  /// [splitHeight] rows. Throws [FFIException] on failure.
+  /// [splitHeight] rows. [splitHeight] must fit an unsigned 32-bit value;
+  /// violations throw a pre-invocation [RangeError]. Throws [FFIException] on
+  /// failure.
   void destroyRenderer(
     Pointer<RendererHandle> renderer, {
     bool useAlternateScreen = false,
     int splitHeight = 0,
   }) {
+    validateUnsigned32Abi(splitHeight, 'splitHeight');
     _guard('Failed to destroy renderer', () {
       _generated.destroyRenderer(
         renderer.cast(),
@@ -180,8 +193,9 @@ class OpenTuiBindings {
 
   /// Resizes [renderer] and its buffers to [width]×[height].
   ///
-  /// Throws [ArgumentError] for non-positive dimensions and [FFIException]
-  /// on native failure.
+  /// [width] and [height] must be between 1 and the unsigned 32-bit maximum.
+  /// Non-positive values throw [ArgumentError]; larger values throw a
+  /// pre-invocation [RangeError]. Throws [FFIException] on native failure.
   void resizeRenderer(Pointer<RendererHandle> renderer, int width, int height) {
     validateRendererDimensions(width, height);
     _guard('Failed to resize renderer', () {
@@ -365,13 +379,16 @@ class OpenTuiBindings {
 
   // Cursor management
   /// Moves [renderer]'s terminal cursor to ([x],[y]) and sets its [visible]
-  /// state. Throws [FFIException] on failure.
+  /// state. [x] and [y] must fit signed 32-bit values; violations throw a
+  /// pre-invocation [RangeError]. Throws [FFIException] on failure.
   void setCursorPosition(
     Pointer<RendererHandle> renderer,
     int x,
     int y,
     bool visible,
   ) {
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
     _guard('Failed to set cursor position', () {
       _generated.setCursorPosition(renderer.cast(), x, y, visible);
     });
@@ -669,8 +686,11 @@ class OpenTuiBindings {
   }
 
   /// Enables the Kitty keyboard protocol for [renderer] with the given
-  /// progressive-enhancement [flags]. Throws [FFIException] on failure.
+  /// progressive-enhancement [flags]. [flags] must fit an unsigned 8-bit
+  /// value; violations throw a pre-invocation [RangeError]. Throws
+  /// [FFIException] on failure.
   void enableKittyKeyboard(Pointer<RendererHandle> renderer, int flags) {
+    _checkUnsignedAbi(flags, 0xFF, 'flags');
     _guard('Failed to enable kitty keyboard', () {
       _generated.enableKittyKeyboard(renderer.cast(), flags);
     });
@@ -867,26 +887,33 @@ class OpenTuiBindings {
 
   // Stats and Memory Stats
   /// Updates [renderer]'s debug-overlay frame stats with [time], [fps], and
-  /// [frameCallbackTime]. Throws [FFIException] on failure.
+  /// [frameCallbackTime]. [fps] must fit an unsigned 32-bit value; violations
+  /// throw a pre-invocation [RangeError]. Throws [FFIException] on failure.
   void updateStats(
     Pointer<RendererHandle> renderer,
     double time,
     int fps,
     double frameCallbackTime,
   ) {
+    _checkUnsignedAbi(fps, 0xFFFFFFFF, 'fps');
     _guard('Failed to update stats', () {
       _generated.updateStats(renderer.cast(), time, fps, frameCallbackTime);
     });
   }
 
   /// Updates [renderer]'s debug-overlay memory stats with [heapUsed],
-  /// [heapTotal], and [arrayBuffers]. Throws [FFIException] on failure.
+  /// [heapTotal], and [arrayBuffers]. [heapUsed], [heapTotal], and
+  /// [arrayBuffers] must fit unsigned 32-bit values; violations throw a
+  /// pre-invocation [RangeError]. Throws [FFIException] on failure.
   void updateMemoryStats(
     Pointer<RendererHandle> renderer,
     int heapUsed,
     int heapTotal,
     int arrayBuffers,
   ) {
+    _checkUnsignedAbi(heapUsed, 0xFFFFFFFF, 'heapUsed');
+    _checkUnsignedAbi(heapTotal, 0xFFFFFFFF, 'heapTotal');
+    _checkUnsignedAbi(arrayBuffers, 0xFFFFFFFF, 'arrayBuffers');
     _guard('Failed to update memory stats', () {
       _generated.updateMemoryStats(
         renderer.cast(),
@@ -911,12 +938,14 @@ class OpenTuiBindings {
 
   // Debug functions
   /// Toggles [renderer]'s debug overlay via [enabled] and positions it at the
-  /// given [corner]. Throws [FFIException] on failure.
+  /// given [corner]. [corner] must fit an unsigned 8-bit value; violations
+  /// throw a pre-invocation [RangeError]. Throws [FFIException] on failure.
   void setDebugOverlay(
     Pointer<RendererHandle> renderer,
     bool enabled,
     int corner,
   ) {
+    _checkUnsignedAbi(corner, 0xFF, 'corner');
     _guard('Failed to set debug overlay', () {
       _generated.setDebugOverlay(renderer.cast(), enabled, corner);
     });
@@ -953,16 +982,13 @@ class OpenTuiBindings {
   /// ID grid. Keep this available for direct OpenTUI experiments, diagnostics,
   /// and parity checks against the native API.
   ///
-  /// Performance: O(1) per region - very fast registration.
-  /// Hit testing lookup is O(log n) where n is the number of regions.
-  ///
   /// Example:
   /// ```dart
   /// // Register a debug overlay region.
-  /// renderer.addToHitGrid(10, 5, 15, 3, debugOverlayId);
+  /// bindings.addToHitGrid(rendererHandle, 10, 5, 15, 3, debugOverlayId);
   ///
-  /// final hitId = renderer.checkHit(mouseX, mouseY);
-  /// debugLog('native hit grid returned $hitId');
+  /// final hitId = bindings.checkHit(rendererHandle, mouseX, mouseY);
+  /// print('native hit grid returned $hitId');
   /// ```
   ///
   /// Parameters:
@@ -972,6 +998,10 @@ class OpenTuiBindings {
   /// - [width]: Region width in columns
   /// - [height]: Region height in rows
   /// - [id]: Unique identifier for this low-level region
+  ///
+  /// [x] and [y] must fit signed 32-bit values. [width], [height], and [id]
+  /// must fit unsigned 32-bit values. Violations throw a pre-invocation
+  /// [RangeError].
   ///
   /// IDs should be unique within the current hit grid. Overlapping regions
   /// may return the most recently added ID.
@@ -989,6 +1019,11 @@ class OpenTuiBindings {
     int height,
     int id,
   ) {
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
+    _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    _checkUnsignedAbi(id, 0xFFFFFFFF, 'id');
     _guard('Failed to add to hit grid', () {
       _generated.addToHitGrid(renderer.cast(), x, y, width, height, id);
     });
@@ -1000,14 +1035,11 @@ class OpenTuiBindings {
   /// region was hit. This is a native/debug primitive; built-in widgets use
   /// render-tree hit testing for pointer dispatch.
   ///
-  /// Performance: O(log n) where n is the number of registered regions.
-  /// Very fast even with hundreds of interactive elements.
-  ///
   /// Example:
   /// ```dart
   /// // Query a region previously registered for native parity debugging.
-  /// final hitId = renderer.checkHit(mouseX, mouseY);
-  /// debugLog('native hit grid returned $hitId');
+  /// final hitId = bindings.checkHit(rendererHandle, mouseX, mouseY);
+  /// print('native hit grid returned $hitId');
   /// ```
   ///
   /// Parameters:
@@ -1015,11 +1047,14 @@ class OpenTuiBindings {
   /// - [x]: Column position to test (0-based)
   /// - [y]: Row position to test (0-based)
   ///
+  /// [x] and [y] must fit unsigned 32-bit values; violations throw a
+  /// pre-invocation [RangeError].
+  ///
   /// Returns:
   /// - The registered native/debug region ID, or 0 if no region contains
   ///   the coordinates
   ///
-  /// Coordinates outside the terminal bounds always return 0.
+  /// ABI-valid coordinates outside the terminal bounds always return 0.
   /// When multiple regions overlap, the most recently added region's ID
   /// is returned.
   ///
@@ -1028,10 +1063,14 @@ class OpenTuiBindings {
   /// See also:
   /// - [addToHitGrid] for registering native/debug regions
   /// - [enableMouse] for enabling mouse input events
-  int checkHit(Pointer<RendererHandle> renderer, int x, int y) => _guard(
-    'Failed to check hit',
-    () => _generated.checkHit(renderer.cast(), x, y),
-  );
+  int checkHit(Pointer<RendererHandle> renderer, int x, int y) {
+    _checkUnsignedAbi(x, 0xFFFFFFFF, 'x');
+    _checkUnsignedAbi(y, 0xFFFFFFFF, 'y');
+    return _guard(
+      'Failed to check hit',
+      () => _generated.checkHit(renderer.cast(), x, y),
+    );
+  }
 
   // Terminal capabilities
   /// Fills [caps] with the terminal capabilities detected for [renderer].

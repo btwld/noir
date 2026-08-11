@@ -1,5 +1,4 @@
-# Analysis options for Noir Framework
-# Based on Dart recommended lints with strict additional rules
+# Analysis options for Noir.
 
 include: package:lints/recommended.yaml
 
@@ -9,24 +8,14 @@ analyzer:
     strict-inference: true
     strict-raw-types: true
   errors:
-    # Treat info-level issues as warnings for visibility
     todo: warning
-    # Allow unused imports during development (CI will catch them)
     unused_import: warning
     unused_local_variable: warning
   exclude:
-    # Exclude generated FFI bindings from analysis
     - lib/src/ffi/generated_bindings.dart
     - lib/src/ffi/native_asset_bindings.dart
-    # Exclude build artifacts
     - build/**
-    # This external-package fixture is analyzed in isolation with fatal flags.
     - test/fixtures/source_package_consumer/**
-
-dcm:
-  extends:
-    - recommended
-    - metrics-recommended
 
 linter:
   rules:
@@ -98,7 +87,6 @@ linter:
     unnecessary_breaks: true
     unnecessary_lambdas: true
     unnecessary_library_directive: true
-    # unnecessary_null_aware_operator_assignment: true  # Not recognized in this Dart version
     unnecessary_null_checks: true
     unnecessary_parenthesis: true
     unnecessary_raw_strings: true
@@ -108,7 +96,6 @@ linter:
     use_enums: true
     use_if_null_to_convert_nulls_to_bools: true
     use_is_even_rather_than_modulo: true
-    # use_late_for_private_fields_safely: true  # Not recognized in this Dart version
     use_named_constants: true
     use_raw_strings: true
     use_setters_to_change_properties: true
@@ -117,16 +104,10 @@ linter:
     use_to_and_as_if_applicable: true
 
     # -- Documentation --
-    # Require public API documentation (matches Flutter standards)
     public_member_api_docs: true
-    # package_api_docs: true  # Removed in Dart 3.7.0
 
     # -- Disabled rules that conflict with project patterns --
-    # Relative imports are preferred within lib/ for this project
     always_use_package_imports: false
-    # Allow longer lines for documentation and complex expressions
     lines_longer_than_80_chars: false
-    # Some widgets use underscore-prefixed parameters intentionally
     no_leading_underscores_for_library_prefixes: false
-    # Allow single-member abstracts for widget interfaces
     one_member_abstracts: false

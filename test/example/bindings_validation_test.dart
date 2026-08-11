@@ -56,7 +56,23 @@ void main() {
       BufferMatchers.containsText('Text Attributes Demonstration'),
     );
     expect(frames[2], BufferMatchers.hasColorAt(5, 7, Color.yellow));
-    expect(frames[2].getCell(5, 7).hasAttribute(Attr.bold), isTrue);
+    for (final (x, y, attributes) in <(int, int, int)>[
+      (5, 5, 0),
+      (5, 7, Attr.bold),
+      (5, 9, Attr.italic),
+      (5, 11, Attr.underline),
+      (5, 13, Attr.dim),
+      (5, 15, Attr.reverse),
+      (5, 17, Attr.strike),
+      (5, 19, Attr.bold | Attr.underline),
+      (40, 8, Attr.blink),
+    ]) {
+      expect(
+        frames[2].getCell(x, y).attributes,
+        attributes,
+        reason: 'unexpected attribute bits at ($x, $y)',
+      );
+    }
 
     expect(frames[3], BufferMatchers.containsText('Box Drawing Demonstration'));
     expect(frames[3].getCell(22, 1).hasAttribute(Attr.bold), isTrue);

@@ -616,6 +616,15 @@ enum TerminalCapabilityKind {
   /// Tertiary device attributes (`CSI = ... c`).
   tertiaryDeviceAttributes,
 
+  /// DEC private-mode report (`CSI ? ... $ y`).
+  privateModeReport,
+
+  /// Cursor position report (`CSI row ; column R`).
+  cursorPositionReport,
+
+  /// Kitty keyboard protocol status (`CSI ? ... u`).
+  kittyKeyboardStatus,
+
   /// Device control string (`ESC P ... ST`).
   deviceControlString,
 

@@ -9,17 +9,17 @@ import '../ffi/types.dart';
 import 'buffer.dart';
 import 'color.dart';
 
-/// Manages the terminal rendering pipeline, including frame buffers, compositing, and output flushing.
+/// Manages frame buffers, terminal rendering, and output flushing.
 class Renderer {
   Renderer._(this._bindings, this._ptr) {
     _finalizer.attach(this, _ptr.cast<Void>(), detach: _finalizerKey);
   }
 
-  /// Opens guarded bindings and allocates a native renderer for positive dimensions.
+  /// Opens guarded bindings and allocates a native renderer.
   ///
-  /// Set [testing] to true to redirect all native render output to /dev/null.
-  /// Useful in test harnesses that capture render state via direct buffer
-  /// access and do not want ANSI sequences written to stdout.
+  /// Set [testing] to true to use OpenTUI's non-terminal testing sink. This is
+  /// useful in harnesses that capture render state through direct buffer access
+  /// instead of terminal output.
   ///
   /// Throws [ArgumentError] when [width] or [height] is non-positive.
   factory Renderer.create(int width, int height, {bool testing = false}) {
@@ -27,9 +27,7 @@ class Renderer {
     final bindings = OpenTuiBindings();
     final ptr = bindings.createRenderer(width, height, testing: testing);
     if (ptr == nullptr) {
-      throw StateError(
-        'Failed to create renderer. Ensure libopentui is installed and loadable.',
-      );
+      throw StateError('OpenTUI returned a null renderer handle.');
     }
     return Renderer._(bindings, ptr);
   }
@@ -123,7 +121,7 @@ class Renderer {
   /// after each render() call. This ensures immediate output visibility in TTY
   /// environments but may impact performance in high-frequency rendering.
   ///
-  /// Set to false for maximum performance when you handle flushing manually.
+  /// Set to false when the caller owns the output-flush schedule.
   void setAutoFlush(bool enabled) {
     _autoFlush = enabled;
   }
@@ -162,6 +160,7 @@ class Renderer {
   /// Releases all native renderer resources and detaches the finalizer.
   void dispose({bool useAlternateScreen = false, int splitHeight = 0}) {
     if (_disposed) return;
+    validateUnsigned32Abi(splitHeight, 'splitHeight');
     _disposed = true;
     // Detach from finalizer before manual destruction (prevent double-free)
     _finalizer.detach(_finalizerKey);
@@ -191,4 +190,14 @@ class Renderer {
     _checkNotDisposed();
     return _bindings;
   }
+}
+
+/// Routes one raw terminal capability response through its renderer owner.
+///
+/// Internal app/session code uses this bridge instead of reaching through the
+/// renderer to its FFI bindings or native handle.
+@internal
+void processRendererCapabilityResponse(Renderer renderer, String response) {
+  renderer._checkNotDisposed();
+  renderer._bindings.processCapabilityResponse(renderer._ptr, response);
 }

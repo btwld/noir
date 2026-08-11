@@ -4,7 +4,98 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 
+import '../foundation/first_error.dart';
 import 'input.dart';
+
+/// Narrow stdin boundary used to acquire and release one terminal-input lease.
+@visibleForTesting
+abstract interface class StdinInputSource {
+  /// Whether stdin is attached to a terminal.
+  bool get hasTerminal;
+
+  /// Whether stdin currently buffers input by line.
+  bool get lineMode;
+
+  /// Sets whether stdin buffers input by line.
+  set lineMode(bool value);
+
+  /// Whether stdin currently echoes input bytes.
+  bool get echoMode;
+
+  /// Sets whether stdin echoes input bytes.
+  set echoMode(bool value);
+
+  /// Subscribes [onData] to raw stdin bytes.
+  StreamSubscription<List<int>> listen(void Function(List<int>) onData);
+}
+
+final class _StdinModeLease {
+  _StdinModeLease._(this._source, this._savedLineMode, this._savedEchoMode);
+
+  factory _StdinModeLease.acquire(StdinInputSource source) {
+    final lease = _StdinModeLease._(source, source.lineMode, source.echoMode);
+    try {
+      source.echoMode = false;
+      source.lineMode = false;
+    } on Object catch (error, stackTrace) {
+      try {
+        lease.restore();
+      } on Object {
+        // The acquisition failure remains primary after rollback is attempted.
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+    return lease;
+  }
+
+  final StdinInputSource _source;
+  final bool _savedLineMode;
+  final bool _savedEchoMode;
+  bool _restored = false;
+
+  void restore() {
+    if (_restored) return;
+
+    final failures = FirstErrorRecorder();
+    try {
+      failures
+        ..attempt(() => _source.lineMode = _savedLineMode)
+        ..attempt(() => _source.echoMode = _savedEchoMode);
+    } finally {
+      _restored = true;
+    }
+    failures.rethrowFirst();
+  }
+}
+
+final class _IoStdinInputSource implements StdinInputSource {
+  const _IoStdinInputSource();
+
+  @override
+  bool get hasTerminal {
+    try {
+      return stdin.hasTerminal;
+    } on FileSystemException {
+      return false;
+    }
+  }
+
+  @override
+  bool get lineMode => stdin.lineMode;
+
+  @override
+  set lineMode(bool value) => stdin.lineMode = value;
+
+  @override
+  bool get echoMode => stdin.echoMode;
+
+  @override
+  set echoMode(bool value) => stdin.echoMode = value;
+
+  @override
+  StreamSubscription<List<int>> listen(void Function(List<int>) onData) =>
+      stdin.listen(onData);
+}
 
 /// Connects raw stdin bytes to the app input pipeline by parsing ANSI escape
 /// sequences into key, mouse, paste, and terminal capability inputs.
@@ -29,66 +120,104 @@ import 'input.dart';
 ///   `ESC[keycode[:alternate];modifiers[:event-type];text u`
 class StdinInputDriver {
   /// Routes parsed stdin events to [_inputDispatcher] when input is started.
-  StdinInputDriver(this._inputDispatcher);
+  StdinInputDriver(
+    this._inputDispatcher, {
+    @visibleForTesting StdinInputSource? source,
+  }) : _source = source ?? const _IoStdinInputSource();
 
   final InputDispatcher _inputDispatcher;
+  final StdinInputSource _source;
+  // Ownership moves to a local snapshot before stop invokes cancellation.
+  // ignore: cancel_subscriptions
   StreamSubscription<List<int>>? _sub;
-  bool? _previousLineMode;
-  bool? _previousEchoMode;
+  _StdinModeLease? _modeLease;
   // Buffer for incomplete escape sequences split across reads.
   final List<int> _pending = <int>[];
+  _DiscardedAnsiFrame? _discardedFrame;
   Timer? _escapeTimer;
   static const Duration _escapeFlushDelay = Duration(milliseconds: 25);
 
-  /// Begin consuming stdin. No-op if stdin is not a TTY (headless / piped).
-  void start() {
-    if (!_stdinHasTerminal()) return;
+  /// Begins consuming stdin and returns whether terminal input was acquired.
+  ///
+  /// Returns `false` without mutating stdin when it is headless or piped.
+  /// Acquisition failures restore the inherited modes before escaping.
+  bool start() {
+    if (_modeLease != null) return true;
+    if (!_source.hasTerminal) return false;
+
+    final lease = _StdinModeLease.acquire(_source);
+    _modeLease = lease;
     try {
-      _previousLineMode = stdin.lineMode;
-      _previousEchoMode = stdin.echoMode;
-      stdin.lineMode = false;
-      stdin.echoMode = false;
-    } on StdinException {
-      // Some platforms refuse mode changes; carry on best-effort.
+      _sub = _source.listen(_onBytes);
+    } on Object catch (error, stackTrace) {
+      _modeLease = null;
+      try {
+        lease.restore();
+      } on Object {
+        // The listen failure remains primary after rollback is attempted.
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     }
-    _sub = stdin.listen(_onBytes);
+    return true;
   }
 
-  /// Stop consuming stdin and restore terminal modes if we changed them.
+  /// Stops consuming stdin and exactly restores the acquired terminal modes.
   void stop() {
-    _escapeTimer?.cancel();
+    final escapeTimer = _escapeTimer;
+    final subscription = _sub;
+    final lease = _modeLease;
     _escapeTimer = null;
-    _sub?.cancel();
     _sub = null;
-    if (!_stdinHasTerminal()) return;
-    try {
-      if (_previousEchoMode != null) stdin.echoMode = _previousEchoMode!;
-      if (_previousLineMode != null) stdin.lineMode = _previousLineMode!;
-    } on StdinException {
-      // Best-effort restore.
-    }
-  }
+    _modeLease = null;
+    _pending.clear();
+    _discardedFrame = null;
+    escapeTimer?.cancel();
 
-  bool _stdinHasTerminal() {
-    try {
-      return stdin.hasTerminal;
-    } on FileSystemException {
-      return false;
+    final failures = FirstErrorRecorder();
+    if (subscription != null) {
+      failures.attempt(() {
+        final cancellation = subscription.cancel();
+        cancellation.ignore();
+      });
     }
+    if (lease != null) {
+      failures.attempt(lease.restore);
+    }
+    failures.rethrowFirst();
   }
 
   void _onBytes(List<int> bytes) {
     _escapeTimer?.cancel();
     _escapeTimer = null;
-    _pending.addAll(bytes);
-    final result = parseAnsiInput(_pending, holdTrailingEscape: true);
+    final input = _pending.isEmpty ? bytes : <int>[..._pending, ...bytes];
+    _pending.clear();
+
+    var parseBytes = input;
+    final discardedFrame = _discardedFrame;
+    if (discardedFrame != null) {
+      final recovery = _recoverDiscardedFrame(discardedFrame, input);
+      if (!recovery.complete) {
+        _pending.addAll(recovery.retainedPrefix);
+        return;
+      }
+      _discardedFrame = null;
+      if (recovery.nextIndex >= input.length) {
+        return;
+      }
+      parseBytes = input.sublist(recovery.nextIndex);
+    }
+
+    final result = _parseBoundedAnsiInput(parseBytes, holdTrailingEscape: true);
     _pending
       ..clear()
       ..addAll(result.leftover);
+    _discardedFrame = result._discardedFrame;
     for (final ev in result.events) {
       ev.dispatchTo(_inputDispatcher);
     }
-    if (_pending.length == 1 && _pending.single == 0x1b) {
+    if (_discardedFrame == null &&
+        _pending.length == 1 &&
+        _pending.single == 0x1b) {
       _escapeTimer = Timer(_escapeFlushDelay, _flushPendingEscape);
     }
   }
@@ -100,7 +229,11 @@ class StdinInputDriver {
   }
 
   void _flushPendingEscape() {
-    if (_pending.length != 1 || _pending.single != 0x1b) return;
+    if (_discardedFrame != null ||
+        _pending.length != 1 ||
+        _pending.single != 0x1b) {
+      return;
+    }
     _pending.clear();
     KeyInput(
       _key(LogicalKeyboardKey.escape, keyCode: 27),
@@ -181,14 +314,139 @@ class CapabilityInput extends ParsedInput {
 /// should feed them back in front of the next chunk.
 class ParseResult {
   /// Records decoded [events] and incomplete [leftover] bytes for the next pass.
-  const ParseResult(this.events, this.leftover);
+  const ParseResult(this.events, this.leftover) : _discardedFrame = null;
+
+  const ParseResult._discarding(
+    this.events,
+    this.leftover,
+    this._discardedFrame,
+  );
 
   /// Fully decoded input events from this parse pass.
   final List<ParsedInput> events;
 
   /// Trailing bytes of an incomplete sequence to prepend to the next chunk.
   final List<int> leftover;
+
+  final _DiscardedAnsiFrame? _discardedFrame;
 }
+
+const int _maxBracketedPastePayloadBytes = 1024 * 1024;
+const int _maxControlSequenceBodyBytes = 4096;
+const List<int> _bracketedPasteEnd = <int>[0x1b, 0x5b, 0x32, 0x30, 0x31, 0x7e];
+
+enum _DiscardedAnsiFrame { bracketedPaste, stringCapability, csi }
+
+final class _ParseContext {
+  _ParseContext({required this.enforceLimits});
+
+  final bool enforceLimits;
+  _DiscardedAnsiFrame? discardedFrame;
+  List<int> retainedPrefix = const <int>[];
+
+  void discard(_DiscardedAnsiFrame frame, List<int> prefix) {
+    discardedFrame = frame;
+    retainedPrefix = prefix;
+  }
+}
+
+({bool complete, int nextIndex, List<int> retainedPrefix})
+_recoverDiscardedFrame(_DiscardedAnsiFrame frame, List<int> bytes) {
+  switch (frame) {
+    case _DiscardedAnsiFrame.bracketedPaste:
+      final end = _indexOfSequence(bytes, _bracketedPasteEnd);
+      if (end >= 0) {
+        return (
+          complete: true,
+          nextIndex: end + _bracketedPasteEnd.length,
+          retainedPrefix: const <int>[],
+        );
+      }
+      return (
+        complete: false,
+        nextIndex: bytes.length,
+        retainedPrefix: _trailingSequencePrefix(bytes, _bracketedPasteEnd),
+      );
+    case _DiscardedAnsiFrame.stringCapability:
+      for (var i = 0; i < bytes.length; i++) {
+        if (bytes[i] == 0x07) {
+          return (
+            complete: true,
+            nextIndex: i + 1,
+            retainedPrefix: const <int>[],
+          );
+        }
+        if (bytes[i] == 0x1b && i + 1 < bytes.length && bytes[i + 1] == 0x5c) {
+          return (
+            complete: true,
+            nextIndex: i + 2,
+            retainedPrefix: const <int>[],
+          );
+        }
+      }
+      return (
+        complete: false,
+        nextIndex: bytes.length,
+        retainedPrefix: bytes.isNotEmpty && bytes.last == 0x1b
+            ? const <int>[0x1b]
+            : const <int>[],
+      );
+    case _DiscardedAnsiFrame.csi:
+      for (var i = 0; i < bytes.length; i++) {
+        if (!_isCsiBodyByte(bytes[i])) {
+          return (
+            complete: true,
+            nextIndex: i + 1,
+            retainedPrefix: const <int>[],
+          );
+        }
+      }
+      return (
+        complete: false,
+        nextIndex: bytes.length,
+        retainedPrefix: const <int>[],
+      );
+  }
+}
+
+int _indexOfSequence(List<int> bytes, List<int> sequence, {int start = 0}) {
+  for (var i = start; i + sequence.length <= bytes.length; i++) {
+    var matches = true;
+    for (var j = 0; j < sequence.length; j++) {
+      if (bytes[i + j] != sequence[j]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return i;
+  }
+  return -1;
+}
+
+List<int> _trailingSequencePrefix(
+  List<int> bytes,
+  List<int> sequence, {
+  int start = 0,
+}) {
+  final available = bytes.length - start;
+  final maximum = available < sequence.length - 1
+      ? available
+      : sequence.length - 1;
+  for (var length = maximum; length > 0; length--) {
+    final offset = bytes.length - length;
+    var matches = true;
+    for (var i = 0; i < length; i++) {
+      if (bytes[offset + i] != sequence[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return bytes.sublist(offset);
+  }
+  return const <int>[];
+}
+
+bool _isCsiBodyByte(int byte) => byte >= 0x20 && byte <= 0x3f;
 
 KeyEvent _key(
   LogicalKeyboardKey logicalKey, {
@@ -223,14 +481,44 @@ int _decodeModifierField(int modField) {
 /// Parse a chunk of raw bytes into key, mouse, paste, and terminal capability
 /// inputs. Pure function, side-effect free — exposed for unit testing without
 /// a real stdin. Bytes that don't match a recognised pattern are dropped.
-ParseResult parseAnsiInput(List<int> bytes, {bool holdTrailingEscape = false}) {
+ParseResult parseAnsiInput(
+  List<int> bytes, {
+  bool holdTrailingEscape = false,
+}) => _parseAnsiInput(
+  bytes,
+  holdTrailingEscape: holdTrailingEscape,
+  enforceLimits: false,
+);
+
+ParseResult _parseBoundedAnsiInput(
+  List<int> bytes, {
+  required bool holdTrailingEscape,
+}) => _parseAnsiInput(
+  bytes,
+  holdTrailingEscape: holdTrailingEscape,
+  enforceLimits: true,
+);
+
+ParseResult _parseAnsiInput(
+  List<int> bytes, {
+  required bool holdTrailingEscape,
+  required bool enforceLimits,
+}) {
   final events = <ParsedInput>[];
+  final context = _ParseContext(enforceLimits: enforceLimits);
   var i = 0;
   // _PasteState tracks whether we're inside a bracketed-paste block.
   final paste = _PasteState();
   while (i < bytes.length) {
     if (paste.active) {
-      final consumed = paste.advance(bytes, i, events);
+      final consumed = paste.advance(bytes, i, events, context);
+      if (context.discardedFrame != null) {
+        return ParseResult._discarding(
+          events,
+          context.retainedPrefix,
+          context.discardedFrame,
+        );
+      }
       if (consumed < 0) {
         // End sequence not found yet — keep everything from paste.startIndex
         // onward as leftover for the next chunk.
@@ -239,7 +527,21 @@ ParseResult parseAnsiInput(List<int> bytes, {bool holdTrailingEscape = false}) {
       i += consumed;
       continue;
     }
-    final consumed = _parseOne(bytes, i, events, paste, holdTrailingEscape);
+    final consumed = _parseOne(
+      bytes,
+      i,
+      events,
+      paste,
+      holdTrailingEscape,
+      context,
+    );
+    if (context.discardedFrame != null) {
+      return ParseResult._discarding(
+        events,
+        context.retainedPrefix,
+        context.discardedFrame,
+      );
+    }
     if (consumed == 0) {
       // Incomplete escape sequence at end of buffer; preserve as leftover.
       return ParseResult(events, bytes.sublist(i));
@@ -259,33 +561,43 @@ class _PasteState {
   /// Try to consume up through (and including) the `ESC [ 201 ~` end
   /// sequence. Returns the number of input bytes consumed since [start].
   /// Returns -1 if the end sequence is not in [bytes] yet.
-  int advance(List<int> bytes, int start, List<ParsedInput> out) {
+  int advance(
+    List<int> bytes,
+    int start,
+    List<ParsedInput> out,
+    _ParseContext context,
+  ) {
     // Look for ESC [ 2 0 1 ~.
     final end = _indexOfEnd(bytes, start);
     if (end < 0) {
+      if (context.enforceLimits) {
+        final terminatorPrefix = _trailingSequencePrefix(
+          bytes,
+          _bracketedPasteEnd,
+          start: start,
+        );
+        final definitePayloadLength =
+            bytes.length - start - terminatorPrefix.length;
+        if (definitePayloadLength > _maxBracketedPastePayloadBytes) {
+          context.discard(_DiscardedAnsiFrame.bracketedPaste, terminatorPrefix);
+        }
+      }
       return -1;
+    }
+    if (context.enforceLimits && end - start > _maxBracketedPastePayloadBytes) {
+      active = false;
+      return (end - start) + _bracketedPasteEnd.length;
     }
     out.add(
       PasteInput(utf8.decode(bytes.sublist(start, end), allowMalformed: true)),
     );
     active = false;
-    return (end - start) + 6; // length of "ESC [ 2 0 1 ~"
+    return (end - start) + _bracketedPasteEnd.length;
   }
 
-  int _indexOfEnd(List<int> bytes, int from) {
-    // ESC [ 2 0 1 ~  =  0x1b 0x5b 0x32 0x30 0x31 0x7e
-    for (var i = from; i + 5 < bytes.length; i++) {
-      if (bytes[i] == 0x1b &&
-          bytes[i + 1] == 0x5b &&
-          bytes[i + 2] == 0x32 &&
-          bytes[i + 3] == 0x30 &&
-          bytes[i + 4] == 0x31 &&
-          bytes[i + 5] == 0x7e) {
-        return i;
-      }
-    }
-    return -1;
-  }
+  // ESC [ 2 0 1 ~  =  0x1b 0x5b 0x32 0x30 0x31 0x7e
+  int _indexOfEnd(List<int> bytes, int from) =>
+      _indexOfSequence(bytes, _bracketedPasteEnd, start: from);
 }
 
 /// Returns the number of bytes consumed. Returns 0 to signal "incomplete
@@ -296,6 +608,7 @@ int _parseOne(
   List<ParsedInput> out,
   _PasteState paste,
   bool holdTrailingEscape,
+  _ParseContext context,
 ) {
   final b = bytes[start];
 
@@ -308,14 +621,14 @@ int _parseOne(
     }
     final next = bytes[start + 1];
     if (next == 0x5b /* '[' */ ) {
-      return _parseCsi(bytes, start, out, paste);
+      return _parseCsi(bytes, start, out, paste, context);
     }
     if (next == 0x4f /* 'O' */ ) {
       return _parseSs3(bytes, start, out);
     }
     // DCS ESC P, OSC ESC ], APC ESC _, PM ESC ^ — terminated by BEL or ST.
     if (next == 0x50 || next == 0x5d || next == 0x5f || next == 0x5e) {
-      return _parseStringCapability(bytes, start, out);
+      return _parseStringCapability(bytes, start, out, context);
     }
     // ST alone (ESC \) — drop silently.
     if (next == 0x5c) {
@@ -403,7 +716,12 @@ int _parseOne(
   return 1;
 }
 
-int _parseStringCapability(List<int> bytes, int start, List<ParsedInput> out) {
+int _parseStringCapability(
+  List<int> bytes,
+  int start,
+  List<ParsedInput> out,
+  _ParseContext context,
+) {
   final kind = switch (bytes[start + 1]) {
     0x50 => TerminalCapabilityKind.deviceControlString,
     0x5d => TerminalCapabilityKind.operatingSystemCommand,
@@ -415,32 +733,48 @@ int _parseStringCapability(List<int> bytes, int start, List<ParsedInput> out) {
   var i = start + 2;
   while (i < bytes.length) {
     if (bytes[i] == 0x07) {
-      out.add(
-        _capabilityInput(
-          kind: kind,
-          bytes: bytes,
-          start: start,
-          payloadStart: start + 2,
-          payloadEnd: i,
-          end: i + 1,
-        ),
-      );
+      if (!context.enforceLimits ||
+          i - (start + 2) <= _maxControlSequenceBodyBytes) {
+        out.add(
+          _capabilityInput(
+            kind: kind,
+            bytes: bytes,
+            start: start,
+            payloadStart: start + 2,
+            payloadEnd: i,
+            end: i + 1,
+          ),
+        );
+      }
       return i + 1 - start;
     }
     if (bytes[i] == 0x1b && i + 1 < bytes.length && bytes[i + 1] == 0x5c) {
-      out.add(
-        _capabilityInput(
-          kind: kind,
-          bytes: bytes,
-          start: start,
-          payloadStart: start + 2,
-          payloadEnd: i,
-          end: i + 2,
-        ),
-      );
+      if (!context.enforceLimits ||
+          i - (start + 2) <= _maxControlSequenceBodyBytes) {
+        out.add(
+          _capabilityInput(
+            kind: kind,
+            bytes: bytes,
+            start: start,
+            payloadStart: start + 2,
+            payloadEnd: i,
+            end: i + 2,
+          ),
+        );
+      }
       return i + 2 - start;
     }
     i++;
+  }
+  if (context.enforceLimits) {
+    final terminatorPrefix = bytes.isNotEmpty && bytes.last == 0x1b
+        ? const <int>[0x1b]
+        : const <int>[];
+    final definiteBodyLength =
+        bytes.length - (start + 2) - terminatorPrefix.length;
+    if (definiteBodyLength > _maxControlSequenceBodyBytes) {
+      context.discard(_DiscardedAnsiFrame.stringCapability, terminatorPrefix);
+    }
   }
   return 0; // incomplete
 }
@@ -450,6 +784,7 @@ int _parseCsi(
   int start,
   List<ParsedInput> out,
   _PasteState paste,
+  _ParseContext context,
 ) {
   // Layout: ESC [ <params> <intermediates> <final>
   // params:        0x30..0x3f  (digits, ; , < > ? — including SGR mouse '<')
@@ -460,15 +795,24 @@ int _parseCsi(
   while (i < bytes.length && bytes[i] >= 0x30 && bytes[i] <= 0x3f) {
     i++;
   }
+  final paramsEnd = i;
   while (i < bytes.length && bytes[i] >= 0x20 && bytes[i] <= 0x2f) {
     i++;
   }
   if (i >= bytes.length) {
+    if (context.enforceLimits &&
+        i - (start + 2) > _maxControlSequenceBodyBytes) {
+      context.discard(_DiscardedAnsiFrame.csi, const <int>[]);
+    }
     // Incomplete sequence: signal "preserve and wait".
     return 0;
   }
+  if (context.enforceLimits && i - (start + 2) > _maxControlSequenceBodyBytes) {
+    return i + 1 - start;
+  }
   final finalByte = bytes[i];
-  final params = String.fromCharCodes(bytes.sublist(paramsStart, i));
+  final params = String.fromCharCodes(bytes.sublist(paramsStart, paramsEnd));
+  final intermediates = String.fromCharCodes(bytes.sublist(paramsEnd, i));
 
   if (finalByte == 0x63 /* c */ ) {
     final kind = _deviceAttributesKind(params);
@@ -485,6 +829,29 @@ int _parseCsi(
       );
       return i + 1 - start;
     }
+  }
+
+  final reportKind = switch ((finalByte, intermediates, params)) {
+    (0x79, r'$', final params) when _privateModeReport.hasMatch(params) =>
+      TerminalCapabilityKind.privateModeReport,
+    (0x52, '', final params) when _cursorPositionReport.hasMatch(params) =>
+      TerminalCapabilityKind.cursorPositionReport,
+    (0x75, '', final params) when _kittyKeyboardStatus.hasMatch(params) =>
+      TerminalCapabilityKind.kittyKeyboardStatus,
+    _ => null,
+  };
+  if (reportKind != null) {
+    out.add(
+      _capabilityInput(
+        kind: reportKind,
+        bytes: bytes,
+        start: start,
+        payloadStart: paramsStart,
+        payloadEnd: i,
+        end: i + 1,
+      ),
+    );
+    return i + 1 - start;
   }
 
   // SGR mouse: parameters start with '<'.
@@ -545,6 +912,10 @@ int _parseCsi(
   if (evt != null) out.add(KeyInput(evt));
   return i + 1 - start;
 }
+
+final RegExp _privateModeReport = RegExp(r'^\?[0-9]+;[0-9]+$');
+final RegExp _cursorPositionReport = RegExp(r'^[0-9]+;[0-9]+$');
+final RegExp _kittyKeyboardStatus = RegExp(r'^\?[0-9]+$');
 
 int _csiModifiers(String params) {
   final parts = params.split(';');
@@ -687,7 +1058,7 @@ KeyEvent? _parseKittyCsiU(String params) {
       isRepeat: isRepeat,
     );
   }
-  if (code >= 0x20 && code <= 0x10ffff) {
+  if (code >= 0x20 && _isUnicodeScalarValue(code)) {
     final character = _kittyPrintableCharacter(
       codepoint: code,
       modifiers: mods,
@@ -722,7 +1093,7 @@ String _kittyPrintableCharacter({
   if (modifiers & KeyModifiers.shift != 0 &&
       shiftedCodepoint != null &&
       shiftedCodepoint > 0 &&
-      shiftedCodepoint <= 0x10ffff) {
+      _isUnicodeScalarValue(shiftedCodepoint)) {
     return String.fromCharCode(shiftedCodepoint);
   }
   return String.fromCharCode(codepoint);
@@ -732,7 +1103,9 @@ String? _parseKittyAssociatedText(String field) {
   final codepoints = <int>[];
   for (final part in field.split(':')) {
     final codepoint = int.tryParse(part);
-    if (codepoint == null || codepoint <= 0 || codepoint > 0x10ffff) {
+    if (codepoint == null ||
+        codepoint <= 0 ||
+        !_isUnicodeScalarValue(codepoint)) {
       continue;
     }
     codepoints.add(codepoint);
@@ -740,6 +1113,9 @@ String? _parseKittyAssociatedText(String field) {
   if (codepoints.isEmpty) return null;
   return String.fromCharCodes(codepoints);
 }
+
+bool _isUnicodeScalarValue(int value) =>
+    value >= 0 && value <= 0x10ffff && (value < 0xd800 || value > 0xdfff);
 
 LogicalKeyboardKey? _kittyNamedKey(int code) {
   switch (code) {

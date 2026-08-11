@@ -31,7 +31,7 @@ class TextStyle {
   /// The typeface variant to use when drawing the letters (e.g., italics).
   final FontStyle? fontStyle;
 
-  /// A list of strings that specify the text decoration (e.g., underline).
+  /// Text decorations such as underline or line-through.
   final List<TextDecoration>? decoration;
 
   /// Terminal-specific text effects (blink, reverse video).

@@ -10,7 +10,7 @@ add_tags:
   - vm
 
 tags:
-  process-spawning:
-    # Runs by default locally. CI executes these tests in a separate Dart
-    # process before the native-asset-heavy full suite.
+  safe-process-spawning:
     skip: false
+  restricted-process-lifecycle:
+    skip: Requires explicit authorization for signal and process lifecycle testing.

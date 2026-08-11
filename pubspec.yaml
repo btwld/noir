@@ -1,6 +1,6 @@
 name: noir
 description: A Flutter-like reactive terminal UI framework for Dart, powered by OpenTUI.
-version: 0.1.0
+version: 1.0.0-alpha.1
 repository: https://github.com/leoafarias/noir
 issue_tracker: https://github.com/leoafarias/noir/issues
 
@@ -29,33 +29,9 @@ dependencies:
 
 dev_dependencies:
   analyzer: ^8.2.0
-  lints: ^3.0.0
-  test: ^1.25.0
   ffigen: ^15.0.0
+  # Keep pub-downgrade test execution compatible with Dart 3.10.
+  frontend_server_client: ^4.0.0
+  lints: ^6.0.0
   path: ^1.9.0
-
-ffigen:
-  name: OpenTuiBindings
-  description: Auto-generated bindings for OpenTUI
-  output: 'lib/src/ffi/generated_bindings.dart'
-
-  headers:
-    entry-points:
-      - 'external/opentui/packages/go/opentui.h'
-
-  functions:
-    include:
-      - '.*'
-
-  structs:
-    include:
-      - 'Capabilities'
-
-  comments:
-    style: any
-    length: full
-
-  preamble: |
-    // Generated FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
-    // Regenerate with: dart run ffigen
-    // Do not edit manually.
+  test: ^1.25.0

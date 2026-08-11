@@ -183,7 +183,9 @@ void main() {
   test(
     'invalid const geometry fails constant evaluation',
     () async {
-      final temp = await Directory.systemTemp.createTemp('noir-p9-016-const-');
+      final temp = await Directory.systemTemp.createTemp(
+        'noir-geometry-const-',
+      );
       addTearDown(() => temp.delete(recursive: true));
       final packageConfig =
           '${Directory.current.path}/.dart_tool/package_config.json';
@@ -216,6 +218,6 @@ void main() { print(value); }
         );
       }
     },
-    tags: const ['process-spawning'],
+    tags: const ['safe-process-spawning'],
   );
 }

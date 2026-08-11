@@ -1,4 +1,4 @@
-// Regression tests for CORE-004 (P9-009): a deferred autofocus microtask
+// Regression tests: a deferred autofocus microtask
 // must not target a disposed/replaced/detached FocusNode.
 //
 // These mount/unmount Focus widgets directly via BuildOwner + Element,

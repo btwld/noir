@@ -420,15 +420,42 @@ void main() {
       ),
     ).toLowerCase();
     for (final fact
-        in 'native encoded cell words|not a unicode string or a uniformly decodable code-point array|top bits `00` identify a direct scalar word|top bits `10` identify a packed grapheme-start word|right extent and an opaque 26-bit pool identity|top bits `11` identify a continuation word|left and right extents and the same opaque identity|process-global native grapheme pool|cannot independently recover grapheme text|non-empty views are native-owned, read-only|immediate inspection|next textbuffer mutation, reset, or disposal|zero, getdirectaccess returns dart-owned empty typed lists'
+        in 'native encoded cell words|not a unicode string or a uniformly decodable code-point array|top bits `00` identify a direct scalar word|top bits `10` identify a packed grapheme-start word|right extent and an opaque 26-bit pool identity|top bits `11` identify a continuation word|left and right extents and the same opaque identity|process-global native grapheme pool|cannot independently recover grapheme text|non-empty views are native-owned, read-only|immediate inspection|next textbuffer mutation, reset, or disposal|zero, getdirectaccess returns dart-owned empty typed lists|unmodifiable, including aliases created from their byte buffers|zero-copy'
             .split('|')) {
       expect(directDoc, contains(fact), reason: fact);
     }
-    final directConstructor = _member(direct, 'new') as ConstructorDeclaration;
+    expect(
+      direct.members
+          .whereType<ConstructorDeclaration>()
+          .map(_memberName)
+          .toList(),
+      ['_'],
+    );
+    final directConstructor = _member(direct, '_') as ConstructorDeclaration;
     expect(
       _compactSource(directConstructor.parameters.toSource()),
-      '({required this.encodedCells, required this.foregrounds, required this.backgrounds, required this.attributes, required this.length})',
+      '({required Uint32List encodedCells, required Float32List foregrounds, required Float32List backgrounds, required Uint16List attributes, required this.length})',
     );
+    expect(
+      directConstructor.initializers.map(
+        (initializer) => _compactSource(initializer.toSource()),
+      ),
+      <String>[
+        'encodedCells = encodedCells.asUnmodifiableView()',
+        'foregrounds = foregrounds.asUnmodifiableView()',
+        'backgrounds = backgrounds.asUnmodifiableView()',
+        'attributes = attributes.asUnmodifiableView()',
+      ],
+    );
+    final textBufferSource = File(
+      'lib/src/core/text_buffer.dart',
+    ).readAsStringSync();
+    expect(
+      RegExp(r'DirectTextAccess\._\(').allMatches(textBufferSource),
+      hasLength(3),
+      reason: 'one private declaration and the empty/native call sites',
+    );
+    expect(RegExp(r'DirectTextAccess\(').allMatches(textBufferSource), isEmpty);
     final directFields = direct.members
         .whereType<FieldDeclaration>()
         .expand((field) => field.fields.variables)
@@ -668,6 +695,121 @@ void main() {
       }
       if (entry.key == 'textBufferWriteChunk') {
         expect('convert.utf8.encode(text)'.allMatches(source), hasLength(1));
+      }
+    }
+  });
+
+  test('guarded raw FFI rejects every remaining fixed-width narrowing', () async {
+    final unit = await resolve('lib/src/ffi/bindings.dart');
+    final validateDimensions = unit.unit.declarations
+        .whereType<FunctionDeclaration>()
+        .singleWhere(
+          (declaration) =>
+              declaration.name.lexeme == 'validateRendererDimensions',
+        );
+    _expectOrderedFragments(
+      _compactSource(validateDimensions.functionExpression.body.toSource()),
+      <String>[
+        'if (width <= 0)',
+        "throw ArgumentError.value(width, 'width', 'must be greater than zero');",
+        "_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');",
+        'if (height <= 0)',
+        "throw ArgumentError.value(height, 'height', 'must be greater than zero');",
+        "_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');",
+      ],
+    );
+    final validateDoc = _compactSource(
+      (validateDimensions.declaredFragment!.element.documentationComment ?? '')
+          .replaceAll('///', ''),
+    ).toLowerCase();
+    for (final fact in const <String>[
+      'between 1 and the unsigned 32-bit maximum',
+      'non-positive values use [argumenterror]',
+      'larger values use [rangeerror]',
+    ]) {
+      expect(validateDoc, contains(fact), reason: fact);
+    }
+
+    final bindings = unit.unit.declarations
+        .whereType<ClassDeclaration>()
+        .singleWhere(
+          (declaration) => declaration.name.lexeme == 'OpenTuiBindings',
+        );
+    const guardBodies = <String, String>{
+      'createRenderer':
+          'validateRendererDimensions(width, height);|return _guard(',
+      'resizeRenderer': 'validateRendererDimensions(width, height);|_guard(',
+      'destroyRenderer':
+          "validateUnsigned32Abi(splitHeight, 'splitHeight');|_guard(",
+      'setCursorPosition':
+          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_guard(",
+      'enableKittyKeyboard': "_checkUnsignedAbi(flags, 0xFF, 'flags');|_guard(",
+      'updateStats': "_checkUnsignedAbi(fps, 0xFFFFFFFF, 'fps');|_guard(",
+      'updateMemoryStats':
+          "_checkUnsignedAbi(heapUsed, 0xFFFFFFFF, 'heapUsed');|_checkUnsignedAbi(heapTotal, 0xFFFFFFFF, 'heapTotal');|_checkUnsignedAbi(arrayBuffers, 0xFFFFFFFF, 'arrayBuffers');|_guard(",
+      'setDebugOverlay': "_checkUnsignedAbi(corner, 0xFF, 'corner');|_guard(",
+      'addToHitGrid':
+          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_checkUnsignedAbi(id, 0xFFFFFFFF, 'id');|_guard(",
+      'checkHit':
+          "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|return _guard(",
+    };
+    const docFacts = <String, List<String>>{
+      'createRenderer': <String>[
+        '[width] and [height] must be between 1 and the unsigned 32-bit maximum',
+        'non-positive values throw [argumenterror]',
+        'larger values throw a pre-invocation [rangeerror]',
+      ],
+      'resizeRenderer': <String>[
+        '[width] and [height] must be between 1 and the unsigned 32-bit maximum',
+        'non-positive values throw [argumenterror]',
+        'larger values throw a pre-invocation [rangeerror]',
+      ],
+      'destroyRenderer': <String>[
+        '[splitheight] must fit an unsigned 32-bit value',
+        'pre-invocation [rangeerror]',
+      ],
+      'setCursorPosition': <String>[
+        '[x] and [y] must fit signed 32-bit values',
+        'pre-invocation [rangeerror]',
+      ],
+      'enableKittyKeyboard': <String>[
+        '[flags] must fit an unsigned 8-bit value',
+        'pre-invocation [rangeerror]',
+      ],
+      'updateStats': <String>[
+        '[fps] must fit an unsigned 32-bit value',
+        'pre-invocation [rangeerror]',
+      ],
+      'updateMemoryStats': <String>[
+        '[heapused], [heaptotal], and [arraybuffers] must fit unsigned 32-bit values',
+        'pre-invocation [rangeerror]',
+      ],
+      'setDebugOverlay': <String>[
+        '[corner] must fit an unsigned 8-bit value',
+        'pre-invocation [rangeerror]',
+      ],
+      'addToHitGrid': <String>[
+        '[x] and [y] must fit signed 32-bit values',
+        '[width], [height], and [id] must fit unsigned 32-bit values',
+        'pre-invocation [rangeerror]',
+      ],
+      'checkHit': <String>[
+        '[x] and [y] must fit unsigned 32-bit values',
+        'pre-invocation [rangeerror]',
+        'abi-valid coordinates outside the terminal bounds always return 0',
+      ],
+    };
+
+    expect(guardBodies.keys, unorderedEquals(docFacts.keys));
+    for (final entry in guardBodies.entries) {
+      final method = _member(bindings, entry.key) as MethodDeclaration;
+      _expectOrderedFragments(
+        _compactSource(method.body.toSource()),
+        entry.value.split('|'),
+      );
+      final doc = _memberDoc(method).toLowerCase();
+      for (final fact in docFacts[entry.key]!) {
+        expect(doc, contains(fact), reason: '${entry.key}: $fact');
       }
     }
   });

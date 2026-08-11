@@ -12,11 +12,12 @@ import 'tui_canvas.dart';
 ///
 /// The box has a [border] and a body.
 ///
-/// The [shape] of the box can be a circle or a rectangle.
+/// Rectangular fill and borders are supported. [BoxShape.circle] is an
+/// experimental compatibility value: it suppresses the body fill, while the
+/// border and hit-testing geometry remain rectangular.
 ///
 /// The body of the box is painted with the [color]. In the terminal,
-/// [color] only fills [BoxShape.rectangle] bodies; [BoxShape.circle] paints
-/// no body fill (it affects hit testing and the border only).
+/// [color] only fills [BoxShape.rectangle] bodies.
 ///
 /// The [border] paints over the body.
 @immutable
@@ -41,15 +42,14 @@ class BoxDecoration extends Decoration {
 
   /// A border to draw above the background [color].
   ///
-  /// Follows the [shape].
-  ///
   /// Use [Border] objects to describe borders that do not depend on the reading
   /// direction.
   final BoxBorder? border;
 
-  /// The shape to fill the background [color] into.
+  /// Controls whether the background [color] is filled.
   ///
-  /// The [border] will be drawn on top of the shape, not within it.
+  /// [BoxShape.circle] currently suppresses the fill. It does not make the
+  /// terminal border or hit-test geometry circular.
   final BoxShape shape;
 
   @override

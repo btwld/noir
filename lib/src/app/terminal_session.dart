@@ -27,8 +27,8 @@ enum TerminalSignal {
 /// Minimal input driver interface used by [TerminalSession].
 @visibleForTesting
 abstract interface class TerminalInputDriver {
-  /// Starts the driver.
-  void start();
+  /// Starts the driver and reports whether terminal stdin was acquired.
+  bool start();
 
   /// Stops the driver.
   void stop();
@@ -40,9 +40,6 @@ abstract interface class TerminalPlatform {
   /// Whether stdout is attached to a terminal.
   bool get stdoutHasTerminal;
 
-  /// Whether stdin is attached to a terminal.
-  bool get stdinHasTerminal;
-
   /// Whether the current platform is Windows.
   bool get isWindows;
 
@@ -51,18 +48,6 @@ abstract interface class TerminalPlatform {
 
   /// Current terminal lines.
   int get terminalLines;
-
-  /// Current stdin line mode.
-  bool get stdinLineMode;
-
-  /// Sets stdin line mode.
-  set stdinLineMode(bool value);
-
-  /// Current stdin echo mode.
-  bool get stdinEchoMode;
-
-  /// Sets stdin echo mode.
-  set stdinEchoMode(bool value);
 
   /// Writes raw data to stdout.
   void stdoutWrite(String data);
@@ -116,13 +101,24 @@ class TerminalSession {
       _ownsRenderer = renderer == null;
       _useTerminalSession = stdoutHasTerminal;
 
-      if (_useTerminalSession) {
-        _renderer!.setupTerminal();
-      }
-
       final inputDriver = _inputDriverFactory(inputDispatcher);
       _inputDriver = inputDriver;
-      inputDriver.start();
+      if (_useTerminalSession) {
+        final sessionRenderer = _renderer!;
+        _capabilitySubscription = inputDispatcher.onCapabilityResponse((event) {
+          event.consume();
+          processRendererCapabilityResponse(sessionRenderer, event.raw);
+        }, priority: _capabilityRoutingPriority);
+      }
+
+      final inputAcquired = inputDriver.start();
+      if (_useTerminalSession && !inputAcquired) {
+        throw StateError('Interactive terminal setup requires terminal stdin');
+      }
+      if (_useTerminalSession) {
+        _terminalSetupAttempted = true;
+        _renderer!.setupTerminal();
+      }
       _installSignalHandlers();
       _installResizeHandler();
     } on Object catch (error, stackTrace) {
@@ -134,6 +130,8 @@ class TerminalSession {
       Error.throwWithStackTrace(error, stackTrace);
     }
   }
+
+  static const int _capabilityRoutingPriority = InputPriority.app + 1;
 
   final bool _isHeadless;
   final void Function() _scheduleFrame;
@@ -147,7 +145,9 @@ class TerminalSession {
   Renderer? _renderer;
   bool _ownsRenderer = false;
   TerminalInputDriver? _inputDriver;
+  InputSubscription? _capabilitySubscription;
   bool _useTerminalSession = false;
+  bool _terminalSetupAttempted = false;
   bool _closing = false;
   bool _closed = false;
   bool _handlingExitSignal = false;
@@ -230,6 +230,7 @@ class TerminalSession {
       _signalSubscriptions,
     );
     final inputDriver = _inputDriver;
+    final capabilitySubscription = _capabilitySubscription;
     final renderer = _renderer;
     final ownsRenderer = _ownsRenderer;
 
@@ -241,6 +242,9 @@ class TerminalSession {
         });
       }
       failures.attempt(() => inputDriver?.stop());
+      if (capabilitySubscription != null) {
+        failures.attempt(capabilitySubscription.cancel);
+      }
       failures.attempt(_restoreTerminalSession);
       if (renderer != null && ownsRenderer) {
         failures.attempt(renderer.dispose);
@@ -248,8 +252,10 @@ class TerminalSession {
     } finally {
       _signalSubscriptions.clear();
       _inputDriver = null;
+      _capabilitySubscription = null;
       _ownsRenderer = false;
       _useTerminalSession = false;
+      _terminalSetupAttempted = false;
       _closed = true;
       _closing = false;
     }
@@ -324,7 +330,7 @@ class TerminalSession {
   }
 
   void _restoreTerminalSession() {
-    if (!_useTerminalSession) {
+    if (!_terminalSetupAttempted) {
       return;
     }
 
@@ -344,13 +350,6 @@ class TerminalSession {
       attempt(() => _platform.stdoutWrite(sequence));
     }
     attempt(_platform.stdoutFlush);
-
-    bool? stdinHasTerminal;
-    attempt(() => stdinHasTerminal = _platform.stdinHasTerminal);
-    if (stdinHasTerminal ?? false) {
-      attempt(() => _platform.stdinLineMode = true);
-      attempt(() => _platform.stdinEchoMode = true);
-    }
   }
 }
 
@@ -370,9 +369,7 @@ class _StdinTerminalInputDriver implements TerminalInputDriver {
   final StdinInputDriver _driver;
 
   @override
-  void start() {
-    _driver.start();
-  }
+  bool start() => _driver.start();
 
   @override
   void stop() {
@@ -385,15 +382,6 @@ class _IoTerminalPlatform implements TerminalPlatform {
   bool get stdoutHasTerminal => io.stdout.hasTerminal;
 
   @override
-  bool get stdinHasTerminal {
-    try {
-      return io.stdin.hasTerminal;
-    } on io.FileSystemException {
-      return false;
-    }
-  }
-
-  @override
   bool get isWindows => io.Platform.isWindows;
 
   @override
@@ -401,22 +389,6 @@ class _IoTerminalPlatform implements TerminalPlatform {
 
   @override
   int get terminalLines => io.stdout.terminalLines;
-
-  @override
-  bool get stdinLineMode => io.stdin.lineMode;
-
-  @override
-  set stdinLineMode(bool value) {
-    io.stdin.lineMode = value;
-  }
-
-  @override
-  bool get stdinEchoMode => io.stdin.echoMode;
-
-  @override
-  set stdinEchoMode(bool value) {
-    io.stdin.echoMode = value;
-  }
 
   @override
   void stdoutWrite(String data) {

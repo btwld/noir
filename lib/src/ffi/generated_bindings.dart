@@ -1,6 +1,7 @@
 // Generated FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
-// Regenerate with: dart run ffigen
+// Regenerate with: dart run ffigen --config ffigen_dynamic.yaml
 // Do not edit manually.
+// ignore_for_file: unused_element, unused_field
 
 // AUTO GENERATED FILE, DO NOT EDIT.
 //

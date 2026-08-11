@@ -4,10 +4,8 @@ import 'package:noir/src/animation/animation_controller.dart';
 import 'package:noir/src/animation/ticker.dart';
 import 'package:test/test.dart';
 
-/// CORE-005 (partial-distance runs must scale duration by the fraction of
-/// [lowerBound, upperBound] actually traveled) and CORE-006 (the `canceled`
-/// parameter on `stop()` is dead and has been removed; the returned Future
-/// contract is "this run ended", not "this run was or wasn't cancelled").
+/// Covers proportional partial-distance duration and the run-completion
+/// contract after `stop()`.
 class TestTickerProvider implements TickerProvider {
   TestTickerProvider(this.scheduler);
   final TickerScheduler scheduler;
@@ -26,7 +24,7 @@ void main() {
       vsync = TestTickerProvider(scheduler);
     });
 
-    group('CORE-005: partial-distance runs scale duration', () {
+    group('partial-distance runs scale duration', () {
       test('forward(from: 0.5) over [0, 1] with duration:100ms completes by '
           '~50ms, while forward(from: 0.0) is only half-way at the same '
           'timestamp', () async {
@@ -51,7 +49,7 @@ void main() {
         expect(half.value, closeTo(1.0, 1e-6));
 
         // Full-range run at the same wall-clock point is only half-way,
-        // and its own timing is unaffected by the CORE-005 fix.
+        // and its own timing is unaffected by the partial-distance run.
         expect(full.status, AnimationStatus.forward);
         expect(full.value, closeTo(0.5, 1e-6));
 
@@ -141,7 +139,7 @@ void main() {
       );
     });
 
-    group('CORE-005: zero-distance short-circuit retained', () {
+    group('zero-distance short-circuit retained', () {
       test(
         'forward() already at upperBound completes with no ticking',
         () async {
@@ -176,84 +174,60 @@ void main() {
       );
     });
 
-    group(
-      'CORE-006: stop() has no canceled parameter; Future means "run ended"',
-      () {
-        test('forward() future completes on natural finish', () async {
-          final controller = AnimationController(
-            vsync: vsync,
-            duration: const Duration(milliseconds: 100),
-          );
-
-          var completed = false;
-          final future = controller.forward(from: 0).then((_) {
-            completed = true;
-          });
-          scheduler.handleFrame(Duration.zero);
-          scheduler.handleFrame(const Duration(milliseconds: 100));
-          await future;
-          expect(completed, isTrue);
-          expect(controller.status, AnimationStatus.completed);
-          controller.dispose();
-        });
-
-        test('interrupting forward() with reverse() completes the first future '
-            '(run-ended, not cancellation-aware)', () async {
-          final controller = AnimationController(
-            vsync: vsync,
-            duration: const Duration(milliseconds: 100),
-          );
-
-          var forwardCompleted = false;
-          final forwardFuture = controller.forward(from: 0).then((_) {
-            forwardCompleted = true;
-          });
-          scheduler.handleFrame(Duration.zero);
-          scheduler.handleFrame(const Duration(milliseconds: 50));
-          expect(forwardCompleted, isFalse);
-
-          final reverseFuture = controller.reverse();
-          // The first future must already be complete: reverse() calls
-          // stop() internally before starting its own run. By the time an
-          // asynchronous continuation observes that completion, status is
-          // the current replacement run's status, not the old run's outcome.
-          await forwardFuture;
-          expect(forwardCompleted, isTrue);
-          expect(controller.status, AnimationStatus.reverse);
-          expect(controller.isAnimating, isTrue);
-
-          scheduler.handleFrame(Duration.zero);
-          scheduler.handleFrame(const Duration(milliseconds: 100));
-          await reverseFuture;
-          expect(controller.status, AnimationStatus.dismissed);
-          controller.dispose();
-        });
-
-        test(
-          'stop() completes the pending future without reaching the target',
-          () async {
-            final controller = AnimationController(
-              vsync: vsync,
-              duration: const Duration(milliseconds: 100),
-            );
-
-            final future = controller.forward(from: 0);
-            scheduler.handleFrame(Duration.zero);
-            scheduler.handleFrame(const Duration(milliseconds: 50));
-            expect(controller.value, closeTo(0.5, 1e-6));
-            final valueAtStop = controller.value;
-
-            // stop() takes no arguments -- the `canceled` parameter is gone.
-            controller.stop();
-            await future;
-            expect(controller.value, valueAtStop);
-            expect(controller.status, AnimationStatus.forward);
-            expect(controller.isAnimating, isFalse);
-            controller.dispose();
-          },
+    group('stop() has no canceled parameter; Future means "run ended"', () {
+      test('forward() future completes on natural finish', () async {
+        final controller = AnimationController(
+          vsync: vsync,
+          duration: const Duration(milliseconds: 100),
         );
 
-        test('dispose() completes a still-pending future', () async {
+        var completed = false;
+        final future = controller.forward(from: 0).then((_) {
+          completed = true;
+        });
+        scheduler.handleFrame(Duration.zero);
+        scheduler.handleFrame(const Duration(milliseconds: 100));
+        await future;
+        expect(completed, isTrue);
+        expect(controller.status, AnimationStatus.completed);
+        controller.dispose();
+      });
+
+      test('interrupting forward() with reverse() completes the first future '
+          '(run-ended, not cancellation-aware)', () async {
+        final controller = AnimationController(
+          vsync: vsync,
+          duration: const Duration(milliseconds: 100),
+        );
+
+        var forwardCompleted = false;
+        final forwardFuture = controller.forward(from: 0).then((_) {
+          forwardCompleted = true;
+        });
+        scheduler.handleFrame(Duration.zero);
+        scheduler.handleFrame(const Duration(milliseconds: 50));
+        expect(forwardCompleted, isFalse);
+
+        final reverseFuture = controller.reverse();
+        // The first future must already be complete: reverse() calls
+        // stop() internally before starting its own run. By the time an
+        // asynchronous continuation observes that completion, status is
+        // the current replacement run's status, not the old run's outcome.
+        await forwardFuture;
+        expect(forwardCompleted, isTrue);
+        expect(controller.status, AnimationStatus.reverse);
+        expect(controller.isAnimating, isTrue);
+
+        scheduler.handleFrame(Duration.zero);
+        scheduler.handleFrame(const Duration(milliseconds: 100));
+        await reverseFuture;
+        expect(controller.status, AnimationStatus.dismissed);
+        controller.dispose();
+      });
+
+      test(
+        'stop() completes the pending future without reaching the target',
+        () async {
           final controller = AnimationController(
             vsync: vsync,
             duration: const Duration(milliseconds: 100),
@@ -262,11 +236,32 @@ void main() {
           final future = controller.forward(from: 0);
           scheduler.handleFrame(Duration.zero);
           scheduler.handleFrame(const Duration(milliseconds: 50));
+          expect(controller.value, closeTo(0.5, 1e-6));
+          final valueAtStop = controller.value;
 
-          controller.dispose();
+          // stop() takes no arguments -- the `canceled` parameter is gone.
+          controller.stop();
           await future;
-        });
-      },
-    );
+          expect(controller.value, valueAtStop);
+          expect(controller.status, AnimationStatus.forward);
+          expect(controller.isAnimating, isFalse);
+          controller.dispose();
+        },
+      );
+
+      test('dispose() completes a still-pending future', () async {
+        final controller = AnimationController(
+          vsync: vsync,
+          duration: const Duration(milliseconds: 100),
+        );
+
+        final future = controller.forward(from: 0);
+        scheduler.handleFrame(Duration.zero);
+        scheduler.handleFrame(const Duration(milliseconds: 50));
+
+        controller.dispose();
+        await future;
+      });
+    });
   });
 }

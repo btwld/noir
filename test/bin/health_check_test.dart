@@ -1,11 +1,13 @@
 @TestOn('vm')
-@Tags(['process-spawning'])
+@Tags(['safe-process-spawning'])
 library;
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
+
+final _forbiddenControlCharacters = RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]');
 
 void main() {
   test(
@@ -20,6 +22,11 @@ void main() {
         result.exitCode,
         0,
         reason: 'stdout:\n${result.stdout}\n\nstderr:\n${result.stderr}',
+      );
+      expect(
+        '${result.stdout}${result.stderr}',
+        isNot(matches(_forbiddenControlCharacters)),
+        reason: 'The shipped health check must not emit terminal controls.',
       );
     },
     timeout: const Timeout(Duration(seconds: 15)),
@@ -70,6 +77,11 @@ dependencies:
         result.exitCode,
         0,
         reason: 'stdout:\n${result.stdout}\n\nstderr:\n${result.stderr}',
+      );
+      expect(
+        '${result.stdout}${result.stderr}',
+        isNot(matches(_forbiddenControlCharacters)),
+        reason: 'The shipped health check must not emit terminal controls.',
       );
       expect(result.stdout, isNot(contains('native_manifest.json is missing')));
     },

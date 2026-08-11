@@ -1,4 +1,4 @@
-// Regression tests for RLI-006 (P9-010): `FocusNode.unfocus()` on the
+// Regression tests: `FocusNode.unfocus()` on the
 // primary focus must never immediately reselect the node itself and must
 // never jump to an arbitrary sibling. It follows Flutter's default
 // `UnfocusDisposition.scope`: focus moves to the nearest enclosing scope

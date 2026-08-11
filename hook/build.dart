@@ -132,6 +132,7 @@ final class NativeManifestEntry {
     required this.path,
     required this.url,
     required this.archivePath,
+    required this.minimumOsVersion,
     required this.sha256,
   });
 
@@ -141,6 +142,7 @@ final class NativeManifestEntry {
     final path = json['path'];
     final url = json['url'];
     final archivePath = json['archivePath'];
+    final minimumOsVersion = json['minimumOsVersion'];
     final sha256 = json['sha256'];
     if (os is! String ||
         arch is! String ||
@@ -150,6 +152,19 @@ final class NativeManifestEntry {
         sha256 is! String) {
       throw NativeAssetBuildException('Manifest entry $key is incomplete.');
     }
+    if (os == 'macos') {
+      if (minimumOsVersion is! String ||
+          !RegExp(r'^\d+\.\d+$').hasMatch(minimumOsVersion) ||
+          minimumOsVersion != '15.0') {
+        throw NativeAssetBuildException(
+          'Manifest entry $key must declare minimumOsVersion 15.0.',
+        );
+      }
+    } else if (json.containsKey('minimumOsVersion')) {
+      throw NativeAssetBuildException(
+        'Manifest entry $key must not declare minimumOsVersion.',
+      );
+    }
     return NativeManifestEntry(
       key: key,
       os: os,
@@ -157,6 +172,7 @@ final class NativeManifestEntry {
       path: path,
       url: Uri.parse(url),
       archivePath: archivePath,
+      minimumOsVersion: minimumOsVersion as String?,
       sha256: sha256,
     );
   }
@@ -171,6 +187,7 @@ final class NativeManifestEntry {
   /// the build hook resolves the bundled file, not this URL.
   final Uri url;
   final String archivePath;
+  final String? minimumOsVersion;
   final String sha256;
 }
 

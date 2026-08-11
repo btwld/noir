@@ -5,6 +5,8 @@ import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/terminal_session.dart';
 import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;
+import 'package:noir/src/core/input.dart' show InputManagerKernelAccess;
+import 'package:noir/src/core/stdin_input_driver.dart';
 import 'package:test/test.dart';
 
 import '../helpers/tui_test_app.dart';
@@ -144,6 +146,56 @@ void main() {
     } finally {
       mouseSub.cancel();
       pasteSub.cancel();
+      app.dispose();
+    }
+  });
+
+  test('complete capability batch never reaches application input', () {
+    const response =
+        '\x1b[?1016;2\$y'
+        '\x1b[?2027;2\$y'
+        '\x1b[?2031;2\$y'
+        '\x1b[?1004;1\$y'
+        '\x1b[?2004;2\$y'
+        '\x1b[?2026;2\$y'
+        '\x1b[1;2R'
+        '\x1b[1;3R'
+        '\x1bP>|kitty(0.40.1)\x1b\\'
+        '\x1b[?0u'
+        '\x1b_Gi=1;OK\x1b\\'
+        '\x1b[?62;4c';
+    final app = createTuiTestApp(
+      const Text('capabilities'),
+      headless: false,
+      terminalPlatform: _RecordingTerminalPlatform(),
+      inputDriverFactory: (_) => _NoopInputDriver(),
+    );
+    final dispatcher = app.binding.inputManager.dispatcher;
+    final leakedCapabilities = <Object>[];
+    final keys = <KeyEvent>[];
+    final mouse = <MouseEvent>[];
+    final paste = <PasteEvent>[];
+    final subscriptions = <InputSubscription>[
+      dispatcher.onCapabilityResponse(
+        leakedCapabilities.add,
+        priority: InputPriority.widget - 1,
+      ),
+      app.binding.inputManager.onKey(keys.add),
+      app.binding.inputManager.onMouse(mouse.add),
+      app.binding.inputManager.onPaste(paste.add),
+    ];
+
+    try {
+      StdinInputDriver(dispatcher).debugFeedBytes(response.codeUnits);
+
+      expect(leakedCapabilities, isEmpty);
+      expect(keys, isEmpty);
+      expect(mouse, isEmpty);
+      expect(paste, isEmpty);
+    } finally {
+      for (final subscription in subscriptions) {
+        subscription.cancel();
+      }
       app.dispose();
     }
   });
@@ -321,8 +373,8 @@ void main() {
       expect(driver.stops, 1);
       expect(platform.stdoutWriteAttempts, 3);
       expect(platform.stdoutFlushes, 1);
-      expect(platform.stdinLineModeSets, 1);
-      expect(platform.stdinEchoModeSets, 1);
+      expect(platform.stdinLineModeSets, 0);
+      expect(platform.stdinEchoModeSets, 0);
       expect(binding.buildOwner.pipelineOwner.debugNeedsLayout, isFalse);
       expect(binding.buildOwner.pipelineOwner.debugNeedsPaint, isFalse);
       expect(() => renderer!.nextBuffer, throwsStateError);
@@ -369,8 +421,8 @@ void main() {
     expect(driver.stops, 1);
     expect(platform.stdoutWriteAttempts, 3);
     expect(platform.stdoutFlushes, 1);
-    expect(platform.stdinLineModeSets, 1);
-    expect(platform.stdinEchoModeSets, 1);
+    expect(platform.stdinLineModeSets, 0);
+    expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
   });
 }
@@ -502,7 +554,7 @@ class _TickerProbeState extends State<_TickerProbe>
 
 class _NoopInputDriver implements TerminalInputDriver {
   @override
-  void start() {}
+  bool start() => true;
 
   @override
   void stop() {}
@@ -516,8 +568,9 @@ class _ProbeInputDriver implements TerminalInputDriver {
   int stops = 0;
 
   @override
-  void start() {
+  bool start() {
     starts++;
+    return true;
   }
 
   @override
@@ -532,9 +585,6 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
 
   @override
   bool stdoutHasTerminal;
-
-  @override
-  bool get stdinHasTerminal => true;
 
   @override
   bool get isWindows => false;
@@ -552,19 +602,15 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
   int stdinLineModeSets = 0;
   int stdinEchoModeSets = 0;
 
-  @override
   bool get stdinLineMode => _stdinLineMode;
 
-  @override
   set stdinLineMode(bool value) {
     stdinLineModeSets++;
     _stdinLineMode = value;
   }
 
-  @override
   bool get stdinEchoMode => _stdinEchoMode;
 
-  @override
   set stdinEchoMode(bool value) {
     stdinEchoModeSets++;
     _stdinEchoMode = value;
@@ -603,9 +649,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   bool get stdoutHasTerminal => false;
 
   @override
-  bool get stdinHasTerminal => false;
-
-  @override
   bool get isWindows => false;
 
   @override
@@ -613,12 +656,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
 
   @override
   int get terminalLines => 24;
-
-  @override
-  bool stdinLineMode = true;
-
-  @override
-  bool stdinEchoMode = true;
 
   @override
   void stdoutWrite(String data) {}

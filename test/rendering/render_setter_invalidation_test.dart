@@ -47,7 +47,7 @@ void main() {
       _expectNoWork(harness, () => proxy.child = second);
     });
 
-    test('P9-016 validation rejects before dirty work', () {
+    test('validation rejects before dirty work', () {
       final constrained = RenderConstrainedBox(
         additionalConstraints: const BoxConstraints(maxWidth: 8),
       );

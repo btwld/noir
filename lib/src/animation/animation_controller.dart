@@ -56,7 +56,7 @@ class AnimationController extends Animation<double> {
   // forward()/reverse() start. It is `duration`/`reverseDuration` scaled by
   // how much of [lowerBound, upperBound] this run actually travels, so a
   // partial-distance run (e.g. forward(from: 0.5)) takes proportionally
-  // less time than a full-range run (CORE-005). See _scaledDuration.
+  // less time than a full-range run. See _scaledDuration.
   Duration _runDuration = Duration.zero;
   Completer<void>? _completer;
 
@@ -257,8 +257,8 @@ class AnimationController extends Animation<double> {
   // Scales `full` (duration or reverseDuration) by the fraction of
   // [lowerBound, upperBound] that this run's [_beginValue] -> [_endValue]
   // travel actually covers, so a partial-distance run takes proportionally
-  // less wall-clock time than a full-range run (CORE-005; matches Flutter's
-  // AnimationController._animateToInternal remainingFraction scaling).
+  // less wall-clock time than a full-range run. This matches Flutter's
+  // AnimationController._animateToInternal remainingFraction scaling.
   Duration _scaledDuration(Duration full) {
     final range = upperBound - lowerBound;
     if (range <= 0) {

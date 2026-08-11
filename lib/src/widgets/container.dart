@@ -82,9 +82,8 @@ class Container extends StatelessWidget {
 
   /// The color to paint behind the [child].
   ///
-  /// This property should be preferred when the background is a simple color.
-  /// For other cases, such as gradients or images, use the [decoration]
-  /// property.
+  /// Prefer this property for a simple solid background. Use [decoration] when
+  /// a supported terminal border is also needed.
   ///
   /// If the [decoration] is used, this property must be null. A background
   /// color may still be painted by the [decoration] even if this property is

@@ -124,14 +124,14 @@ Buffer createBufferFromNative(
 ///
 /// Example:
 /// ```dart
-/// final buffer = renderer.getNextBuffer();
+/// final buffer = renderer.nextBuffer;
 ///
 /// // Clear to dark background
-/// buffer.clear(Color.fromHex('#1A202C'));
+/// buffer.clear(Color.rgb(0.1, 0.13, 0.17));
 ///
 /// // Draw a bordered panel
 /// buffer.drawBox(5, 2, 30, 15,
-///     BoxOptions(sides: BorderSides.all(), title: 'Settings'),
+///     const BoxOptions(title: 'Settings'),
 ///     Color.cyan, Color.darkGray);
 ///
 /// // Add content text
@@ -226,7 +226,7 @@ class Buffer {
   ///
   /// // Styled text with background
   /// buffer.drawText('Error!', 10, 5, Color.red,
-  ///     bg: Color.yellow, attributes: TextAttribute.bold);
+  ///     bg: Color.yellow, attributes: Attr.bold);
   /// ```
   ///
   /// [x] and [y] must fit unsigned 32-bit values and [attributes] an unsigned
@@ -284,17 +284,16 @@ class Buffer {
   /// ```dart
   /// // Simple bordered box
   /// buffer.drawBox(10, 5, 25, 12,
-  ///     BoxOptions(sides: BorderSides.all()),
+  ///     const BoxOptions(),
   ///     Color.white, Color.transparent);
   ///
   /// // Dialog with title
   /// buffer.drawBox(15, 8, 35, 18,
-  ///     BoxOptions(
-  ///         sides: BorderSides.all(),
+  ///     const BoxOptions(
   ///         title: 'Confirm Action',
   ///         titleAlignment: TextAlign.center,
   ///         fill: true
-  ///     ), Color.cyan, Color.darkBlue);
+  ///     ), Color.cyan, Color.blue);
   /// ```
   ///
   /// [x] and [y] must fit signed 32-bit values and [width] and [height]
@@ -517,7 +516,7 @@ class Buffer {
   }
 }
 
-/// Direct access to Buffer internal arrays for performance-critical operations
+/// Direct access to Buffer internal arrays for advanced operations.
 class DirectBufferAccess {
   /// Bundles cell-array views and dimensions for direct buffer operations.
   const DirectBufferAccess({
@@ -529,7 +528,11 @@ class DirectBufferAccess {
     required this.height,
   });
 
-  /// Unicode code points for each cell in row-major order.
+  /// Native encoded cell words in row-major order.
+  ///
+  /// A word may be a direct Unicode scalar or a native packed-grapheme value.
+  /// Treat this field as encoded storage rather than a Unicode-code-point
+  /// array.
   final Uint32List chars;
 
   /// Foreground [Color] channels packed as four floats per cell (RGBA).
@@ -560,13 +563,16 @@ class DirectBufferAccess {
     return y * width + x;
   }
 
-  /// Get a character at the specified coordinates
+  /// Decodes a direct Unicode-scalar cell at the specified coordinates.
+  ///
+  /// Do not call this for a native packed-grapheme cell; inspect [chars]
+  /// directly when working with encoded cell words.
   String getChar(int x, int y) {
     final index = _getIndex(x, y);
     return String.fromCharCode(chars[index]);
   }
 
-  /// Set a character at the specified coordinates
+  /// Stores the first Unicode scalar from a non-empty [char].
   void setChar(int x, int y, String char) {
     final index = _getIndex(x, y);
     if (char.isEmpty) throw ArgumentError('Character cannot be empty');

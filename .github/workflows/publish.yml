@@ -1,81 +1,83 @@
 name: Publish to pub.dev
 
-# Tag-driven publishing via pub.dev automated publishing (GitHub Actions OIDC).
-# pub.dev side config (one-time, by a package uploader):
-#   pub.dev -> noir -> Admin -> Automated publishing -> enable GitHub Actions
-#   Repository: leoafarias/cli_ui   Tag pattern: v{{version}}
-# The pubspec `version` MUST equal the pushed tag (without the leading "v").
+# One-time pub.dev configuration:
+#   package: noir
+#   repository: leoafarias/noir
+#   tag pattern: v{{version}}
+# Automated publishing applies only after the first version is published
+# manually, as required by pub.dev.
 
 on:
   push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'      # stable, e.g. v0.1.0
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # prerelease, e.g. v0.1.0-dev.1
+    tags: ['v*']
 
 permissions:
   contents: read
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  # Gate the publish on a clean, verifiable working tree. This validates a
-  # checkout we control; it does not run inside the reusable publish workflow,
-  # so `publish` depends on it via `needs`.
   preflight:
-    name: Pre-publish validation
+    name: Validate package
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
-      - name: Verify tag matches pubspec version
+      - name: Verify release tag
         shell: bash
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
-          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+([0-9A-Za-z.+-]+)[[:space:]]*$ ]]; then
-            echo "::error::pubspec.yaml must declare exactly one plain version"
+          semver='[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?([+][0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?'
+          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+($semver)[[:space:]]*$ ]]; then
+            echo "::error::pubspec.yaml must contain exactly one valid semantic version"
             exit 1
           fi
           package_version="${BASH_REMATCH[1]}"
-          expected_tag="v$package_version"
-          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
+          if [[ "$RELEASE_TAG" != "v$package_version" ]]; then
             echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
             exit 1
           fi
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
         with:
           sdk: '3.10.0'
 
       - name: Install dependencies
         run: dart pub get
 
-      - name: Verify bundled binaries match native_manifest.json (SHA-256)
+      - name: Verify bundled native assets
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
 
-      - name: Static analysis
+      - name: Run strict analysis
         run: dart analyze --fatal-infos
 
-      - name: Tests (native-asset path)
-        run: dart test --exclude-tags process-spawning --concurrency=1
+      - name: Run ordinary tests
+        run: dart test --exclude-tags restricted-process-lifecycle --concurrency=1
 
-      - name: Publish dry-run
+      - name: Validate documentation links
+        run: dart doc --validate-links --output .context/dartdoc
+
+      - name: Validate publish archive
         run: dart pub publish --dry-run
 
-  # OIDC publish via the Dart team's reusable workflow (no long-lived secrets).
   publish:
-    name: Publish to pub.dev
+    name: Publish package
     needs: preflight
     permissions:
-      id-token: write   # required: mints the short-lived OIDC token for pub.dev
+      id-token: write
       contents: read
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-    # Enable if you require a 'pub.dev' environment (adds a manual-approval gate):
-    # with:
-    #   environment: pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0

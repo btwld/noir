@@ -3,7 +3,7 @@ import 'package:noir/noir_low_level.dart';
 
 import '../helpers/test_element_host.dart';
 
-/// Assertions-disabled probe for P9-025 positive-or-null maxLines.
+/// Assertions-disabled probe for positive-or-null maxLines.
 void main() {
   _expectArgument('render-construct-zero', () {
     RenderParagraph(text: const TextSpan(text: 'a'), maxLines: 0);

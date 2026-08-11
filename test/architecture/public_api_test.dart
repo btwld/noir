@@ -294,7 +294,7 @@ void main() {
     expect(
       exports.expand((export) => export.symbols).toSet(),
       hasLength(168),
-      reason: 'P9-038 locks the high-level surface at exactly 168 symbols.',
+      reason: 'The high-level surface is locked at exactly 168 symbols.',
     );
   });
 

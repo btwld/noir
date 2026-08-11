@@ -1,4 +1,4 @@
-@Tags(['process-spawning'])
+@Tags(['safe-process-spawning'])
 library;
 
 import 'dart:io';
@@ -10,7 +10,7 @@ void main() {
     final result = await Process.run(Platform.resolvedExecutable, [
       'run',
       '--no-enable-asserts',
-      'test/fixtures/p9_024_release_probe.dart',
+      'test/fixtures/text_editing_owner_release_probe.dart',
     ], workingDirectory: Directory.current.path);
 
     expect(

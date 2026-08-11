@@ -1,5 +1,5 @@
 @TestOn('vm')
-@Tags(['process-spawning'])
+@Tags(['safe-process-spawning'])
 library;
 
 import 'dart:convert';

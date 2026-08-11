@@ -219,7 +219,7 @@ class TextBuffer {
   ) {
     final len = _bindings.textBufferGetLength(capturedHandle);
     if (len == 0) {
-      return DirectTextAccess(
+      return DirectTextAccess._(
         encodedCells: Uint32List(0),
         foregrounds: Float32List(0),
         backgrounds: Float32List(0),
@@ -231,7 +231,7 @@ class TextBuffer {
     final charPtr = _bindings.textBufferGetCharPtr(capturedHandle);
     final attrPtr = _bindings.textBufferGetAttributesPtr(capturedHandle);
 
-    return DirectTextAccess(
+    return DirectTextAccess._(
       encodedCells: charPtr.asTypedList(len),
       foregrounds: _textBufferColors(capturedHandle, len, foreground: true),
       backgrounds: _textBufferColors(capturedHandle, len, foreground: false),
@@ -318,16 +318,20 @@ class TextBuffer {
 /// When [length] is positive, the non-empty views are native-owned, read-only,
 /// and valid only for immediate inspection until the next TextBuffer mutation,
 /// reset, or disposal. When [length] is zero, getDirectAccess returns Dart-owned
-/// empty typed lists rather than native views.
+/// empty typed lists rather than native views. All four views are unmodifiable,
+/// including aliases created from their byte buffers. Their wrappers are
+/// zero-copy and do not extend the lifetime of the underlying native storage.
 class DirectTextAccess {
-  /// Bundles typed cell-array views for immediate read-only inspection.
-  const DirectTextAccess({
-    required this.encodedCells,
-    required this.foregrounds,
-    required this.backgrounds,
-    required this.attributes,
+  DirectTextAccess._({
+    required Uint32List encodedCells,
+    required Float32List foregrounds,
+    required Float32List backgrounds,
+    required Uint16List attributes,
     required this.length,
-  });
+  }) : encodedCells = encodedCells.asUnmodifiableView(),
+       foregrounds = foregrounds.asUnmodifiableView(),
+       backgrounds = backgrounds.asUnmodifiableView(),
+       attributes = attributes.asUnmodifiableView();
 
   /// Native encoded cell words; use their `00`, `10`, and `11` top-bit class
   /// rather than treating every word as a Unicode code point.

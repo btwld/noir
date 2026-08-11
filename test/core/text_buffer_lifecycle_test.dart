@@ -99,6 +99,62 @@ void main() {
       expect(direct.backgrounds[3], closeTo(background.a, 1e-6));
     });
 
+    final directMutations = <(String, void Function(DirectTextAccess access))>[
+      ('encodedCells', (access) => access.encodedCells[0] = 66),
+      ('foregrounds', (access) => access.foregrounds[0] = 0.75),
+      ('backgrounds', (access) => access.backgrounds[0] = 0.75),
+      ('attributes', (access) => access.attributes[0] = 8),
+    ];
+    for (final (name, mutate) in directMutations) {
+      test('direct access $name view rejects mutation', () {
+        final buffer = TextBuffer.create()
+          ..writeChunk('A', Color.white, Color.black, 7);
+        addTearDown(buffer.dispose);
+
+        expect(() => mutate(buffer.getDirectAccess()), throwsUnsupportedError);
+      });
+    }
+
+    final aliasMutations = <(String, void Function(DirectTextAccess access))>[
+      (
+        'encodedCells',
+        (access) => access.encodedCells.buffer.asUint32List(
+          access.encodedCells.offsetInBytes,
+          access.encodedCells.length,
+        )[0] = 66,
+      ),
+      (
+        'foregrounds',
+        (access) => access.foregrounds.buffer.asFloat32List(
+          access.foregrounds.offsetInBytes,
+          access.foregrounds.length,
+        )[0] = 0.75,
+      ),
+      (
+        'backgrounds',
+        (access) => access.backgrounds.buffer.asFloat32List(
+          access.backgrounds.offsetInBytes,
+          access.backgrounds.length,
+        )[0] = 0.75,
+      ),
+      (
+        'attributes',
+        (access) => access.attributes.buffer.asUint16List(
+          access.attributes.offsetInBytes,
+          access.attributes.length,
+        )[0] = 8,
+      ),
+    ];
+    for (final (name, mutate) in aliasMutations) {
+      test('direct access $name buffer alias rejects mutation', () {
+        final buffer = TextBuffer.create()
+          ..writeChunk('A', Color.white, Color.black, 7);
+        addTearDown(buffer.dispose);
+
+        expect(() => mutate(buffer.getDirectAccess()), throwsUnsupportedError);
+      });
+    }
+
     test('writeChunk validates its unsigned attribute mask before writing', () {
       final buffer = TextBuffer.create();
       addTearDown(buffer.dispose);

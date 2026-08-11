@@ -267,7 +267,7 @@ void main() {
     },
   );
 
-  test('terminal setup failure restores terminal before input starts', () {
+  test('terminal setup failure stops input acquired before setup', () {
     final renderer = Renderer.create(6, 2, testing: true)..dispose();
     final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
     final driver = _FakeTerminalInputDriver();
@@ -286,9 +286,96 @@ void main() {
       throwsStateError,
     );
 
-    expect(driver.starts, 0);
+    expect(driver.starts, 1);
+    expect(driver.stops, 1);
     expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
     expect(platform.stdoutFlushes, 1);
+  });
+
+  test('capability route is installed before input starts', () {
+    final renderer = Renderer.create(6, 2, testing: true);
+    final dispatcher = _dispatcher();
+    final lowerPriorityEvents = <TerminalCapabilityEvent>[];
+    final lowerPrioritySubscription = dispatcher.onCapabilityResponse(
+      lowerPriorityEvents.add,
+      priority: InputPriority.widget - 1,
+    );
+    final driver = _FakeTerminalInputDriver(
+      onStart: () {
+        dispatcher.dispatchCapabilityResponse(
+          TerminalCapabilityEvent(
+            kind: TerminalCapabilityKind.primaryDeviceAttributes,
+            payload: '?62;4',
+            raw: '\x1b[?62;4c',
+          ),
+        );
+      },
+    );
+    addTearDown(() {
+      lowerPrioritySubscription.cancel();
+      renderer.dispose();
+    });
+
+    final session = TerminalSession(
+      width: 6,
+      height: 2,
+      headless: false,
+      inputDispatcher: dispatcher,
+      renderer: renderer,
+      scheduleFrame: () {},
+      platform: _FakeTerminalPlatform(stdoutHasTerminal: true),
+      inputDriverFactory: (_) => driver,
+    );
+    addTearDown(session.close);
+
+    expect(lowerPriorityEvents, isEmpty);
+
+    session.close();
+    renderer.dispose();
+    dispatcher.dispatchCapabilityResponse(
+      TerminalCapabilityEvent(
+        kind: TerminalCapabilityKind.primaryDeviceAttributes,
+        payload: '?1',
+        raw: '\x1b[?1c',
+      ),
+    );
+
+    expect(lowerPriorityEvents.map((event) => event.raw), ['\x1b[?1c']);
+  });
+
+  test('interactive stdout rejects inactive stdin before setup', () {
+    final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+    final driver = _FakeTerminalInputDriver(acquired: false);
+    Renderer? renderer;
+    addTearDown(() => renderer?.dispose());
+
+    expect(
+      () => TerminalSession(
+        width: 6,
+        height: 2,
+        headless: false,
+        inputDispatcher: _dispatcher(),
+        scheduleFrame: () {},
+        platform: platform,
+        rendererFactory: (width, height) {
+          renderer = Renderer.create(width, height, testing: true);
+          return renderer!;
+        },
+        inputDriverFactory: (_) => driver,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('terminal stdin'),
+        ),
+      ),
+    );
+
+    expect(driver.starts, 1);
+    expect(driver.stops, 1);
+    expect(platform.writes, isEmpty);
+    expect(() => renderer!.nextBuffer, throwsStateError);
   });
 
   test('input start failure remains primary when rollback stop also fails', () {
@@ -331,8 +418,37 @@ void main() {
     expect(caughtStack.toString(), originalStartStack.toString());
     expect(driver.starts, 1);
     expect(driver.stops, 1);
-    expect(platform.writes, hasLength(3));
+    expect(platform.writes, isEmpty);
+    expect(platform.stdoutFlushes, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
+  });
+
+  test('session does not overwrite modes restored by its input driver', () {
+    final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+    final driver = _FakeTerminalInputDriver(
+      onStop: () {
+        platform
+          ..stdinLineMode = false
+          ..stdinEchoMode = false;
+      },
+    );
+    final renderer = Renderer.create(6, 2, testing: true);
+    addTearDown(renderer.dispose);
+    final session = TerminalSession(
+      width: 6,
+      height: 2,
+      headless: false,
+      inputDispatcher: _dispatcher(),
+      renderer: renderer,
+      scheduleFrame: () {},
+      platform: platform,
+      inputDriverFactory: (_) => driver,
+    );
+
+    session.close();
+
+    expect(platform.stdinLineMode, isFalse);
+    expect(platform.stdinEchoMode, isFalse);
   });
 
   test('stop failure does not skip cleanup and close remains at-most-once', () {
@@ -366,8 +482,8 @@ void main() {
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(3));
     expect(platform.stdoutFlushes, 1);
-    expect(platform.stdinLineModeSets, 1);
-    expect(platform.stdinEchoModeSets, 1);
+    expect(platform.stdinLineModeSets, 0);
+    expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
 
     final canceledSignals = List<TerminalSignal>.from(platform.canceledSignals);
@@ -375,8 +491,8 @@ void main() {
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(3));
     expect(platform.stdoutFlushes, 1);
-    expect(platform.stdinLineModeSets, 1);
-    expect(platform.stdinEchoModeSets, 1);
+    expect(platform.stdinLineModeSets, 0);
+    expect(platform.stdinEchoModeSets, 0);
     expect(platform.canceledSignals, canceledSignals);
   });
 
@@ -384,12 +500,10 @@ void main() {
     'terminal restore actions continue after independent platform failures',
     () {
       final writeError = StateError('stdout write failed');
-      final lineModeError = StateError('stdin line mode failed');
       final platform = _FakeTerminalPlatform(
         stdoutHasTerminal: true,
         stdoutWriteError: writeError,
         stdoutWriteErrorAttempt: 1,
-        stdinLineModeError: lineModeError,
       );
       final renderer = Renderer.create(6, 2, testing: true);
       addTearDown(renderer.dispose);
@@ -409,8 +523,8 @@ void main() {
       expect(platform.stdoutWriteAttempts, 3);
       expect(platform.writes, hasLength(2));
       expect(platform.stdoutFlushes, 1);
-      expect(platform.stdinLineModeSets, 1);
-      expect(platform.stdinEchoModeSets, 1);
+      expect(platform.stdinLineModeSets, 0);
+      expect(platform.stdinEchoModeSets, 0);
       expect(() => renderer.nextBuffer, returnsNormally);
     },
   );
@@ -455,17 +569,19 @@ void main() {
 InputDispatcher _dispatcher() => InputManager().dispatcher;
 
 class _FakeTerminalInputDriver implements TerminalInputDriver {
-  _FakeTerminalInputDriver({this.onStart, this.onStop});
+  _FakeTerminalInputDriver({this.acquired = true, this.onStart, this.onStop});
 
+  final bool acquired;
   final void Function()? onStart;
   final void Function()? onStop;
   int starts = 0;
   int stops = 0;
 
   @override
-  void start() {
+  bool start() {
     starts++;
     onStart?.call();
+    return acquired;
   }
 
   @override
@@ -478,23 +594,18 @@ class _FakeTerminalInputDriver implements TerminalInputDriver {
 class _FakeTerminalPlatform implements TerminalPlatform {
   _FakeTerminalPlatform({
     bool stdoutHasTerminal = false,
-    bool stdinHasTerminal = true,
     this.terminalColumns = 80,
     this.terminalLines = 24,
     this.stdoutWriteError,
     this.stdoutWriteErrorAttempt,
-    this.stdinLineModeError,
-  }) : _stdoutHasTerminal = stdoutHasTerminal,
-       _stdinHasTerminal = stdinHasTerminal;
+  }) : _stdoutHasTerminal = stdoutHasTerminal;
 
   bool _stdoutHasTerminal;
-  bool _stdinHasTerminal;
   bool _stdinLineMode = false;
   bool _stdinEchoMode = false;
 
   final Error? stdoutWriteError;
   final int? stdoutWriteErrorAttempt;
-  final Error? stdinLineModeError;
 
   int stdoutWriteAttempts = 0;
   int stdoutFlushes = 0;
@@ -507,11 +618,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   set stdoutHasTerminal(bool value) => _stdoutHasTerminal = value;
 
   @override
-  bool get stdinHasTerminal => _stdinHasTerminal;
-
-  set stdinHasTerminal(bool value) => _stdinHasTerminal = value;
-
-  @override
   bool isWindows = false;
 
   @override
@@ -520,23 +626,15 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   @override
   int terminalLines;
 
-  @override
   bool get stdinLineMode => _stdinLineMode;
 
-  @override
   set stdinLineMode(bool value) {
     stdinLineModeSets++;
-    final error = stdinLineModeError;
-    if (error != null) {
-      throw error;
-    }
     _stdinLineMode = value;
   }
 
-  @override
   bool get stdinEchoMode => _stdinEchoMode;
 
-  @override
   set stdinEchoMode(bool value) {
     stdinEchoModeSets++;
     _stdinEchoMode = value;

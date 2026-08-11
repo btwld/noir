@@ -47,7 +47,8 @@ void main() {
       'lib/src/app/terminal_session.dart',
     ).readAsStringSync();
 
-    expect(stdinSource, contains('StdinInputDriver(this._inputDispatcher)'));
+    expect(stdinSource, contains('StdinInputDriver('));
+    expect(stdinSource, contains('this._inputDispatcher'));
     expect(stdinSource, contains('void dispatchTo(InputDispatcher'));
     expect(stdinSource, isNot(contains('void dispatchTo(InputManager')));
     expect(
@@ -55,6 +56,8 @@ void main() {
       contains('TerminalInputDriver Function(InputDispatcher inputDispatcher)'),
     );
     expect(sessionSource, isNot(contains('StdinInputDriver(inputManager)')));
+    expect(sessionSource, contains('onCapabilityResponse'));
+    expect(sessionSource, contains('event.consume()'));
   });
 
   test('framework managers subscribe through dispatcher path', () {

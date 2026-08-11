@@ -1,101 +1,62 @@
-# Noir Test Guide
+# Noir test guide
 
-The test suite mixes framework-level unit coverage, render/golden verification, example regression coverage, and local Go parity checks.
+The suite is organized by behavior:
 
-## Primary Commands
+- `test/animation`: ticker and controller behavior.
+- `test/app`: binding, application, and terminal-session lifecycle.
+- `test/core`: buffers, renderer, input parser, and native resource helpers.
+- `test/framework`: Element, State, key, dependency, and diagnostics semantics.
+- `test/rendering`: render-object layout and painting.
+- `test/widgets`: widget behavior, focus, editing, and interaction.
+- `test/example`: runnable-example regressions.
+- `test/golden` and `test/goldens`: visual capture tests and fixtures.
+- `test/parity`: Dart-versus-Go parity.
+- `test/architecture`: executable ownership and distribution boundaries.
 
-Run the standard validation set:
+## Normal validation
 
-```bash
-dart analyze
-dart test test/architecture/
-dart test test/layout_widgets_test.dart --reporter=expanded
-dart test --exclude-tags process-spawning --concurrency=1
-```
+    dart analyze --fatal-infos
+    dart test test/architecture/ --concurrency=1
+    dart test --exclude-tags restricted-process-lifecycle --concurrency=1
 
-Focused unit, widget, golden, and architecture tests are ordinary local
-validation. The ordinary checkpoint excludes `process-spawning` so that
-subprocess checks can be selected deliberately and the restricted parity
-wrapper is never selected by accident.
+`safe-process-spawning` tests are ordinary isolated-process checks and run in
+the normal suite. `test/parity/go_snapshot_wrapper_test.dart` alone uses
+`restricted-process-lifecycle` because it deliberately tests signal and
+termination behavior. Run it only after exact authorization, by exact path,
+with `--run-skipped`. Never select the whole parity directory as a shortcut.
 
-## Test Layout
+## Harness ownership
 
-The suite is organized by behavior instead of a generic `unit/integration` split:
+| Harness | Use |
+| --- | --- |
+| `WidgetTester.pumpWidget` | Layout and widget lifecycle |
+| `BufferCapture.capture` | A single rendered frame |
+| `KeyDriver` | Synthetic parsed input |
+| `createTuiTestApp` | Binding/parser integration |
 
-- `test/animation/`: ticker and animation controller coverage
-- `test/app/`: `TuiBinding`, `runTuiApp`, and `TuiApp` facade behavior
-- `test/core/`: low-level renderer/cursor/buffer helpers
-- `test/framework/`: element tree, lifecycle, keys, diagnostics, and updates
-- `test/rendering/`: render-object correctness checks
-- `test/widgets/`: widget behavior and input/focus tests
-- `test/example/`: example-specific regression coverage
-- `test/golden/`: reusable visual regression suites
-- `test/parity/`: Dart-vs-Go parity tooling
-- `test/helpers/`: capture and golden infrastructure
+Use `BufferMatchers` for cells and captured cursor state.
 
 ## Goldens
 
-Golden tests compare captured output against files in `test/goldens/`.
+Normal runs compare checked-in captures:
 
-Normal runs compare only:
+    dart test test/golden/
+    dart test test/example/layout_basics_golden_test.dart
 
-```bash
-dart test test/golden
-dart test test/example/layout_basics_golden_test.dart
-```
+Only intentional visual changes regenerate them:
 
-Regenerate goldens only for intentional visual changes:
+    UPDATE_GOLDENS=1 dart test test/golden/
 
-```bash
-UPDATE_GOLDENS=1 dart test test/golden
-UPDATE_GOLDENS=1 dart test test/example/layout_basics_golden_test.dart
-```
+Inspect `test/failures/` before accepting a changed capture. Visual goldens use
+character buffers plus style and cursor sidecars unless the assertion is
+intentionally text-only.
 
-When a golden comparison fails, helper code writes artifacts to `test/failures/`. That directory is ignored by git and should be treated as disposable local output.
+## Safe parity
 
-## Parity
+Initialize the pinned reference, then select only the primitive/widget tests:
 
-Local parity is opt-in and requires the repo-owned Go snapshot wrapper. If
-your checkout did not fetch submodules, initialize the pinned OpenTUI
-reference first:
+    git submodule update --init external/opentui
+    GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart test --reporter=expanded test/parity/primitives_parity_test.dart test/parity/widget_parity_test.dart --concurrency=1
 
-```bash
-git submodule update --init external/opentui
-```
-
-Then run:
-
-```bash
-./scripts/run_go_snapshot.sh --scene S1 --width 20 --height 5
-GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart test -r expanded test/parity/primitives_parity_test.dart --concurrency=1
-GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart test -r expanded test/parity/widget_parity_test.dart --concurrency=1
-GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart test -r expanded test/parity/primitives_parity_test.dart test/parity/widget_parity_test.dart --concurrency=1
-GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart run \
-  bin/parity_compare.dart \
-  --scenes S1,S2,S3,W1,W2,W3 --width 20 --height 5
-```
-
-S1–S3 exercise low-level buffer primitives. W1–W3 exercise painted
-`Text`, default `Row`, and default `Column` widget output through
-`BufferCapture`. The comparator checks every character, foreground RGBA, and
-background RGBA cell in the fixed `20x5` scenes.
-
-The wrapper validates signal and process-termination behavior.
-`go_snapshot_wrapper_test.dart` is tagged `process-spawning`, excluded from
-routine validation, and must only run with exact task-specific authorization.
-Do not use the whole `test/parity` directory as a routine selector.
-
-## Helpers
-
-Important helper utilities:
-
-- `test/helpers/buffer_capture.dart`: root render-pipeline capture
-- `test/helpers/golden_testing.dart`: golden comparison and failure artifact handling
-- `test/helpers/widget_tester.dart`: widget-oriented test support
-
-## Maintenance Notes
-
-- Keep `test/failures/` untracked.
-- Update goldens only through `UPDATE_GOLDENS=1`.
-- Prefer targeted regression tests for framework fixes before expanding golden
-  coverage.
+These compare fixed-size Dart and Go scenes. They do not run the restricted
+wrapper lifecycle test.

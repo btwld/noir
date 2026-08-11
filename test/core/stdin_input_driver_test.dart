@@ -121,10 +121,13 @@ void main() {
       expect(ctrlUp.isControlPressed, isTrue);
     });
 
-    test('unknown CSI final byte is dropped safely', () {
-      // ESC [ 1 ; 2 R  (cursor position report — not handled in v1)
-      final events = _keyEventsFor([0x1b, 0x5b, 0x31, 0x3b, 0x32, 0x52]);
-      expect(events, isEmpty);
+    test('cursor position report is capability input, not a key', () {
+      final result = parseAnsiInput('\x1b[1;2R'.codeUnits);
+      final capabilities = result.events.whereType<CapabilityInput>().toList();
+
+      expect(result.events.whereType<KeyInput>(), isEmpty);
+      expect(capabilities, hasLength(1));
+      expect(capabilities.single.event.raw, '\x1b[1;2R');
     });
   });
 
@@ -196,6 +199,71 @@ void main() {
       expect(events.whereType<MouseInput>(), isEmpty);
       expect(events.whereType<PasteInput>(), isEmpty);
       expect(events.whereType<CapabilityInput>(), hasLength(2));
+    });
+
+    test('complete native query batch is preserved as capability input', () {
+      const response =
+          '\x1b[?1016;2\$y'
+          '\x1b[?2027;2\$y'
+          '\x1b[?2031;2\$y'
+          '\x1b[?1004;1\$y'
+          '\x1b[?2004;2\$y'
+          '\x1b[?2026;2\$y'
+          '\x1b[1;2R'
+          '\x1b[1;3R'
+          '\x1bP>|kitty(0.40.1)\x1b\\'
+          '\x1b[?0u'
+          '\x1b_Gi=1;OK\x1b\\'
+          '\x1b[?62;4c';
+
+      final result = parseAnsiInput(response.codeUnits);
+      final capabilities = result.events
+          .whereType<CapabilityInput>()
+          .map((input) => input.event)
+          .toList();
+
+      expect(result.leftover, isEmpty);
+      expect(result.events.whereType<KeyInput>(), isEmpty);
+      expect(result.events.whereType<MouseInput>(), isEmpty);
+      expect(result.events.whereType<PasteInput>(), isEmpty);
+      expect(capabilities, hasLength(12));
+      expect(capabilities.map((event) => event.raw).join(), response);
+      expect(capabilities.map((event) => event.kind), <TerminalCapabilityKind>[
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.privateModeReport,
+        TerminalCapabilityKind.cursorPositionReport,
+        TerminalCapabilityKind.cursorPositionReport,
+        TerminalCapabilityKind.deviceControlString,
+        TerminalCapabilityKind.kittyKeyboardStatus,
+        TerminalCapabilityKind.applicationProgramCommand,
+        TerminalCapabilityKind.primaryDeviceAttributes,
+      ]);
+    });
+
+    test('CSI capability reports require exact response shapes', () {
+      for (final sequence in const <String>[
+        '\x1b[?1016;2y',
+        '\x1b[1016;2\$y',
+        '\x1b[1R',
+        '\x1b[1;2;3R',
+        '\x1b[?0;1u',
+      ]) {
+        expect(
+          parseAnsiInput(
+            sequence.codeUnits,
+          ).events.whereType<CapabilityInput>(),
+          isEmpty,
+          reason: sequence,
+        );
+      }
+
+      final kittyKey = parseAnsiInput('\x1b[97u'.codeUnits).events;
+      expect(kittyKey.whereType<CapabilityInput>(), isEmpty);
+      expect(kittyKey.whereType<KeyInput>().single.event.character, 'a');
     });
 
     test('DCS response followed by printable text separates correctly', () {
@@ -365,6 +433,64 @@ void main() {
   });
 
   group('parseAnsiInput — bracketed paste', () {
+    test('paste payload exactly at the retained limit is accepted', () {
+      final probe = _DriverProbe();
+      addTearDown(probe.dispose);
+      final payload = List<int>.filled(1024 * 1024, 0x61);
+
+      probe.driver.debugFeedBytes(<int>[
+        ...'\x1b[200~'.codeUnits,
+        ...payload,
+        ...'\x1b[201~'.codeUnits,
+      ]);
+
+      expect(probe.keys, isEmpty);
+      expect(probe.pastes, hasLength(1));
+      expect(probe.pastes.single.text.length, payload.length);
+    });
+
+    test(
+      'oversized split paste is dropped without leaking key-shaped payload',
+      () {
+        final probe = _DriverProbe();
+        addTearDown(probe.dispose);
+        final oversized = List<int>.filled((1024 * 1024) + 1, 0x78);
+
+        probe.driver.debugFeedBytes(<int>[
+          0x61,
+          ...'\x1b[200~'.codeUnits,
+          ...oversized,
+          ...'\x1b[A'.codeUnits,
+          ...'\x1b[20'.codeUnits,
+        ]);
+
+        expect(probe.keys, ['a']);
+        expect(probe.pastes, isEmpty);
+        expect(probe.capabilities, isEmpty);
+
+        probe.driver.debugFeedBytes('1~b'.codeUnits);
+
+        expect(probe.keys, ['a', 'b']);
+        expect(probe.pastes, isEmpty);
+        expect(probe.capabilities, isEmpty);
+      },
+    );
+
+    test('oversized paste recovers to a same-chunk suffix', () {
+      final probe = _DriverProbe();
+      addTearDown(probe.dispose);
+      final oversized = List<int>.filled((1024 * 1024) + 1, 0x78);
+
+      probe.driver.debugFeedBytes(<int>[
+        ...'\x1b[200~'.codeUnits,
+        ...oversized,
+        ...'\x1b[201~z'.codeUnits,
+      ]);
+
+      expect(probe.keys, ['z']);
+      expect(probe.pastes, isEmpty);
+    });
+
     test('paste block becomes a single PasteInput event', () {
       final bytes = '\x1b[200~hello world\x1b[201~'.codeUnits;
       final events = parseAnsiInput(bytes).events;
@@ -422,6 +548,83 @@ void main() {
 
       expect(second.events.whereType<KeyInput>(), isEmpty);
       expect(second.events.whereType<PasteInput>().single.text, '\x1b[A');
+    });
+  });
+
+  group('StdinInputDriver bounded control frames', () {
+    test('control body exactly at the retained limit is accepted', () {
+      final probe = _DriverProbe();
+      addTearDown(probe.dispose);
+      final payload = List<int>.filled(4096, 0x78);
+
+      probe.driver.debugFeedBytes(<int>[
+        ...'\x1b]'.codeUnits,
+        ...payload,
+        0x07,
+      ]);
+
+      expect(probe.keys, isEmpty);
+      expect(probe.capabilities, hasLength(1));
+      expect(probe.capabilities.single.payload.length, payload.length);
+    });
+
+    test('oversized OSC is dropped through BEL and suffix is parsed', () {
+      final probe = _DriverProbe();
+      addTearDown(probe.dispose);
+      final oversized = List<int>.filled(4097, 0x78);
+
+      probe.driver.debugFeedBytes(<int>[
+        0x61,
+        ...'\x1b]'.codeUnits,
+        ...oversized,
+        ...'\x1b[A'.codeUnits,
+      ]);
+      expect(probe.keys, ['a']);
+      expect(probe.capabilities, isEmpty);
+
+      probe.driver.debugFeedBytes(<int>[0x07, 0x62]);
+
+      expect(probe.keys, ['a', 'b']);
+      expect(probe.capabilities, isEmpty);
+    });
+
+    test('oversized ST control strings recover across a split terminator', () {
+      for (final opener in const ['\x1bP', '\x1b_', '\x1b^']) {
+        final probe = _DriverProbe();
+        addTearDown(probe.dispose);
+        final oversized = List<int>.filled(4097, 0x78);
+
+        probe.driver.debugFeedBytes(<int>[
+          ...opener.codeUnits,
+          ...oversized,
+          ...'\x1b[A'.codeUnits,
+          0x1b,
+        ]);
+        expect(probe.keys, isEmpty, reason: opener);
+        expect(probe.capabilities, isEmpty, reason: opener);
+
+        probe.driver.debugFeedBytes(<int>[0x5c, 0x7a]);
+
+        expect(probe.keys, ['z'], reason: opener);
+        expect(probe.capabilities, isEmpty, reason: opener);
+      }
+    });
+
+    test('oversized CSI parameters are dropped through their final byte', () {
+      final probe = _DriverProbe();
+      addTearDown(probe.dispose);
+
+      probe.driver.debugFeedBytes(<int>[
+        0x61,
+        ...'\x1b['.codeUnits,
+        ...List<int>.filled(4097, 0x31),
+      ]);
+      expect(probe.keys, ['a']);
+
+      probe.driver.debugFeedBytes('~b'.codeUnits);
+
+      expect(probe.keys, ['a', 'b']);
+      expect(probe.capabilities, isEmpty);
     });
   });
 
@@ -494,6 +697,51 @@ void main() {
       expect(event.character, '!');
       expect(event.isShiftPressed, isTrue);
     });
+
+    test('Kitty primary surrogates become unknown non-text keys', () {
+      for (final codepoint in const [0xD800, 0xDFFF]) {
+        final event = _keyEventsFor('\x1b[$codepoint;1u'.codeUnits).single;
+
+        expect(event.logicalKey, LogicalKeyboardKey.unknown);
+        expect(event.keyCode, codepoint);
+        expect(event.character, isNull);
+      }
+    });
+
+    test('Kitty scalar immediately before surrogates remains printable', () {
+      final event = _keyEventsFor('\x1b[55295;1u'.codeUnits).single;
+
+      expect(event.character, String.fromCharCode(0xD7FF));
+    });
+
+    test('Kitty invalid shifted scalar falls back to the base character', () {
+      final event = _keyEventsFor('\x1b[97:55296;2u'.codeUnits).single;
+
+      expect(event.logicalKey, LogicalKeyboardKey.keyA);
+      expect(event.character, 'a');
+      expect(event.isShiftPressed, isTrue);
+    });
+
+    test('Kitty associated text filters surrogate components', () {
+      final event = _keyEventsFor('\x1b[97;1;98:55296:99u'.codeUnits).single;
+
+      expect(event.character, 'bc');
+    });
+
+    test('Kitty all-invalid associated text falls back to base', () {
+      final event = _keyEventsFor(
+        '\x1b[97;1;55296:1114112:0u'.codeUnits,
+      ).single;
+
+      expect(event.character, 'a');
+    });
+
+    test('Kitty named-key precedence remains unchanged', () {
+      final event = _keyEventsFor('\x1b[57344;1u'.codeUnits).single;
+
+      expect(event.logicalKey, LogicalKeyboardKey.escape);
+      expect(event.character, isNull);
+    });
   });
 
   group('parseAnsiInput — incomplete sequences', () {
@@ -540,3 +788,30 @@ List<TerminalCapabilityEvent> _capabilityEventsFor(List<int> bytes) =>
     parseAnsiInput(
       bytes,
     ).events.whereType<CapabilityInput>().map((input) => input.event).toList();
+
+final class _DriverProbe {
+  _DriverProbe() {
+    _subscriptions.addAll(<InputSubscription>[
+      dispatcher.onKey(
+        (event) => keys.add(event.character ?? event.logicalKey.keyLabel),
+      ),
+      dispatcher.onPaste(pastes.add),
+      dispatcher.onCapabilityResponse(capabilities.add),
+    ]);
+  }
+
+  final InputDispatcher dispatcher = InputDispatcher();
+  late final StdinInputDriver driver = StdinInputDriver(dispatcher);
+  final List<String> keys = <String>[];
+  final List<PasteEvent> pastes = <PasteEvent>[];
+  final List<TerminalCapabilityEvent> capabilities =
+      <TerminalCapabilityEvent>[];
+  final List<InputSubscription> _subscriptions = <InputSubscription>[];
+
+  void dispose() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    driver.stop();
+  }
+}

@@ -27,7 +27,7 @@ const _targets = [
 ///   dart run scripts/fetch_opentui_binaries.dart [--verify-only] [--verify-urls]
 ///
 /// The build hook is the runtime distribution path. This script is developer
-/// tooling for keeping native_manifest.json aligned with native/<os>/<arch>/.
+/// tooling for keeping native_manifest.json aligned with `native/<os>/<arch>/`.
 void main(List<String> args) async {
   final verifyOnly = args.contains('--verify-only');
   final verifyUrls = args.contains('--verify-urls');
@@ -72,6 +72,7 @@ final class _NativeManifestTool {
         'path': target.path,
         'url': '$_downloadBaseUrl/${target.assetPath}',
         'archivePath': '',
+        'minimumOsVersion': ?target.minimumOsVersion,
         'sha256': await _sha256(file),
       };
     }
@@ -133,6 +134,18 @@ final class _NativeManifestTool {
       }
       if (entry['archivePath'] != '') {
         throw StateError('Manifest entry ${target.key} must use direct URL');
+      }
+      if (target.minimumOsVersion case final minimumOsVersion?) {
+        if (entry['minimumOsVersion'] != minimumOsVersion) {
+          throw StateError(
+            'Manifest entry ${target.key} must declare minimumOsVersion '
+            '$minimumOsVersion',
+          );
+        }
+      } else if (entry.containsKey('minimumOsVersion')) {
+        throw StateError(
+          'Manifest entry ${target.key} must not declare minimumOsVersion',
+        );
       }
       final file = File(target.path);
       if (!file.existsSync()) {
@@ -229,4 +242,5 @@ final class _NativeTarget {
   String get key => '$os-$arch';
   String get path => 'native/$os/$arch/$fileName';
   String get assetPath => '$os/$arch/$fileName';
+  String? get minimumOsVersion => os == 'macos' ? '15.0' : null;
 }

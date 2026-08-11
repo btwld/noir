@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('rendering Buffer imports are limited to the Phase 4 allowlist', () {
+  test('rendering and widgets never import Buffer directly', () {
     const allowlistedBufferImports = <String>{};
 
     final unexpectedImports = <String>[];
@@ -30,17 +30,17 @@ void main() {
     expect(
       allowlistedBufferImports,
       isEmpty,
-      reason: 'Phase 4 removes the render-buffer migration budget.',
+      reason: 'The render-buffer migration budget is closed.',
     );
     expect(
       unexpectedImports,
       isEmpty,
-      reason: 'New render objects must not import Buffer during migration.',
+      reason: 'Render objects must record paint through PaintingContext.',
     );
     expect(
       staleAllowlistEntries,
       isEmpty,
-      reason: 'Remove files from the allowlist as Phase 4 migrates them.',
+      reason: 'A closed allowlist cannot retain stale entries.',
     );
     expect(
       seenAllowlistEntries,

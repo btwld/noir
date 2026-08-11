@@ -5,80 +5,78 @@ import 'package:test/test.dart';
 void main() {
   final workflows = <String, String>{
     for (final name in <String>['ci', 'release', 'publish'])
-      name: File(
-        '.github/workflows/$name.yml',
-      ).readAsStringSync().replaceAll('\r\n', '\n'),
+      name: _read('.github/workflows/$name.yml'),
   };
   final publish = workflows['publish']!;
 
-  test('workflows use directly committed native assets without Git LFS', () {
-    final lfsKey = RegExp(
-      r'^[ \t]*lfs[ \t]*:',
-      caseSensitive: false,
-      multiLine: true,
-    );
-    final lfsCommand = RegExp(r'\bgit(?:-|[ \t]+)lfs\b', caseSensitive: false);
-
+  test('workflows never depend on Git LFS restoration', () {
     for (final entry in workflows.entries) {
       expect(
         entry.value,
-        isNot(matches(lfsKey)),
-        reason: '${entry.key}.yml must not restore an LFS checkout key',
+        isNot(matches(RegExp(r'^\s*lfs\s*:', multiLine: true))),
+        reason: '${entry.key}.yml must use committed native assets',
       );
-      final executableSource = entry.value
-          .split('\n')
-          .where((line) => !line.trimLeft().startsWith('#'))
-          .join('\n');
       expect(
-        executableSource,
-        isNot(matches(lfsCommand)),
-        reason: '${entry.key}.yml must not restore an LFS command',
+        entry.value,
+        isNot(matches(RegExp(r'\bgit(?:-|\s+)lfs\b'))),
+        reason: '${entry.key}.yml must not invoke Git LFS',
       );
     }
   });
 
-  test('pub.dev preflight rejects a tag that differs from pubspec version', () {
-    const tagGate = r'''
-      - name: Verify tag matches pubspec version
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
-          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+([0-9A-Za-z.+-]+)[[:space:]]*$ ]]; then
-            echo "::error::pubspec.yaml must declare exactly one plain version"
-            exit 1
-          fi
-          package_version="${BASH_REMATCH[1]}"
-          expected_tag="v$package_version"
-          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
-            echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
-            exit 1
-          fi''';
+  test('publish configuration names Noir and immutable actions', () {
+    expect(publish, contains('repository: leoafarias/noir'));
+    expect(publish, isNot(contains('leoafarias/cli_ui')));
+    expect(publish, contains("tags: ['v*']"));
 
+    for (final line
+        in publish
+            .split('\n')
+            .map((line) => line.trim())
+            .where((line) => line.startsWith('uses:'))) {
+      expect(
+        line,
+        matches(RegExp(r'^uses: [^@ ]+@[0-9a-f]{40}(?: # v[^ ]+)?$')),
+        reason: 'publish action must be immutable: $line',
+      );
+    }
+  });
+
+  test('publish preflight validates exact semantic version and package', () {
     final preflightStart = publish.indexOf('  preflight:');
     final publishStart = publish.indexOf('  publish:', preflightStart + 1);
     expect(preflightStart, greaterThan(-1));
     expect(publishStart, greaterThan(preflightStart));
 
     final preflight = publish.substring(preflightStart, publishStart);
-    final checkout = preflight.indexOf('uses: actions/checkout@v4');
-    final gate = preflight.indexOf(tagGate);
-    final setup = preflight.indexOf('uses: dart-lang/setup-dart@v1');
-    final dryRun = preflight.indexOf('run: dart pub publish --dry-run');
-    final publishJob = publish.substring(publishStart);
-    final failureOverride = RegExp(
-      r'^[ \t]*(?:continue-on-error|if)[ \t]*:',
-      multiLine: true,
+    expect(preflight, contains('semver='));
+    expect(preflight, contains(r'package_version="${BASH_REMATCH[1]}"'));
+    expect(preflight, contains(r'"v$package_version"'));
+    expect(
+      preflight,
+      contains('dart run scripts/fetch_opentui_binaries.dart --verify-only'),
     );
+    expect(
+      preflight,
+      contains(
+        'dart test --exclude-tags restricted-process-lifecycle --concurrency=1',
+      ),
+    );
+    expect(preflight, contains('dart doc --validate-links'));
+    expect(preflight, contains('dart pub publish --dry-run'));
+    expect(preflight, isNot(contains('continue-on-error')));
+  });
 
-    expect(checkout, greaterThan(-1));
-    expect(gate, greaterThan(checkout));
-    expect(setup, greaterThan(gate));
-    expect(dryRun, greaterThan(gate));
-    expect(preflight, isNot(matches(failureOverride)));
-    expect(publishJob, contains('    needs: preflight'));
-    expect(publishJob, isNot(matches(failureOverride)));
+  test('OIDC publication depends on preflight with least privilege', () {
+    expect(publish, contains('permissions:\n  contents: read'));
+    final publishJob = publish.substring(publish.indexOf('  publish:'));
+    expect(publishJob, contains('needs: preflight'));
+    expect(publishJob, contains('id-token: write'));
+    expect(publishJob, contains('contents: read'));
+    expect(publishJob, isNot(contains('secrets.')));
+    expect(publishJob, isNot(contains('continue-on-error')));
   });
 }
+
+String _read(String path) =>
+    File(path).readAsStringSync().replaceAll('\r\n', '\n');

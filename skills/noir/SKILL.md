@@ -20,7 +20,7 @@ metadata:
 Noir uses a Flutter-inspired declarative widget model for the terminal. You
 write `Widget` trees; noir lays them out in character cells and paints them
 through OpenTUI's native renderer over Dart FFI. Familiar concepts transfer,
-but terminal constraints and noir's pre-1.0 contracts differ. Noir signatures
+but terminal constraints and noir's prerelease contracts differ. Noir signatures
 are authoritative.
 
 **Single import gets you the whole authoring surface:**
@@ -57,15 +57,13 @@ These catch the mistakes that don't surface until runtime:
    of the launch cursor and overwrite prior rows. This does not make disposal
    optional. With `headless: true`, `isHeadless` is true and no terminal
    renderer exists, so mouse and Kitty mode controls are unavailable. Native
-   capability queries also currently begin before the stdin driver acquires
-   terminal input. Low-level validation reproduced the underlying
-   canonical/echo mechanism, but high-level corruption was not reproduced; do
-   not imply that every terminal or run visibly corrupts. Ctrl+C exits by
-   default; to quit programmatically call `app.dispose()` then `io.exit(0)`.
+   capability replies are acquired and consumed before application input.
+   Ctrl+C exits by default; to quit programmatically call `app.dispose()` then
+   `io.exit(0)`.
 5. **Focus-owning and text-editing widgets are controller-driven.** `TextInput`/
    `TextArea` accept `controller` XOR `value` (never both); pass a `FocusNode`
    you own and dispose. See `references/inputs-and-focus.md`.
-6. **No backwards-compat shims while noir is pre-1.0.** Prefer the current API;
+6. **No backwards-compat shims during prerelease.** Prefer the current API;
    don't add deprecation layers.
 
 ## Quick start

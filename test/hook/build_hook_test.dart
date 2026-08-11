@@ -78,6 +78,64 @@ void main() {
     );
   });
 
+  test('macOS manifest entries require the current deployment floor', () {
+    expect(
+      () => hook.NativeManifest.fromJson({
+        'abiVersion': expectedOpenTuiAbiVersion,
+        'assets': {'macos-arm64': _entryJson(os: 'macos', arch: 'arm64')},
+      }),
+      throwsA(isA<hook.NativeAssetBuildException>()),
+    );
+  });
+
+  test('manifest rejects invalid or misplaced deployment floors', () {
+    for (final minimum in <Object?>[15, '15', '15.0.0', '14.0']) {
+      expect(
+        () => hook.NativeManifest.fromJson({
+          'abiVersion': expectedOpenTuiAbiVersion,
+          'assets': {
+            'macos-x64': _entryJson(
+              os: 'macos',
+              arch: 'x64',
+              minimumOsVersion: minimum,
+            ),
+          },
+        }),
+        throwsA(isA<hook.NativeAssetBuildException>()),
+        reason: 'minimumOsVersion=$minimum',
+      );
+    }
+    expect(
+      () => hook.NativeManifest.fromJson({
+        'abiVersion': expectedOpenTuiAbiVersion,
+        'assets': {
+          'linux-x64': _entryJson(
+            os: 'linux',
+            arch: 'x64',
+            minimumOsVersion: '15.0',
+          ),
+        },
+      }),
+      throwsA(isA<hook.NativeAssetBuildException>()),
+    );
+  });
+
+  test('manifest accepts macOS 15.0 deployment metadata', () {
+    expect(
+      () => hook.NativeManifest.fromJson({
+        'abiVersion': expectedOpenTuiAbiVersion,
+        'assets': {
+          'macos-arm64': _entryJson(
+            os: 'macos',
+            arch: 'arm64',
+            minimumOsVersion: '15.0',
+          ),
+        },
+      }),
+      returnsNormally,
+    );
+  });
+
   test('missing bundled binary fails loudly', () async {
     final temp = await _createTempDir('opentui_missing_test_');
 
@@ -107,5 +165,20 @@ hook.NativeManifestEntry _entry() => hook.NativeManifestEntry(
   path: 'native/macos/arm64/libopentui.dylib',
   url: Uri.parse('https://example.invalid/libopentui.dylib'),
   archivePath: '',
+  minimumOsVersion: '15.0',
   sha256: '0' * 64,
 );
+
+Map<String, Object?> _entryJson({
+  required String os,
+  required String arch,
+  Object? minimumOsVersion,
+}) => {
+  'os': os,
+  'arch': arch,
+  'path': 'native/$os/$arch/libopentui',
+  'url': 'https://example.invalid/libopentui',
+  'archivePath': '',
+  'sha256': '0' * 64,
+  'minimumOsVersion': ?minimumOsVersion,
+};

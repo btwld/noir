@@ -1,4 +1,4 @@
-@Tags(['process-spawning'])
+@Tags(['restricted-process-lifecycle'])
 // Serialized wrapper lifecycles compose setup, event gates, bounded process
 // completion, stream closure, and cleanup inside one Dart test; 60 seconds is
 // the file's composed outer ceiling while _Harness.run bounds each spawned
