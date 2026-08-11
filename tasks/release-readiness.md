@@ -77,6 +77,10 @@ from this checklist; each is a separate authorized operation.
 
 ## Final candidate evidence
 
+The private preparation commit, tree, recovery bundle, source archive,
+inventory, native hashes, tool versions, and dated Phase 1 checks are recorded
+in [`1.0-preparation-evidence.md`](1.0-preparation-evidence.md).
+
 Repository and content review:
 
 - Baseline `dbf4d30ebfd9a119f1b0306a30d9900561e8de2e`: all 593 tracked entries
