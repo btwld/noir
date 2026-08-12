@@ -11,7 +11,9 @@ Read, in order:
 4. [`1.0-release-plan.md`](1.0-release-plan.md) for the ordered private-history,
    `main`, prerelease, and stable-release handoff.
 5. [`2.0-native-build-contract.md`](2.0-native-build-contract.md) when working
-   on the separately authorized Phase 2 native candidate builds.
+   on the separately authorized Phase 2 native candidate builds, followed by
+   [`2.1-native-build-implementation-plan.md`](2.1-native-build-implementation-plan.md)
+   for the reviewed wrapper sequence.
 6. The affected source, tests, and pinned OpenTUI reference implementation.
 
 ## Workflow

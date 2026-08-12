@@ -9,8 +9,12 @@ from this checklist; each is a separate authorized operation.
 
 Phase 2 candidate builds are now authorized under the reviewed hybrid method
 in [`2.0-native-build-contract.md`](2.0-native-build-contract.md). The wrapper
-and candidate builds are still pending. This authorization does not permit
-tracked-artifact replacement or any later restricted operation.
+described by the
+[`2.1 implementation plan`](2.1-native-build-implementation-plan.md) is locally
+implemented and passes its focused and ordinary non-native verification. It
+has not yet passed the required pushed-diff review, and no candidate build has
+run. This authorization does not permit tracked-artifact replacement or any
+later restricted operation.
 
 ## Alpha gates
 
