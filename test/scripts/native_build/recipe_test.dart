@@ -3,6 +3,25 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
+  test('runner bootstraps certificates from the signed snapshot over HTTP', () {
+    final dockerfile = File(
+      'scripts/native_build/recipe/Dockerfile',
+    ).readAsStringSync();
+
+    expect(
+      dockerfile,
+      contains(r'http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}'),
+    );
+    expect(
+      dockerfile,
+      isNot(
+        contains(
+          r'https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}',
+        ),
+      ),
+    );
+  });
+
   test('runner recipe pins every network and toolchain input', () {
     final dockerfile = File(
       'scripts/native_build/recipe/Dockerfile',

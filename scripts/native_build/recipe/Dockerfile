@@ -4,8 +4,10 @@ FROM --platform=linux/arm64 debian:bookworm-slim@sha256:817e6cf99d6fc127ff4ffe85
 ARG DEBIAN_SNAPSHOT=20260801T000000Z
 ENV DEBIAN_FRONTEND=noninteractive
 
+# bookworm-slim does not include a CA bundle. Bootstrap ca-certificates over
+# HTTP from the dated snapshot; apt authenticates the signed InRelease file.
 RUN printf '%s\n' \
-      "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bookworm main" \
+      "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bookworm main" \
       > /etc/apt/sources.list \
     && rm -f /etc/apt/sources.list.d/* \
     && apt-get -o Acquire::Check-Valid-Until=false update \
