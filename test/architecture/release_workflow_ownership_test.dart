@@ -82,6 +82,16 @@ void main() {
       r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
       hasLength(2),
     );
+    expect(
+      r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
+          .allMatches(workflow),
+      hasLength(2),
+    );
+    expect(
+      workflow,
+      isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
+      reason: 'runner context is unavailable in job-level env',
+    );
   });
 
   test('tag releases require an exact semantic-version/package match', () {

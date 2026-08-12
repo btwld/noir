@@ -50,7 +50,17 @@ void main() {
 
     final preflight = publish.substring(preflightStart, publishStart);
     expect(preflight, contains('timeout-minutes: 15'));
-    expect(preflight, contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache'));
+    expect(
+      preflight,
+      contains(
+        r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"',
+      ),
+    );
+    expect(
+      preflight,
+      isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
+      reason: 'runner context is unavailable in job-level env',
+    );
     expect(preflight, contains('actions/cache@'));
     expect(preflight, contains(r'path: ${{ runner.temp }}/pub-cache'));
     expect(preflight, contains('semver='));

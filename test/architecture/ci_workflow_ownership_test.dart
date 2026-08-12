@@ -99,8 +99,14 @@ void main() {
         hasLength(3),
       );
       expect(
-        r'PUB_CACHE: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+        r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
+            .allMatches(workflow),
         hasLength(3),
+      );
+      expect(
+        workflow,
+        isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
+        reason: 'runner context is unavailable in job-level env',
       );
       expect('run: dart pub get'.allMatches(workflow), hasLength(3));
       expect(workflow, isNot(contains('.dart_tool')));
