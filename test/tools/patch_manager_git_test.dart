@@ -559,6 +559,10 @@ void main() {
     );
 
     test('literal pathspec magic cannot widen untracked staging', () async {
+      if (Platform.isWindows) {
+        markTestSkipped('Git pathspec magic is not a valid Windows filename.');
+        return;
+      }
       const literalPath = ':(glob)trap*.txt';
       await File('${repo.path}/$literalPath').writeAsString('literal\n');
       await File('${repo.path}/trap-match.txt').writeAsString('sibling\n');
