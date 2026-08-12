@@ -123,6 +123,8 @@ void _rejectPathLeaks(ArtifactInspection inspection) {
     '/usr/lib/debug',
     '/lib/ld-linux-aarch64.so.1',
     '/lib64/ld-linux-x86-64.so.2',
+    // Mach-O records these exact system loader dependencies in load commands.
+    '/usr/lib/dyld',
     '/usr/lib/libSystem.B.dylib',
   };
   final plausibleAbsolutePath = RegExp('^/[A-Za-z][A-Za-z0-9._-]{2,}/');

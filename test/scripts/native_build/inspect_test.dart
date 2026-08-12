@@ -183,6 +183,31 @@ void main() {
     }
   });
 
+  test('allows only reviewed Mach-O loader paths', () {
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          macArm64,
+          printableStrings:
+              '/usr/lib/dyld\n'
+              '/usr/lib/libSystem.B.dylib\n',
+        ),
+      ),
+      returnsNormally,
+    );
+    for (final path in <String>[
+      '/usr/lib/dyld/child',
+      '/usr/lib/libSystem.B.dylib/child',
+    ]) {
+      expect(
+        () =>
+            inspectArtifact(_inspection(macArm64, printableStrings: '$path\n')),
+        throwsA(isA<ArtifactInspectionException>()),
+        reason: path,
+      );
+    }
+  });
+
   test('rejects nonidentical or incomplete root hash tables', () {
     final rootA = <String, String>{
       for (final target in nativeBuildTargets)
