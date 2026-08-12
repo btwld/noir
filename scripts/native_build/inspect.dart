@@ -125,7 +125,7 @@ void _rejectPathLeaks(ArtifactInspection inspection) {
     '/lib64/ld-linux-x86-64.so.2',
     '/usr/lib/libSystem.B.dylib',
   };
-  final plausibleAbsolutePath = RegExp(r'^/[A-Za-z][A-Za-z0-9._-]{2,}(?:/|$)');
+  final plausibleAbsolutePath = RegExp('^/[A-Za-z][A-Za-z0-9._-]{2,}/');
   final absolutePath = RegExp(
     r'(?:^|\s)(/[^\s,;:!?]+)(?=[\s,;:!?]|$)',
     multiLine: true,

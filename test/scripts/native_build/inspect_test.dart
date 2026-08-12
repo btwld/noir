@@ -162,7 +162,9 @@ void main() {
               '/proc/self/exe\n'
               '/usr/lib/debug\n'
               '/4/I\n'
-              '/u&^Y\n',
+              '/mem\n'
+              '/u&^Y\n'
+              '/yox\n',
         ),
       ),
       returnsNormally,
