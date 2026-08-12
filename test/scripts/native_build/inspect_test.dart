@@ -151,6 +151,36 @@ void main() {
     }
   });
 
+  test('allows only reviewed Zig Linux runtime paths', () {
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          linuxX64,
+          printableStrings:
+              '/proc//proc/self/fd/\n'
+              '/proc/self/fd/\n'
+              '/proc/self/exe\n'
+              '/usr/lib/debug\n'
+              '/4/I\n'
+              '/u&^Y\n',
+        ),
+      ),
+      returnsNormally,
+    );
+    for (final path in <String>[
+      '/proc/self/exe/child',
+      '/proc/self/fd/secret',
+      '/usr/lib/debug/evil',
+    ]) {
+      expect(
+        () =>
+            inspectArtifact(_inspection(linuxX64, printableStrings: '$path\n')),
+        throwsA(isA<ArtifactInspectionException>()),
+        reason: path,
+      );
+    }
+  });
+
   test('rejects nonidentical or incomplete root hash tables', () {
     final rootA = <String, String>{
       for (final target in nativeBuildTargets)
