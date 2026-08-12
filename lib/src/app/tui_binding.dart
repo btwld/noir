@@ -299,4 +299,22 @@ final class TuiBinding {
       _scheduler.scheduleFrame();
     }
   }
+
+  /// Rebuild the mounted tree and force a full layout and paint pass.
+  ///
+  /// Call this once a hot-reload `reloadSources` request has succeeded. Only
+  /// the existing element and render graphs are re-run: the renderer, terminal
+  /// session, input drivers, and every native handle stay exactly as they are.
+  void reassemble() {
+    if (_disposed || _disposing) {
+      return;
+    }
+    _owner.reassemble();
+    // Not redundant with the rebuild above. A reloaded `performLayout` or
+    // `paint` body changes no widget configuration, so every value-equality
+    // render setter declines to mark anything dirty and the frame would paint
+    // nothing new. One mark on the render root is enough: `flushLayout` and
+    // `flushPaint` re-walk the whole tree from there.
+    _renderView.markNeedsLayout();
+  }
 }

@@ -217,6 +217,37 @@ class BuildOwner {
     }
   }
 
+  /// Marks every live element dirty so the next [buildScope] re-runs its
+  /// `build()`.
+  ///
+  /// This is hot reload's second step: `reloadSources` swaps method bodies but
+  /// leaves the element tree untouched, so nothing re-executes an edited
+  /// `build()` until something marks it dirty. No `State` is recreated and no
+  /// `initState` re-runs — only `build()` bodies re-execute.
+  ///
+  /// Deliberate design decision: every registered element is marked, not only
+  /// the root. Reconciliation currently has no identical-widget short-circuit,
+  /// so marking the root alone would happen to cascade through the whole tree
+  /// — but that is a property of reconciliation, not a guarantee this method
+  /// should depend on. Marking directly keeps reassemble correct if such a
+  /// short-circuit is ever added. [scheduleBuild]'s generation-stamped
+  /// reservations still collapse the marks with the parent cascade, so each
+  /// element rebuilds exactly once.
+  ///
+  /// Safe with nothing mounted, after [dispose], and from inside a `build()`:
+  /// an in-build call drains in a later batch of the same [buildScope] pass
+  /// rather than re-entering it.
+  void reassemble() {
+    if (_disposed) {
+      return;
+    }
+    // Snapshot first: `scheduleBuild` requests a frame through `_onFrame`, and
+    // a host callback may mount elements before this loop finishes.
+    for (final element in _depths.keys.toList(growable: false)) {
+      scheduleBuild(element);
+    }
+  }
+
   void _registerElement(Element element, Element? parent) {
     if (_depths.containsKey(element)) {
       throw StateError('Element is already registered with BuildOwner');

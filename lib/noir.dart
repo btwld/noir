@@ -27,6 +27,8 @@ export 'src/animation/ticker.dart'
         TickerProviderStateMixin;
 // App entrypoint
 export 'src/app/app.dart' show TuiApp, runTuiApp;
+// Opt-in hot-reload service extension for development builds.
+export 'src/app/hot_reload.dart' show registerHotReloadExtension;
 // Terminal capabilities (high-level helpers users genuinely need)
 export 'src/core/capabilities.dart'
     show ColorSupport, TerminalCapabilities, TerminalSize;

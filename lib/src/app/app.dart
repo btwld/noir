@@ -83,6 +83,16 @@ final class TuiApp implements Disposable {
     _binding.disableKittyKeyboard();
   }
 
+  /// Rebuilds the whole widget tree and forces a full repaint.
+  ///
+  /// Call this after a hot-reload source swap succeeds. Every `build()` body
+  /// re-executes once; owned `State`, focus, scroll, and animation state
+  /// survive, and no terminal or native resource is recreated.
+  void reassemble() {
+    _checkNotDisposed();
+    _binding.reassemble();
+  }
+
   VoidCallback _own(InputSubscription subscription) {
     _subscriptions.add(subscription);
     var cancelled = false;

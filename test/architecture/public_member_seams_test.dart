@@ -893,6 +893,7 @@ const Set<String> _tuiAppMembers = <String>{
   'disableMouse',
   'enableKittyKeyboard',
   'disableKittyKeyboard',
+  'reassemble',
   'dispose',
 };
 

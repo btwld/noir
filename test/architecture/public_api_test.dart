@@ -22,6 +22,7 @@ void main() {
         'TickerProviderStateMixin',
       },
       'src/app/app.dart': {'TuiApp', 'runTuiApp'},
+      'src/app/hot_reload.dart': {'registerHotReloadExtension'},
       'src/core/capabilities.dart': {
         'ColorSupport',
         'TerminalCapabilities',
@@ -293,8 +294,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(168),
-      reason: 'The high-level surface is locked at exactly 168 symbols.',
+      hasLength(169),
+      reason: 'The high-level surface is locked at exactly 169 symbols.',
     );
   });
 

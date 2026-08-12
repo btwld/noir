@@ -132,6 +132,13 @@ signal handling also performs cleanup for SIGINT, SIGTERM, and SIGHUP.
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
 are unavailable in that mode.
 
+`TuiApp.reassemble()` rebuilds the whole widget tree and forces a full layout
+and paint pass without recreating any `State`, terminal, or native resource.
+It is the hot-reload hook: call it after a source swap succeeds, or call
+`registerHotReloadExtension(app)` once from `main()` with the handle
+`runTuiApp` returned, so a development driver can invoke it over the VM
+service extension `ext.noir.reassemble`.
+
 Noir has three supported import tiers:
 
 - `package:noir/noir.dart` — ordinary application and widget authoring.
@@ -255,6 +262,11 @@ corrupt package.
   return to main-screen row 1/column 1 instead of the launch cursor and
   overwrite prior shell rows. Callers must still dispose `TuiApp` so all owned
   resources and terminal modes are released.
+- Hot reload is bounded by what the Dart VM can swap into a live isolate.
+  `TuiApp.reassemble()` re-runs `build()`, layout, and paint bodies only: it
+  never re-runs `main()` or `initState`, so changes to those, to a signature
+  held by a frame on the stack, to an enum converted into a class, or to the
+  bundled OpenTUI native library still require a full restart.
 - The current Linux libraries retain absolute build/debug paths. They pass
   static integrity checks, but are not cleared for public publication or
   runtime acceptance until an explicitly authorized artifact refresh or

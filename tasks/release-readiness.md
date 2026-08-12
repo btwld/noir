@@ -41,6 +41,26 @@ publication, native build, manual workflow dispatch, or public visibility.
 - [ ] The implementation branch and clean `main` staged CI runs are green.
 - [ ] A verified recovery bundle and clean-clone verification are recorded.
 
+## Hot reload
+
+`BuildOwner.reassemble()` marks every registered element dirty.
+`TuiBinding.reassemble()` adds one `markNeedsLayout()` on the render root so a
+reloaded `performLayout`/`paint` body repaints even when no widget
+configuration changed. `TuiApp.reassemble()` forwards, rejecting a disposed
+handle. Opt-in `registerHotReloadExtension(app)` publishes
+`ext.noir.reassemble` for a development driver.
+
+`test/hot_reload_e2e_test.dart` is the automated proof: a real `reloadSources`
+against a spawned headless app, asserting the source swap alone changes no
+rendered output and that the extension call does.
+
+`scripts/hot_reload_driver.dart` has no automated coverage. It was exercised
+manually against a headless target — reload, repaint, and compile-error
+recovery — but never against a real terminal, which stays outside ordinary
+verification. VM-level restart cases — `main()`, `initState`, signatures live
+on the stack, enum-to-class conversions, and any native library change — are
+documented, not fixed.
+
 ## Retained limitations
 
 - The pinned native `bufferDrawText` encoder mishandles a run beginning with a

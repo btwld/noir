@@ -62,6 +62,20 @@ void main() {
     }
   });
 
+  test('reassemble forwards to the binding and rebuilds the tree', () {
+    final log = <String>[];
+    final binding = TuiBinding(headless: true)..runApp(_BuildProbe(log));
+    final app = createTuiAppForTesting(binding);
+    addTearDown(app.dispose);
+
+    expect(log, <String>['build']);
+
+    app.reassemble();
+    binding.debugFlushFrame();
+
+    expect(log, <String>['build', 'build']);
+  });
+
   test('dispose cancels active handlers and rejects every mutator', () {
     final inputManager = InputManager();
     final app = createTuiAppForTesting(
@@ -99,10 +113,23 @@ void main() {
       app.disableMouse,
       app.enableKittyKeyboard,
       app.disableKittyKeyboard,
+      app.reassemble,
     ]) {
       expect(operation, throwsStateError);
     }
   });
+}
+
+class _BuildProbe extends StatelessWidget {
+  const _BuildProbe(this.log);
+
+  final List<String> log;
+
+  @override
+  Widget build(BuildContext context) {
+    log.add('build');
+    return const SizedBox();
+  }
 }
 
 void _dispatchAll(InputManager inputManager) {
