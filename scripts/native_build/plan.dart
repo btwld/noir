@@ -18,6 +18,16 @@ final class NativeBuildTarget {
   final NativeArchitecture architecture;
 
   bool get isMacOs => format == NativeArtifactFormat.machO;
+
+  String get buildOutputFileName => switch (format) {
+    NativeArtifactFormat.coff => 'opentui.dll',
+    _ => outputFileName,
+  };
+
+  List<String> get buildAuxiliaryFileNames => switch (format) {
+    NativeArtifactFormat.coff => const <String>['opentui.pdb'],
+    _ => const <String>[],
+  };
 }
 
 const List<NativeBuildTarget> nativeBuildTargets = <NativeBuildTarget>[

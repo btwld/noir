@@ -208,14 +208,22 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
             .map((file) => p.relative(file.path, from: builtDirectory.path))
             .toList()
           ..sort();
-    if (outputFiles.length != 1 ||
-        outputFiles.single != target.outputFileName) {
+    final expectedOutputFiles = <String>[
+      target.buildOutputFileName,
+      ...target.buildAuxiliaryFileNames,
+    ]..sort();
+    if (outputFiles.length != expectedOutputFiles.length ||
+        outputFiles.indexed.any(
+          (entry) => entry.$2 != expectedOutputFiles[entry.$1],
+        )) {
       throw NativeBuildWorkflowException(
-        '${root.label}/${target.name} produced unexpected files: '
-        '${outputFiles.join(', ')}',
+        '${root.label}/${target.name} expected '
+        '${expectedOutputFiles.join(', ')}; found ${outputFiles.join(', ')}',
       );
     }
-    final builtFile = File(p.join(builtDirectory.path, target.outputFileName));
+    final builtFile = File(
+      p.join(builtDirectory.path, target.buildOutputFileName),
+    );
     final artifactRoot = Directory(
       p.join(_evidenceDirectory.path, 'artifacts', root.label, target.name),
     )..createSync(recursive: true);

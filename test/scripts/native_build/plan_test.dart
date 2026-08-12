@@ -28,6 +28,28 @@ void main() {
       'libopentui.dll',
       'libopentui.dll',
     ]);
+    expect(
+      nativeBuildTargets.map((target) => target.buildOutputFileName),
+      <String>[
+        'libopentui.so',
+        'libopentui.so',
+        'libopentui.dylib',
+        'libopentui.dylib',
+        'opentui.dll',
+        'opentui.dll',
+      ],
+    );
+    expect(
+      nativeBuildTargets.map((target) => target.buildAuxiliaryFileNames),
+      <List<String>>[
+        const <String>[],
+        const <String>[],
+        const <String>[],
+        const <String>[],
+        const <String>['opentui.pdb'],
+        const <String>['opentui.pdb'],
+      ],
+    );
   });
 
   test('reverses only root B and isolates every root path', () {
