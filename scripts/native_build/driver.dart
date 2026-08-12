@@ -541,12 +541,6 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
     File(
       p.join(_evidenceDirectory.path, 'provenance.slsa.json'),
     ).writeAsStringSync(canonicalJson(slsaProvenance(provenanceInputs)));
-    _writeJson('success.json', <String, Object?>{
-      'runId': _runId,
-      'finishedAtUtc': finishedAt.toIso8601String(),
-      'matchedCandidates': result.normalizedHashes,
-      'trackedArtifactsReplaced': false,
-    });
     final inventory = await inventoryFiles(_evidenceDirectory);
     final inventoryFile =
         File(p.join(_evidenceDirectory.path, 'inventory.json'))
@@ -596,6 +590,12 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
           }),
           flush: true,
         );
+    _writeJson('success.json', <String, Object?>{
+      'runId': _runId,
+      'finishedAtUtc': finishedAt.toIso8601String(),
+      'matchedCandidates': result.normalizedHashes,
+      'trackedArtifactsReplaced': false,
+    });
     emit('Evidence: ${_evidenceDirectory.path}');
     emit('Recovery mirror: ${mirror.path}');
     emit('Mirror verification: ${mirrorReport.path}');
