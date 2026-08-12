@@ -22,6 +22,19 @@ void main() {
     );
   });
 
+  test('runner installs the decompressor before extracting Zig', () {
+    final dockerfile = File(
+      'scripts/native_build/recipe/Dockerfile',
+    ).readAsStringSync();
+
+    final xzPackage = dockerfile.indexOf(r'      xz-utils \');
+    final zigExtraction = dockerfile.indexOf('tar --extract --xz');
+
+    expect(xzPackage, isNonNegative);
+    expect(zigExtraction, isNonNegative);
+    expect(xzPackage, lessThan(zigExtraction));
+  });
+
   test('runner recipe pins every network and toolchain input', () {
     final dockerfile = File(
       'scripts/native_build/recipe/Dockerfile',

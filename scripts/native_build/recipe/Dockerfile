@@ -15,6 +15,7 @@ RUN printf '%s\n' \
       ca-certificates \
       llvm \
       minisign \
+      xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
 ADD --checksum=sha256:f7a654acc967864f7a050ddacfaa778c7504a0eca8d2b678839c21eea47c992b \
