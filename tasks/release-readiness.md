@@ -7,19 +7,15 @@ not cleared for public pub.dev publication, beta, or stable 1.0. Do not tag,
 publish, create a GitHub release, enable workflows, or refresh native artifacts
 from this checklist; each is a separate authorized operation.
 
-Phase 2 candidate builds are now authorized under the reviewed hybrid method
-in [`2.0-native-build-contract.md`](2.0-native-build-contract.md). The wrapper
-described by the
-[`2.1 implementation plan`](2.1-native-build-implementation-plan.md) is locally
-implemented. The first candidate run, `20260812T030411Z-90cfa46d`, stopped
-without designating candidates after the pinned `llvm-strip --strip-debug`
-left Mach-O `N_SO` and `N_OSO` build/cache paths in the root-A macOS x64
-artifact. Exact-runner review proved that `llvm-strip --discard-all` removes
-those records while preserving the retained Linux and macOS external exports,
-formats, architectures, and macOS 15.0 floor. The reviewed correction and a
-bounded CI validation job are pending full local and GitHub validation before
-the twelve-build run resumes. This authorization does not permit
-tracked-artifact replacement or any later restricted operation.
+Phase 2 candidate builds completed under the reviewed hybrid method in
+[`2.0-native-build-contract.md`](2.0-native-build-contract.md) and the
+[`2.1 implementation plan`](2.1-native-build-implementation-plan.md). Run
+`20260812T135653Z-9e981ca2` used the pinned runner and
+`llvm-strip --discard-all` normalization, passed all twelve builds and gates,
+and designated six byte-identical root-pair candidates. Its evidence and
+recovery material were hash-verified under `~/noir-release-recovery/`. The
+candidate set is evidence only: no tracked native artifact, manifest, ABI,
+generated binding, OpenTUI source, or gitlink was replaced.
 
 ## Alpha gates
 
@@ -63,13 +59,15 @@ tracked-artifact replacement or any later restricted operation.
   best-effort cleanup. Exact terminal-byte/cursor acceptance has not been run.
 - The six native artifacts, hashes, URLs, ABI, and submodule pin are read-only
   in this preparation pass.
-- GitHub Actions remain disabled until the revised native wrapper passes all
-  local gates. The release owner authorized enabling them afterward solely to
-  validate the bounded pull-request CI; no release or publication dispatch is
-  authorized. The GitHub-release workflow is manual and accepts only an
-  existing, version-matching tag. The official setup-dart publisher is pinned
-  at its outer reusable-workflow commit, but that upstream workflow currently
-  uses a mutable checkout action and floating SDK internally.
+- GitHub Actions were explicitly enabled solely to validate the bounded
+  pull-request CI. The `Native build wrapper` job for recipe commit
+  `bf60a1b214e4824ad371160a79bff3c2cd0b3f8c` passed in 28 seconds; the overall
+  existing workflow remains red because its Ubuntu and Windows ordinary-suite
+  jobs retain unrelated platform failures. No release or publication workflow
+  was dispatched. The GitHub-release workflow remains manual and accepts only
+  an existing, version-matching tag. The official setup-dart publisher is
+  pinned at its outer reusable-workflow commit, but that upstream workflow
+  currently uses a mutable checkout action and floating SDK internally.
 - Pathologically fragmented near-limit paste input remains memory-bounded but
   can repeat copying and parsing work.
 
@@ -92,7 +90,50 @@ tracked-artifact replacement or any later restricted operation.
 - Make an explicit dependency-strategy decision for the pinned native
   cursor-restoration limitation.
 
-## Final candidate evidence
+## Phase 2 candidate evidence
+
+Successful run `20260812T135653Z-9e981ca2` records:
+
+- Noir recipe commit `bf60a1b214e4824ad371160a79bff3c2cd0b3f8c`, tree
+  `be05c0198b25ce10f803fee3958184ddcc5571e8`, and recipe digest
+  `bc688ab8861588e4cd067163519821d0086b07a95cb182f0a1b014dd736a08a0`;
+- OpenTUI commit `ddbc9edf81a1fa89961135ab0481df15054ed4b0` and tree
+  `3d35a9ef9a77ca7e1768d2fbe7191522fe7f59cc`;
+- runner image digest
+  `sha256:2ef1eeb6c3278e45d9e0e75518dcce4ba41e2bb48a792a4bd258d772e60595c8`
+  and runner archive SHA-256
+  `79ce1abe9850024270af6d78471a337260a0dd69af87f1667e03228a72c8291a`;
+- local evidence at
+  `.context/native-build-runs/20260812T135653Z-9e981ca2/evidence` and the
+  externally preserved mirror at
+  `~/noir-release-recovery/20260812T135653Z-9e981ca2`;
+- evidence-inventory SHA-256
+  `c3a48dc7297c425cbd783dcf8ea4d89838bcf37660d57ada3da446fa243f293b`
+  and mirror-verification report SHA-256
+  `282f4bc0d304ee713110aff7ba307b6cce67ba2d356fcfe16bfa7827cefc26db`;
+  all 151 mirrored files were independently rehashed successfully; and
+- bounded GitHub Actions run `31564383894`, job `94013215756`, passed without
+  building, publishing, or uploading native candidates.
+
+Matched normalized candidates:
+
+```text
+x86_64-linux     5549d0e11d817cda414870702e9bb3042b4c8c8f65309491635a1d1ab5dd757b
+aarch64-linux    84d8c12a161b900e67eb2a2d2b32d08c2a4b5b5d1f1c8244e892bc0ae922947b
+x86_64-macos     13a8f9d133f064b7f77cd7d3b01b7f6552e64a038b05af00b461ff87d5c27dd2
+aarch64-macos    3bf6535cdd01860662dc2a1a592c9f38ce0a3e5880e563abcd02a3a30207db4a
+x86_64-windows   e7a99c2c50b3e0d4ef9b483509b5fadbf01095fa0d867505a52b17788ae64a0e
+aarch64-windows  feaa2c7ab9cedf554de5492dcf4f127e241edd4f62893d69602e74b2c8c731de
+```
+
+Both roots passed static format/architecture inspection, the exact required
+export inventory, path scans, macOS 15.0 floors, ABI 2 host health, package
+snapshot health, and compiled packaged-CLI health. The protected-path record
+proves identical before/after hashes for the tracked manifest, six bundled
+libraries, ABI contract, bindings, native symbol inventory, and OpenTUI
+gitlink. `trackedArtifactsReplaced` is `false`.
+
+## Phase 1 final candidate evidence
 
 The private preparation commit, tree, recovery bundle, source archive,
 inventory, native hashes, tool versions, and dated Phase 1 checks are recorded
@@ -135,7 +176,6 @@ Behavior and package verification:
 Not run:
 
 - Real terminal, PTY, raw-mode, visual-session, signal/termination, crash,
-  sanitizer, leak, artifact refresh, workflow, tag, release, or publication
-  operations. The retained Phase 2 native run stopped during root-A static
-  inspection; no full twelve-build candidate set has completed.
+  sanitizer, leak, tracked-artifact refresh, tag, release, or publication
+  operations.
 - Live execution on Linux, Windows, macOS x64, or a second macOS version.
