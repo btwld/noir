@@ -248,12 +248,19 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
       '--file-headers',
       '/work/artifact/${target.outputFileName}',
     ]);
-    final exports = await _runTool(normalized.parent, <String>[
-      'llvm-nm',
-      '--defined-only',
-      '--extern-only',
-      '/work/artifact/${target.outputFileName}',
-    ]);
+    final exports = await _runTool(normalized.parent, switch (target.format) {
+      NativeArtifactFormat.coff => <String>[
+        'llvm-readobj',
+        '--coff-exports',
+        '/work/artifact/${target.outputFileName}',
+      ],
+      _ => <String>[
+        'llvm-nm',
+        '--defined-only',
+        '--extern-only',
+        '/work/artifact/${target.outputFileName}',
+      ],
+    });
     final strings = await _runTool(normalized.parent, <String>[
       'llvm-strings',
       '/work/artifact/${target.outputFileName}',

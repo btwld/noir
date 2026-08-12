@@ -95,11 +95,27 @@ void main() {
             .map((file) => p.basename(file.path)),
         isNot(contains('opentui.pdb')),
       );
+      expect(
+        runner.commands,
+        contains(
+          containsAllInOrder(<String>[
+            'llvm-readobj',
+            '--coff-exports',
+            '/work/artifact/${target.outputFileName}',
+          ]),
+        ),
+      );
+      expect(
+        runner.commands.any((command) => command.contains('llvm-nm')),
+        isFalse,
+      );
     },
   );
 }
 
 final class _RecordingRunner implements CommandRunner {
+  final List<List<String>> commands = <List<String>>[];
+
   @override
   Future<CommandResult> run(
     String executable,
@@ -107,7 +123,12 @@ final class _RecordingRunner implements CommandRunner {
     String? workingDirectory,
     Map<String, String>? environment,
   }) async {
+    commands.add(<String>[executable, ...arguments]);
     final stdout = switch (arguments) {
+      _ when arguments.contains('--coff-exports') =>
+        requiredOpenTuiNativeSymbolNames
+            .map((symbol) => 'Export {\n  Name: $symbol\n}')
+            .join('\n'),
       _ when arguments.contains('llvm-readobj') =>
         'Format: COFF-x86-64\nArch: x86_64\n',
       _ when arguments.contains('llvm-nm') =>
