@@ -1,0 +1,31 @@
+name: OpenTuiNativeAssetBindings
+description: Auto-generated @Native bindings for the bundled OpenTUI asset
+output: 'lib/src/ffi/native_asset_bindings.dart'
+ffi-native:
+  asset-id: 'package:noir/src/ffi/native_asset_bindings.dart'
+
+headers:
+  entry-points:
+    - 'native/opentui_v0_5_1.h'
+
+functions:
+  include:
+    - '.*'
+
+structs:
+  include:
+    - 'CursorStyleOptions'
+
+macros:
+  exclude:
+    - '.*'
+
+comments:
+  style: any
+  length: full
+
+preamble: |
+  // Generated @Native bindings from Noir's selected OpenTUI v0.5.1 declarations.
+  // Regenerate with: dart run ffigen --config ffigen_native_assets.yaml
+  // Do not edit manually.
+  // ignore_for_file: unused_element, unused_field

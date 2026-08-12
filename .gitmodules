@@ -1,0 +1,3 @@
+[submodule "external/opentui"]
+	path = external/opentui
+	url = https://github.com/anomalyco/opentui.git

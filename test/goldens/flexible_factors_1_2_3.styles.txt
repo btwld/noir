@@ -1,0 +1,14 @@
+0,0:#ffffffff|#ff0000ff|0 * 5
+5,0:#ffffffff|#0000ffff|0 * 10
+15,0:#ffffffff|#00ff00ff|0 * 15
+0,1:#ffffffff|#ff0000ff|0 * 5
+5,1:#ffffffff|#0000ffff|0 * 10
+15,1:#ffffffff|#00ff00ff|0 * 15
+0,2:#ffffffff|#ff0000ff|0 * 5
+5,2:#ffffffff|#0000ffff|0 * 10
+15,2:#ffffffff|#00ff00ff|0 * 15
+0,3:#ffffffff|#000000ff|0 * 30
+0,4:#ffffffff|#000000ff|0 * 30
+0,5:#ffffffff|#000000ff|0 * 30
+0,6:#ffffffff|#000000ff|0 * 30
+0,7:#ffffffff|#000000ff|0 * 30

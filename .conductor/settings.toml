@@ -1,0 +1,13 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "git submodule update --init --recursive external/opentui && dart pub get"
+run_mode = "concurrent"
+
+[scripts.run.analyze]
+command = "dart analyze --fatal-infos"
+icon = "search-check"
+
+[scripts.run.test]
+command = "dart test --concurrency=1"
+icon = "test-tube"

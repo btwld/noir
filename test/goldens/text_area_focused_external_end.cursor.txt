@@ -1,0 +1,1 @@
+visible at (8,1) style=block color=#ffffff blinking=true

@@ -1,0 +1,100 @@
+name: Publish to pub.dev
+
+# One-time pub.dev configuration:
+#   package: noir
+#   repository: leoafarias/noir
+#   tag pattern: v{{version}}
+# Automated publishing applies only after the first version is published
+# manually, as required by pub.dev.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Validate package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Verify release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
+          semver='[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?([+][0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?'
+          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+($semver)[[:space:]]*$ ]]; then
+            echo "::error::pubspec.yaml must contain exactly one valid semantic version"
+            exit 1
+          fi
+          package_version="${BASH_REMATCH[1]}"
+          if [[ "$RELEASE_TAG" != "v$package_version" ]]; then
+            echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
+            exit 1
+          fi
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Verify bundled native assets
+        timeout-minutes: 2
+        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+
+      - name: Check formatting
+        timeout-minutes: 2
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+
+      - name: Run strict analysis
+        timeout-minutes: 4
+        run: dart analyze --fatal-infos
+
+      - name: Run ordinary tests
+        timeout-minutes: 8
+        run: dart test --concurrency=1
+
+      - name: Validate documentation links
+        timeout-minutes: 5
+        run: dart doc --validate-links --output .context/dartdoc
+
+      - name: Validate publish archive
+        timeout-minutes: 5
+        run: dart pub publish --dry-run
+
+  publish:
+    name: Publish package
+    needs: preflight
+    permissions:
+      id-token: write
+      contents: read
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0

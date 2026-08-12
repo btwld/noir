@@ -1,0 +1,14 @@
+# No global environment overrides required; the build hook bundles the OpenTUI
+# native library as a Dart code asset that the runtime resolves automatically.
+# Set `OPENTUI_LIBRARY_PATH` manually only when testing custom builds.
+
+test_on: vm
+
+timeout: 30s
+
+add_tags:
+  - vm
+
+tags:
+  safe-process-spawning:
+    skip: false
