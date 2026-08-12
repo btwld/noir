@@ -11,10 +11,15 @@ Phase 2 candidate builds are now authorized under the reviewed hybrid method
 in [`2.0-native-build-contract.md`](2.0-native-build-contract.md). The wrapper
 described by the
 [`2.1 implementation plan`](2.1-native-build-implementation-plan.md) is locally
-implemented and passes its focused and ordinary non-native verification. It
-has not yet passed the required pushed-diff review, and no candidate build has
-run. This authorization does not permit tracked-artifact replacement or any
-later restricted operation.
+implemented. The first candidate run, `20260812T030411Z-90cfa46d`, stopped
+without designating candidates after the pinned `llvm-strip --strip-debug`
+left Mach-O `N_SO` and `N_OSO` build/cache paths in the root-A macOS x64
+artifact. Exact-runner review proved that `llvm-strip --discard-all` removes
+those records while preserving the retained Linux and macOS external exports,
+formats, architectures, and macOS 15.0 floor. The reviewed correction and a
+bounded CI validation job are pending full local and GitHub validation before
+the twelve-build run resumes. This authorization does not permit
+tracked-artifact replacement or any later restricted operation.
 
 ## Alpha gates
 
@@ -58,10 +63,13 @@ later restricted operation.
   best-effort cleanup. Exact terminal-byte/cursor acceptance has not been run.
 - The six native artifacts, hashes, URLs, ABI, and submodule pin are read-only
   in this preparation pass.
-- GitHub Actions remain disabled. The GitHub-release workflow is manual and
-  accepts only an existing, version-matching tag. The official setup-dart
-  publisher is pinned at its outer reusable-workflow commit, but that upstream
-  workflow currently uses a mutable checkout action and floating SDK internally.
+- GitHub Actions remain disabled until the revised native wrapper passes all
+  local gates. The release owner authorized enabling them afterward solely to
+  validate the bounded pull-request CI; no release or publication dispatch is
+  authorized. The GitHub-release workflow is manual and accepts only an
+  existing, version-matching tag. The official setup-dart publisher is pinned
+  at its outer reusable-workflow commit, but that upstream workflow currently
+  uses a mutable checkout action and floating SDK internally.
 - Pathologically fragmented near-limit paste input remains memory-bounded but
   can repeat copying and parsing work.
 
@@ -127,6 +135,7 @@ Behavior and package verification:
 Not run:
 
 - Real terminal, PTY, raw-mode, visual-session, signal/termination, crash,
-  sanitizer, leak, native rebuild, artifact refresh, workflow, tag, release,
-  or publication operations.
+  sanitizer, leak, artifact refresh, workflow, tag, release, or publication
+  operations. The retained Phase 2 native run stopped during root-A static
+  inspection; no full twelve-build candidate set has completed.
 - Live execution on Linux, Windows, macOS x64, or a second macOS version.

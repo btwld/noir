@@ -39,6 +39,37 @@ jobs:
       - name: Run strict analysis
         run: dart analyze --fatal-infos
 
+  native-wrapper:
+    name: Native build wrapper
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Use the reviewed repository identity
+        run: git remote set-url origin git@github.com:leoafarias/noir.git
+
+      - name: Run the normalization regression
+        timeout-minutes: 5
+        run: dart test test/scripts/native_build/normalization_policy_test.dart --concurrency=1
+
+      - name: Validate the guarded native-build plan
+        timeout-minutes: 5
+        run: dart run scripts/build_opentui_candidates.dart --plan
+
   test:
     name: Test (${{ matrix.os }})
     needs: analyze

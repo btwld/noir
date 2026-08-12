@@ -231,7 +231,7 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
 
     await _runTool(normalized.parent, <String>[
       'llvm-strip',
-      '--strip-debug',
+      '--discard-all',
       '/work/artifact/${target.outputFileName}',
     ]);
     final normalizedHash = await _hashFile(normalized);

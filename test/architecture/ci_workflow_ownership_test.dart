@@ -44,6 +44,49 @@ void main() {
     }
   });
 
+  test('CI bounds native wrapper validation without building candidates', () {
+    final start = workflow.indexOf('  native-wrapper:');
+    expect(start, isNonNegative);
+    final end = workflow.indexOf('\n  test:', start);
+    expect(end, greaterThan(start));
+
+    final job = workflow.substring(start, end);
+    expect(job, contains('timeout-minutes: 10'));
+    expect(
+      RegExp(r'^\s+timeout-minutes: 5$', multiLine: true).allMatches(job),
+      hasLength(2),
+    );
+    expect(
+      job,
+      contains(
+        'dart test test/scripts/native_build/normalization_policy_test.dart '
+        '--concurrency=1',
+      ),
+    );
+    expect(
+      job,
+      contains('dart run scripts/build_opentui_candidates.dart --plan'),
+    );
+    expect(
+      job,
+      contains('git remote set-url origin git@github.com:leoafarias/noir.git'),
+    );
+    expect(job, isNot(contains('--execute-native-build')));
+    expect(job, isNot(contains('actions/upload-artifact')));
+    expect(job, isNot(contains('actions/download-artifact')));
+    expect(job, isNot(contains('secrets.')));
+    expect(job, isNot(contains('dart pub publish')));
+    expect(
+      job,
+      isNot(
+        contains(
+          'dart test --exclude-tags restricted-process-lifecycle '
+          '--concurrency=1',
+        ),
+      ),
+    );
+  });
+
   test('ordinary subprocess tests are distinct from restricted lifecycle', () {
     for (final path in _safeProcessTests) {
       final source = _read(path);
