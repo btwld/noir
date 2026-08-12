@@ -834,19 +834,18 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
       requiredSourceDateEpoch * 1000,
       isUtc: true,
     );
+    final gitDirectory = p.join(source.path, '.git');
     final entities = source
         .listSync(recursive: true, followLinks: false)
         .where(
-          (entity) => !p.isWithin(p.join(source.path, '.git'), entity.path),
+          (entity) =>
+              !p.equals(gitDirectory, entity.path) &&
+              !p.isWithin(gitDirectory, entity.path),
         )
         .toList();
     for (final entity in entities.whereType<File>()) {
       entity.setLastModifiedSync(timestamp);
     }
-    for (final entity in entities.whereType<Directory>().toList().reversed) {
-      File(entity.path).setLastModifiedSync(timestamp);
-    }
-    File(source.path).setLastModifiedSync(timestamp);
   }
 
   Directory _rootDirectory(NativeBuildRoot root, String name) =>
