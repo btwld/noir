@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 
 import 'container.dart';
 import 'inspect.dart';
+import 'normalize.dart';
 import 'plan.dart';
 import 'preflight.dart';
 import 'provenance.dart';
@@ -237,6 +238,12 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
     await raw.copy(normalized.path);
     final rawHash = await _hashFile(raw);
 
+    final canonicalized = canonicalizeArtifactIdentifiers(
+      await normalized.readAsBytes(),
+      target,
+    );
+    await normalized.writeAsBytes(canonicalized, flush: true);
+
     await _runTool(normalized.parent, <String>[
       'llvm-strip',
       '--discard-all',
@@ -246,6 +253,7 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
     final header = await _runTool(normalized.parent, <String>[
       'llvm-readobj',
       '--file-headers',
+      if (target.format == NativeArtifactFormat.coff) '--coff-debug-directory',
       '/work/artifact/${target.outputFileName}',
     ]);
     final exports = await _runTool(normalized.parent, switch (target.format) {
@@ -300,6 +308,12 @@ final class IoNativeBuildDriver implements NativeBuildDriver {
       'target': target.name,
       'rawSha256': rawHash,
       'normalizedSha256': normalizedHash,
+      'identifierCanonicalization': switch (target.format) {
+        NativeArtifactFormat.elf => 'none',
+        NativeArtifactFormat.machO => 'zero-lc-uuid',
+        NativeArtifactFormat.coff =>
+          'zero-coff-timestamp-debug-directory-and-buildid',
+      },
       'header': header,
       'exports': exports.split('\n').where((line) => line.isNotEmpty).toList(),
       'version': versions,

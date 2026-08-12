@@ -8,6 +8,7 @@ import 'package:test/test.dart';
 import '../../../scripts/native_build/driver.dart';
 import '../../../scripts/native_build/plan.dart';
 import '../../../scripts/native_build/preflight.dart';
+import 'artifact_fixtures.dart';
 
 void main() {
   test(
@@ -44,7 +45,7 @@ void main() {
         ),
       )..createSync(recursive: true);
       final installedDll = File(p.join(builtDirectory.path, 'opentui.dll'))
-        ..writeAsBytesSync(<int>[0x4d, 0x5a]);
+        ..writeAsBytesSync(minimalPeArtifact(machine: 0x8664));
       File(
         p.join(builtDirectory.path, 'opentui.pdb'),
       ).writeAsBytesSync(<int>[0x50, 0x44, 0x42]);
@@ -130,7 +131,9 @@ final class _RecordingRunner implements CommandRunner {
             .map((symbol) => 'Export {\n  Name: $symbol\n}')
             .join('\n'),
       _ when arguments.contains('llvm-readobj') =>
-        'Format: COFF-x86-64\nArch: x86_64\n',
+        'Format: COFF-x86-64\nArch: x86_64\n'
+            'TimeDateStamp: 1970-01-01 00:00:00 (0x0)\n'
+            'DebugDirectory [\n]\n',
       _ when arguments.contains('llvm-nm') =>
         requiredOpenTuiNativeSymbolNames
             .map((symbol) => '00000000 T $symbol')

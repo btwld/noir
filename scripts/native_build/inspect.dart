@@ -59,6 +59,20 @@ void inspectArtifact(ArtifactInspection inspection) {
       '${target.name} has the wrong architecture',
     );
   }
+  if (target.format == NativeArtifactFormat.coff) {
+    if (!RegExp(
+          r'timedatestamp:.*\(0x0\)',
+          caseSensitive: false,
+        ).hasMatch(inspection.fileHeaderOutput) ||
+        !RegExp(
+          r'debugdirectory\s*\[\s*\]',
+          caseSensitive: false,
+        ).hasMatch(inspection.fileHeaderOutput)) {
+      throw ArtifactInspectionException(
+        '${target.name} retains noncanonical PE build metadata',
+      );
+    }
+  }
 
   final exports = inspection.exportOutput
       .split('\n')
@@ -76,15 +90,24 @@ void inspectArtifact(ArtifactInspection inspection) {
     );
   }
 
-  if (target.isMacOs &&
-      !RegExp(
-        r'(?:minos\s+|(?:minversion|minimumosversion):\s*)'
-        r'15\.0(?:\.0)?(?:\s|$)',
-        caseSensitive: false,
-      ).hasMatch(inspection.versionOutput)) {
-    throw ArtifactInspectionException(
-      '${target.name} does not declare the macOS 15.0 floor',
-    );
+  if (target.isMacOs) {
+    if (!RegExp(
+      r'(?:minos\s+|(?:minversion|minimumosversion):\s*)'
+      r'15\.0(?:\.0)?(?:\s|$)',
+      caseSensitive: false,
+    ).hasMatch(inspection.versionOutput)) {
+      throw ArtifactInspectionException(
+        '${target.name} does not declare the macOS 15.0 floor',
+      );
+    }
+    if (!RegExp(
+      r'uuid\s+00000000-0000-0000-0000-000000000000',
+      caseSensitive: false,
+    ).hasMatch(inspection.versionOutput)) {
+      throw ArtifactInspectionException(
+        '${target.name} retains a noncanonical Mach-O UUID',
+      );
+    }
   }
 
   _rejectPathLeaks(inspection);

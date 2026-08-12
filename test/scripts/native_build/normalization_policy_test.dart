@@ -8,6 +8,7 @@ import 'package:test/test.dart';
 import '../../../scripts/native_build/driver.dart';
 import '../../../scripts/native_build/plan.dart';
 import '../../../scripts/native_build/preflight.dart';
+import 'artifact_fixtures.dart';
 
 void main() {
   test(
@@ -46,7 +47,7 @@ void main() {
               ),
             )
             ..createSync(recursive: true)
-            ..writeAsBytesSync(<int>[0x4d, 0x61, 0x63, 0x68, 0x4f]);
+            ..writeAsBytesSync(minimalMachOArtifact(cpuType: 0x01000007));
       expect(builtFile.existsSync(), isTrue);
 
       final runner = _RecordingRunner(target);
@@ -117,7 +118,8 @@ final class _RecordingRunner implements CommandRunner {
       _ when arguments.contains('llvm-strings') =>
         '/usr/lib/libSystem.B.dylib\nOpenTUI\n',
       _ when arguments.contains('llvm-objdump') =>
-        'cmd LC_BUILD_VERSION\nplatform macos\nminos 15.0\nsdk 15.1\n',
+        'cmd LC_BUILD_VERSION\nplatform macos\nminos 15.0\nsdk 15.1\n'
+            'cmd LC_UUID\nuuid 00000000-0000-0000-0000-000000000000\n',
       _ => '',
     };
     return CommandResult(exitCode: 0, stdout: stdout, stderr: '');

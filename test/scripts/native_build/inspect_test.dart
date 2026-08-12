@@ -9,6 +9,9 @@ void main() {
   final macArm64 = nativeBuildTargets.singleWhere(
     (target) => target.name == 'aarch64-macos',
   );
+  final windowsX64 = nativeBuildTargets.singleWhere(
+    (target) => target.name == 'x86_64-windows',
+  );
 
   test('accepts exact format, machine, exports, floor, and clean strings', () {
     expect(
@@ -35,7 +38,9 @@ void main() {
           executableFileNames: <String>['libopentui.dylib'],
           fileHeaderOutput: _header(macArm64),
           exportOutput: _exports(leadingUnderscore: true),
-          versionOutput: 'cmd LC_BUILD_VERSION\nminos 15.0\nsdk 15.4\n',
+          versionOutput:
+              'cmd LC_BUILD_VERSION\nminos 15.0\nsdk 15.4\n'
+              'cmd LC_UUID\nuuid 00000000-0000-0000-0000-000000000000\n',
           printableStrings: '/usr/lib/libSystem.B.dylib\nOpenTUI\n',
           forbiddenPathFragments: const <String>[],
         ),
@@ -96,6 +101,32 @@ void main() {
         throwsA(isA<ArtifactInspectionException>()),
       );
     }
+  });
+
+  test('rejects noncanonical Mach-O and PE build identifiers', () {
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          macArm64,
+          versionOutput:
+              'minos 15.0\n'
+              'uuid 11111111-1111-1111-1111-111111111111\n',
+        ),
+      ),
+      throwsA(isA<ArtifactInspectionException>()),
+    );
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          windowsX64,
+          fileHeaderOutput:
+              'Format: COFF-x86-64\nArch: x86_64\n'
+              'TimeDateStamp: 2026-08-12 00:00:00 (0x12345678)\n'
+              'DebugDirectory [\n  DebugEntry {}\n]\n',
+        ),
+      ),
+      throwsA(isA<ArtifactInspectionException>()),
+    );
   });
 
   test('rejects build paths, home paths, drive paths, and debug sources', () {
@@ -241,7 +272,12 @@ ArtifactInspection _inspection(
   executableFileNames: executableFileNames ?? <String>[target.outputFileName],
   fileHeaderOutput: fileHeaderOutput ?? _header(target),
   exportOutput: exportOutput ?? _exports(),
-  versionOutput: versionOutput ?? (target.isMacOs ? 'MinVersion: 15.0\n' : ''),
+  versionOutput:
+      versionOutput ??
+      (target.isMacOs
+          ? 'MinVersion: 15.0\n'
+                'UUID 00000000-0000-0000-0000-000000000000\n'
+          : ''),
   printableStrings: printableStrings,
   forbiddenPathFragments: const <String>[
     '/build/noir-root-a',
@@ -254,8 +290,14 @@ String _header(NativeBuildTarget target) => switch (target.name) {
   'aarch64-linux' => 'Format: elf64-littleaarch64\nArch: aarch64\n',
   'x86_64-macos' => 'Format: Mach-O 64-bit x86-64\nArch: x86_64\n',
   'aarch64-macos' => 'Format: Mach-O arm64\nArch: aarch64\n',
-  'x86_64-windows' => 'Format: COFF-x86-64\nArch: x86_64\n',
-  'aarch64-windows' => 'Format: COFF-ARM64\nArch: aarch64\n',
+  'x86_64-windows' =>
+    'Format: COFF-x86-64\nArch: x86_64\n'
+        'TimeDateStamp: 1970-01-01 00:00:00 (0x0)\n'
+        'DebugDirectory [\n]\n',
+  'aarch64-windows' =>
+    'Format: COFF-ARM64\nArch: aarch64\n'
+        'TimeDateStamp: 1970-01-01 00:00:00 (0x0)\n'
+        'DebugDirectory [\n]\n',
   _ => throw StateError('unexpected fixture target'),
 };
 
