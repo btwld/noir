@@ -112,15 +112,20 @@ void _rejectPathLeaks(ArtifactInspection inspection) {
       '${inspection.target.name} contains a Windows build path',
     );
   }
-  const allowedLoaderPaths = <String>{
+  const reviewedAbsolutePaths = <String>{
+    // OpenTUI's testing renderer discards output through this device.
+    '/dev/null',
     '/lib/ld-linux-aarch64.so.1',
     '/lib64/ld-linux-x86-64.so.2',
     '/usr/lib/libSystem.B.dylib',
   };
-  final absolutePath = RegExp(r'(?:^|\s)(/[^\s]+)', multiLine: true);
+  final absolutePath = RegExp(
+    r'(?:^|\s)(/[^\s,;:!?]+)(?=[\s,;:!?]|$)',
+    multiLine: true,
+  );
   for (final match in absolutePath.allMatches(inspection.printableStrings)) {
     final path = match.group(1)!;
-    if (!allowedLoaderPaths.contains(path)) {
+    if (!reviewedAbsolutePaths.contains(path)) {
       throw ArtifactInspectionException(
         '${inspection.target.name} contains unreviewed absolute path $path',
       );

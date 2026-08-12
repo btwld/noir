@@ -129,6 +129,28 @@ void main() {
     );
   });
 
+  test('allows only OpenTUI testing renderer references to /dev/null', () {
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          linuxX64,
+          printableStrings:
+              '/dev/null\n'
+              'Failed to open /dev/null, falling back to stdout\n',
+        ),
+      ),
+      returnsNormally,
+    );
+    for (final path in <String>['/dev/null/child', '/dev/nullish']) {
+      expect(
+        () =>
+            inspectArtifact(_inspection(linuxX64, printableStrings: '$path\n')),
+        throwsA(isA<ArtifactInspectionException>()),
+        reason: path,
+      );
+    }
+  });
+
   test('rejects nonidentical or incomplete root hash tables', () {
     final rootA = <String, String>{
       for (final target in nativeBuildTargets)
