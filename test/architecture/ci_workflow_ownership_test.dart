@@ -52,6 +52,7 @@ void main() {
 
     final job = workflow.substring(start, end);
     expect(job, contains('timeout-minutes: 10'));
+    expect(job, contains('fetch-depth: 0'));
     expect(
       RegExp(r'^\s+timeout-minutes: 5$', multiLine: true).allMatches(job),
       hasLength(2),
