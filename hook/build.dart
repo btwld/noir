@@ -37,9 +37,18 @@ Future<void> buildOpenTuiNativeAsset(
     environment: environment,
   );
 
-  final isLinkedMacOS =
-      input.config.linkingEnabled && input.config.code.targetOS == OS.macOS;
-  if (isLinkedMacOS) {
+  if (!input.config.linkingEnabled) {
+    output.assets.code.add(
+      CodeAsset(
+        package: input.packageName,
+        name: openTuiNativeAssetName,
+        linkMode: DynamicLoadingSystem(library),
+      ),
+    );
+    return;
+  }
+
+  if (input.config.code.targetOS == OS.macOS) {
     final bundleReadyLibrary = input.outputDirectoryShared.resolve(
       'macos-${entry.arch}-libopentui.dylib',
     );
@@ -59,10 +68,8 @@ Future<void> buildOpenTuiNativeAsset(
     CodeAsset(
       package: input.packageName,
       name: openTuiNativeAssetName,
-      linkMode: input.config.code.targetOS == OS.macOS
-          ? DynamicLoadingSystem(library)
-          : DynamicLoadingBundled(),
-      file: input.config.code.targetOS == OS.macOS ? null : library,
+      linkMode: DynamicLoadingBundled(),
+      file: library,
     ),
   );
 }

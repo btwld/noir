@@ -29,6 +29,48 @@ void main() {
     );
   });
 
+  test('Linux JIT loads the unchanged official library in place', () async {
+    await testCodeBuildHook(
+      linkingEnabled: false,
+      targetOS: OS.linux,
+      mainMethod: hook.main,
+      check: (input, output) {
+        final assets = output.assets.code;
+        expect(assets, hasLength(1));
+        final asset = assets.single;
+        expect(asset.id, 'package:noir/${hook.openTuiNativeAssetName}');
+        final linkMode = asset.linkMode;
+        expect(linkMode, isA<DynamicLoadingSystem>());
+        expect(asset.file, isNull);
+        expect(
+          File.fromUri((linkMode as DynamicLoadingSystem).uri).existsSync(),
+          isTrue,
+        );
+      },
+    );
+  });
+
+  test('Windows JIT loads the unchanged official library in place', () async {
+    await testCodeBuildHook(
+      linkingEnabled: false,
+      targetOS: OS.windows,
+      mainMethod: hook.main,
+      check: (input, output) {
+        final assets = output.assets.code;
+        expect(assets, hasLength(1));
+        final asset = assets.single;
+        expect(asset.id, 'package:noir/${hook.openTuiNativeAssetName}');
+        final linkMode = asset.linkMode;
+        expect(linkMode, isA<DynamicLoadingSystem>());
+        expect(asset.file, isNull);
+        expect(
+          File.fromUri((linkMode as DynamicLoadingSystem).uri).existsSync(),
+          isTrue,
+        );
+      },
+    );
+  });
+
   test('linked macOS apps derive only a bundle output copy', () async {
     final official = File(
       'native/macos/${Architecture.current == Architecture.arm64 ? 'arm64' : 'x64'}/libopentui.dylib',
