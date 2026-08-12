@@ -108,14 +108,16 @@ ctrl.isEmpty
 ctrl.clear();
 ctrl.setCursor(line, col);
 
-ctrl.insert(String replacement, { bool allowNewline = true });  // false for single-line fields
+// The four edit methods return bool — false means the edit was rejected.
+bool ok = ctrl.insert(String replacement, { bool allowNewline = true });
 ctrl.newline(); ctrl.deleteBack(); ctrl.deleteForward();
+
 ctrl.moveCursorLeft(); ctrl.moveCursorRight(); ctrl.moveCursorUp(); ctrl.moveCursorDown();
 ctrl.moveLineStart(); ctrl.moveLineEnd(); ctrl.moveDocumentStart(); ctrl.moveDocumentEnd();
 ```
 
 For single-line inputs, pass `allowNewline: false` to `insert(...)` so pasted
-newlines are rejected.
+newlines are rejected — it returns `false` instead of inserting.
 
 ```dart
 final _controller = TextEditingController(text: 'hello');

@@ -9,7 +9,9 @@ add a small number of headless lifecycle and interactive integration checks.
 
 `runTuiApp(..., headless: true)` mounts the normal widget and element tree
 without creating an owned terminal renderer. It is useful for checking that an
-application can mount, build, and dispose through the public lifecycle:
+application can mount, build, and dispose through the public lifecycle. Pass
+`width`/`height` to pin the layout size so the test does not depend on the
+terminal running it (they default to 80×24):
 
 ```dart
 import 'package:noir/noir.dart';
@@ -17,16 +19,22 @@ import 'package:test/test.dart';
 
 void main() {
   test('mounts and disposes headlessly', () {
-    final app = runTuiApp(const Text('ready'), headless: true);
+    final app = runTuiApp(
+      const Text('ready'),
+      width: 40,
+      height: 10,
+      headless: true,
+    );
 
     expect(app.isHeadless, isTrue);
-    app.dispose();
+    app.dispose();   // idempotent; safe to call again in a tearDown
   });
 }
 ```
 
 Headless mode deliberately has no renderer-backed mouse or Kitty keyboard mode
-controls. It is a lifecycle seam, not a visual snapshot facility.
+controls. It is a lifecycle seam, not a visual snapshot facility: it proves the
+tree builds and tears down, not what the frame looked like.
 
 ## State and controller tests
 
@@ -56,9 +64,11 @@ them.
 
 ## Framework contributor tests
 
-The Noir development repository has additional private layout, buffer,
-input-driver, integration, and golden-test infrastructure. Those helpers are
-not package API and are intentionally absent from the published archive.
-Consult the contributor documentation in the
-[development repository](https://github.com/leoafarias/noir) when changing
-the framework itself.
+The development repository has additional layout, buffer, input-driver,
+integration, and golden-test infrastructure under `test/helpers/`
+(`WidgetTester`, `BufferCapture`, `KeyDriver`, `createTuiTestApp`). Those
+helpers live in `test/`, not `lib/`: they are not package API, they are absent
+from the published archive, and application tests cannot import them. When you
+are changing the framework itself rather than an app built on it, follow
+[`AGENTS.md`](../../../AGENTS.md) — it names which harness to use for which
+kind of test and forbids inventing a fifth one.

@@ -6,12 +6,53 @@ the focus system they plug into, raw key/mouse events, and the
 
 ## Contents
 
+- [How a key reaches your code](#how-a-key-reaches-your-code)
 - [The value-vs-controller rule](#the-value-vs-controller-rule)
 - [TextInput](#textinput) · [TextArea](#textarea) · [Select](#select) · [ScrollBox](#scrollbox)
 - [Focus: Focus / FocusScope / FocusNode](#focus)
 - [Raw input: KeyEvent / MouseEvent](#raw-input)
 - [PointerListener](#pointerlistener)
 - [Shortcuts / Actions / Intents](#shortcuts--actions--intents)
+
+---
+
+## How a key reaches your code
+
+Read this before writing any key handler — most "my handler never fires" and
+"my text field ate the shortcut" bugs are an ordering misunderstanding, not a
+wiring mistake.
+
+Every `KeyEvent` is dispatched through one pipeline. The first handler that
+returns `KeyEventResult.handled` (or calls `event.consume()`) stops the walk;
+`KeyEventResult.ignored` lets it continue.
+
+| # | Stage | Registered by |
+|---|---|---|
+| 1 | App-priority handlers | `app.onKey(...)` on the `TuiApp` handle |
+| 2 | `Shortcuts` lookup from the focused element upward → `Intent` → nearest `Actions` | `Shortcuts` + `Actions` widgets |
+| 3 | Printable character → `InsertTextIntent` | how `TextInput`/`TextArea` receive typing |
+| 4 | `onKeyEvent` on the focused `FocusNode`, then each ancestor node | `Focus`, `FocusScope`, or a bare `FocusNode` |
+| 5 | Default Tab / Shift+Tab traversal | built in; runs only if 1–4 all ignored |
+
+Practical consequences:
+
+- **Tab traversal is free.** Stage 5 asks the enclosing scope's
+  `FocusTraversalPolicy` for the next/previous focusable node — the nearest
+  `FocusScope`, or the root scope when you haven't added one. A form with two
+  `TextInput`s already tabs between them with no key handling of your own.
+  Writing your own Tab branch at stage 4 pre-empts the policy — correct only
+  when you want traversal the policy wouldn't produce (e.g. conditionally
+  skipping a field).
+- **App-level bindings outrank the focused widget.** A plain `q` registered
+  through `app.onKey` fires before a focused `TextInput` sees it, so the letter
+  becomes untypable. Give app-level bindings a modifier (`Ctrl+Q`), or express
+  them as `Shortcuts` inside the subtree where they should apply.
+- **A focused text field consumes ordinary characters at stage 3**, so an
+  ancestor `Focus.onKeyEvent` will not see them. Non-character keys (Escape,
+  function keys, arrows the field ignores) still bubble to stage 4.
+- **Stage 4 bubbles**, so a `FocusScope` near the root is the right place for
+  form-wide keys such as Enter-to-submit, and it sees them regardless of which
+  field is focused.
 
 ---
 
@@ -95,9 +136,9 @@ const TextArea({
 ```
 
 Built-in keys: arrows + Home/End + Ctrl+Home/End move the caret; Backspace/Delete
-edit and join lines. Physical Tab and Shift+Tab move focus through the traversal
-policy and do not edit text. For deliberate indentation,
-dispatching an `InsertTabIntent` inserts `tabSize` spaces.
+edit and join lines. Physical Tab and Shift+Tab fall through to focus traversal
+(stage 5 above) and do not insert text — for deliberate indentation, dispatch an
+`InsertTabIntent`, which inserts `tabSize` spaces.
 
 ## Select
 
@@ -228,10 +269,10 @@ KeyEventResult _onKey(FocusNode node, KeyEvent event) {
 }
 ```
 
-> **Noir repository contributors:** `FocusNodeOwnerStateMixin` is a
-> repository-contributor implementation rule for framework widgets. Package
-> consumers must not import `package:noir/src/**`; compose the exported
-> `Focus`, `FocusScope`, and `FocusNode` APIs instead.
+> `FocusNodeOwnerStateMixin`, which `AGENTS.md` requires of framework
+> widgets, is not exported. Application code must not import
+> `package:noir/src/**`; compose the exported `Focus`, `FocusScope`, and
+> `FocusNode` instead.
 
 ---
 
