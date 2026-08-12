@@ -13,7 +13,6 @@ void probeInternalSeams({
   required WidgetInspectorService inspector,
   required Buffer buffer,
   required Renderer renderer,
-  required TextBuffer textBuffer,
 }) {
   final element = context.element; // seam:BuildContext.element
   context.owner; // seam:BuildContext.owner
@@ -61,8 +60,6 @@ void probeInternalSeams({
   renderer.debugCurrentBuffer; // seam:Renderer.debugCurrentBuffer
   renderer.handle; // seam:Renderer.handle
   renderer.bindings; // seam:Renderer.bindings
-  textBuffer.lineInfo; // seam:TextBuffer.lineInfo
-  textBuffer.handle; // seam:TextBuffer.handle
 }
 
 final class _ConsumerInherited extends InheritedWidget {

@@ -19,7 +19,9 @@ jobs:
   verify:
     name: Verify and package native assets
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    env:
+      PUB_CACHE: ${{ runner.temp }}/pub-cache
 
     steps:
       - name: Checkout repository
@@ -52,10 +54,18 @@ jobs:
         with:
           sdk: '3.10.0'
 
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+
       - name: Install dependencies
+        timeout-minutes: 3
         run: dart pub get
 
       - name: Verify bundled native assets
+        timeout-minutes: 2
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
@@ -65,7 +75,8 @@ jobs:
         run: dart analyze --fatal-infos
 
       - name: Run ordinary tests
-        run: dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+        timeout-minutes: 8
+        run: dart test --concurrency=1
 
       - name: Validate documentation links
         run: dart doc --validate-links --output .context/dartdoc
@@ -105,7 +116,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 12
+    env:
+      PUB_CACHE: ${{ runner.temp }}/pub-cache
 
     steps:
       - name: Checkout repository
@@ -128,7 +141,14 @@ jobs:
           name: opentui-binaries
           path: .
 
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+
       - name: Install dependencies
+        timeout-minutes: 3
         run: dart pub get
 
       - name: Run packaged health check
@@ -138,9 +158,11 @@ jobs:
         shell: bash
         run: |
           dart build cli -t bin/health_check.dart --output build/health-check
+          cp -R build/health-check/bundle "$RUNNER_TEMP/health-check-bundle"
+          rm -rf build/health-check
           case "${{ runner.os }}" in
-            Windows) bundle="build/health-check/bundle/bin/health_check.exe" ;;
-            *) bundle="build/health-check/bundle/bin/health_check" ;;
+            Windows) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check.exe" ;;
+            *) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check" ;;
           esac
           "$bundle"
 
@@ -148,7 +170,7 @@ jobs:
     name: Publish GitHub release
     needs: [verify, test-package]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
       contents: write
 
@@ -170,7 +192,7 @@ jobs:
           body: |
             Bundled OpenTUI targets:
 
-            - macOS 15.0 or later (x64, arm64)
+            - macOS 13.0 or later (x64, arm64)
             - Linux (x64, arm64)
             - Windows (x64, arm64)
 

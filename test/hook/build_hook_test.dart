@@ -1,31 +1,68 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
-import 'package:noir/src/ffi/abi_contract.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
 
 void main() {
-  test('build hook emits bundled CodeAsset for current platform', () async {
+  test('macOS JIT loads the unchanged official library in place', () async {
     await testCodeBuildHook(
+      linkingEnabled: false,
+      targetOS: OS.macOS,
       mainMethod: hook.main,
       check: (input, output) {
         final assets = output.assets.code;
         expect(assets, hasLength(1));
         final asset = assets.single;
         expect(asset.id, 'package:noir/${hook.openTuiNativeAssetName}');
-        expect(asset.linkMode, isA<DynamicLoadingBundled>());
-        expect(asset.file, isNotNull);
-        expect(File.fromUri(asset.file!).existsSync(), isTrue);
+        final linkMode = asset.linkMode;
+        expect(linkMode, isA<DynamicLoadingSystem>());
+        expect(asset.file, isNull);
+        expect(
+          File.fromUri((linkMode as DynamicLoadingSystem).uri).existsSync(),
+          isTrue,
+        );
       },
     );
   });
 
+  test('linked macOS apps derive only a bundle output copy', () async {
+    final official = File(
+      'native/macos/${Architecture.current == Architecture.arm64 ? 'arm64' : 'x64'}/libopentui.dylib',
+    );
+    final manifest = hook.NativeManifest.fromFile(File('native_manifest.json'));
+    final manifestEntry = manifest.entryFor(OS.macOS, Architecture.current);
+    final officialHashBefore = sha256.convert(official.readAsBytesSync());
+    expect(officialHashBefore.toString(), manifestEntry.sha256);
+
+    await testCodeBuildHook(
+      linkingEnabled: true,
+      targetOS: OS.macOS,
+      mainMethod: hook.main,
+      check: (input, output) {
+        final code = output.assets.code.single;
+        expect(code.linkMode, isA<DynamicLoadingBundled>());
+        expect(code.file, isNotNull);
+        final bundled = File.fromUri(code.file!);
+        expect(bundled.existsSync(), isTrue);
+        expect(
+          sha256.convert(bundled.readAsBytesSync()),
+          isNot(officialHashBefore),
+        );
+      },
+    );
+    expect(sha256.convert(official.readAsBytesSync()), officialHashBefore);
+  });
+
   test('manifest records every supported binary', () {
     final manifest = hook.NativeManifest.fromFile(File('native_manifest.json'));
-    expect(manifest.abiVersion, expectedOpenTuiAbiVersion);
+    expect(manifest.schemaVersion, 1);
+    expect(manifest.repository, Uri.https('github.com', '/anomalyco/opentui'));
+    expect(manifest.tag, 'v0.5.1');
+    expect(manifest.commit, 'ad9a818d7a9d73f3386e92a445d0feb4b395c69e');
 
     for (final key in [
       'macos-arm64',
@@ -39,7 +76,9 @@ void main() {
       expect(entry, isNotNull, reason: key);
       expect(entry!.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
       expect(entry.path, startsWith('native/'));
-      expect(entry.url.scheme, 'https');
+      expect(entry.archiveUrl.scheme, 'https');
+      expect(entry.archiveSha256, matches(RegExp(r'^[a-f0-9]{64}$')));
+      expect(entry.archiveMember, isNotEmpty);
     }
   });
 
@@ -62,17 +101,20 @@ void main() {
     );
   });
 
-  test('manifest ABI mismatch fails loudly', () {
+  test('manifest schema mismatch fails loudly', () {
     expect(
       () => hook.NativeManifest.fromJson({
-        'abiVersion': expectedOpenTuiAbiVersion + 1,
+        'schemaVersion': 2,
+        'repository': 'https://github.com/anomalyco/opentui',
+        'tag': 'v0.5.1',
+        'commit': 'ad9a818d7a9d73f3386e92a445d0feb4b395c69e',
         'assets': <String, Object?>{},
       }),
       throwsA(
         isA<hook.NativeAssetBuildException>().having(
           (error) => error.message,
           'message',
-          contains('does not match Dart ABI'),
+          contains('schema version'),
         ),
       ),
     );
@@ -80,58 +122,52 @@ void main() {
 
   test('macOS manifest entries require the current deployment floor', () {
     expect(
-      () => hook.NativeManifest.fromJson({
-        'abiVersion': expectedOpenTuiAbiVersion,
-        'assets': {'macos-arm64': _entryJson(os: 'macos', arch: 'arm64')},
-      }),
+      () => hook.NativeManifestEntry.fromJson(
+        'macos-arm64',
+        _entryJson(os: 'macos', arch: 'arm64'),
+      ),
       throwsA(isA<hook.NativeAssetBuildException>()),
     );
   });
 
   test('manifest rejects invalid or misplaced deployment floors', () {
-    for (final minimum in <Object?>[15, '15', '15.0.0', '14.0']) {
+    for (final minimum in <Object?>[13, '13', '13.0.0', '12.0', '15.0']) {
       expect(
-        () => hook.NativeManifest.fromJson({
-          'abiVersion': expectedOpenTuiAbiVersion,
-          'assets': {
-            'macos-x64': _entryJson(
-              os: 'macos',
-              arch: 'x64',
-              minimumOsVersion: minimum,
-            ),
-          },
-        }),
+        () => hook.NativeManifestEntry.fromJson(
+          'macos-x64',
+          _entryJson(os: 'macos', arch: 'x64', minimumOsVersion: minimum),
+        ),
         throwsA(isA<hook.NativeAssetBuildException>()),
         reason: 'minimumOsVersion=$minimum',
       );
     }
     expect(
-      () => hook.NativeManifest.fromJson({
-        'abiVersion': expectedOpenTuiAbiVersion,
-        'assets': {
-          'linux-x64': _entryJson(
-            os: 'linux',
-            arch: 'x64',
-            minimumOsVersion: '15.0',
-          ),
-        },
-      }),
+      () => hook.NativeManifestEntry.fromJson(
+        'linux-x64',
+        _entryJson(
+          os: 'linux',
+          arch: 'x64',
+          minimumOsVersion: '13.0',
+          minimumGlibcVersion: '2.17',
+        ),
+      ),
       throwsA(isA<hook.NativeAssetBuildException>()),
     );
   });
 
-  test('manifest accepts macOS 15.0 deployment metadata', () {
+  test('manifest accepts canonical platform floors', () {
     expect(
-      () => hook.NativeManifest.fromJson({
-        'abiVersion': expectedOpenTuiAbiVersion,
-        'assets': {
-          'macos-arm64': _entryJson(
-            os: 'macos',
-            arch: 'arm64',
-            minimumOsVersion: '15.0',
-          ),
-        },
-      }),
+      () => hook.NativeManifestEntry.fromJson(
+        'macos-arm64',
+        _entryJson(os: 'macos', arch: 'arm64', minimumOsVersion: '13.0'),
+      ),
+      returnsNormally,
+    );
+    expect(
+      () => hook.NativeManifestEntry.fromJson(
+        'linux-x64',
+        _entryJson(os: 'linux', arch: 'x64', minimumGlibcVersion: '2.17'),
+      ),
       returnsNormally,
     );
   });
@@ -163,9 +199,11 @@ hook.NativeManifestEntry _entry() => hook.NativeManifestEntry(
   os: 'macos',
   arch: 'arm64',
   path: 'native/macos/arm64/libopentui.dylib',
-  url: Uri.parse('https://example.invalid/libopentui.dylib'),
-  archivePath: '',
-  minimumOsVersion: '15.0',
+  archiveUrl: Uri.parse('https://example.invalid/opentui.zip'),
+  archiveSha256: '1' * 64,
+  archiveMember: 'libopentui.dylib',
+  minimumOsVersion: '13.0',
+  minimumGlibcVersion: null,
   sha256: '0' * 64,
 );
 
@@ -173,12 +211,15 @@ Map<String, Object?> _entryJson({
   required String os,
   required String arch,
   Object? minimumOsVersion,
+  Object? minimumGlibcVersion,
 }) => {
   'os': os,
   'arch': arch,
   'path': 'native/$os/$arch/libopentui',
-  'url': 'https://example.invalid/libopentui',
-  'archivePath': '',
+  'archiveUrl': 'https://example.invalid/opentui.zip',
+  'archiveSha256': '1' * 64,
+  'archiveMember': os == 'windows' ? 'opentui.dll' : 'libopentui',
   'sha256': '0' * 64,
   'minimumOsVersion': ?minimumOsVersion,
+  'minimumGlibcVersion': ?minimumGlibcVersion,
 };

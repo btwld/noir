@@ -31,6 +31,11 @@ void main() {
       expect(disposalAttemptCount, creationCount);
       expect(combinedOutput, contains('forced cleanup failure'));
       expect(combinedOutput, isNot(contains('ALL CHECKS PASSED')));
+      expect(
+        combinedOutput.runes,
+        everyElement(lessThanOrEqualTo(0x7F)),
+        reason: 'Health output must remain portable ASCII.',
+      );
     },
   );
 }

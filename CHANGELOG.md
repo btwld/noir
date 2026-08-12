@@ -8,7 +8,8 @@
   focus, keyboard and mouse input, text editing, scrolling, and animation.
 - Bundled, SHA-256-verified OpenTUI native libraries for macOS, Linux, and
   Windows on x64 and arm64.
-- macOS bundles require macOS 15.0 or later.
+- Canonical OpenTUI v0.5.1 source and unchanged official release assets.
+- macOS bundles require macOS 13.0 or later.
 - See
   [Known Limitations](https://github.com/leoafarias/noir#known-limitations)
   for current platform and rendering constraints.

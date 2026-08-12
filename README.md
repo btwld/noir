@@ -68,7 +68,7 @@ class HelloApp extends StatelessWidget {
 ```
 
 The complete version is available in
-[the hello example](https://github.com/leoafarias/noir/blob/master/example/hello.dart).
+[the hello example](https://github.com/leoafarias/noir/blob/main/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state, and check `mounted` before updating from
@@ -113,7 +113,7 @@ class _CounterAppState extends State<CounterApp> {
 ```
 
 See
-[the counter example](https://github.com/leoafarias/noir/blob/master/example/counter.dart)
+[the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
 for the package version.
 
 ## Application Lifecycle and API Tiers
@@ -144,29 +144,29 @@ backend remain framework-owned; they are not supported package surfaces.
 
 ## Example Apps
 
-- [Hello](https://github.com/leoafarias/noir/blob/master/example/hello.dart) — a minimal stateless application.
-- [Counter](https://github.com/leoafarias/noir/blob/master/example/counter.dart) — stateful rebuilds with `setState`.
-- [Layout basics](https://github.com/leoafarias/noir/blob/master/example/layout_basics.dart) — core layout and flex usage.
-- [Layout demo](https://github.com/leoafarias/noir/blob/master/example/layout_demo.dart) — alignment, decoration, and richer
+- [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
+- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — stateful rebuilds with `setState`.
+- [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
+- [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
-- [Inherited state](https://github.com/leoafarias/noir/blob/master/example/inherited_example.dart) — inherited dependencies
+- [Inherited state](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart) — inherited dependencies
   and rebuild propagation.
-- [Focus form](https://github.com/leoafarias/noir/blob/master/example/focus_form.dart) — focus management and text input.
-- [Select](https://github.com/leoafarias/noir/blob/master/example/select_demo.dart) — keyboard and mouse option selection.
-- [Scroll box](https://github.com/leoafarias/noir/blob/master/example/scrollbox_demo.dart) — clipped scrolling and
+- [Focus form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart) — focus management and text input.
+- [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart) — keyboard and mouse option selection.
+- [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped scrolling and
   scrollbars.
-- [Text area](https://github.com/leoafarias/noir/blob/master/example/textarea_demo.dart) — multiline editing and submission.
-- [Widgets tour](https://github.com/leoafarias/noir/blob/master/example/widgets_tour.dart) — the interactive widget set.
-- [Chat demo](https://github.com/leoafarias/noir/blob/master/example/chat_demo.dart) — scrollback, input, asynchronous state,
+- [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing and submission.
+- [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set.
+- [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
   and animation.
-- [Pulse animation](https://github.com/leoafarias/noir/blob/master/example/pulse_animation.dart) — `AnimationController` and
+- [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
   ticker-driven updates.
-- [Bindings validation](https://github.com/leoafarias/noir/blob/master/example/bindings_validation.dart) — interactive
+- [Bindings validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart) — interactive
   advanced renderer/buffer and ABI-unstable FFI validation in a terminal at
   least 120×40 cells.
 
 The
-[example guide](https://github.com/leoafarias/noir/blob/master/example/README.md)
+[example guide](https://github.com/leoafarias/noir/blob/main/example/README.md)
 includes the command for every app.
 
 ## Supported Keyboard and Mouse Input
@@ -202,7 +202,12 @@ package is incomplete or corrupt and the build fails.
 | Linux | `x64`, `arm64` |
 | Windows | `x64`, `arm64` |
 
-The bundled macOS x64 and arm64 libraries require macOS 15.0 or later.
+The bundled macOS x64 and arm64 libraries require macOS 13.0 or later.
+For linked macOS applications, Dart must rewrite the dylib install name for a
+relocatable bundle. The official dylib has no load-command padding, so Noir
+removes its optional source-version load command from a temporary hook output
+copy before Dart rewrites and signs that copy. The six tracked release assets
+remain byte-for-byte identical to the hashes in `native_manifest.json`.
 
 Run the packaged diagnostic to check bundled native asset resolution without
 writing terminal controls:
@@ -216,8 +221,13 @@ native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
 
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](https://github.com/leoafarias/noir/blob/master/THIRD_PARTY_NOTICES.md)
+[Third-Party Notices](https://github.com/leoafarias/noir/blob/main/THIRD_PARTY_NOTICES.md)
 for OpenTUI provenance and license terms.
+
+High-level Unicode cell measurement uses a compact pure-Dart range table
+derived from the exact `uucode` revision pinned by OpenTUI v0.5.1 (Unicode
+16.0) plus OpenTUI's width overrides. This keeps widget layout out of FFI while
+matching the pinned native release's code-point and grapheme rules.
 
 The URLs in `native_manifest.json` record immutable provenance for the
 currently bundled artifacts. They are not an update instruction or a runtime
@@ -229,9 +239,15 @@ corrupt package.
 
 ## Known Limitations
 
-- Complex emoji, variation sequences, and other multi-code-point graphemes do
-  not yet have exact cell-width and paint guarantees on every path. Selection
-  and caret behavior inherits that limitation.
+- High-level layout and painting keep multi-code-point graphemes intact and
+  expand intersecting selection ranges to whole grapheme clusters.
+  `DirectBufferAccess.chars` remains native encoded storage: packed grapheme
+  words are not independently decodable Unicode scalars.
+- OpenTUI v0.5.1's native `bufferDrawText` path mishandles a run whose first
+  grapheme has source-level width zero: it can emit UTF-8 continuation bytes as
+  cells and advance before the following text. Noir keeps the pinned source's
+  correct zero-width layout semantics; leading zero-width graphemes, including
+  ones isolated by a style boundary, can therefore diverge from native paint.
 - Decorated box content can escape a clipped viewport in some overflow cases.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.

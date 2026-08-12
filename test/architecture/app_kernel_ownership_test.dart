@@ -65,7 +65,7 @@ void main() {
     expect(
       rendererSource,
       contains(
-        'renderer._bindings.processCapabilityResponse(renderer._ptr, response)',
+        'renderer._bindings.processCapabilityResponse(renderer._handle, response)',
       ),
     );
   });

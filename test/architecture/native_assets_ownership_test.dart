@@ -1,7 +1,8 @@
 import 'dart:io';
 
-import 'package:noir/src/ffi/abi_contract.dart';
 import 'package:test/test.dart';
+
+import '../helpers/opentui_v051_contract.dart';
 
 void main() {
   test('native assets own bundled runtime loading', () {
@@ -48,17 +49,19 @@ void main() {
     expect(internals, isNot(contains('native_library_locator.dart')));
   });
 
-  test('ABI validation runs once before renderer creation', () {
-    final library = _read('lib/src/ffi/library.dart');
-    final bindings = _read('lib/src/ffi/bindings.dart');
-    final renderer = _read('lib/src/core/renderer.dart');
+  test(
+    'canonical native symbols are initialized once before renderer creation',
+    () {
+      final library = _read('lib/src/ffi/library.dart');
+      final bindings = _read('lib/src/ffi/bindings.dart');
+      final renderer = _read('lib/src/core/renderer.dart');
 
-    expect(library, contains('static final OpenTuiNativeSymbols'));
-    expect(library, contains('_openValidatedForProcess'));
-    expect(library, contains('OpenTuiNativeAbi(symbols).validateAbi()'));
-    expect(bindings, contains('OpenTuiNativeLibrary.open()'));
-    expect(renderer, contains('OpenTuiBindings()'));
-  });
+      expect(library, contains('static final OpenTuiNativeSymbols'));
+      expect(library, contains('_openValidatedForProcess'));
+      expect(bindings, contains('OpenTuiNativeLibrary.open()'));
+      expect(renderer, contains('OpenTuiBindings()'));
+    },
+  );
 
   test('renderer dimensions are guarded at every Dart boundary', () {
     final renderer = _read('lib/src/core/renderer.dart');
@@ -92,20 +95,20 @@ void main() {
       ],
     );
     _expectTokensInOrder(
-      _declarationBody(bindings, 'Pointer<RendererHandle> createRenderer('),
+      _declarationBody(bindings, 'RendererHandle createRenderer('),
       <String>[
         'validateRendererDimensions(width, height);',
-        '_generated.createRenderer(',
+        '_native.createRenderer(',
       ],
     );
     _expectTokensInOrder(
       _declarationBody(
         bindings,
-        'void resizeRenderer(Pointer<RendererHandle> renderer, int width, int height)',
+        'void resizeRenderer(RendererHandle renderer, int width, int height)',
       ),
       <String>[
         'validateRendererDimensions(width, height);',
-        '_generated.resizeRenderer(',
+        '_native.resizeRenderer(',
       ],
     );
   });
@@ -113,35 +116,33 @@ void main() {
   test('native symbol inventory is exact and guarded', () {
     final bindings = _read('lib/src/ffi/bindings.dart');
     final nativeSymbols = _read('lib/src/ffi/native_symbols.dart');
-    final bundledTargets = RegExp(
-      r'Native\.addressOf<.*?>\(\s*bundled\.([A-Za-z_]\w*)\s*,?\s*\)',
-      dotAll: true,
-    ).allMatches(nativeSymbols).map((match) => match.group(1)!).toList();
-
-    expect(requiredOpenTuiNativeSymbolNames, hasLength(60));
-    expect(requiredOpenTuiNativeSymbolNames.toSet(), hasLength(60));
-    expect(bundledTargets, requiredOpenTuiNativeSymbolNames);
-    expect(bundledTargets.toSet(), hasLength(bundledTargets.length));
+    expect(selectedOpenTuiV051Symbols, hasLength(33));
+    expect(selectedOpenTuiV051Symbols.toSet(), hasLength(33));
+    for (final symbol in selectedOpenTuiV051Symbols) {
+      expect(nativeSymbols, contains('bundled.$symbol('), reason: symbol);
+    }
 
     for (final symbol in <String>[
       'textBufferConcat',
       'textBufferResize',
       'textBufferGetCapacity',
     ]) {
-      expect(requiredOpenTuiNativeSymbolNames, isNot(contains(symbol)));
+      expect(selectedOpenTuiV051Symbols, isNot(contains(symbol)));
       expect(bindings, isNot(contains('$symbol(')));
       expect(nativeSymbols, isNot(contains('$symbol(')));
     }
   });
 
-  test('ABI validation resolves symbols without behavior probes', () {
-    final abi = _read('lib/src/ffi/abi.dart');
+  test('fork ABI probes are absent from the runtime boundary', () {
+    final runtime = [
+      _read('lib/src/ffi/library.dart'),
+      _read('lib/src/ffi/bindings.dart'),
+      _read('lib/src/ffi/native_symbols.dart'),
+    ].join('\n');
 
-    expect(abi, contains('symbols.resolveRequiredSymbols()'));
-    expect(abi, isNot(contains('createTextBuffer(')));
-    expect(abi, isNot(contains('calloc')));
-    expect(abi, isNot(contains('otuiDartLastError()')));
-    expect(abi, isNot(contains('otuiDartClearError()')));
+    expect(File('lib/src/ffi/abi.dart').existsSync(), isFalse);
+    expect(runtime, isNot(contains('otui_dart_')));
+    expect(runtime, isNot(contains('TextBuffer')));
   });
 
   test('package landing stays inside the publish boundary', () {
@@ -162,7 +163,7 @@ void main() {
       'not an update instruction',
       'OPENTUI_LIBRARY_PATH',
       'exact development override',
-      'macOS 15.0 or later',
+      'macOS 13.0 or later',
     ]) {
       expect(readme, contains(clause), reason: clause);
     }
@@ -190,7 +191,6 @@ void main() {
       'FFIGEN.md',
       'ffigen_dynamic.yaml',
       'ffigen_native_assets.yaml',
-      'bin/parity_compare.dart',
       'bin/patch_manager.dart',
       'bin/snapshot_scenes.dart',
     ]) {

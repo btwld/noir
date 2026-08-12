@@ -218,11 +218,6 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
     'MouseSupport',
   },
   'src/core/renderer.dart': {'Renderer'},
-  'src/core/text_buffer.dart': {
-    'DirectTextAccess',
-    'TextBuffer',
-    'WidthMethod',
-  },
   'src/framework/diagnostics.dart': {
     'WidgetInspectorService',
     'describeIdentity',
@@ -264,18 +259,16 @@ const Map<String, Set<String>> _ffiAllowlist = <String, Set<String>>{
     'BoxOptions',
     'TextAlign',
   },
-  'src/ffi/abi.dart': {
-    'OpenTuiAbiMismatchException',
-    'expectedOpenTuiAbiVersion',
-    'openTuiCodeAssetId',
+  'src/ffi/bindings.dart': {
+    'FFIException',
+    'OpenTuiBindings',
+    'OpenTuiRenderStatus',
   },
-  'src/ffi/bindings.dart': {'FFIException', 'OpenTuiBindings'},
   'src/ffi/library.dart': {'OpenTuiLibraryLoadException'},
   'src/ffi/types.dart': {
-    'CapabilitiesHandle',
+    'OpenTuiHandle',
     'OptimizedBufferHandle',
     'RendererHandle',
-    'TextBufferHandle',
   },
 };
 

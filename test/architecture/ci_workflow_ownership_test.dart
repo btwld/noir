@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 const _safeProcessTests = <String>[
@@ -17,9 +18,10 @@ const _safeProcessTests = <String>[
 void main() {
   final workflow = _read('.github/workflows/ci.yml');
 
-  test('CI targets master with least privilege and cancellation', () {
-    expect(workflow, contains('branches: [master]'));
-    expect(workflow, isNot(contains('branches: [master, main]')));
+  test('CI targets main and every pull-request base with cancellation', () {
+    expect(workflow, contains('push:\n    branches: [main]'));
+    expect(workflow, contains('  pull_request:'));
+    expect(workflow, isNot(contains('pull_request:\n    branches:')));
     expect(workflow, contains('permissions:\n  contents: read'));
     expect(
       workflow,
@@ -44,115 +46,110 @@ void main() {
     }
   });
 
-  test('CI bounds native wrapper validation without building candidates', () {
-    final start = workflow.indexOf('  native-wrapper:');
-    expect(start, isNonNegative);
-    final end = workflow.indexOf('\n  test:', start);
-    expect(end, greaterThan(start));
+  test('CI is staged through bounded analyze, Ubuntu, and desktop jobs', () {
+    final analyze = _job(workflow, 'analyze');
+    final ubuntu = _job(workflow, 'ubuntu-test');
+    final desktop = _job(workflow, 'desktop-test');
 
-    final job = workflow.substring(start, end);
-    expect(job, contains('timeout-minutes: 10'));
-    expect(job, contains('fetch-depth: 0'));
+    expect(analyze, contains('runs-on: ubuntu-latest'));
+    expect(analyze, contains('timeout-minutes: 8'));
+    expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
+    expect(analyze, contains('timeout-minutes: 2\n        run: dart format'));
+    expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
+
+    expect(ubuntu, contains('needs: analyze'));
+    expect(ubuntu, contains('timeout-minutes: 10'));
     expect(
-      RegExp(r'^\s+timeout-minutes: 5$', multiLine: true).allMatches(job),
-      hasLength(2),
-    );
-    expect(
-      job,
+      ubuntu,
       contains(
-        'dart test test/scripts/native_build/normalization_policy_test.dart '
-        '--concurrency=1',
+        'timeout-minutes: 2\n        run: dart run scripts/fetch_opentui_binaries.dart --verify-only',
       ),
     );
     expect(
-      job,
-      contains('dart run scripts/build_opentui_candidates.dart --plan'),
+      ubuntu,
+      contains('timeout-minutes: 8\n        run: dart test --concurrency=1'),
     );
+
+    expect(desktop, contains('needs: ubuntu-test'));
+    expect(desktop, contains('timeout-minutes: 12'));
+    expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
-      job,
-      contains('git remote set-url origin git@github.com:leoafarias/noir.git'),
-    );
-    expect(job, isNot(contains('--execute-native-build')));
-    expect(job, isNot(contains('actions/upload-artifact')));
-    expect(job, isNot(contains('actions/download-artifact')));
-    expect(job, isNot(contains('secrets.')));
-    expect(job, isNot(contains('dart pub publish')));
-    expect(
-      job,
-      isNot(
-        contains(
-          'dart test --exclude-tags restricted-process-lifecycle '
-          '--concurrency=1',
-        ),
+      desktop,
+      contains(
+        'timeout-minutes: 2\n        run: dart run scripts/fetch_opentui_binaries.dart --verify-only',
       ),
+    );
+    expect(
+      desktop,
+      contains('timeout-minutes: 10\n        run: dart test --concurrency=1'),
     );
   });
 
-  test('ordinary subprocess tests are distinct from restricted lifecycle', () {
-    for (final path in _safeProcessTests) {
-      final source = _read(path);
+  test(
+    'each CI job caches only the isolated pub cache and always resolves',
+    () {
+      expect('actions/cache@'.allMatches(workflow), hasLength(3));
       expect(
-        source,
-        contains('safe-process-spawning'),
-        reason: '$path must use the ordinary subprocess tag',
+        r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+        hasLength(3),
       );
-      expect(source, isNot(contains('restricted-process-lifecycle')));
-      expect(source, isNot(matches(RegExp("[\"']process-spawning[\"']"))));
+      expect(
+        r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}"
+            .allMatches(workflow),
+        hasLength(3),
+      );
+      expect(
+        r'PUB_CACHE: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+        hasLength(3),
+      );
+      expect('run: dart pub get'.allMatches(workflow), hasLength(3));
+      expect(workflow, isNot(contains('.dart_tool')));
+    },
+  );
+
+  test('ordinary suite has no removed wrapper, parity, or restricted lane', () {
+    for (final stale in <String>[
+      'native-wrapper',
+      'parity:',
+      'GO_SNAPSHOT_CMD',
+      'restricted-process-lifecycle',
+      'build_opentui_candidates',
+    ]) {
+      expect(workflow, isNot(contains(stale)), reason: stale);
     }
 
-    const wrapperPath = 'test/parity/go_snapshot_wrapper_test.dart';
-    final wrapper = _read(wrapperPath);
-    expect(wrapper, contains("@Tags(['restricted-process-lifecycle'])"));
-    expect(wrapper, isNot(contains('safe-process-spawning')));
+    for (final file in _safeProcessTests) {
+      final source = _read(file);
+      expect(source, contains('safe-process-spawning'), reason: file);
+    }
 
     final restrictedOwners = <String>[];
     for (final entity in Directory('test').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path.contains('/architecture/')) continue;
-      if (RegExp(
-        "@Tags\\(\\[[\"']restricted-process-lifecycle[\"']\\]\\)",
-      ).hasMatch(_read(entity.path))) {
-        restrictedOwners.add(entity.path);
+      final normalized = path
+          .relative(entity.path, from: Directory.current.path)
+          .replaceAll(Platform.pathSeparator, '/');
+      if (normalized.startsWith('test/architecture/')) continue;
+      if (_read(entity.path).contains('restricted-process-lifecycle')) {
+        restrictedOwners.add(normalized);
       }
     }
-    expect(restrictedOwners, [wrapperPath]);
-
-    final config = _read('dart_test.yaml');
-    expect(config, contains('  safe-process-spawning:'));
-    expect(config, contains('  restricted-process-lifecycle:'));
+    expect(restrictedOwners, isEmpty);
     expect(
-      config,
-      isNot(matches(RegExp('^  process-spawning:', multiLine: true))),
+      _read('dart_test.yaml'),
+      isNot(contains('restricted-process-lifecycle')),
     );
   });
+}
 
-  test('CI runs safe tests and selects parity without wrapper lifecycle', () {
-    expect(
-      workflow,
-      contains(
-        'dart test --exclude-tags restricted-process-lifecycle --concurrency=1',
-      ),
-    );
-    expect(workflow, isNot(contains('test/bin/health_check_test.dart')));
-    expect(workflow, contains('test/parity/primitives_parity_test.dart'));
-    expect(workflow, contains('test/parity/widget_parity_test.dart'));
-    expect(
-      workflow,
-      isNot(contains('test/parity/go_snapshot_wrapper_test.dart')),
-    );
-    expect(
-      workflow,
-      isNot(matches(RegExp(r'dart test[^\n]*test/parity(?:/|\s|$)'))),
-    );
-    expect(workflow, contains('GO_SNAPSHOT_CMD: ./scripts/run_go_snapshot.sh'));
-  });
-
-  test('CI covers all supported desktop operating systems', () {
-    expect(workflow, contains('ubuntu-latest'));
-    expect(workflow, contains('macos-latest'));
-    expect(workflow, contains('windows-latest'));
-    expect(workflow, contains('fail-fast: false'));
-  });
+String _job(String workflow, String name) {
+  final start = workflow.indexOf('  $name:');
+  expect(start, isNonNegative, reason: 'missing job $name');
+  final end = workflow.indexOf(
+    RegExp('^  [a-z][a-z-]+:', multiLine: true),
+    start + 3,
+  );
+  return workflow.substring(start, end < 0 ? workflow.length : end);
 }
 
 String _read(String path) =>

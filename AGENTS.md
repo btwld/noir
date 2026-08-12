@@ -37,12 +37,10 @@ recording/compositing internals remain framework-owned.
 
 ## OpenTUI reference and ownership
 
-`external/opentui` is a read-only submodule pinned by Noir. Its fork URL records
-provenance; it does not authorize changes.
+`external/opentui` is a read-only submodule pinned to canonical OpenTUI v0.5.1.
 
 Use these pinned sources when checking semantics:
 
-- `external/opentui/packages/go` for the primary OpenTUI behavior.
 - `external/opentui/packages/react` for declarative component patterns.
 - `external/opentui/packages/core` for renderer, input, and buffer behavior.
 
@@ -75,18 +73,16 @@ remove obsolete API shapes instead of adding compatibility shims.
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test <focused test paths> --concurrency=1
-    dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+    dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
-standard suite. `restricted-process-lifecycle` is reserved for the Go parity
-wrapper's deliberate signal/termination coverage and requires exact
-authorization.
+standard suite.
 
-GitHub Actions are intentionally disabled in repository settings. Workflow
-files may be linted and reviewed locally, but do not dispatch, rerun, or
-re-enable them unless the user explicitly asks.
+Automatic GitHub Actions runs for `push` and `pull_request` are ordinary
+verification. Do not manually dispatch or rerun a workflow unless the user
+explicitly asks.
 
 Do not run any of the following without exact authorization:
 
@@ -94,7 +90,7 @@ Do not run any of the following without exact authorization:
 - deliberate crashes, fatal signals, process-kill tests, leak profilers,
   sanitizers, Valgrind, or resource-exhaustion probes;
 - native builds, artifact refreshes, ABI fault injection, or publication;
-- tag, release, or workflow operations.
+- tag, release, or manual workflow operations.
 
 Parser fakes, headless renderers, package-consumer subprocesses, architecture
 source scans, and temporary Git fixtures are ordinary checks unless they

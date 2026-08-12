@@ -1,20 +1,13 @@
-/// Terminal-cell width tables and helpers for grapheme clusters.
+/// Terminal-cell width helpers for grapheme clusters.
 ///
-/// Cell widths follow the common terminal convention:
-/// - Most characters occupy 1 cell.
-/// - CJK ideographs, fullwidth ASCII forms, and common emoji occupy 2 cells.
-/// - Zero-width control characters and combining marks within a cluster do not
-///   contribute extra width — the cluster width is determined by its base
-///   character.
-///
-/// The classification is intentionally simple and does not try to perfectly
-/// emulate `wcwidth`. The OpenTUI text engine handles the precise per-cell
-/// layout when it draws to the buffer; this helper is for editing and
-/// cursor math in widget State where we need a quick, dependency-free
-/// approximation.
+/// Width follows the pinned OpenTUI v0.5.1 Unicode algorithm so layout, direct
+/// painting, selection, clipping, and cursor math share its cell placement
+/// without crossing the native boundary during widget work.
 library;
 
 import 'package:characters/characters.dart';
+
+import 'unicode_width_table.dart';
 
 /// Returns the terminal cell width of a single grapheme cluster.
 ///
@@ -25,14 +18,64 @@ int terminalCellWidth(String cluster) {
   if (cluster.isEmpty) return 0;
   final iter = cluster.characters.iterator;
   if (!iter.moveNext()) return 0;
-  final first = iter.current;
-  // The base code point of the cluster decides the cell width; combining
-  // marks attach without adding cells.
-  final runes = first.runes.iterator;
+  final runes = iter.current.runes.iterator;
   if (!runes.moveNext()) return 0;
-  final base = runes.current;
-  return _isWide(base) ? 2 : 1;
+
+  final first = runes.current;
+  var width = _openTuiCodePointWidth(first);
+  var hasWidth = width > 0;
+  final regionalIndicatorPair = _isRegionalIndicator(first);
+  var hasIndicMark = false;
+
+  while (runes.moveNext()) {
+    final codePoint = runes.current;
+    final codePointWidth = _openTuiCodePointWidth(codePoint);
+
+    if (codePoint == 0xFE0F) {
+      if (hasWidth && width == 1) width = 2;
+      continue;
+    }
+
+    if (_isDevanagariNonspacingMark(codePoint)) {
+      hasIndicMark = true;
+      continue;
+    }
+
+    if (regionalIndicatorPair && _isRegionalIndicator(codePoint)) {
+      width += codePointWidth;
+      hasWidth = true;
+    } else if (!hasWidth && codePointWidth > 0) {
+      width = codePointWidth;
+      hasWidth = true;
+    } else if (hasWidth &&
+        hasIndicMark &&
+        _isDevanagariBase(codePoint) &&
+        codePointWidth > 0) {
+      if (codePoint != 0x0930) width += codePointWidth;
+      hasIndicMark = false;
+    }
+  }
+  return width;
 }
+
+int _openTuiCodePointWidth(int codePoint) =>
+    openTuiCodePointWidthFromTable(codePoint);
+
+bool _isRegionalIndicator(int codePoint) =>
+    codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF;
+
+bool _isDevanagariBase(int codePoint) =>
+    (codePoint >= 0x0915 && codePoint <= 0x0939) ||
+    (codePoint >= 0x0958 && codePoint <= 0x095F);
+
+bool _isDevanagariNonspacingMark(int codePoint) =>
+    (codePoint >= 0x0900 && codePoint <= 0x0902) ||
+    codePoint == 0x093A ||
+    codePoint == 0x093C ||
+    (codePoint >= 0x0941 && codePoint <= 0x0948) ||
+    codePoint == 0x094D ||
+    (codePoint >= 0x0951 && codePoint <= 0x0957) ||
+    (codePoint >= 0x0962 && codePoint <= 0x0963);
 
 /// Returns the terminal cell width of [text] by summing the width of each
 /// grapheme cluster.
@@ -43,28 +86,6 @@ int terminalStringWidth(String text) {
     width += terminalCellWidth(cluster);
   }
   return width;
-}
-
-/// True if [codePoint] is rendered as a wide (2-cell) character in typical
-/// terminal fonts. Uses a small inline range table covering CJK, common
-/// fullwidth blocks, and emoji ranges used by text layout.
-bool _isWide(int codePoint) {
-  // Fast bail for ASCII / Latin-1.
-  if (codePoint < 0x1100) return false;
-  return (codePoint >= 0x1100 && codePoint <= 0x115F) || // Hangul Jamo
-      (codePoint >= 0x2E80 && codePoint <= 0x303E) || // CJK Radicals
-      (codePoint >= 0x3041 && codePoint <= 0x33FF) || // Kana, CJK symbols
-      (codePoint >= 0x3400 && codePoint <= 0x4DBF) || // CJK Extension A
-      (codePoint >= 0x4E00 && codePoint <= 0x9FFF) || // CJK Unified
-      (codePoint >= 0xA000 && codePoint <= 0xA4CF) || // Yi
-      (codePoint >= 0xAC00 && codePoint <= 0xD7A3) || // Hangul Syllables
-      (codePoint >= 0xF900 && codePoint <= 0xFAFF) || // CJK Compat Ideographs
-      (codePoint >= 0xFE30 && codePoint <= 0xFE4F) || // CJK Compat Forms
-      (codePoint >= 0xFF00 && codePoint <= 0xFF60) || // Fullwidth ASCII
-      (codePoint >= 0xFFE0 && codePoint <= 0xFFE6) || // Fullwidth Signs
-      (codePoint >= 0x1F300 && codePoint <= 0x1F64F) || // Misc Symbols & Emoji
-      (codePoint >= 0x1F900 && codePoint <= 0x1F9FF) || // Supplemental Symbols
-      (codePoint >= 0x1FA70 && codePoint <= 0x1FAFF); // Symbols & Pictographs
 }
 
 /// Slice [text] to fit within [maxCells] terminal cells starting from the

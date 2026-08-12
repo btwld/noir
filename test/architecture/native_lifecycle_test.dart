@@ -39,18 +39,10 @@ void main() {
   test('core native resource owners expose deterministic dispose paths', () {
     final requiredSnippets = <String, List<String>>{
       'lib/src/core/renderer.dart': [
-        'Finalizer<Pointer<Void>>',
-        'void dispose({',
-        '_finalizer.detach(_finalizerKey)',
-        'destroyRenderer(',
-        '_disposed = true',
-      ],
-      'lib/src/core/text_buffer.dart': [
-        'Finalizer<Pointer<Void>>',
+        'Finalizer<RendererHandle>',
         'void dispose()',
         '_finalizer.detach(_finalizerKey)',
-        '_utf8Scratch.dispose()',
-        'destroyTextBuffer(',
+        'destroyRenderer(',
         '_disposed = true',
       ],
       'lib/src/foundation/persistent_utf8_text.dart': [
@@ -93,8 +85,8 @@ void main() {
       source,
       matches(
         RegExp(
-          r'Pointer<RendererHandle> get handle \{\s*'
-          r'_checkNotDisposed\(\);\s*return _ptr;\s*\}',
+          r'RendererHandle get handle \{\s*'
+          r'_checkNotDisposed\(\);\s*return _handle;\s*\}',
         ),
       ),
     );
@@ -116,7 +108,7 @@ Iterable<File> _dartFilesUnder(String directory) => Directory(directory)
     .where((file) => file.path.endsWith('.dart'));
 
 bool _hasNativeHandleField(String source) =>
-    RegExp(r'\b(?:TextBuffer|Renderer)\?\s+_[A-Za-z0-9_]+').hasMatch(source);
+    RegExp(r'\bRenderer\?\s+_[A-Za-z0-9_]+').hasMatch(source);
 
 String _normalizePath(String path) =>
     path.replaceAll(Platform.pathSeparator, '/');

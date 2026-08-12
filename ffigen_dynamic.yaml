@@ -4,7 +4,7 @@ output: 'lib/src/ffi/generated_bindings.dart'
 
 headers:
   entry-points:
-    - 'external/opentui/packages/go/opentui.h'
+    - 'native/opentui_v0_5_1.h'
 
 functions:
   include:
@@ -12,14 +12,18 @@ functions:
 
 structs:
   include:
-    - 'Capabilities'
+    - 'CursorStyleOptions'
+
+macros:
+  exclude:
+    - '.*'
 
 comments:
   style: any
   length: full
 
 preamble: |
-  // Generated FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
+  // Generated FFI bindings from Noir's selected OpenTUI v0.5.1 declarations.
   // Regenerate with: dart run ffigen --config ffigen_dynamic.yaml
   // Do not edit manually.
   // ignore_for_file: unused_element, unused_field

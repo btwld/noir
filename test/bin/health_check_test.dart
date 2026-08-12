@@ -11,28 +11,6 @@ final _forbiddenControlCharacters = RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]');
 
 void main() {
   test(
-    'health check exits successfully',
-    () async {
-      final result = await Process.run(Platform.resolvedExecutable, [
-        'run',
-        'bin/health_check.dart',
-      ], workingDirectory: Directory.current.path);
-
-      expect(
-        result.exitCode,
-        0,
-        reason: 'stdout:\n${result.stdout}\n\nstderr:\n${result.stderr}',
-      );
-      expect(
-        '${result.stdout}${result.stderr}',
-        isNot(matches(_forbiddenControlCharacters)),
-        reason: 'The shipped health check must not emit terminal controls.',
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 15)),
-  );
-
-  test(
     'health check succeeds from a downstream package working directory',
     () async {
       final packageRoot = Directory.current.resolveSymbolicLinksSync();

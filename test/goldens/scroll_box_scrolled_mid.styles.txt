@@ -1,21 +1,13 @@
-0,0:#ffffffff|#000000ff|0 * 4
-4,0:#ffffffff|#0f1d2b74|0 * 6
-10,0:#ffffffff|#000000ff|0 * 3
+0,0:#ffffffff|#000000ff|0 * 13
 13,0:#ffffffff|#333333ff|0
 14,0:#ffffffff|#000000ff|0 * 2
-0,1:#ffffffff|#000000ff|0 * 4
-4,1:#ffffffff|#0f1d2b74|0 * 6
-10,1:#ffffffff|#000000ff|0 * 3
-13,1:#ffffffff|#b2b2b2ff|0
+0,1:#ffffffff|#000000ff|0 * 13
+13,1:#ffffffff|#b3b3b3ff|0
 14,1:#ffffffff|#000000ff|0 * 2
-0,2:#ffffffff|#000000ff|0 * 4
-4,2:#ffffffff|#0f1d2b74|0 * 6
-10,2:#ffffffff|#000000ff|0 * 3
-13,2:#ffffffff|#b2b2b2ff|0
+0,2:#ffffffff|#000000ff|0 * 13
+13,2:#ffffffff|#b3b3b3ff|0
 14,2:#ffffffff|#000000ff|0 * 2
-0,3:#ffffffff|#000000ff|0 * 4
-4,3:#ffffffff|#0f1d2b74|0 * 6
-10,3:#ffffffff|#000000ff|0 * 3
+0,3:#ffffffff|#000000ff|0 * 13
 13,3:#ffffffff|#333333ff|0
 14,3:#ffffffff|#000000ff|0 * 2
 0,4:#ffffffff|#000000ff|0 * 16

@@ -29,6 +29,7 @@ dependencies:
 
 dev_dependencies:
   analyzer: ^8.2.0
+  archive: ^4.0.0
   ffigen: ^15.0.0
   # Keep pub-downgrade test execution compatible with Dart 3.10.
   frontend_server_client: ^4.0.0

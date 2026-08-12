@@ -500,7 +500,7 @@ void main() {
         final addedText = buffer.findText("print('new')").single;
         final line = buffer.toLines()[addedText.y];
 
-        expect(line, contains('* +'));
+        expect(line, contains('▶ +'));
         expect(line, isNot(contains('> +')));
       } finally {
         capture.dispose();
@@ -1813,10 +1813,13 @@ Future<void> _settleView() async {
 }
 
 void _expectColorClose(Color actual, Color expected) {
-  expect(actual.r, closeTo(expected.r, 0.001));
-  expect(actual.g, closeTo(expected.g, 0.001));
-  expect(actual.b, closeTo(expected.b, 0.001));
-  expect(actual.a, closeTo(expected.a, 0.001));
+  // Native buffer colors round normalized channels to an integer u16 value
+  // in OpenTUI's 0..255 color domain before a capture converts them back.
+  const channelTolerance = 0.5 / 255 + 0.000001;
+  expect(actual.r, closeTo(expected.r, channelTolerance));
+  expect(actual.g, closeTo(expected.g, channelTolerance));
+  expect(actual.b, closeTo(expected.b, channelTolerance));
+  expect(actual.a, closeTo(expected.a, channelTolerance));
 }
 
 class _StableLeaf extends RenderObjectWidget {

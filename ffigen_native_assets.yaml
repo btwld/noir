@@ -6,7 +6,7 @@ ffi-native:
 
 headers:
   entry-points:
-    - 'external/opentui/packages/go/opentui.h'
+    - 'native/opentui_v0_5_1.h'
 
 functions:
   include:
@@ -14,14 +14,18 @@ functions:
 
 structs:
   include:
-    - 'Capabilities'
+    - 'CursorStyleOptions'
+
+macros:
+  exclude:
+    - '.*'
 
 comments:
   style: any
   length: full
 
 preamble: |
-  // Generated @Native FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
+  // Generated @Native bindings from Noir's selected OpenTUI v0.5.1 declarations.
   // Regenerate with: dart run ffigen --config ffigen_native_assets.yaml
   // Do not edit manually.
   // ignore_for_file: unused_element, unused_field

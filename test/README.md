@@ -10,20 +10,16 @@ The suite is organized by behavior:
 - `test/widgets`: widget behavior, focus, editing, and interaction.
 - `test/example`: runnable-example regressions.
 - `test/golden` and `test/goldens`: visual capture tests and fixtures.
-- `test/parity`: Dart-versus-Go parity.
 - `test/architecture`: executable ownership and distribution boundaries.
 
 ## Normal validation
 
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
-    dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+    dart test --concurrency=1
 
 `safe-process-spawning` tests are ordinary isolated-process checks and run in
-the normal suite. `test/parity/go_snapshot_wrapper_test.dart` alone uses
-`restricted-process-lifecycle` because it deliberately tests signal and
-termination behavior. Run it only after exact authorization, by exact path,
-with `--run-skipped`. Never select the whole parity directory as a shortcut.
+the normal suite.
 
 ## Harness ownership
 
@@ -50,13 +46,3 @@ Only intentional visual changes regenerate them:
 Inspect `test/failures/` before accepting a changed capture. Visual goldens use
 character buffers plus style and cursor sidecars unless the assertion is
 intentionally text-only.
-
-## Safe parity
-
-Initialize the pinned reference, then select only the primitive/widget tests:
-
-    git submodule update --init external/opentui
-    GO_SNAPSHOT_CMD=./scripts/run_go_snapshot.sh dart test --reporter=expanded test/parity/primitives_parity_test.dart test/parity/widget_parity_test.dart --concurrency=1
-
-These compare fixed-size Dart and Go scenes. They do not run the restricted
-wrapper lifecycle test.

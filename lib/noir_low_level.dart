@@ -13,7 +13,7 @@ library;
 // Scheduler and advanced application hosting.
 export 'src/animation/ticker.dart' show TickerScheduler;
 export 'src/app/tui_binding.dart' show TuiBinding;
-// Renderer / buffer / text-buffer primitives
+// Renderer and buffer primitives.
 export 'src/core/buffer.dart' show Buffer, DirectBufferAccess;
 export 'src/core/capabilities.dart' show CapabilitiesDetection;
 // Cursor management (controller + extension on Renderer)
@@ -27,8 +27,6 @@ export 'src/core/input.dart'
         KeyboardSupport,
         MouseSupport;
 export 'src/core/renderer.dart' show Renderer;
-export 'src/core/text_buffer.dart'
-    show DirectTextAccess, TextBuffer, WidthMethod;
 // Advanced widget adapters, lifecycle owners, focus, and diagnostics.
 export 'src/framework/diagnostics.dart'
     show WidgetInspectorService, describeIdentity;

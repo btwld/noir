@@ -63,13 +63,7 @@ final class ConsumerMultiBox extends RenderBox {
 void typeCheckPromotedContracts({
   required TextLayoutEngine textLayout,
   required TickerScheduler ticker,
-  WidthMethod widthMethod = WidthMethod.unicode,
 }) {
-  final textBuffer = TextBuffer.create(widthMethod: widthMethod);
-  textBuffer.writeChunk('contract', Color.white, Color.black, 0);
-  textBuffer.setCell(0, 'N', Color.white, Color.black, 0);
-  final encodedCell = textBuffer.getDirectAccess().encodedCells[0];
-  final Object values = (textLayout, ticker, widthMethod, textBuffer);
+  final Object values = (textLayout, ticker);
   values.toString();
-  encodedCell.toString();
 }

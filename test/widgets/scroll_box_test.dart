@@ -16,7 +16,7 @@ void main() {
       capture.dispose();
     });
 
-    test('clips multi-line TextBuffer output to the vertical viewport', () {
+    test('clips multi-line text output to the vertical viewport', () {
       final captured = capture.capture(
         const SizedBox(
           width: 4,
@@ -29,7 +29,7 @@ void main() {
       expect(captured.getRegion(0, 1, 4, 1), '    ');
     });
 
-    test('clips long TextBuffer output to the horizontal viewport', () {
+    test('clips long text output to the horizontal viewport', () {
       final captured = capture.capture(
         SizedBox(
           width: 2,

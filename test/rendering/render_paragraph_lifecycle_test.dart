@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('RenderParagraph lifecycle', () {
-    test('detach has no native TextBuffer ownership to dispose', () {
+    test('detach has no native text-buffer ownership to dispose', () {
       final paragraph = RenderParagraph(text: const TextSpan(text: 'hello'))
         ..layout(const BoxConstraints.tight(width: 10, height: 1));
 

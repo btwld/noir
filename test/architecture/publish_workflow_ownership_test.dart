@@ -49,6 +49,10 @@ void main() {
     expect(publishStart, greaterThan(preflightStart));
 
     final preflight = publish.substring(preflightStart, publishStart);
+    expect(preflight, contains('timeout-minutes: 15'));
+    expect(preflight, contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache'));
+    expect(preflight, contains('actions/cache@'));
+    expect(preflight, contains(r'path: ${{ runner.temp }}/pub-cache'));
     expect(preflight, contains('semver='));
     expect(preflight, contains(r'package_version="${BASH_REMATCH[1]}"'));
     expect(preflight, contains(r'"v$package_version"'));
@@ -56,15 +60,11 @@ void main() {
       preflight,
       contains('dart run scripts/fetch_opentui_binaries.dart --verify-only'),
     );
-    expect(
-      preflight,
-      contains(
-        'dart test --exclude-tags restricted-process-lifecycle --concurrency=1',
-      ),
-    );
+    expect(preflight, contains('dart test --concurrency=1'));
     expect(preflight, contains('dart doc --validate-links'));
     expect(preflight, contains('dart pub publish --dry-run'));
     expect(preflight, isNot(contains('continue-on-error')));
+    expect(preflight, isNot(contains('.dart_tool')));
   });
 
   test('OIDC publication depends on preflight with least privilege', () {

@@ -1,4 +1,4 @@
-// Generated @Native FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
+// Generated @Native bindings from Noir's selected OpenTUI v0.5.1 declarations.
 // Regenerate with: dart run ffigen --config ffigen_native_assets.yaml
 // Do not edit manually.
 // ignore_for_file: unused_element, unused_field
@@ -12,326 +12,187 @@ library;
 
 import 'dart:ffi' as ffi;
 
-/// Dart package ABI validation functions
-@ffi.Native<ffi.Uint32 Function()>()
-external int otui_dart_abi_version();
-
-@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
-external ffi.Pointer<ffi.Char> otui_dart_build_info();
-
-@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
-external ffi.Pointer<ffi.Char> otui_dart_last_error();
-
-@ffi.Native<ffi.Void Function()>()
-external void otui_dart_clear_error();
-
-/// Renderer management functions
 @ffi.Native<
-  ffi.Pointer<CliRenderer> Function(ffi.Uint32, ffi.Uint32, ffi.Bool)
->()
-external ffi.Pointer<CliRenderer> createRenderer(
-  int width,
-  int height,
-  bool testing,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)>()
-external void setUseThread(ffi.Pointer<CliRenderer> renderer, bool useThread);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool, ffi.Uint32)>()
-external void destroyRenderer(
-  ffi.Pointer<CliRenderer> renderer,
-  bool useAlternateScreen,
-  int splitHeight,
-);
-
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
->()
-external void setBackgroundColor(
-  ffi.Pointer<CliRenderer> renderer,
-  ffi.Pointer<ffi.Float> color,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint32)>()
-external void setRenderOffset(ffi.Pointer<CliRenderer> renderer, int offset);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<CliRenderer>,
-    ffi.Double,
-    ffi.Uint32,
-    ffi.Double,
-  )
->()
-external void updateStats(
-  ffi.Pointer<CliRenderer> renderer,
-  double time,
-  int fps,
-  double frameCallbackTime,
-);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<CliRenderer>,
+  OpenTuiHandle Function(
     ffi.Uint32,
     ffi.Uint32,
-    ffi.Uint32,
-  )
->()
-external void updateMemoryStats(
-  ffi.Pointer<CliRenderer> renderer,
-  int heapUsed,
-  int heapTotal,
-  int arrayBuffers,
-);
-
-@ffi.Native<ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)>()
-external ffi.Pointer<OptimizedBuffer> getNextBuffer(
-  ffi.Pointer<CliRenderer> renderer,
-);
-
-@ffi.Native<ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)>()
-external ffi.Pointer<OptimizedBuffer> getCurrentBuffer(
-  ffi.Pointer<CliRenderer> renderer,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)>()
-external void render(ffi.Pointer<CliRenderer> renderer, bool force);
-
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint32, ffi.Uint32)
->()
-external void resizeRenderer(
-  ffi.Pointer<CliRenderer> renderer,
-  int width,
-  int height,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)>()
-external void enableMouse(
-  ffi.Pointer<CliRenderer> renderer,
-  bool enableMovement,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>)>()
-external void disableMouse(ffi.Pointer<CliRenderer> renderer);
-
-/// Buffer management functions
-@ffi.Native<
-  ffi.Pointer<OptimizedBuffer> Function(
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Bool,
     ffi.Uint8,
+    ffi.Uint8,
+    ffi.Pointer<ffi.Void>,
   )
 >()
-external ffi.Pointer<OptimizedBuffer> createOptimizedBuffer(
+external int createRenderer(
   int width,
   int height,
-  bool respectAlpha,
-  int widthMethod,
+  int bufferedDestinationKind,
+  int remoteModeValue,
+  ffi.Pointer<ffi.Void> feedPtr,
 );
 
-@ffi.Native<ffi.Void Function(ffi.Pointer<OptimizedBuffer>)>()
-external void destroyOptimizedBuffer(ffi.Pointer<OptimizedBuffer> buffer);
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void destroyRenderer(int renderer);
 
-@ffi.Native<ffi.Void Function(ffi.Pointer<OptimizedBuffer>)>()
-external void destroyFrameBuffer(ffi.Pointer<OptimizedBuffer> frameBuffer);
+@ffi.Native<ffi.Uint8 Function(OpenTuiHandle, ffi.Bool)>()
+external int render(int renderer, bool force);
 
-@ffi.Native<ffi.Uint32 Function(ffi.Pointer<OptimizedBuffer>)>()
-external int getBufferWidth(ffi.Pointer<OptimizedBuffer> buffer);
+@ffi.Native<OpenTuiHandle Function(OpenTuiHandle)>()
+external int getNextBuffer(int renderer);
 
-@ffi.Native<ffi.Uint32 Function(ffi.Pointer<OptimizedBuffer>)>()
-external int getBufferHeight(ffi.Pointer<OptimizedBuffer> buffer);
+@ffi.Native<OpenTuiHandle Function(OpenTuiHandle)>()
+external int getCurrentBuffer(int renderer);
 
-/// Buffer drawing functions
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<OptimizedBuffer>, ffi.Pointer<ffi.Float>)
->()
-external void bufferClear(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  ffi.Pointer<ffi.Float> bg,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)>()
+external void resizeRenderer(int renderer, int width, int height);
 
-@ffi.Native<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<OptimizedBuffer>)>()
-external ffi.Pointer<ffi.Uint32> bufferGetCharPtr(
-  ffi.Pointer<OptimizedBuffer> buffer,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint16>)>()
+external void setBackgroundColor(int renderer, ffi.Pointer<ffi.Uint16> color);
 
-@ffi.Native<ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)>()
-external ffi.Pointer<ffi.Float> bufferGetFgPtr(
-  ffi.Pointer<OptimizedBuffer> buffer,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void clearTerminal(int renderer);
 
-@ffi.Native<ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)>()
-external ffi.Pointer<ffi.Float> bufferGetBgPtr(
-  ffi.Pointer<OptimizedBuffer> buffer,
-);
+@ffi.Native<ffi.Uint32 Function(OpenTuiHandle)>()
+external int getBufferWidth(int buffer);
 
-@ffi.Native<ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<OptimizedBuffer>)>()
-external ffi.Pointer<ffi.Uint8> bufferGetAttributesPtr(
-  ffi.Pointer<OptimizedBuffer> buffer,
-);
+@ffi.Native<ffi.Uint32 Function(OpenTuiHandle)>()
+external int getBufferHeight(int buffer);
 
-@ffi.Native<ffi.Bool Function(ffi.Pointer<OptimizedBuffer>)>()
-external bool bufferGetRespectAlpha(ffi.Pointer<OptimizedBuffer> buffer);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<OptimizedBuffer>, ffi.Bool)>()
-external void bufferSetRespectAlpha(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  bool respectAlpha,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint16>)>()
+external void bufferClear(int buffer, ffi.Pointer<ffi.Uint16> bg);
 
 @ffi.Native<
   ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
+    OpenTuiHandle,
     ffi.Pointer<ffi.Uint8>,
-    ffi.Size,
     ffi.Uint32,
     ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
-    ffi.Uint8,
+    ffi.Uint32,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Uint32,
   )
 >()
 external void bufferDrawText(
-  ffi.Pointer<OptimizedBuffer> buffer,
+  int buffer,
   ffi.Pointer<ffi.Uint8> text,
   int textLen,
   int x,
   int y,
-  ffi.Pointer<ffi.Float> fg,
-  ffi.Pointer<ffi.Float> bg,
+  ffi.Pointer<ffi.Uint16> fg,
+  ffi.Pointer<ffi.Uint16> bg,
   int attributes,
 );
 
 @ffi.Native<
   ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
-    ffi.Uint8,
-  )
->()
-external void bufferSetCellWithAlphaBlending(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  int x,
-  int y,
-  int char_code,
-  ffi.Pointer<ffi.Float> fg,
-  ffi.Pointer<ffi.Float> bg,
-  int attributes,
-);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
+    OpenTuiHandle,
     ffi.Uint32,
     ffi.Uint32,
     ffi.Uint32,
     ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
+    ffi.Pointer<ffi.Uint16>,
   )
 >()
 external void bufferFillRect(
-  ffi.Pointer<OptimizedBuffer> buffer,
+  int buffer,
   int x,
   int y,
   int width,
   int height,
-  ffi.Pointer<ffi.Float> bg,
+  ffi.Pointer<ffi.Uint16> bg,
 );
 
 @ffi.Native<
   ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
-    ffi.Pointer<ffi.Uint8>,
-    ffi.Size,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-  )
->()
-external void bufferDrawPackedBuffer(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  ffi.Pointer<ffi.Uint8> data,
-  int dataLen,
-  int posX,
-  int posY,
-  int terminalWidthCells,
-  int terminalHeightCells,
-);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<ffi.Uint8>,
-    ffi.Size,
-    ffi.Uint8,
-    ffi.Uint32,
-  )
->()
-external void bufferDrawSuperSampleBuffer(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  int x,
-  int y,
-  ffi.Pointer<ffi.Uint8> pixelData,
-  int len,
-  int format,
-  int alignedBytesPerRow,
-);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
+    OpenTuiHandle,
     ffi.Int32,
     ffi.Int32,
     ffi.Uint32,
     ffi.Uint32,
     ffi.Pointer<ffi.Uint32>,
     ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
     ffi.Pointer<ffi.Uint8>,
     ffi.Uint32,
   )
 >()
 external void bufferDrawBox(
-  ffi.Pointer<OptimizedBuffer> buffer,
+  int buffer,
   int x,
   int y,
   int width,
   int height,
   ffi.Pointer<ffi.Uint32> borderChars,
   int packedOptions,
-  ffi.Pointer<ffi.Float> borderColor,
-  ffi.Pointer<ffi.Float> backgroundColor,
+  ffi.Pointer<ffi.Uint16> borderColor,
+  ffi.Pointer<ffi.Uint16> backgroundColor,
+  ffi.Pointer<ffi.Uint16> titleColor,
   ffi.Pointer<ffi.Uint8> title,
   int titleLen,
+  ffi.Pointer<ffi.Uint8> bottomTitle,
+  int bottomTitleLen,
 );
 
+@ffi.Native<ffi.Pointer<ffi.Uint32> Function(OpenTuiHandle)>()
+external ffi.Pointer<ffi.Uint32> bufferGetCharPtr(int buffer);
+
+@ffi.Native<ffi.Pointer<ffi.Uint16> Function(OpenTuiHandle)>()
+external ffi.Pointer<ffi.Uint16> bufferGetFgPtr(int buffer);
+
+@ffi.Native<ffi.Pointer<ffi.Uint16> Function(OpenTuiHandle)>()
+external ffi.Pointer<ffi.Uint16> bufferGetBgPtr(int buffer);
+
+@ffi.Native<ffi.Pointer<ffi.Uint32> Function(OpenTuiHandle)>()
+external ffi.Pointer<ffi.Uint32> bufferGetAttributesPtr(int buffer);
+
+@ffi.Native<ffi.Uint32 Function(OpenTuiHandle)>()
+external int bufferGetRealCharSize(int buffer);
+
 @ffi.Native<
-  ffi.Void Function(ffi.Pointer<OptimizedBuffer>, ffi.Uint32, ffi.Uint32)
+  ffi.Uint32 Function(
+    OpenTuiHandle,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
+    ffi.Bool,
+  )
 >()
-external void bufferResize(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  int width,
-  int height,
+external int bufferWriteResolvedChars(
+  int buffer,
+  ffi.Pointer<ffi.Uint8> output,
+  int outputLen,
+  bool addLineBreaks,
 );
 
 @ffi.Native<
   ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
+    OpenTuiHandle,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Pointer<ffi.Uint16>,
+    ffi.Uint32,
+  )
+>()
+external void bufferSetCellWithAlphaBlending(
+  int buffer,
+  int x,
+  int y,
+  int character,
+  ffi.Pointer<ffi.Uint16> fg,
+  ffi.Pointer<ffi.Uint16> bg,
+  int attributes,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    OpenTuiHandle,
     ffi.Int32,
     ffi.Int32,
-    ffi.Pointer<OptimizedBuffer>,
+    OpenTuiHandle,
     ffi.Uint32,
     ffi.Uint32,
     ffi.Uint32,
@@ -339,82 +200,46 @@ external void bufferResize(
   )
 >()
 external void drawFrameBuffer(
-  ffi.Pointer<OptimizedBuffer> target,
+  int target,
   int destX,
   int destY,
-  ffi.Pointer<OptimizedBuffer> frameBuffer,
+  int frameBuffer,
   int sourceX,
   int sourceY,
   int sourceWidth,
   int sourceHeight,
 );
 
-/// Cursor functions
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Int32, ffi.Int32, ffi.Bool)
->()
-external void setCursorPosition(
-  ffi.Pointer<CliRenderer> renderer,
-  int x,
-  int y,
-  bool visible,
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)>()
+external void bufferResize(int buffer, int width, int height);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Int32, ffi.Int32, ffi.Bool)>()
+external void setCursorPosition(int renderer, int x, int y, bool visible);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Pointer<CursorStyleOptions>)>()
+external void setCursorStyleOptions(
+  int renderer,
+  ffi.Pointer<CursorStyleOptions> options,
 );
 
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<CliRenderer>,
-    ffi.Pointer<ffi.Uint8>,
-    ffi.Size,
-    ffi.Bool,
-  )
->()
-external void setCursorStyle(
-  ffi.Pointer<CliRenderer> renderer,
-  ffi.Pointer<ffi.Uint8> style,
-  int styleLen,
-  bool blinking,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Bool)>()
+external void enableMouse(int renderer, bool enableMovement);
 
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
->()
-external void setCursorColor(
-  ffi.Pointer<CliRenderer> renderer,
-  ffi.Pointer<ffi.Float> color,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void disableMouse(int renderer);
 
-/// Terminal capability functions
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<Capabilities>)
->()
-external void getTerminalCapabilities(
-  ffi.Pointer<CliRenderer> renderer,
-  ffi.Pointer<Capabilities> caps,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Uint8)>()
+external void enableKittyKeyboard(int renderer, int flags);
 
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Uint8>, ffi.Size)
->()
-external void processCapabilityResponse(
-  ffi.Pointer<CliRenderer> renderer,
-  ffi.Pointer<ffi.Uint8> response,
-  int responseLen,
-);
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void disableKittyKeyboard(int renderer);
 
-/// Debug and utility functions
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool, ffi.Uint8)>()
-external void setDebugOverlay(
-  ffi.Pointer<CliRenderer> renderer,
-  bool enabled,
-  int corner,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>)>()
-external void clearTerminal(ffi.Pointer<CliRenderer> renderer);
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Bool)>()
+external void setupTerminal(int renderer, bool useAlternateScreen);
 
 @ffi.Native<
   ffi.Void Function(
-    ffi.Pointer<CliRenderer>,
+    OpenTuiHandle,
     ffi.Int32,
     ffi.Int32,
     ffi.Uint32,
@@ -423,7 +248,7 @@ external void clearTerminal(ffi.Pointer<CliRenderer> renderer);
   )
 >()
 external void addToHitGrid(
-  ffi.Pointer<CliRenderer> renderer,
+  int renderer,
   int x,
   int y,
   int width,
@@ -431,213 +256,16 @@ external void addToHitGrid(
   int id,
 );
 
-@ffi.Native<
-  ffi.Uint32 Function(ffi.Pointer<CliRenderer>, ffi.Uint32, ffi.Uint32)
->()
-external int checkHit(ffi.Pointer<CliRenderer> renderer, int x, int y);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>)>()
-external void dumpHitGrid(ffi.Pointer<CliRenderer> renderer);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Int64)>()
-external void dumpBuffers(ffi.Pointer<CliRenderer> renderer, int timestamp);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Int64)>()
-external void dumpStdoutBuffer(
-  ffi.Pointer<CliRenderer> renderer,
-  int timestamp,
-);
-
-/// Keyboard and terminal setup functions
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint8)>()
-external void enableKittyKeyboard(ffi.Pointer<CliRenderer> renderer, int flags);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>)>()
-external void disableKittyKeyboard(ffi.Pointer<CliRenderer> renderer);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)>()
-external void setupTerminal(
-  ffi.Pointer<CliRenderer> renderer,
-  bool useAlternateScreen,
-);
-
-/// TextBuffer functions
-@ffi.Native<ffi.Pointer<TextBuffer> Function(ffi.Uint32, ffi.Uint8)>()
-external ffi.Pointer<TextBuffer> createTextBuffer(int length, int widthMethod);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>)>()
-external void destroyTextBuffer(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Uint32> textBufferGetCharPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Float> textBufferGetFgPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Float> textBufferGetBgPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Pointer<ffi.Uint16> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Uint16> textBufferGetAttributesPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>()
-external int textBufferGetLength(ffi.Pointer<TextBuffer> textBuffer);
+@ffi.Native<ffi.Uint32 Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)>()
+external int checkHit(int renderer, int x, int y);
 
 @ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<TextBuffer>,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
-    ffi.Uint16,
-  )
+  ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint8>, ffi.Uint32)
 >()
-external void textBufferSetCell(
-  ffi.Pointer<TextBuffer> textBuffer,
-  int index,
-  int char_code,
-  ffi.Pointer<ffi.Float> fg,
-  ffi.Pointer<ffi.Float> bg,
-  int attr,
-);
-
-@ffi.Native<
-  ffi.Pointer<TextBuffer> Function(
-    ffi.Pointer<TextBuffer>,
-    ffi.Pointer<TextBuffer>,
-  )
->()
-external ffi.Pointer<TextBuffer> textBufferConcat(
-  ffi.Pointer<TextBuffer> tb1,
-  ffi.Pointer<TextBuffer> tb2,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Uint32)>()
-external void textBufferResize(
-  ffi.Pointer<TextBuffer> textBuffer,
-  int newLength,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>)>()
-external void textBufferReset(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<TextBuffer>,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
-  )
->()
-external void textBufferSetSelection(
-  ffi.Pointer<TextBuffer> textBuffer,
-  int start,
-  int end,
-  ffi.Pointer<ffi.Float> bgColor,
-  ffi.Pointer<ffi.Float> fgColor,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>)>()
-external void textBufferResetSelection(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
->()
-external void textBufferSetDefaultFg(
-  ffi.Pointer<TextBuffer> textBuffer,
-  ffi.Pointer<ffi.Float> fg,
-);
-
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
->()
-external void textBufferSetDefaultBg(
-  ffi.Pointer<TextBuffer> textBuffer,
-  ffi.Pointer<ffi.Float> bg,
-);
-
-@ffi.Native<
-  ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Uint8>)
->()
-external void textBufferSetDefaultAttributes(
-  ffi.Pointer<TextBuffer> textBuffer,
-  ffi.Pointer<ffi.Uint8> attr,
-);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>)>()
-external void textBufferResetDefaults(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<
-  ffi.Uint32 Function(
-    ffi.Pointer<TextBuffer>,
-    ffi.Pointer<ffi.Uint8>,
-    ffi.Uint32,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Float>,
-    ffi.Pointer<ffi.Uint8>,
-  )
->()
-external int textBufferWriteChunk(
-  ffi.Pointer<TextBuffer> textBuffer,
-  ffi.Pointer<ffi.Uint8> textBytes,
-  int textLen,
-  ffi.Pointer<ffi.Float> fg,
-  ffi.Pointer<ffi.Float> bg,
-  ffi.Pointer<ffi.Uint8> attr,
-);
-
-@ffi.Native<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>()
-external int textBufferGetCapacity(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<TextBuffer>)>()
-external void textBufferFinalizeLineInfo(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Uint32> textBufferGetLineStartsPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>()
-external ffi.Pointer<ffi.Uint32> textBufferGetLineWidthsPtr(
-  ffi.Pointer<TextBuffer> textBuffer,
-);
-
-@ffi.Native<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>()
-external int textBufferGetLineCount(ffi.Pointer<TextBuffer> textBuffer);
-
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Pointer<OptimizedBuffer>,
-    ffi.Pointer<TextBuffer>,
-    ffi.Int32,
-    ffi.Int32,
-    ffi.Int32,
-    ffi.Int32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Bool,
-  )
->()
-external void bufferDrawTextBuffer(
-  ffi.Pointer<OptimizedBuffer> buffer,
-  ffi.Pointer<TextBuffer> textBuffer,
-  int x,
-  int y,
-  int clipX,
-  int clipY,
-  int clipWidth,
-  int clipHeight,
-  bool hasClipRect,
+external void processCapabilityResponse(
+  int renderer,
+  ffi.Pointer<ffi.Uint8> response,
+  int responseLen,
 );
 
 /// mbstate_t is an opaque object to keep conversion state, during multibyte
@@ -651,209 +279,21 @@ final class __mbstate_t extends ffi.Union {
   external int _mbstateL;
 }
 
-/// Terminal capabilities structure
-final class Capabilities extends ffi.Struct {
-  @ffi.Bool()
-  external bool supports_truecolor;
+final class CursorStyleOptions extends ffi.Struct {
+  @ffi.Uint8()
+  external int style;
 
-  @ffi.Bool()
-  external bool supports_mouse;
+  @ffi.Uint8()
+  external int blinking;
 
-  @ffi.Bool()
-  external bool supports_kitty_keyboard;
+  external ffi.Pointer<ffi.Uint16> color;
 
-  @ffi.Bool()
-  external bool supports_alternate_screen;
+  @ffi.Uint8()
+  external int cursor;
 }
 
-final class CliRenderer extends ffi.Opaque {}
-
-final class OptimizedBuffer extends ffi.Opaque {}
-
-final class TextBuffer extends ffi.Opaque {}
-
-const int __WORDSIZE = 64;
-
-const int __has_safe_buffers = 1;
-
-const int __DARWIN_ONLY_64_BIT_INO_T = 1;
-
-const int __DARWIN_ONLY_UNIX_CONFORMANCE = 1;
-
-const int __DARWIN_ONLY_VERS_1050 = 1;
-
-const int __DARWIN_UNIX03 = 1;
-
-const int __DARWIN_64_BIT_INO_T = 1;
-
-const int __DARWIN_VERS_1050 = 1;
-
-const int __DARWIN_NON_CANCELABLE = 0;
-
-const String __DARWIN_SUF_EXTSN = '\$DARWIN_EXTSN';
-
-const int __DARWIN_C_ANSI = 4096;
-
-const int __DARWIN_C_FULL = 900000;
-
-const int __DARWIN_C_LEVEL = 900000;
-
-const int __STDC_WANT_LIB_EXT1__ = 1;
-
-const int __DARWIN_NO_LONG_LONG = 0;
-
-const int _DARWIN_FEATURE_64_BIT_INODE = 1;
-
-const int _DARWIN_FEATURE_ONLY_64_BIT_INODE = 1;
-
-const int _DARWIN_FEATURE_ONLY_VERS_1050 = 1;
-
-const int _DARWIN_FEATURE_ONLY_UNIX_CONFORMANCE = 1;
-
-const int _DARWIN_FEATURE_UNIX_CONFORMANCE = 3;
-
-const int __has_ptrcheck = 0;
-
-const int __has_bounds_safety_attributes = 0;
-
-const int __DARWIN_NULL = 0;
-
-const int __PTHREAD_SIZE__ = 8176;
-
-const int __PTHREAD_ATTR_SIZE__ = 56;
-
-const int __PTHREAD_MUTEXATTR_SIZE__ = 8;
-
-const int __PTHREAD_MUTEX_SIZE__ = 56;
-
-const int __PTHREAD_CONDATTR_SIZE__ = 8;
-
-const int __PTHREAD_COND_SIZE__ = 40;
-
-const int __PTHREAD_ONCE_SIZE__ = 8;
-
-const int __PTHREAD_RWLOCK_SIZE__ = 192;
-
-const int __PTHREAD_RWLOCKATTR_SIZE__ = 16;
-
-const int INT8_MAX = 127;
-
-const int INT16_MAX = 32767;
-
-const int INT32_MAX = 2147483647;
-
-const int INT64_MAX = 9223372036854775807;
-
-const int INT8_MIN = -128;
-
-const int INT16_MIN = -32768;
-
-const int INT32_MIN = -2147483648;
-
-const int INT64_MIN = -9223372036854775808;
-
-const int UINT8_MAX = 255;
-
-const int UINT16_MAX = 65535;
-
-const int UINT32_MAX = 4294967295;
-
-const int UINT64_MAX = -1;
-
-const int INT_LEAST8_MIN = -128;
-
-const int INT_LEAST16_MIN = -32768;
-
-const int INT_LEAST32_MIN = -2147483648;
-
-const int INT_LEAST64_MIN = -9223372036854775808;
-
-const int INT_LEAST8_MAX = 127;
-
-const int INT_LEAST16_MAX = 32767;
-
-const int INT_LEAST32_MAX = 2147483647;
-
-const int INT_LEAST64_MAX = 9223372036854775807;
-
-const int UINT_LEAST8_MAX = 255;
-
-const int UINT_LEAST16_MAX = 65535;
-
-const int UINT_LEAST32_MAX = 4294967295;
-
-const int UINT_LEAST64_MAX = -1;
-
-const int INT_FAST8_MIN = -128;
-
-const int INT_FAST16_MIN = -32768;
-
-const int INT_FAST32_MIN = -2147483648;
-
-const int INT_FAST64_MIN = -9223372036854775808;
-
-const int INT_FAST8_MAX = 127;
-
-const int INT_FAST16_MAX = 32767;
-
-const int INT_FAST32_MAX = 2147483647;
-
-const int INT_FAST64_MAX = 9223372036854775807;
-
-const int UINT_FAST8_MAX = 255;
-
-const int UINT_FAST16_MAX = 65535;
-
-const int UINT_FAST32_MAX = 4294967295;
-
-const int UINT_FAST64_MAX = -1;
-
-const int INTPTR_MAX = 9223372036854775807;
-
-const int INTPTR_MIN = -9223372036854775808;
-
-const int UINTPTR_MAX = -1;
-
-const int INTMAX_MAX = 9223372036854775807;
-
-const int UINTMAX_MAX = -1;
-
-const int INTMAX_MIN = -9223372036854775808;
-
-const int PTRDIFF_MIN = -9223372036854775808;
-
-const int PTRDIFF_MAX = 9223372036854775807;
-
-const int SIZE_MAX = -1;
-
-const int RSIZE_MAX = 9223372036854775807;
-
-const int WCHAR_MAX = 2147483647;
-
-const int WCHAR_MIN = -2147483648;
-
-const int WINT_MIN = -2147483648;
-
-const int WINT_MAX = 2147483647;
-
-const int SIG_ATOMIC_MIN = -2147483648;
-
-const int SIG_ATOMIC_MAX = 2147483647;
-
-const int __bool_true_false_are_defined = 1;
-
-const int true1 = 1;
-
-const int false1 = 0;
-
-const int __DARWIN_WCHAR_MAX = 2147483647;
-
-const int __DARWIN_WCHAR_MIN = -2147483648;
-
-const int __DARWIN_WEOF = -1;
-
-const int _FORTIFY_SOURCE = 2;
-
-const int NULL = 0;
-
-const int USER_ADDR_NULL = 0;
+/// Noir-owned declaration of the canonical OpenTUI v0.5.1 exports selected by
+/// this package. The source of truth is external/opentui/packages/core/src/zig/
+/// lib.zig at ad9a818d7a9d73f3386e92a445d0feb4b395c69e.
+typedef OpenTuiHandle = ffi.Uint32;
+typedef DartOpenTuiHandle = int;

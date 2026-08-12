@@ -32,16 +32,14 @@ Run focused tests while developing, then:
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
-    dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+    dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
-included in the standard suite. The sole
-`restricted-process-lifecycle` test deliberately exercises the Go wrapper's
-signal and termination behavior and is not run without exact authorization.
+included in the standard suite.
 
-Do not dispatch the checked-in GitHub workflows. They are intentionally
-disabled at the repository-permissions level.
+Automatic push/pull-request CI is ordinary verification. Do not manually
+dispatch or rerun a workflow without exact authorization.
 
 ## Tests
 

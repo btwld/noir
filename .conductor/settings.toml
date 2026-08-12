@@ -9,5 +9,5 @@ command = "dart analyze --fatal-infos"
 icon = "search-check"
 
 [scripts.run.test]
-command = "dart test --exclude-tags restricted-process-lifecycle --concurrency=1"
+command = "dart test --concurrency=1"
 icon = "test-tube"

@@ -4,8 +4,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:noir/src/ffi/abi_contract.dart';
 import 'package:test/test.dart';
+
+import 'helpers/opentui_v051_contract.dart';
 
 /// Tests to ensure all required platform binaries are present and valid.
 ///
@@ -54,10 +55,8 @@ void main() {
         if (file.existsSync()) {
           final sizeKB = file.lengthSync() / 1024;
 
-          // Reasonable size bounds (adjust based on actual OpenTUI sizes)
-          // - Minimum: 100KB (sanity check for non-empty files)
-          // - Maximum: 5MB (detect bloated debug builds)
-          if (sizeKB < 100 || sizeKB > 5 * 1024) {
+          // Broad sanity bounds around the unchanged official release assets.
+          if (sizeKB < 100 || sizeKB > 25 * 1024) {
             problematicBinaries.add('$path: ${sizeKB.toStringAsFixed(1)}KB');
           }
         }
@@ -70,13 +69,29 @@ void main() {
       }
     });
 
+    test('all binaries target their declared object architecture', () {
+      final mismatches = <String>[];
+      for (final (platform, arch, filename) in expectedTargets) {
+        final path = 'native/$platform/$arch/$filename';
+        final actual = _readObjectArchitecture(File(path).readAsBytesSync());
+        final expected = '$platform-$arch';
+        if (actual != expected) {
+          mismatches.add('$path: expected $expected, found $actual');
+        }
+      }
+      expect(mismatches, isEmpty, reason: mismatches.join('\n'));
+    });
+
     test('native manifest records every bundled binary', () {
       final manifestFile = File('native_manifest.json');
       expect(manifestFile.existsSync(), isTrue);
 
       final manifest =
           jsonDecode(manifestFile.readAsStringSync()) as Map<String, Object?>;
-      expect(manifest['abiVersion'], expectedOpenTuiAbiVersion);
+      expect(manifest['schemaVersion'], 1);
+      expect(manifest['repository'], 'https://github.com/anomalyco/opentui');
+      expect(manifest['tag'], 'v0.5.1');
+      expect(manifest['commit'], 'ad9a818d7a9d73f3386e92a445d0feb4b395c69e');
       final assetsObject = manifest['assets'];
       if (assetsObject is! Map<String, Object?>) {
         fail('native_manifest.json assets must be a map');
@@ -88,7 +103,9 @@ void main() {
         expect(entry, isNotNull, reason: 'Missing manifest entry $key');
         expect(entry!['path'], 'native/$platform/$arch/$filename');
         expect(entry['sha256'], matches(RegExp(r'^[a-f0-9]{64}$')));
-        expect(entry['url'], startsWith('https://'));
+        expect(entry['archiveUrl'], startsWith('https://'));
+        expect(entry['archiveSha256'], matches(RegExp(r'^[a-f0-9]{64}$')));
+        expect(entry['archiveMember'], isNotEmpty);
       }
     });
 
@@ -100,7 +117,7 @@ void main() {
 
       for (final entry in assets.values.cast<Map<String, Object?>>()) {
         if (entry['os'] == 'macos') {
-          expect(entry['minimumOsVersion'], '15.0');
+          expect(entry['minimumOsVersion'], '13.0');
           final path = entry['path']! as String;
           expect(
             _readMacOsMinimumVersion(File(path).readAsBytesSync()),
@@ -203,7 +220,7 @@ void main() {
         '${result.stdout}\n${result.stderr}',
         stripLeadingUnderscore: Platform.isMacOS,
       );
-      for (final symbol in requiredOpenTuiNativeSymbolNames) {
+      for (final symbol in selectedOpenTuiV051Symbols) {
         expect(
           exportedSymbols,
           contains(symbol),
@@ -236,13 +253,13 @@ void main() {
 
       final totalSizeMB = totalSizeBytes / (1024 * 1024);
 
-      // Should be under 10MB uncompressed (pub.dev has 100MB limit)
+      // The six unchanged official assets remain under pub.dev's 100MB limit.
       expect(
         totalSizeMB,
-        lessThan(10),
+        lessThan(60),
         reason:
             'Total binary size too large: ${totalSizeMB.toStringAsFixed(1)}MB. '
-            'Consider stripping debug symbols.',
+            'The official asset set no longer fits the package boundary.',
       );
 
       // Should be at least 1MB (sanity check)
@@ -254,7 +271,7 @@ void main() {
       );
 
       print(
-        '✅ Total binary size: ${totalSizeMB.toStringAsFixed(1)}MB '
+        'OpenTUI binary total: ${totalSizeMB.toStringAsFixed(1)}MB '
         '(~${(totalSizeMB * 0.3).toStringAsFixed(1)}MB gzipped)',
       );
     });
@@ -357,4 +374,45 @@ String _readMacOsMinimumVersion(List<int> bytes) {
   final minor = (encoded >> 8) & 0xff;
   final patch = encoded & 0xff;
   return patch == 0 ? '$major.$minor' : '$major.$minor.$patch';
+}
+
+String _readObjectArchitecture(List<int> bytes) {
+  final data = ByteData.sublistView(Uint8List.fromList(bytes));
+  if (bytes.length >= 20 &&
+      bytes[0] == 0x7f &&
+      bytes[1] == 0x45 &&
+      bytes[2] == 0x4c &&
+      bytes[3] == 0x46) {
+    if (bytes[4] != 2 || bytes[5] != 1) {
+      fail('Expected a little-endian 64-bit ELF binary.');
+    }
+    return switch (data.getUint16(18, Endian.little)) {
+      62 => 'linux-x64',
+      183 => 'linux-arm64',
+      final machine => fail('Unsupported ELF machine $machine.'),
+    };
+  }
+
+  if (bytes.length >= 8 && data.getUint32(0, Endian.little) == 0xfeedfacf) {
+    return switch (data.getUint32(4, Endian.little)) {
+      0x01000007 => 'macos-x64',
+      0x0100000c => 'macos-arm64',
+      final cpu => fail('Unsupported Mach-O CPU type $cpu.'),
+    };
+  }
+
+  if (bytes.length >= 0x40 && bytes[0] == 0x4d && bytes[1] == 0x5a) {
+    final peOffset = data.getUint32(0x3c, Endian.little);
+    if (peOffset + 6 > bytes.length ||
+        data.getUint32(peOffset, Endian.little) != 0x00004550) {
+      fail('Invalid PE header.');
+    }
+    return switch (data.getUint16(peOffset + 4, Endian.little)) {
+      0x8664 => 'windows-x64',
+      0xaa64 => 'windows-arm64',
+      final machine => fail('Unsupported PE machine $machine.'),
+    };
+  }
+
+  fail('Unsupported native object format.');
 }

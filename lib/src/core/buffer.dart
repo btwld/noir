@@ -9,16 +9,8 @@ import '../ffi/types.dart';
 import 'color.dart';
 import 'grapheme_metrics.dart';
 import 'terminal_style.dart';
-import 'text_buffer.dart';
 
 const _rgbaChannelsPerCell = 4;
-const _textBufferTransparentCell = Color(0.123, 0.234, 0.345, 0.456);
-const _packedGraphemeMask = 0xC0000000;
-const _packedGraphemeStart = 0x80000000;
-const _packedGraphemeContinuation = 0xC0000000;
-const _packedRightExtentShift = 28;
-const _packedExtentMask = 0x3;
-const _packedGraphemeIdMask = 0x03FFFFFF;
 
 void _checkUnsignedAbi(int value, int maximum, String name) {
   if (value < 0 || value > maximum) {
@@ -32,64 +24,25 @@ void _checkSigned32Abi(int value, String name) {
   }
 }
 
-({Pointer<TextBufferHandle> textBufferHandle, bool hasClipRect})
-_validateTextBufferDrawArguments(
-  Buffer destination,
-  TextBuffer textBuffer,
-  int x,
-  int y, {
-  int? clipX,
-  int? clipY,
-  int? clipWidth,
-  int? clipHeight,
-}) {
-  destination._checkValid();
-  final textBufferHandle = textBuffer.handle;
-  _checkSigned32Abi(x, 'x');
-  _checkSigned32Abi(y, 'y');
-  if (clipX != null) _checkSigned32Abi(clipX, 'clipX');
-  if (clipY != null) _checkSigned32Abi(clipY, 'clipY');
-  if (clipWidth != null) {
-    _checkUnsignedAbi(clipWidth, 0xFFFFFFFF, 'clipWidth');
-  }
-  if (clipHeight != null) {
-    _checkUnsignedAbi(clipHeight, 0xFFFFFFFF, 'clipHeight');
-  }
-  final hasClipRect =
-      clipX != null && clipY != null && clipWidth != null && clipHeight != null;
-  return (textBufferHandle: textBufferHandle, hasClipRect: hasClipRect);
-}
-
 int _rgbaOffset(int cellIndex) => cellIndex * _rgbaChannelsPerCell;
 
-Color _readRgba(Float32List values, int cellIndex) {
+Color _readRgba(Uint16List values, int cellIndex) {
   final offset = _rgbaOffset(cellIndex);
   return Color(
-    values[offset],
-    values[offset + 1],
-    values[offset + 2],
-    values[offset + 3],
+    (values[offset] & 0xFF) / 255,
+    (values[offset + 1] & 0xFF) / 255,
+    (values[offset + 2] & 0xFF) / 255,
+    (values[offset + 3] & 0xFF) / 255,
   );
 }
 
-void _writeRgba(Float32List values, int cellIndex, Color color) {
+void _writeRgba(Uint16List values, int cellIndex, Color color) {
   final offset = _rgbaOffset(cellIndex);
-  values[offset] = color.r;
-  values[offset + 1] = color.g;
-  values[offset + 2] = color.b;
-  values[offset + 3] = color.a;
+  values[offset] = (color.r * 255).round();
+  values[offset + 1] = (color.g * 255).round();
+  values[offset + 2] = (color.b * 255).round();
+  values[offset + 3] = (color.a * 255).round();
 }
-
-bool _isPackedGraphemeStart(int code) =>
-    (code & _packedGraphemeMask) == _packedGraphemeStart;
-
-bool _isPackedGraphemeContinuation(int code) =>
-    (code & _packedGraphemeMask) == _packedGraphemeContinuation;
-
-int _packedGraphemeId(int code) => code & _packedGraphemeIdMask;
-
-int _packedRightExtent(int code) =>
-    (code >> _packedRightExtentShift) & _packedExtentMask;
 
 /// Shared validity flag for a [Buffer] and every view ([Buffer.clipped]) of
 /// it. Renderer-driven invalidation (after `render`, `resize`, or `dispose`)
@@ -101,9 +54,60 @@ class _BufferValidity {
 /// Creates a buffer wrapper for a native frame owned by the renderer.
 @internal
 Buffer createBufferFromNative(
-  Pointer<OptimizedBufferHandle> pointer,
+  OptimizedBufferHandle pointer,
   OpenTuiBindings bindings,
 ) => Buffer._(pointer, bindings);
+
+/// Resolves native grapheme-table cells for framework capture tests.
+@internal
+@visibleForTesting
+String debugResolveBufferCharacters(
+  Buffer buffer, {
+  bool addLineBreaks = false,
+}) {
+  buffer._checkValid();
+  return buffer._bindings.bufferResolvedCharacters(
+    buffer._ptr,
+    addLineBreaks: addLineBreaks,
+  );
+}
+
+/// Resolves exactly one native cell without re-segmenting adjacent cell text.
+///
+/// Plain Unicode scalar cells can be decoded directly. Packed grapheme and
+/// image cells are resolved by temporarily hiding every other character word
+/// from OpenTUI's debug serializer, with the original frame restored even if
+/// resolution fails. This test-only path preserves native cell boundaries for
+/// separately drawn clusters that Dart's whole-string segmentation could
+/// otherwise merge.
+@internal
+@visibleForTesting
+String debugResolveBufferCell(Buffer buffer, int cellIndex) {
+  buffer._checkValid();
+  final direct = buffer.getDirectAccess();
+  if (cellIndex < 0 || cellIndex >= direct.chars.length) {
+    throw RangeError.range(cellIndex, 0, direct.chars.length - 1, 'cellIndex');
+  }
+
+  final character = direct.chars[cellIndex];
+  final kind = character & 0xC0000000;
+  if (kind == 0xC0000000) return '';
+  if (kind == 0) {
+    return character == 0 || character > 0x10FFFF
+        ? ' '
+        : String.fromCharCode(character);
+  }
+
+  final original = Uint32List.fromList(direct.chars);
+  try {
+    direct.chars
+      ..fillRange(0, direct.chars.length, 0xC0000000)
+      ..[cellIndex] = character;
+    return debugResolveBufferCharacters(buffer);
+  } finally {
+    direct.chars.setAll(0, original);
+  }
+}
 
 /// High-level wrapper for OpenTUI's optimized buffer operations.
 ///
@@ -145,7 +149,7 @@ class Buffer {
 
   Buffer._withValidity(this._ptr, this._bindings, this._validity);
   final OpenTuiBindings _bindings;
-  final Pointer<OptimizedBufferHandle> _ptr;
+  final OptimizedBufferHandle _ptr;
   final _BufferValidity _validity;
 
   /// Returns a [Buffer] view that silently drops draw calls outside the
@@ -230,7 +234,7 @@ class Buffer {
   /// ```
   ///
   /// [x] and [y] must fit unsigned 32-bit values and [attributes] an unsigned
-  /// 8-bit value; violations throw a pre-invocation [RangeError] after the
+  /// 32-bit value; violations throw a pre-invocation [RangeError] after the
   /// lifecycle check.
   void drawText(
     String text,
@@ -243,7 +247,7 @@ class Buffer {
     _checkValid();
     _checkUnsignedAbi(x, 0xFFFFFFFF, 'x');
     _checkUnsignedAbi(y, 0xFFFFFFFF, 'y');
-    _checkUnsignedAbi(attributes, 0xFF, 'attributes');
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
     _bindings.bufferDrawText(_ptr, text, x, y, fg, bg, attributes);
   }
 
@@ -327,7 +331,7 @@ class Buffer {
 
   /// Sets a single cell at (x, y) using alpha blending.
   ///
-  /// [attributes] must fit an unsigned 8-bit value; a violation throws a
+  /// [attributes] must fit an unsigned 32-bit value; a violation throws a
   /// pre-invocation [RangeError] after the lifecycle, character, and bounds
   /// checks.
   void setCell(int x, int y, String char, Color fg, Color bg, int attributes) {
@@ -336,7 +340,7 @@ class Buffer {
 
   /// Sets a cell at (x, y) with full alpha-blending support.
   ///
-  /// [attributes] must fit an unsigned 8-bit value; a violation throws a
+  /// [attributes] must fit an unsigned 32-bit value; a violation throws a
   /// pre-invocation [RangeError] after the lifecycle, character, and bounds
   /// checks.
   void setCellWithAlphaBlending(
@@ -354,7 +358,7 @@ class Buffer {
 
   /// Shared write funnel for public cell writes and the clipped-view
   /// compositing seam: lifecycle, then bounds, then the single unsigned
-  /// 8-bit [attributes] domain check. [charCode] is a Unicode scalar or a
+  /// 32-bit [attributes] domain check. [charCode] is a Unicode scalar or a
   /// native-encoded cell word, both unsigned 32-bit by construction.
   void _setCellCodeWithAlphaBlending(
     int x,
@@ -370,7 +374,7 @@ class Buffer {
         'Coordinates ($x, $y) out of bounds for ${width}x$height buffer',
       );
     }
-    _checkUnsignedAbi(attributes, 0xFF, 'attributes');
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
 
     _bindings.bufferSetCellWithAlphaBlending(
       _ptr,
@@ -461,7 +465,7 @@ class Buffer {
 
     return DirectBufferAccess(
       chars: charPtr.asTypedList(len),
-      foregrounds: fgPtr.asTypedList(len * 4), // 4 floats per Color
+      foregrounds: fgPtr.asTypedList(len * 4), // 4 u16 values per Color
       backgrounds: bgPtr.asTypedList(len * 4),
       attributes: attrPtr.asTypedList(len),
       width: w,
@@ -469,48 +473,10 @@ class Buffer {
     );
   }
 
-  /// Draw a [TextBuffer] to this buffer.
-  ///
-  /// [x], [y], and supplied [clipX]/[clipY] values must fit signed 32-bit
-  /// integers. Supplied [clipWidth]/[clipHeight] values must fit unsigned
-  /// 32-bit integers. Invalid destination or source lifecycles take precedence
-  /// over these pre-invocation [RangeError] checks.
-  void drawTextBuffer(
-    TextBuffer textBuffer,
-    int x,
-    int y, {
-    int? clipX,
-    int? clipY,
-    int? clipWidth,
-    int? clipHeight,
-  }) {
-    final validation = _validateTextBufferDrawArguments(
-      this,
-      textBuffer,
-      x,
-      y,
-      clipX: clipX,
-      clipY: clipY,
-      clipWidth: clipWidth,
-      clipHeight: clipHeight,
-    );
-    _bindings.bufferDrawTextBuffer(
-      _ptr,
-      validation.textBufferHandle,
-      x,
-      y,
-      clipX ?? 0,
-      clipY ?? 0,
-      clipWidth ?? 0,
-      clipHeight ?? 0,
-      validation.hasClipRect,
-    );
-  }
-
   /// Internal: raw native handle. Subject to invalidation; do not retain
   /// across frames or pass to user code. Validity-checked on read.
   @internal
-  Pointer<OptimizedBufferHandle> get handle {
+  OptimizedBufferHandle get handle {
     _checkValid();
     return _ptr;
   }
@@ -535,14 +501,14 @@ class DirectBufferAccess {
   /// array.
   final Uint32List chars;
 
-  /// Foreground [Color] channels packed as four floats per cell (RGBA).
-  final Float32List foregrounds;
+  /// Foreground [Color] channels packed as four `u16` values per cell (RGBA).
+  final Uint16List foregrounds;
 
-  /// Background [Color] channels packed as four floats per cell (RGBA).
-  final Float32List backgrounds;
+  /// Background [Color] channels packed as four `u16` values per cell (RGBA).
+  final Uint16List backgrounds;
 
   /// Text attributes bitmask for each cell.
-  final Uint8List attributes;
+  final Uint32List attributes;
 
   /// Width of the buffer in cells.
   final int width;
@@ -612,11 +578,11 @@ class DirectBufferAccess {
 
   /// Set text attributes at the specified coordinates.
   ///
-  /// [attr] must fit an unsigned 8-bit value; violations throw [RangeError]
+  /// [attr] must fit an unsigned 32-bit value; violations throw [RangeError]
   /// before the native-memory store instead of silently truncating.
   void setAttributes(int x, int y, int attr) {
     final index = _getIndex(x, y);
-    _checkUnsignedAbi(attr, 0xFF, 'attr');
+    _checkUnsignedAbi(attr, 0xFFFFFFFF, 'attr');
     attributes[index] = attr;
   }
 }
@@ -626,7 +592,7 @@ class DirectBufferAccess {
 /// Internal: created via [Buffer.clipped]. Shares the parent's validity
 /// token so that invalidating the parent invalidates every view of it.
 /// Coordinates stay in signed logical space and clip silently, while the
-/// lifecycle and unsigned 8-bit attribute domains are validated even for
+/// lifecycle and unsigned 32-bit attribute domains are validated even for
 /// calls the clip rectangle drops.
 class _ClippedBufferView extends Buffer {
   _ClippedBufferView(
@@ -653,7 +619,7 @@ class _ClippedBufferView extends Buffer {
   @override
   void setCell(int x, int y, String char, Color fg, Color bg, int attributes) {
     _checkValid();
-    _checkUnsignedAbi(attributes, 0xFF, 'attributes');
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
     if (!_inClip(x, y)) return;
     super.setCell(x, y, char, fg, bg, attributes);
   }
@@ -668,7 +634,7 @@ class _ClippedBufferView extends Buffer {
     int attributes,
   ) {
     _checkValid();
-    _checkUnsignedAbi(attributes, 0xFF, 'attributes');
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
     if (!_inClip(x, y)) return;
     super.setCellWithAlphaBlending(x, y, char, fg, bg, attributes);
   }
@@ -694,7 +660,7 @@ class _ClippedBufferView extends Buffer {
     int attributes = 0,
   }) {
     _checkValid();
-    _checkUnsignedAbi(attributes, 0xFF, 'attributes');
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
     // drawText draws horizontally; clip per-row. The horizontal window is
     // computed in terminal cells over grapheme clusters (never UTF-16 code
     // units), so CJK and astral-plane clusters keep their true columns. A
@@ -714,200 +680,5 @@ class _ClippedBufferView extends Buffer {
     );
     if (visible.isEmpty) return;
     super.drawText(visible, drawX, y, fg, bg: bg, attributes: attributes);
-  }
-
-  /// Draws [textBuffer] through this clipped view.
-  ///
-  /// Destination and source lifecycle checks precede signed 32-bit [x], [y],
-  /// [clipX], and [clipY] validation and unsigned 32-bit [clipWidth] and
-  /// [clipHeight] validation. Every supplied clip value is checked even when
-  /// the all-four-fields clip rectangle is inactive. The source must have
-  /// finalized line metadata; stale metadata surfaces as the source's
-  /// [StateError].
-  @override
-  void drawTextBuffer(
-    TextBuffer textBuffer,
-    int x,
-    int y, {
-    int? clipX,
-    int? clipY,
-    int? clipWidth,
-    int? clipHeight,
-  }) {
-    final validation = _validateTextBufferDrawArguments(
-      this,
-      textBuffer,
-      x,
-      y,
-      clipX: clipX,
-      clipY: clipY,
-      clipWidth: clipWidth,
-      clipHeight: clipHeight,
-    );
-    final snapshot = textBuffer.compositingSnapshotFromCapturedHandle(
-      validation.textBufferHandle,
-    );
-    if (this.clipWidth <= 0 || this.clipHeight <= 0) return;
-
-    final extents = _textBufferExtents(snapshot);
-    final sourceX = clipX ?? 0;
-    final sourceY = clipY ?? 0;
-    final visibleSourceWidth = this.clipX + this.clipWidth - x;
-    final visibleSourceHeight = this.clipY + this.clipHeight - y;
-    final inferredSourceWidth = extents.width - sourceX;
-    final inferredSourceHeight = extents.height - sourceY;
-    final sourceWidth =
-        clipWidth ??
-        (inferredSourceWidth > visibleSourceWidth
-            ? inferredSourceWidth
-            : visibleSourceWidth);
-    final sourceHeight =
-        clipHeight ??
-        (inferredSourceHeight > visibleSourceHeight
-            ? inferredSourceHeight
-            : visibleSourceHeight);
-    if (sourceWidth <= 0 || sourceHeight <= 0) return;
-
-    final destLeft = x;
-    final destTop = y;
-    final destRight = x + sourceWidth;
-    final destBottom = y + sourceHeight;
-
-    final viewLeft = this.clipX;
-    final viewTop = this.clipY;
-    final viewRight = this.clipX + this.clipWidth;
-    final viewBottom = this.clipY + this.clipHeight;
-
-    final clippedLeft = destLeft < viewLeft ? viewLeft : destLeft;
-    final clippedTop = destTop < viewTop ? viewTop : destTop;
-    final clippedRight = destRight > viewRight ? viewRight : destRight;
-    final clippedBottom = destBottom > viewBottom ? viewBottom : destBottom;
-    if (clippedLeft >= clippedRight || clippedTop >= clippedBottom) return;
-
-    _copyTextBufferCells(
-      snapshot,
-      clippedLeft,
-      clippedTop,
-      sourceX + (clippedLeft - destLeft),
-      sourceY + (clippedTop - destTop),
-      clippedRight - clippedLeft,
-      clippedBottom - clippedTop,
-    );
-  }
-
-  /// Copies snapshot cells to this view through [_setTextBufferCell].
-  ///
-  /// Snapshot attributes are native `u16` words, yet every value observed
-  /// here fits the unsigned 8-bit cell domain: `TextBuffer.writeChunk` caps
-  /// attributes at 0xFF before writing, the native TextBuffer `setCell` path
-  /// stores `attributes & ATTR_MASK` (0xFF), and the `USE_DEFAULT_*` high
-  /// bits accompany only null color pointers, which this package never
-  /// passes. No mask is applied here; a violated invariant surfaces as the
-  /// shared funnel's [RangeError] instead of silently diverging from the
-  /// native `USE_DEFAULT_ATTR` semantics.
-  void _copyTextBufferCells(
-    ({DirectTextAccess access, List<int> lineStarts, List<int> lineWidths})
-    snapshot,
-    int destX,
-    int destY,
-    int sourceX,
-    int sourceY,
-    int drawWidth,
-    int drawHeight,
-  ) {
-    final access = snapshot.access;
-    final lineStarts = snapshot.lineStarts;
-    final lineWidths = snapshot.lineWidths;
-
-    for (var row = 0; row < drawHeight; row++) {
-      final sourceRow = sourceY + row;
-      if (sourceRow < 0 ||
-          sourceRow >= lineStarts.length ||
-          sourceRow >= lineWidths.length) {
-        continue;
-      }
-
-      final lineStart = lineStarts[sourceRow];
-      final lineWidth = lineWidths[sourceRow];
-      int? lastDrawnGraphemeId;
-      for (var col = 0; col < drawWidth; col++) {
-        final sourceCol = sourceX + col;
-        if (sourceCol < 0 || sourceCol >= lineWidth) {
-          continue;
-        }
-
-        final sourceIndex = lineStart + sourceCol;
-        if (sourceIndex < 0 || sourceIndex >= access.length) {
-          continue;
-        }
-
-        final code = access.encodedCells[sourceIndex];
-        if (code == 0 || code == 10) {
-          continue;
-        }
-
-        final destCellX = destX + col;
-        final destCellY = destY + row;
-        final bg = _readTextBufferBackground(access, sourceIndex);
-        final fg = _readRgba(access.foregrounds, sourceIndex);
-        final attributes = access.attributes[sourceIndex];
-
-        if (_isPackedGraphemeContinuation(code)) {
-          final graphemeId = _packedGraphemeId(code);
-          if (graphemeId == lastDrawnGraphemeId) {
-            continue;
-          }
-          _setTextBufferCell(destCellX, destCellY, 32, fg, bg, attributes);
-          continue;
-        }
-
-        if (_isPackedGraphemeStart(code)) {
-          final width = 1 + _packedRightExtent(code);
-          if (sourceCol + width > sourceX + drawWidth) {
-            _setTextBufferCell(destCellX, destCellY, 32, fg, bg, attributes);
-            continue;
-          }
-          lastDrawnGraphemeId = _packedGraphemeId(code);
-        } else {
-          lastDrawnGraphemeId = null;
-        }
-
-        _setTextBufferCell(destCellX, destCellY, code, fg, bg, attributes);
-      }
-    }
-  }
-
-  Color _readTextBufferBackground(DirectTextAccess access, int sourceIndex) {
-    final bg = _readRgba(access.backgrounds, sourceIndex);
-    return bg.a == 0 ? _textBufferTransparentCell : bg;
-  }
-
-  /// Compositing seam into the shared supported-tier funnel; the funnel's
-  /// unsigned 8-bit attribute check owns rejection for this seam.
-  void _setTextBufferCell(
-    int x,
-    int y,
-    int charCode,
-    Color fg,
-    Color bg,
-    int attributes,
-  ) {
-    super._setCellCodeWithAlphaBlending(x, y, charCode, fg, bg, attributes);
-  }
-
-  ({int width, int height}) _textBufferExtents(
-    ({DirectTextAccess access, List<int> lineStarts, List<int> lineWidths})
-    snapshot,
-  ) {
-    if (snapshot.lineWidths.isNotEmpty) {
-      var width = 0;
-      for (final lineWidth in snapshot.lineWidths) {
-        if (lineWidth > width) {
-          width = lineWidth;
-        }
-      }
-      return (width: width, height: snapshot.lineStarts.length);
-    }
-    return (width: snapshot.access.length, height: 1);
   }
 }

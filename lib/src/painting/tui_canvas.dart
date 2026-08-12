@@ -5,7 +5,6 @@ import '../core/buffer.dart';
 import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/terminal_style.dart';
-import '../core/text_buffer.dart';
 import '../render/geometry.dart';
 import '../rendering/text_highlight.dart';
 import '../widgets/text_layout.dart';
@@ -348,6 +347,24 @@ final class _DrawTextLayoutCommand extends _TuiDrawCommand {
   final TextHighlight? selection;
 }
 
+final class _TextPaintRun {
+  _TextPaintRun({
+    required this.x,
+    required this.endX,
+    required this.text,
+    required this.foreground,
+    required this.background,
+    required this.attributes,
+  });
+
+  final int x;
+  int endX;
+  final StringBuffer text;
+  final Color foreground;
+  final Color background;
+  final int attributes;
+}
+
 /// Encodes a display list into the current OpenTUI [Buffer].
 final class _DisplayListEncoder {
   /// Encode [displayList] into [buffer].
@@ -400,33 +417,27 @@ final class _DisplayListEncoder {
               command.offset,
               source,
             );
-            _drawTextLayoutSourceClip(drawTarget, command, source);
+            _drawTextLayoutRuns(drawTarget, command, source);
           } else {
-            final textBuffer = _textBufferForLayout(command);
-            try {
-              target.drawTextBuffer(
-                textBuffer,
-                command.offset.dx,
-                command.offset.dy,
-              );
-            } finally {
-              textBuffer.dispose();
-            }
+            _drawTextLayoutRuns(target, command, null);
           }
       }
     }
   }
 
-  void _drawTextLayoutSourceClip(
+  void _drawTextLayoutRuns(
     Buffer target,
     _DrawTextLayoutCommand command,
-    Rect source,
+    Rect? sourceRect,
   ) {
+    final layout = command.layout;
+    final source =
+        sourceRect ??
+        Rect.fromLTWH(0, 0, layout.maxLineWidth, layout.lines.length);
     if (source.width <= 0 || source.height <= 0) {
       return;
     }
 
-    final layout = command.layout;
     for (
       var lineIndex = source.top;
       lineIndex < source.bottom && lineIndex < layout.lines.length;
@@ -437,6 +448,24 @@ final class _DisplayListEncoder {
       }
       final line = layout.lines[lineIndex];
       var cell = 0;
+      _TextPaintRun? pending;
+
+      void flush() {
+        final run = pending;
+        if (run == null) {
+          return;
+        }
+        target.drawText(
+          run.text.toString(),
+          run.x,
+          command.offset.dy + lineIndex - source.top,
+          run.foreground,
+          bg: run.background,
+          attributes: run.attributes,
+        );
+        pending = null;
+      }
+
       for (final run in line.runs) {
         var sourceOffset = run.sourceStart;
         for (final cluster in run.text.characters) {
@@ -444,14 +473,42 @@ final class _DisplayListEncoder {
           final nextCell = cell + width;
           final sourceEnd = sourceOffset + cluster.length;
           if (cell >= source.left && nextCell <= source.right) {
-            target.setCell(
-              command.offset.dx + cell - source.left,
-              command.offset.dy + lineIndex - source.top,
-              cluster,
-              _foregroundForCluster(command, run, sourceOffset, sourceEnd),
-              _backgroundForCluster(command, run, sourceOffset, sourceEnd),
-              run.style.computedAttributes,
+            final x = command.offset.dx + cell - source.left;
+            final foreground = _foregroundForCluster(
+              command,
+              run,
+              sourceOffset,
+              sourceEnd,
             );
+            final background = _backgroundForCluster(
+              command,
+              run,
+              sourceOffset,
+              sourceEnd,
+            );
+            final attributes = run.style.computedAttributes;
+            final current = pending;
+            if (current != null &&
+                current.endX == x &&
+                current.foreground == foreground &&
+                current.background == background &&
+                current.attributes == attributes) {
+              current
+                ..text.write(cluster)
+                ..endX = x + width;
+            } else {
+              flush();
+              pending = _TextPaintRun(
+                x: x,
+                endX: x + width,
+                text: StringBuffer(cluster),
+                foreground: foreground,
+                background: background,
+                attributes: attributes,
+              );
+            }
+          } else {
+            flush();
           }
           cell = nextCell;
           sourceOffset = sourceEnd;
@@ -460,6 +517,7 @@ final class _DisplayListEncoder {
           }
         }
       }
+      flush();
     }
   }
 
@@ -486,9 +544,7 @@ final class _DisplayListEncoder {
     final selection = command.selection;
     if (selection != null &&
         _selectionIntersects(selection, sourceStart, sourceEnd)) {
-      return selection.backgroundColor ??
-          run.style.backgroundColor ??
-          Color.transparent;
+      return selection.backgroundColor ?? const Color(0.3, 0.5, 0.9, 0.5);
     }
     return run.style.backgroundColor ?? Color.transparent;
   }
@@ -498,50 +554,6 @@ final class _DisplayListEncoder {
     int sourceStart,
     int sourceEnd,
   ) => sourceStart < selection.end && sourceEnd > selection.start;
-
-  TextBuffer _textBufferForLayout(_DrawTextLayoutCommand command) {
-    final layout = command.layout;
-    final textBuffer = TextBuffer.create();
-    for (var lineIndex = 0; lineIndex < layout.lines.length; lineIndex++) {
-      final line = layout.lines[lineIndex];
-      for (final run in line.runs) {
-        textBuffer.writeChunk(
-          run.text,
-          run.style.color,
-          run.style.backgroundColor ?? Color.transparent,
-          run.style.computedAttributes,
-        );
-      }
-      if (lineIndex < layout.lines.length - 1) {
-        textBuffer.writeChunk(
-          '\n',
-          layout.style.color,
-          layout.style.backgroundColor ?? Color.transparent,
-          layout.style.computedAttributes,
-        );
-      }
-    }
-    textBuffer.finalizeLineInfo();
-
-    final selection = command.selection;
-    if (selection != null && layout.text.isNotEmpty) {
-      final rawStart = selection.start.clamp(0, layout.text.length);
-      final rawEnd = selection.end.clamp(rawStart, layout.text.length);
-      if (rawStart < rawEnd) {
-        final start = layout.bufferOffsetForSourceUtf16(rawStart);
-        final end = layout.bufferOffsetForSourceUtf16(rawEnd);
-        if (start < end) {
-          textBuffer.setSelection(
-            start,
-            end,
-            selection.backgroundColor ?? const Color(0.3, 0.5, 0.9, 0.5),
-            selection.foregroundColor ?? layout.style.color,
-          );
-        }
-      }
-    }
-    return textBuffer;
-  }
 
   Buffer _targetFor(Buffer buffer, Rect? clip) {
     if (clip == null) {

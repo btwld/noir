@@ -22,15 +22,15 @@ Core 1.0 covers:
 - Bundled native loading for the supported desktop targets.
 
 Full OpenTUI-React component or hook parity is post-1.0. Full-root layout and
-paint recording on dirty frames and transient native-text preparation during
-display-list encoding are accepted initial costs, not performance guarantees.
+paint recording on dirty frames and grapheme-run encoding during display-list
+composition are accepted initial costs, not performance guarantees.
 Optimization work begins only after retained, reproducible measurement breaks
 an explicit workload budget.
 
 ## Quality requirements
 
 - Semantics follow Flutter where Noir intentionally mirrors Flutter and the
-  pinned OpenTUI Go/React/core sources where rendering or input behavior is
+  pinned OpenTUI React/core sources where rendering or input behavior is
   concerned.
 - Native ownership is explicit. Every native resource has a deterministic,
   idempotent cleanup path; finalizers are fallback protection only.
@@ -98,5 +98,6 @@ record must link the evidence and list every accepted residual risk.
 - Tests are added before production fixes for behavior changes.
 - A failure path must preserve the primary error while attempting all cleanup.
 - No backwards-compatibility shim is added during prerelease cleanup.
-- A release, tag, publication, workflow run, or native artifact change is a
-  separate authorized operation.
+- A release, tag, publication, manually dispatched workflow, or native artifact
+  change is a separate authorized operation. Automatic push/pull-request CI is
+  ordinary verification.

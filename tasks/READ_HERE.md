@@ -8,13 +8,9 @@ Read, in order:
 2. [`../GOALS.md`](../GOALS.md) for the durable quality and release gates.
 3. [`release-readiness.md`](release-readiness.md) for current work and residual
    risk.
-4. [`1.0-release-plan.md`](1.0-release-plan.md) for the ordered private-history,
-   `main`, prerelease, and stable-release handoff.
-5. [`2.0-native-build-contract.md`](2.0-native-build-contract.md) when working
-   on the separately authorized Phase 2 native candidate builds, followed by
-   [`2.1-native-build-implementation-plan.md`](2.1-native-build-implementation-plan.md)
-   for the reviewed wrapper sequence.
-6. The affected source, tests, and pinned OpenTUI reference implementation.
+4. [`1.0-release-plan.md`](1.0-release-plan.md) for the ordered private-history
+   and clean-`main` handoff.
+5. The affected source, tests, and pinned OpenTUI reference implementation.
 
 ## Workflow
 
@@ -37,14 +33,14 @@ commit path. They still require link checks and a stale-reference scan.
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
-    dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+    dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
     git diff --check
 
-The safe subprocess tests run in the ordinary suite. Do not run the
-`restricted-process-lifecycle` wrapper, real terminal/PTY tests, native builds,
-artifact refreshes, workflows, tags, publication, or releases without exact
+Safe subprocess tests and automatic push/pull-request CI are ordinary checks.
+Do not run real terminal/PTY tests, native builds, artifact refreshes, manual
+workflow dispatches or reruns, tags, publication, or releases without exact
 authorization.
 
 ## Done means

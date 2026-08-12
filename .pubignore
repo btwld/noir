@@ -61,7 +61,6 @@ coverage/
 # Keep packaged native binaries and native_manifest.json.
 
 # Development-only executables (not part of the published API)
-bin/parity_compare.dart
 bin/patch_manager.dart
 bin/snapshot_scenes.dart
 

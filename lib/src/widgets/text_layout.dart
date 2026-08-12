@@ -25,7 +25,6 @@ final class TextLayout {
     required this.style,
     required this.indexMap,
     required this.lines,
-    required this.sourceGraphemeToBufferOffset,
     required this.size,
   });
 
@@ -41,14 +40,8 @@ final class TextLayout {
   /// Laid-out lines in paint order.
   final List<TextLayoutLine> lines;
 
-  /// Source grapheme-index to buffer rune offset mapping.
-  final List<int> sourceGraphemeToBufferOffset;
-
   /// Terminal-cell size.
   final Size size;
-
-  /// Text written to the native text buffer, including layout newlines.
-  String get bufferText => lines.map((line) => line.text).join('\n');
 
   /// Maximum laid-out line width in terminal cells.
   int get maxLineWidth =>
@@ -56,15 +49,6 @@ final class TextLayout {
 
   /// Number of laid-out lines.
   int get lineCount => math.max(1, lines.length);
-
-  /// Convert a source UTF-16 offset to a laid-out buffer rune offset.
-  int bufferOffsetForSourceUtf16(int utf16Offset) {
-    final grapheme = indexMap.utf16ToGrapheme(utf16Offset);
-    return sourceGraphemeToBufferOffset[grapheme.clamp(
-      0,
-      sourceGraphemeToBufferOffset.length - 1,
-    )];
-  }
 }
 
 /// One laid-out terminal text line.
@@ -122,13 +106,12 @@ final class TextLayoutEngine {
     final text = textBuffer.toString();
     final effectiveStyle = root is TextSpan ? root.style ?? style : style;
     final indexMap = TextIndexMap(text);
-    final laidOut = _layoutRuns(runs, indexMap, constraints.maxWidth);
+    final laidOut = _layoutRuns(runs, constraints.maxWidth);
     return TextLayout(
       text: text,
       style: effectiveStyle,
       indexMap: indexMap,
       lines: laidOut.lines,
-      sourceGraphemeToBufferOffset: laidOut.sourceGraphemeToBufferOffset,
       size: Size(
         constraints.constrainWidth(laidOut.maxLineWidth),
         constraints.constrainHeight(math.max(1, laidOut.lines.length)),
@@ -167,11 +150,7 @@ final class TextLayoutEngine {
     runs.add(_SourceRun(value, inheritedStyle, start, textBuffer.length));
   }
 
-  _LayoutResult _layoutRuns(
-    List<_SourceRun> sourceRuns,
-    TextIndexMap indexMap,
-    int? maxWidth,
-  ) {
+  _LayoutResult _layoutRuns(List<_SourceRun> sourceRuns, int? maxWidth) {
     final lines = <_LineBuild>[];
     final current = <_ClusterToken>[];
     var currentWidth = 0;
@@ -179,12 +158,11 @@ final class TextLayoutEngine {
     int widthOf(List<_ClusterToken> tokens) =>
         tokens.fold(0, (sum, token) => sum + token.width);
 
-    void flushLine({int? explicitNewlineSourceStart}) {
+    void flushLine() {
       lines.add(
         _LineBuild(
           tokens: List<_ClusterToken>.unmodifiable(current),
           width: currentWidth,
-          explicitNewlineSourceStart: explicitNewlineSourceStart,
         ),
       );
       current.clear();
@@ -219,7 +197,7 @@ final class TextLayoutEngine {
       var sourceOffset = run.sourceStart;
       for (final cluster in run.text.characters) {
         if (cluster == '\n') {
-          flushLine(explicitNewlineSourceStart: sourceOffset);
+          flushLine();
           sourceOffset += cluster.length;
           continue;
         }
@@ -242,25 +220,6 @@ final class TextLayoutEngine {
       flushLine();
     }
 
-    final sourceToBuffer = List<int>.filled(indexMap.graphemeCount + 1, 0);
-    var bufferOffset = 0;
-    for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      final line = lines[lineIndex];
-      for (final token in line.tokens) {
-        sourceToBuffer[indexMap.utf16ToGrapheme(token.sourceStart)] =
-            bufferOffset;
-        bufferOffset += token.text.runes.length;
-      }
-      if (lineIndex < lines.length - 1) {
-        bufferOffset++;
-        final sourceStart = line.explicitNewlineSourceStart;
-        if (sourceStart != null) {
-          sourceToBuffer[indexMap.utf16ToGrapheme(sourceStart)] = bufferOffset;
-        }
-      }
-    }
-    sourceToBuffer[indexMap.graphemeCount] = bufferOffset;
-
     final textLines = lines
         .map(
           (line) => TextLayoutLine(
@@ -270,10 +229,7 @@ final class TextLayoutEngine {
         )
         .toList(growable: false);
 
-    return _LayoutResult(
-      lines: List<TextLayoutLine>.unmodifiable(textLines),
-      sourceGraphemeToBufferOffset: List<int>.unmodifiable(sourceToBuffer),
-    );
+    return _LayoutResult(lines: List<TextLayoutLine>.unmodifiable(textLines));
   }
 
   Iterable<TextLayoutRun> _runsFor(List<_ClusterToken> tokens) sync* {
@@ -330,15 +286,10 @@ final class _ClusterToken {
 }
 
 final class _LineBuild {
-  const _LineBuild({
-    required this.tokens,
-    required this.width,
-    required this.explicitNewlineSourceStart,
-  });
+  const _LineBuild({required this.tokens, required this.width});
 
   final List<_ClusterToken> tokens;
   final int width;
-  final int? explicitNewlineSourceStart;
 }
 
 final class _MutableRun {
@@ -362,13 +313,9 @@ final class _MutableRun {
 }
 
 final class _LayoutResult {
-  const _LayoutResult({
-    required this.lines,
-    required this.sourceGraphemeToBufferOffset,
-  });
+  const _LayoutResult({required this.lines});
 
   final List<TextLayoutLine> lines;
-  final List<int> sourceGraphemeToBufferOffset;
 
   /// Maximum laid-out line width in terminal cells, derived from [lines]
   /// exactly as [TextLayout.maxLineWidth] derives it.

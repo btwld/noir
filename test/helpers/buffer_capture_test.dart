@@ -1,4 +1,5 @@
 import 'package:noir/noir.dart';
+import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
 
 import 'buffer_capture.dart';
@@ -82,6 +83,73 @@ void main() {
 
       expect(lines[0], startsWith('AB'), reason: 'First row should be AB');
       expect(lines[1], startsWith('CD'), reason: 'Second row should be CD');
+    });
+
+    test('wide glyph ending a row does not shift the next row', () {
+      final narrowCapture = BufferCapture(width: 2, height: 2);
+      try {
+        final result = narrowCapture.capture(
+          const Column(children: [Text('界'), Text('A')]),
+        );
+
+        expect(result, BufferMatchers.hasCharAt(0, 0, '界'));
+        expect(result, BufferMatchers.hasCharAt(1, 0, ''));
+        expect(
+          result,
+          BufferMatchers.hasCharAt(1, 1, 'A'),
+          reason: result.toLines().toString(),
+        );
+      } finally {
+        narrowCapture.dispose();
+      }
+    });
+
+    test('keeps separately drawn cells from merging during capture', () {
+      final renderer = Renderer.create(4, 1, testing: true);
+      try {
+        final buffer = renderer.nextBuffer..clear(Color.black);
+        buffer
+          ..setCell(0, 0, 'A', Color.white, Color.black, 0)
+          ..setCell(1, 0, '\u0301', Color.white, Color.black, 0)
+          ..drawText('🇺', 2, 0, Color.white)
+          ..drawText('🇸', 3, 0, Color.white);
+
+        final result = CapturedBuffer.fromBuffer(buffer);
+        expect(result, BufferMatchers.hasCharAt(0, 0, 'A'));
+        expect(result, BufferMatchers.hasCharAt(1, 0, '\u0301'));
+        expect(result, BufferMatchers.hasCharAt(2, 0, '🇺'));
+        expect(result, BufferMatchers.hasCharAt(3, 0, '🇸'));
+      } finally {
+        renderer.dispose();
+      }
+    });
+
+    test('styled flag leaves its continuation cell before the next run', () {
+      final flagCapture = BufferCapture(width: 4, height: 1);
+      try {
+        final result = flagCapture.capture(
+          const Text.rich(
+            TextSpan(
+              children: <InlineSpan>[
+                TextSpan(
+                  text: '🇺🇸',
+                  style: TextStyle(color: Color.green),
+                ),
+                TextSpan(
+                  text: 'B',
+                  style: TextStyle(color: Color.red),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        expect(result, BufferMatchers.hasCharAt(0, 0, '🇺🇸'));
+        expect(result, BufferMatchers.hasCharAt(1, 0, ''));
+        expect(result, BufferMatchers.hasCharAt(2, 0, 'B'));
+      } finally {
+        flagCapture.dispose();
+      }
     });
 
     test('tight terminal constraints center default Row and Column', () {

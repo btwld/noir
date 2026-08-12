@@ -1,5 +1,4 @@
 // ignore_for_file: avoid_positional_boolean_parameters, use_setters_to_change_properties
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:meta/meta.dart';
@@ -9,10 +8,18 @@ import '../ffi/types.dart';
 import 'buffer.dart';
 import 'color.dart';
 
+/// Creates a renderer around injected bindings for failure-path tests.
+@internal
+@visibleForTesting
+Renderer createRendererForTesting(
+  OpenTuiBindings bindings,
+  RendererHandle handle,
+) => Renderer._(bindings, handle);
+
 /// Manages frame buffers, terminal rendering, and output flushing.
 class Renderer {
-  Renderer._(this._bindings, this._ptr) {
-    _finalizer.attach(this, _ptr.cast<Void>(), detach: _finalizerKey);
+  Renderer._(this._bindings, this._handle) {
+    _finalizer.attach(this, _handle, detach: _finalizerKey);
   }
 
   /// Opens guarded bindings and allocates a native renderer.
@@ -25,28 +32,21 @@ class Renderer {
   factory Renderer.create(int width, int height, {bool testing = false}) {
     validateRendererDimensions(width, height);
     final bindings = OpenTuiBindings();
-    final ptr = bindings.createRenderer(width, height, testing: testing);
-    if (ptr == nullptr) {
-      throw StateError('OpenTUI returned a null renderer handle.');
-    }
-    return Renderer._(bindings, ptr);
+    final handle = bindings.createRenderer(width, height, testing: testing);
+    return Renderer._(bindings, handle);
   }
 
   /// Finalizer for best-effort cleanup if dispose() is not called.
   /// This releases native resources when users forget to dispose the renderer.
-  static final Finalizer<Pointer<Void>> _finalizer = Finalizer<Pointer<Void>>((
-    pointer,
-  ) {
-    if (pointer == nullptr) {
-      return;
-    }
-    final bindings = OpenTuiBindings();
-    // Use default dispose settings in finalizer (no alternate screen cleanup)
-    bindings.destroyRenderer(pointer.cast<RendererHandle>());
-  });
+  static final Finalizer<RendererHandle> _finalizer = Finalizer<RendererHandle>(
+    (handle) {
+      final bindings = OpenTuiBindings();
+      bindings.destroyRenderer(handle);
+    },
+  );
 
   final OpenTuiBindings _bindings;
-  final Pointer<RendererHandle> _ptr;
+  final RendererHandle _handle;
   Buffer? _nextBuffer;
   bool _disposed = false;
   bool _autoFlush = true;
@@ -59,7 +59,7 @@ class Renderer {
   /// Initialize terminal session (enter alt screen, set modes)
   void setupTerminal({bool useAlternateScreen = true}) {
     _checkNotDisposed();
-    _bindings.setupTerminal(_ptr, useAlternateScreen);
+    _bindings.setupTerminal(_handle, useAlternateScreen);
   }
 
   /// Resize the renderer (and its underlying buffer) to new dimensions.
@@ -69,7 +69,7 @@ class Renderer {
   void resize(int width, int height) {
     _checkNotDisposed();
     validateRendererDimensions(width, height);
-    _bindings.resizeRenderer(_ptr, width, height);
+    _bindings.resizeRenderer(_handle, width, height);
     _nextBuffer?.invalidate();
     _nextBuffer = null;
   }
@@ -78,7 +78,7 @@ class Renderer {
   Buffer get nextBuffer {
     _checkNotDisposed();
     _nextBuffer ??= createBufferFromNative(
-      _bindings.getNextBuffer(_ptr),
+      _bindings.getNextBuffer(_handle),
       _bindings,
     );
     return _nextBuffer!;
@@ -89,7 +89,10 @@ class Renderer {
   @internal
   Buffer get debugCurrentBuffer {
     _checkNotDisposed();
-    return createBufferFromNative(_bindings.getCurrentBuffer(_ptr), _bindings);
+    return createBufferFromNative(
+      _bindings.getCurrentBuffer(_handle),
+      _bindings,
+    );
   }
 
   /// Renders the current buffer to the terminal.
@@ -106,13 +109,19 @@ class Renderer {
   /// Get a fresh buffer via [nextBuffer].
   void render({bool force = false, bool? autoFlush}) {
     _checkNotDisposed();
-    _bindings.render(_ptr, force);
-    final shouldFlush = autoFlush ?? _autoFlush;
-    if (shouldFlush) {
-      stdout.flush();
+    try {
+      _bindings.render(_handle, force);
+      final shouldFlush = autoFlush ?? _autoFlush;
+      if (shouldFlush) {
+        stdout.flush();
+      }
+    } finally {
+      // OpenTUI may have cleared or otherwise mutated the frame before it
+      // reports failure. Never let callers reuse a potentially stale native
+      // view, including when rendering or flushing throws.
+      _nextBuffer?.invalidate();
+      _nextBuffer = null;
     }
-    _nextBuffer?.invalidate();
-    _nextBuffer = null;
   }
 
   /// Sets the default auto-flush behavior for this renderer.
@@ -132,13 +141,13 @@ class Renderer {
   /// Sets the terminal background color to [color].
   void setBackgroundColor(Color color) {
     _checkNotDisposed();
-    _bindings.setBackgroundColor(_ptr, color);
+    _bindings.setBackgroundColor(_handle, color);
   }
 
   /// Clears the terminal screen.
   void clearTerminal() {
     _checkNotDisposed();
-    _bindings.clearTerminal(_ptr);
+    _bindings.clearTerminal(_handle);
   }
 
   /// Registers a low-level native/debug hit-grid region.
@@ -146,7 +155,7 @@ class Renderer {
   /// Built-in widgets use render-tree hit testing for pointer routing.
   void addToHitGrid(int x, int y, int width, int height, int id) {
     _checkNotDisposed();
-    _bindings.addToHitGrid(_ptr, x, y, width, height, id);
+    _bindings.addToHitGrid(_handle, x, y, width, height, id);
   }
 
   /// Queries the low-level native/debug hit grid.
@@ -154,24 +163,19 @@ class Renderer {
   /// Built-in widgets use render-tree hit testing for pointer routing.
   int checkHit(int x, int y) {
     _checkNotDisposed();
-    return _bindings.checkHit(_ptr, x, y);
+    return _bindings.checkHit(_handle, x, y);
   }
 
   /// Releases all native renderer resources and detaches the finalizer.
-  void dispose({bool useAlternateScreen = false, int splitHeight = 0}) {
+  void dispose() {
     if (_disposed) return;
-    validateUnsigned32Abi(splitHeight, 'splitHeight');
     _disposed = true;
     // Detach from finalizer before manual destruction (prevent double-free)
     _finalizer.detach(_finalizerKey);
     // Invalidate before destroying native handle so any stragglers (clipped
     // views, etc.) fail fast instead of touching freed memory.
     _nextBuffer?.invalidate();
-    _bindings.destroyRenderer(
-      _ptr,
-      useAlternateScreen: useAlternateScreen,
-      splitHeight: splitHeight,
-    );
+    _bindings.destroyRenderer(_handle);
     _nextBuffer = null;
   }
 
@@ -179,9 +183,9 @@ class Renderer {
   /// `MouseSupport`, and `KeyboardSupport` extensions in the same package
   /// and by tests that need to drive the FFI directly. Not for user code.
   @internal
-  Pointer<RendererHandle> get handle {
+  RendererHandle get handle {
     _checkNotDisposed();
-    return _ptr;
+    return _handle;
   }
 
   /// Internal: shared FFI bindings. Same caveats as [handle].
@@ -199,5 +203,5 @@ class Renderer {
 @internal
 void processRendererCapabilityResponse(Renderer renderer, String response) {
   renderer._checkNotDisposed();
-  renderer._bindings.processCapabilityResponse(renderer._ptr, response);
+  renderer._bindings.processCapabilityResponse(renderer._handle, response);
 }

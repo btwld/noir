@@ -1,31 +1,36 @@
 # Third-Party Notices
 
-Noir bundles native libraries from the following third-party component.
+Noir bundles the unchanged native libraries from the canonical OpenTUI v0.5.1
+release.
 
-## OpenTUI
+- Source: https://github.com/anomalyco/opentui
+- Release: `v0.5.1`
+- Pinned revision: `ad9a818d7a9d73f3386e92a445d0feb4b395c69e`
 
-Source: https://github.com/leoafarias/opentui
+The release archives include OpenTUI and transitive notices for Wuffs,
+libwebp, stb, and Little CMS. Their exact upstream files are published with
+Noir:
 
-Pinned revision: `ddbc9edf81a1fa89961135ab0481df15054ed4b0`
+- [OpenTUI license](third_party/opentui-v0.5.1/LICENSE)
+- [Wuffs license](third_party/opentui-v0.5.1/LICENSE-WUFFS)
+- [libwebp license](third_party/opentui-v0.5.1/LICENSE-LIBWEBP)
+- [libwebp authors](third_party/opentui-v0.5.1/AUTHORS-LIBWEBP)
+- [libwebp patent grant](third_party/opentui-v0.5.1/PATENTS-LIBWEBP)
+- [stb license](third_party/opentui-v0.5.1/LICENSE-STB)
+- [Little CMS license](third_party/opentui-v0.5.1/LICENSE-LCMS2)
 
-MIT License
+These files were extracted from the official
+`opentui-native-v0.5.1-darwin-arm64.zip` archive after its SHA-256 digest was
+verified against the release manifest. The same notice files are present in
+all six official platform archives.
 
-Copyright (c) 2025 opentui
+## uucode and Unicode data
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Noir incorporates a compact range table derived from the exact `uucode`
+revision pinned by OpenTUI v0.5.1. The table applies OpenTUI's width rules to
+that revision's Unicode 16.0 general-category and East Asian Width data.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- Source: https://github.com/jacobsandlund/uucode
+- Pinned revision: `84ceda8561a17ba4a9b96ac5c583f779660bbd4e`
+- [uucode MIT license](third_party/uucode-84ceda/LICENSE.md)
+- [Unicode data license](third_party/uucode-84ceda/LICENSE_unicode)

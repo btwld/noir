@@ -4,6 +4,9 @@
 *.dll binary
 *.so binary
 
+# Preserve exact license bytes extracted from the verified official archives.
+third_party/opentui-v0.5.1/** -whitespace
+
 # Golden snapshots are compared with LF normalization.
 test/goldens/** text eol=lf
 # Buffer snapshots intentionally preserve fixed-width terminal padding.

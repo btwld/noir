@@ -54,19 +54,19 @@ class HealthCheckRunner {
     _emit('');
     _emit('=' * 50);
     if (allPassed) {
-      _emit('✅ ALL CHECKS PASSED');
+      _emit('[PASS] ALL CHECKS PASSED');
       _emit('Noir bindings are working correctly!');
       return 0;
     }
 
-    _emit('❌ SOME CHECKS FAILED');
+    _emit('[FAIL] SOME CHECKS FAILED');
     _emit('Please review the errors above and fix the issues.');
     return 1;
   }
 
   bool _checkEnvironment() {
     _emit('');
-    _emit('🔍 Checking Environment Setup...');
+    _emit('[CHECK] Environment Setup');
     var passed = true;
 
     final envPath = io.Platform.environment['OPENTUI_LIBRARY_PATH'];
@@ -87,7 +87,7 @@ class HealthCheckRunner {
 
   bool _checkLibraryLoading() {
     _emit('');
-    _emit('🔍 Checking Library Loading...');
+    _emit('[CHECK] Library Loading');
     var passed = true;
     final renderers = <Renderer>[];
 
@@ -111,7 +111,7 @@ class HealthCheckRunner {
 
   bool _checkBasicOperations() {
     _emit('');
-    _emit('🔍 Checking Basic Operations...');
+    _emit('[CHECK] Basic Operations');
     var passed = true;
     final renderers = <Renderer>[];
 
@@ -159,7 +159,7 @@ class HealthCheckRunner {
 
   bool _checkAdvancedFeatures() {
     _emit('');
-    _emit('🔍 Checking Advanced Features...');
+    _emit('[CHECK] Advanced Features');
     var passed = true;
     final renderers = <Renderer>[];
 
@@ -258,19 +258,19 @@ class HealthCheckRunner {
   }
 
   void _pass(String message) {
-    _emit('  ✅ $message');
+    _emit('  [PASS] $message');
   }
 
   void _fail(String message) {
-    _emit('  ❌ $message');
+    _emit('  [FAIL] $message');
   }
 
   void _info(String message) {
-    _emit('  ℹ️  $message');
+    _emit('  [INFO] $message');
   }
 
   void _suggest(String message) {
-    _emit('  💡 Suggestion: $message');
+    _emit('  [SUGGEST] $message');
   }
 }
 

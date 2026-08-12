@@ -1,7 +1,6 @@
 import 'dart:ffi';
 import 'dart:io' show File, Platform;
 
-import 'abi.dart';
 import 'native_symbols.dart';
 
 /// Opens the OpenTUI native symbols.
@@ -19,9 +18,7 @@ final class OpenTuiNativeLibrary {
       return _openOverride(envPath);
     }
 
-    final symbols = BundledOpenTuiNativeSymbols();
-    OpenTuiNativeAbi(symbols).validateAbi();
-    return symbols;
+    return BundledOpenTuiNativeSymbols();
   }
 
   static OpenTuiNativeSymbols _openOverride(String path) {
@@ -32,13 +29,8 @@ final class OpenTuiNativeLibrary {
     }
 
     try {
-      final symbols = LookupOpenTuiNativeSymbols(DynamicLibrary.open(path));
-      OpenTuiNativeAbi(symbols).validateAbi();
-      return symbols;
+      return LookupOpenTuiNativeSymbols(DynamicLibrary.open(path));
     } catch (error) {
-      if (error is OpenTuiAbiMismatchException) {
-        rethrow;
-      }
       throw OpenTuiLibraryLoadException(
         'Failed to load OPENTUI_LIBRARY_PATH=$path: $error',
       );
@@ -58,6 +50,6 @@ final class OpenTuiLibraryLoadException implements Exception {
   String toString() =>
       'Could not load OpenTUI native library.\n'
       '$message\n'
-      'Run a Dart command that invokes hook/build.dart to bundle the native '
+      'Run dart pub get so hook/build.dart can resolve the verified package '
       'asset, or set OPENTUI_LIBRARY_PATH to a matching development build.';
 }

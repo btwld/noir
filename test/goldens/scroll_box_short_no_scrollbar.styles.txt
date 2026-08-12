@@ -1,12 +1,6 @@
-0,0:#ffffffff|#000000ff|0 * 4
-4,0:#ffffffff|#0f1d2b74|0 * 6
-10,0:#ffffffff|#000000ff|0 * 6
-0,1:#ffffffff|#000000ff|0 * 4
-4,1:#ffffffff|#0f1d2b74|0 * 6
-10,1:#ffffffff|#000000ff|0 * 6
-0,2:#ffffffff|#000000ff|0 * 4
-4,2:#ffffffff|#0f1d2b74|0 * 6
-10,2:#ffffffff|#000000ff|0 * 6
+0,0:#ffffffff|#000000ff|0 * 16
+0,1:#ffffffff|#000000ff|0 * 16
+0,2:#ffffffff|#000000ff|0 * 16
 0,3:#ffffffff|#000000ff|0 * 16
 0,4:#ffffffff|#000000ff|0 * 16
 0,5:#ffffffff|#000000ff|0 * 16

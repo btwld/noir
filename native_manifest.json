@@ -1,55 +1,66 @@
 {
-  "abiVersion": 2,
+  "schemaVersion": 1,
+  "repository": "https://github.com/anomalyco/opentui",
+  "tag": "v0.5.1",
+  "commit": "ad9a818d7a9d73f3386e92a445d0feb4b395c69e",
   "assets": {
-    "macos-x64": {
-      "os": "macos",
-      "arch": "x64",
-      "path": "native/macos/x64/libopentui.dylib",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/x64/libopentui.dylib",
-      "archivePath": "",
-      "minimumOsVersion": "15.0",
-      "sha256": "d80970770863f647cca83dbe1ab983039660a3593da01552620f4f0510bd952a"
-    },
     "macos-arm64": {
       "os": "macos",
       "arch": "arm64",
       "path": "native/macos/arm64/libopentui.dylib",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/macos/arm64/libopentui.dylib",
-      "archivePath": "",
-      "minimumOsVersion": "15.0",
-      "sha256": "0648d6243c43f8780f2e41b66052478a9821a0986385b961f11a0536059053bf"
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-darwin-arm64.zip",
+      "archiveSha256": "4318f9a545b765698a4d43b3d90b0fd501717edcd442e6efe24453e164ecd122",
+      "archiveMember": "libopentui.dylib",
+      "sha256": "196d4994f8ff02a2b8c6e5581eadf315040ff8cfdb487791a7f7ec01669ee10f",
+      "minimumOsVersion": "13.0"
     },
-    "linux-x64": {
-      "os": "linux",
+    "macos-x64": {
+      "os": "macos",
       "arch": "x64",
-      "path": "native/linux/x64/libopentui.so",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/linux/x64/libopentui.so",
-      "archivePath": "",
-      "sha256": "63535b6958c9fad3f59b37b4dcabb231009a83488ff578059cb8e46f31d05e04"
+      "path": "native/macos/x64/libopentui.dylib",
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-darwin-x64.zip",
+      "archiveSha256": "804c1c45b058c6251cbb3019ffba6e422451be18ad11325b1b896601d9f07a61",
+      "archiveMember": "libopentui.dylib",
+      "sha256": "6de2ff94531ecef296a7d7cb5bb299bb6ee3763f3f6a8b9fefbaf2c706e4304c",
+      "minimumOsVersion": "13.0"
     },
     "linux-arm64": {
       "os": "linux",
       "arch": "arm64",
       "path": "native/linux/arm64/libopentui.so",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/linux/arm64/libopentui.so",
-      "archivePath": "",
-      "sha256": "7c13f55f2b30d7da9753b33fd957ac3afbcf9083128707a8bb9d809ebf402bf1"
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-linux-arm64.zip",
+      "archiveSha256": "edc644e32c1532d065af72bcd0f3bbaf2393a2d923e70870ac71f4580b223a0e",
+      "archiveMember": "libopentui.so",
+      "sha256": "378de47d86f187f565798f0d4da831db5fa75be19574dae0e0b04f5df4316794",
+      "minimumGlibcVersion": "2.17"
     },
-    "windows-x64": {
-      "os": "windows",
+    "linux-x64": {
+      "os": "linux",
       "arch": "x64",
-      "path": "native/windows/x64/libopentui.dll",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/windows/x64/libopentui.dll",
-      "archivePath": "",
-      "sha256": "221c8acb12da85f279621e13d8d0e45e4718a00bb13d5fcc940f1cb686a715fa"
+      "path": "native/linux/x64/libopentui.so",
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-linux-x64.zip",
+      "archiveSha256": "d1b760cf568dc46fd377c83308ebcb9c08e91cbe3f9d688a4b4403bfe0c411de",
+      "archiveMember": "libopentui.so",
+      "sha256": "8db7922e8e765015a0a95a2d7bc5b12af9cce2a3dc78479a381edf81bd922807",
+      "minimumGlibcVersion": "2.17"
     },
     "windows-arm64": {
       "os": "windows",
       "arch": "arm64",
       "path": "native/windows/arm64/libopentui.dll",
-      "url": "https://raw.githubusercontent.com/leoafarias/opentui/ddbc9edf81a1fa89961135ab0481df15054ed4b0/dart-native-assets/windows/arm64/libopentui.dll",
-      "archivePath": "",
-      "sha256": "9593cdeab209116de3ef8b58eefb3942bcb133d0a60fd844fdaf0e8c1cb2238e"
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-windows-arm64.zip",
+      "archiveSha256": "6bff48a5c0ec85f476e3873962852954c21f7f9037315f9c23cdb39f4016eac6",
+      "archiveMember": "opentui.dll",
+      "sha256": "f7f98743f98d0f95583160fb31cb76adee951a1eb0f67fd489cc841c44d0c402"
+    },
+    "windows-x64": {
+      "os": "windows",
+      "arch": "x64",
+      "path": "native/windows/x64/libopentui.dll",
+      "archiveUrl": "https://github.com/anomalyco/opentui/releases/download/v0.5.1/opentui-native-v0.5.1-windows-x64.zip",
+      "archiveSha256": "df0521164cf1257d8c7a8e215f3e291064141ec18c6b7d8fe36f5d74798693af",
+      "archiveMember": "opentui.dll",
+      "sha256": "8c8b15103d70373c0e1313bd0a51fee360c66280ca063cc19936d8d20cd167c7"
     }
   }
 }

@@ -1,4 +1,4 @@
-// Generated FFI bindings for OpenTUI from external/opentui/packages/go/opentui.h.
+// Generated FFI bindings from Noir's selected OpenTUI v0.5.1 declarations.
 // Regenerate with: dart run ffigen --config ffigen_dynamic.yaml
 // Do not edit manually.
 // ignore_for_file: unused_element, unused_field
@@ -24,449 +24,159 @@ class OpenTuiBindings {
     ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup,
   ) : _lookup = lookup;
 
-  /// Dart package ABI validation functions
-  int otui_dart_abi_version() {
-    return _otui_dart_abi_version();
-  }
-
-  late final _otui_dart_abi_versionPtr =
-      _lookup<ffi.NativeFunction<ffi.Uint32 Function()>>(
-        'otui_dart_abi_version',
-      );
-  late final _otui_dart_abi_version = _otui_dart_abi_versionPtr
-      .asFunction<int Function()>();
-
-  ffi.Pointer<ffi.Char> otui_dart_build_info() {
-    return _otui_dart_build_info();
-  }
-
-  late final _otui_dart_build_infoPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
-        'otui_dart_build_info',
-      );
-  late final _otui_dart_build_info = _otui_dart_build_infoPtr
-      .asFunction<ffi.Pointer<ffi.Char> Function()>();
-
-  ffi.Pointer<ffi.Char> otui_dart_last_error() {
-    return _otui_dart_last_error();
-  }
-
-  late final _otui_dart_last_errorPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
-        'otui_dart_last_error',
-      );
-  late final _otui_dart_last_error = _otui_dart_last_errorPtr
-      .asFunction<ffi.Pointer<ffi.Char> Function()>();
-
-  void otui_dart_clear_error() {
-    return _otui_dart_clear_error();
-  }
-
-  late final _otui_dart_clear_errorPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function()>>('otui_dart_clear_error');
-  late final _otui_dart_clear_error = _otui_dart_clear_errorPtr
-      .asFunction<void Function()>();
-
-  /// Renderer management functions
-  ffi.Pointer<CliRenderer> createRenderer(int width, int height, bool testing) {
-    return _createRenderer(width, height, testing);
+  int createRenderer(
+    int width,
+    int height,
+    int bufferedDestinationKind,
+    int remoteModeValue,
+    ffi.Pointer<ffi.Void> feedPtr,
+  ) {
+    return _createRenderer(
+      width,
+      height,
+      bufferedDestinationKind,
+      remoteModeValue,
+      feedPtr,
+    );
   }
 
   late final _createRendererPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Pointer<CliRenderer> Function(ffi.Uint32, ffi.Uint32, ffi.Bool)
+          OpenTuiHandle Function(
+            ffi.Uint32,
+            ffi.Uint32,
+            ffi.Uint8,
+            ffi.Uint8,
+            ffi.Pointer<ffi.Void>,
+          )
         >
       >('createRenderer');
   late final _createRenderer = _createRendererPtr
-      .asFunction<ffi.Pointer<CliRenderer> Function(int, int, bool)>();
+      .asFunction<int Function(int, int, int, int, ffi.Pointer<ffi.Void>)>();
 
-  void setUseThread(ffi.Pointer<CliRenderer> renderer, bool useThread) {
-    return _setUseThread(renderer, useThread);
-  }
-
-  late final _setUseThreadPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)
-        >
-      >('setUseThread');
-  late final _setUseThread = _setUseThreadPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool)>();
-
-  void destroyRenderer(
-    ffi.Pointer<CliRenderer> renderer,
-    bool useAlternateScreen,
-    int splitHeight,
-  ) {
-    return _destroyRenderer(renderer, useAlternateScreen, splitHeight);
+  void destroyRenderer(int renderer) {
+    return _destroyRenderer(renderer);
   }
 
   late final _destroyRendererPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool, ffi.Uint32)
-        >
-      >('destroyRenderer');
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'destroyRenderer',
+      );
   late final _destroyRenderer = _destroyRendererPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool, int)>();
+      .asFunction<void Function(int)>();
 
-  void setBackgroundColor(
-    ffi.Pointer<CliRenderer> renderer,
-    ffi.Pointer<ffi.Float> color,
-  ) {
-    return _setBackgroundColor(renderer, color);
-  }
-
-  late final _setBackgroundColorPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
-        >
-      >('setBackgroundColor');
-  late final _setBackgroundColor = _setBackgroundColorPtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
-      >();
-
-  void setRenderOffset(ffi.Pointer<CliRenderer> renderer, int offset) {
-    return _setRenderOffset(renderer, offset);
-  }
-
-  late final _setRenderOffsetPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint32)
-        >
-      >('setRenderOffset');
-  late final _setRenderOffset = _setRenderOffsetPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int)>();
-
-  void updateStats(
-    ffi.Pointer<CliRenderer> renderer,
-    double time,
-    int fps,
-    double frameCallbackTime,
-  ) {
-    return _updateStats(renderer, time, fps, frameCallbackTime);
-  }
-
-  late final _updateStatsPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
-            ffi.Double,
-            ffi.Uint32,
-            ffi.Double,
-          )
-        >
-      >('updateStats');
-  late final _updateStats = _updateStatsPtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, double, int, double)
-      >();
-
-  void updateMemoryStats(
-    ffi.Pointer<CliRenderer> renderer,
-    int heapUsed,
-    int heapTotal,
-    int arrayBuffers,
-  ) {
-    return _updateMemoryStats(renderer, heapUsed, heapTotal, arrayBuffers);
-  }
-
-  late final _updateMemoryStatsPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Uint32,
-          )
-        >
-      >('updateMemoryStats');
-  late final _updateMemoryStats = _updateMemoryStatsPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int, int, int)>();
-
-  ffi.Pointer<OptimizedBuffer> getNextBuffer(
-    ffi.Pointer<CliRenderer> renderer,
-  ) {
-    return _getNextBuffer(renderer);
-  }
-
-  late final _getNextBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)
-        >
-      >('getNextBuffer');
-  late final _getNextBuffer = _getNextBufferPtr
-      .asFunction<
-        ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)
-      >();
-
-  ffi.Pointer<OptimizedBuffer> getCurrentBuffer(
-    ffi.Pointer<CliRenderer> renderer,
-  ) {
-    return _getCurrentBuffer(renderer);
-  }
-
-  late final _getCurrentBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)
-        >
-      >('getCurrentBuffer');
-  late final _getCurrentBuffer = _getCurrentBufferPtr
-      .asFunction<
-        ffi.Pointer<OptimizedBuffer> Function(ffi.Pointer<CliRenderer>)
-      >();
-
-  void render(ffi.Pointer<CliRenderer> renderer, bool force) {
+  int render(int renderer, bool force) {
     return _render(renderer, force);
   }
 
   late final _renderPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)
-        >
-      >('render');
-  late final _render = _renderPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool)>();
+      _lookup<ffi.NativeFunction<ffi.Uint8 Function(OpenTuiHandle, ffi.Bool)>>(
+        'render',
+      );
+  late final _render = _renderPtr.asFunction<int Function(int, bool)>();
 
-  void resizeRenderer(
-    ffi.Pointer<CliRenderer> renderer,
-    int width,
-    int height,
-  ) {
+  int getNextBuffer(int renderer) {
+    return _getNextBuffer(renderer);
+  }
+
+  late final _getNextBufferPtr =
+      _lookup<ffi.NativeFunction<OpenTuiHandle Function(OpenTuiHandle)>>(
+        'getNextBuffer',
+      );
+  late final _getNextBuffer = _getNextBufferPtr.asFunction<int Function(int)>();
+
+  int getCurrentBuffer(int renderer) {
+    return _getCurrentBuffer(renderer);
+  }
+
+  late final _getCurrentBufferPtr =
+      _lookup<ffi.NativeFunction<OpenTuiHandle Function(OpenTuiHandle)>>(
+        'getCurrentBuffer',
+      );
+  late final _getCurrentBuffer = _getCurrentBufferPtr
+      .asFunction<int Function(int)>();
+
+  void resizeRenderer(int renderer, int width, int height) {
     return _resizeRenderer(renderer, width, height);
   }
 
   late final _resizeRendererPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint32, ffi.Uint32)
+          ffi.Void Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)
         >
       >('resizeRenderer');
   late final _resizeRenderer = _resizeRendererPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int, int)>();
+      .asFunction<void Function(int, int, int)>();
 
-  void enableMouse(ffi.Pointer<CliRenderer> renderer, bool enableMovement) {
-    return _enableMouse(renderer, enableMovement);
+  void setBackgroundColor(int renderer, ffi.Pointer<ffi.Uint16> color) {
+    return _setBackgroundColor(renderer, color);
   }
 
-  late final _enableMousePtr =
+  late final _setBackgroundColorPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)
+          ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint16>)
         >
-      >('enableMouse');
-  late final _enableMouse = _enableMousePtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool)>();
+      >('setBackgroundColor');
+  late final _setBackgroundColor = _setBackgroundColorPtr
+      .asFunction<void Function(int, ffi.Pointer<ffi.Uint16>)>();
 
-  void disableMouse(ffi.Pointer<CliRenderer> renderer) {
-    return _disableMouse(renderer);
+  void clearTerminal(int renderer) {
+    return _clearTerminal(renderer);
   }
 
-  late final _disableMousePtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<CliRenderer>)>>(
-        'disableMouse',
+  late final _clearTerminalPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'clearTerminal',
       );
-  late final _disableMouse = _disableMousePtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>)>();
+  late final _clearTerminal = _clearTerminalPtr
+      .asFunction<void Function(int)>();
 
-  /// Buffer management functions
-  ffi.Pointer<OptimizedBuffer> createOptimizedBuffer(
-    int width,
-    int height,
-    bool respectAlpha,
-    int widthMethod,
-  ) {
-    return _createOptimizedBuffer(width, height, respectAlpha, widthMethod);
-  }
-
-  late final _createOptimizedBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<OptimizedBuffer> Function(
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Bool,
-            ffi.Uint8,
-          )
-        >
-      >('createOptimizedBuffer');
-  late final _createOptimizedBuffer = _createOptimizedBufferPtr
-      .asFunction<ffi.Pointer<OptimizedBuffer> Function(int, int, bool, int)>();
-
-  void destroyOptimizedBuffer(ffi.Pointer<OptimizedBuffer> buffer) {
-    return _destroyOptimizedBuffer(buffer);
-  }
-
-  late final _destroyOptimizedBufferPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<OptimizedBuffer>)>
-      >('destroyOptimizedBuffer');
-  late final _destroyOptimizedBuffer = _destroyOptimizedBufferPtr
-      .asFunction<void Function(ffi.Pointer<OptimizedBuffer>)>();
-
-  void destroyFrameBuffer(ffi.Pointer<OptimizedBuffer> frameBuffer) {
-    return _destroyFrameBuffer(frameBuffer);
-  }
-
-  late final _destroyFrameBufferPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<OptimizedBuffer>)>
-      >('destroyFrameBuffer');
-  late final _destroyFrameBuffer = _destroyFrameBufferPtr
-      .asFunction<void Function(ffi.Pointer<OptimizedBuffer>)>();
-
-  int getBufferWidth(ffi.Pointer<OptimizedBuffer> buffer) {
+  int getBufferWidth(int buffer) {
     return _getBufferWidth(buffer);
   }
 
   late final _getBufferWidthPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Uint32 Function(ffi.Pointer<OptimizedBuffer>)>
-      >('getBufferWidth');
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(OpenTuiHandle)>>(
+        'getBufferWidth',
+      );
   late final _getBufferWidth = _getBufferWidthPtr
-      .asFunction<int Function(ffi.Pointer<OptimizedBuffer>)>();
+      .asFunction<int Function(int)>();
 
-  int getBufferHeight(ffi.Pointer<OptimizedBuffer> buffer) {
+  int getBufferHeight(int buffer) {
     return _getBufferHeight(buffer);
   }
 
   late final _getBufferHeightPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Uint32 Function(ffi.Pointer<OptimizedBuffer>)>
-      >('getBufferHeight');
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(OpenTuiHandle)>>(
+        'getBufferHeight',
+      );
   late final _getBufferHeight = _getBufferHeightPtr
-      .asFunction<int Function(ffi.Pointer<OptimizedBuffer>)>();
+      .asFunction<int Function(int)>();
 
-  /// Buffer drawing functions
-  void bufferClear(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    ffi.Pointer<ffi.Float> bg,
-  ) {
+  void bufferClear(int buffer, ffi.Pointer<ffi.Uint16> bg) {
     return _bufferClear(buffer, bg);
   }
 
   late final _bufferClearPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
-            ffi.Pointer<ffi.Float>,
-          )
+          ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint16>)
         >
       >('bufferClear');
   late final _bufferClear = _bufferClearPtr
-      .asFunction<
-        void Function(ffi.Pointer<OptimizedBuffer>, ffi.Pointer<ffi.Float>)
-      >();
-
-  ffi.Pointer<ffi.Uint32> bufferGetCharPtr(
-    ffi.Pointer<OptimizedBuffer> buffer,
-  ) {
-    return _bufferGetCharPtr(buffer);
-  }
-
-  late final _bufferGetCharPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<OptimizedBuffer>)
-        >
-      >('bufferGetCharPtr');
-  late final _bufferGetCharPtr = _bufferGetCharPtrPtr
-      .asFunction<
-        ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<OptimizedBuffer>)
-      >();
-
-  ffi.Pointer<ffi.Float> bufferGetFgPtr(ffi.Pointer<OptimizedBuffer> buffer) {
-    return _bufferGetFgPtr(buffer);
-  }
-
-  late final _bufferGetFgPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)
-        >
-      >('bufferGetFgPtr');
-  late final _bufferGetFgPtr = _bufferGetFgPtrPtr
-      .asFunction<
-        ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)
-      >();
-
-  ffi.Pointer<ffi.Float> bufferGetBgPtr(ffi.Pointer<OptimizedBuffer> buffer) {
-    return _bufferGetBgPtr(buffer);
-  }
-
-  late final _bufferGetBgPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)
-        >
-      >('bufferGetBgPtr');
-  late final _bufferGetBgPtr = _bufferGetBgPtrPtr
-      .asFunction<
-        ffi.Pointer<ffi.Float> Function(ffi.Pointer<OptimizedBuffer>)
-      >();
-
-  ffi.Pointer<ffi.Uint8> bufferGetAttributesPtr(
-    ffi.Pointer<OptimizedBuffer> buffer,
-  ) {
-    return _bufferGetAttributesPtr(buffer);
-  }
-
-  late final _bufferGetAttributesPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<OptimizedBuffer>)
-        >
-      >('bufferGetAttributesPtr');
-  late final _bufferGetAttributesPtr = _bufferGetAttributesPtrPtr
-      .asFunction<
-        ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<OptimizedBuffer>)
-      >();
-
-  bool bufferGetRespectAlpha(ffi.Pointer<OptimizedBuffer> buffer) {
-    return _bufferGetRespectAlpha(buffer);
-  }
-
-  late final _bufferGetRespectAlphaPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<OptimizedBuffer>)>
-      >('bufferGetRespectAlpha');
-  late final _bufferGetRespectAlpha = _bufferGetRespectAlphaPtr
-      .asFunction<bool Function(ffi.Pointer<OptimizedBuffer>)>();
-
-  void bufferSetRespectAlpha(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    bool respectAlpha,
-  ) {
-    return _bufferSetRespectAlpha(buffer, respectAlpha);
-  }
-
-  late final _bufferSetRespectAlphaPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<OptimizedBuffer>, ffi.Bool)
-        >
-      >('bufferSetRespectAlpha');
-  late final _bufferSetRespectAlpha = _bufferSetRespectAlphaPtr
-      .asFunction<void Function(ffi.Pointer<OptimizedBuffer>, bool)>();
+      .asFunction<void Function(int, ffi.Pointer<ffi.Uint16>)>();
 
   void bufferDrawText(
-    ffi.Pointer<OptimizedBuffer> buffer,
+    int buffer,
     ffi.Pointer<ffi.Uint8> text,
     int textLen,
     int x,
     int y,
-    ffi.Pointer<ffi.Float> fg,
-    ffi.Pointer<ffi.Float> bg,
+    ffi.Pointer<ffi.Uint16> fg,
+    ffi.Pointer<ffi.Uint16> bg,
     int attributes,
   ) {
     return _bufferDrawText(buffer, text, textLen, x, y, fg, bg, attributes);
@@ -476,86 +186,38 @@ class OpenTuiBindings {
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Pointer<ffi.Uint8>,
-            ffi.Size,
             ffi.Uint32,
             ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
-            ffi.Uint8,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Uint32,
           )
         >
       >('bufferDrawText');
   late final _bufferDrawText = _bufferDrawTextPtr
       .asFunction<
         void Function(
-          ffi.Pointer<OptimizedBuffer>,
+          int,
           ffi.Pointer<ffi.Uint8>,
           int,
           int,
           int,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Uint16>,
+          ffi.Pointer<ffi.Uint16>,
           int,
         )
       >();
 
-  void bufferSetCellWithAlphaBlending(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    int x,
-    int y,
-    int char_code,
-    ffi.Pointer<ffi.Float> fg,
-    ffi.Pointer<ffi.Float> bg,
-    int attributes,
-  ) {
-    return _bufferSetCellWithAlphaBlending(
-      buffer,
-      x,
-      y,
-      char_code,
-      fg,
-      bg,
-      attributes,
-    );
-  }
-
-  late final _bufferSetCellWithAlphaBlendingPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
-            ffi.Uint8,
-          )
-        >
-      >('bufferSetCellWithAlphaBlending');
-  late final _bufferSetCellWithAlphaBlending =
-      _bufferSetCellWithAlphaBlendingPtr
-          .asFunction<
-            void Function(
-              ffi.Pointer<OptimizedBuffer>,
-              int,
-              int,
-              int,
-              ffi.Pointer<ffi.Float>,
-              ffi.Pointer<ffi.Float>,
-              int,
-            )
-          >();
-
   void bufferFillRect(
-    ffi.Pointer<OptimizedBuffer> buffer,
+    int buffer,
     int x,
     int y,
     int width,
     int height,
-    ffi.Pointer<ffi.Float> bg,
+    ffi.Pointer<ffi.Uint16> bg,
   ) {
     return _bufferFillRect(buffer, x, y, width, height, bg);
   }
@@ -564,133 +226,35 @@ class OpenTuiBindings {
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Uint32,
             ffi.Uint32,
             ffi.Uint32,
             ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Uint16>,
           )
         >
       >('bufferFillRect');
   late final _bufferFillRect = _bufferFillRectPtr
       .asFunction<
-        void Function(
-          ffi.Pointer<OptimizedBuffer>,
-          int,
-          int,
-          int,
-          int,
-          ffi.Pointer<ffi.Float>,
-        )
-      >();
-
-  void bufferDrawPackedBuffer(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    ffi.Pointer<ffi.Uint8> data,
-    int dataLen,
-    int posX,
-    int posY,
-    int terminalWidthCells,
-    int terminalHeightCells,
-  ) {
-    return _bufferDrawPackedBuffer(
-      buffer,
-      data,
-      dataLen,
-      posX,
-      posY,
-      terminalWidthCells,
-      terminalHeightCells,
-    );
-  }
-
-  late final _bufferDrawPackedBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Size,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Uint32,
-          )
-        >
-      >('bufferDrawPackedBuffer');
-  late final _bufferDrawPackedBuffer = _bufferDrawPackedBufferPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<OptimizedBuffer>,
-          ffi.Pointer<ffi.Uint8>,
-          int,
-          int,
-          int,
-          int,
-          int,
-        )
-      >();
-
-  void bufferDrawSuperSampleBuffer(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    int x,
-    int y,
-    ffi.Pointer<ffi.Uint8> pixelData,
-    int len,
-    int format,
-    int alignedBytesPerRow,
-  ) {
-    return _bufferDrawSuperSampleBuffer(
-      buffer,
-      x,
-      y,
-      pixelData,
-      len,
-      format,
-      alignedBytesPerRow,
-    );
-  }
-
-  late final _bufferDrawSuperSampleBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Size,
-            ffi.Uint8,
-            ffi.Uint32,
-          )
-        >
-      >('bufferDrawSuperSampleBuffer');
-  late final _bufferDrawSuperSampleBuffer = _bufferDrawSuperSampleBufferPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<OptimizedBuffer>,
-          int,
-          int,
-          ffi.Pointer<ffi.Uint8>,
-          int,
-          int,
-          int,
-        )
+        void Function(int, int, int, int, int, ffi.Pointer<ffi.Uint16>)
       >();
 
   void bufferDrawBox(
-    ffi.Pointer<OptimizedBuffer> buffer,
+    int buffer,
     int x,
     int y,
     int width,
     int height,
     ffi.Pointer<ffi.Uint32> borderChars,
     int packedOptions,
-    ffi.Pointer<ffi.Float> borderColor,
-    ffi.Pointer<ffi.Float> backgroundColor,
+    ffi.Pointer<ffi.Uint16> borderColor,
+    ffi.Pointer<ffi.Uint16> backgroundColor,
+    ffi.Pointer<ffi.Uint16> titleColor,
     ffi.Pointer<ffi.Uint8> title,
     int titleLen,
+    ffi.Pointer<ffi.Uint8> bottomTitle,
+    int bottomTitleLen,
   ) {
     return _bufferDrawBox(
       buffer,
@@ -702,8 +266,11 @@ class OpenTuiBindings {
       packedOptions,
       borderColor,
       backgroundColor,
+      titleColor,
       title,
       titleLen,
+      bottomTitle,
+      bottomTitleLen,
     );
   }
 
@@ -711,15 +278,18 @@ class OpenTuiBindings {
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Int32,
             ffi.Int32,
             ffi.Uint32,
             ffi.Uint32,
             ffi.Pointer<ffi.Uint32>,
             ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
             ffi.Pointer<ffi.Uint8>,
             ffi.Uint32,
           )
@@ -728,46 +298,154 @@ class OpenTuiBindings {
   late final _bufferDrawBox = _bufferDrawBoxPtr
       .asFunction<
         void Function(
-          ffi.Pointer<OptimizedBuffer>,
+          int,
           int,
           int,
           int,
           int,
           ffi.Pointer<ffi.Uint32>,
           int,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Uint16>,
+          ffi.Pointer<ffi.Uint16>,
+          ffi.Pointer<ffi.Uint16>,
+          ffi.Pointer<ffi.Uint8>,
+          int,
           ffi.Pointer<ffi.Uint8>,
           int,
         )
       >();
 
-  void bufferResize(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    int width,
-    int height,
-  ) {
-    return _bufferResize(buffer, width, height);
+  ffi.Pointer<ffi.Uint32> bufferGetCharPtr(int buffer) {
+    return _bufferGetCharPtr(buffer);
   }
 
-  late final _bufferResizePtr =
+  late final _bufferGetCharPtrPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Pointer<ffi.Uint32> Function(OpenTuiHandle)>
+      >('bufferGetCharPtr');
+  late final _bufferGetCharPtr = _bufferGetCharPtrPtr
+      .asFunction<ffi.Pointer<ffi.Uint32> Function(int)>();
+
+  ffi.Pointer<ffi.Uint16> bufferGetFgPtr(int buffer) {
+    return _bufferGetFgPtr(buffer);
+  }
+
+  late final _bufferGetFgPtrPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Pointer<ffi.Uint16> Function(OpenTuiHandle)>
+      >('bufferGetFgPtr');
+  late final _bufferGetFgPtr = _bufferGetFgPtrPtr
+      .asFunction<ffi.Pointer<ffi.Uint16> Function(int)>();
+
+  ffi.Pointer<ffi.Uint16> bufferGetBgPtr(int buffer) {
+    return _bufferGetBgPtr(buffer);
+  }
+
+  late final _bufferGetBgPtrPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Pointer<ffi.Uint16> Function(OpenTuiHandle)>
+      >('bufferGetBgPtr');
+  late final _bufferGetBgPtr = _bufferGetBgPtrPtr
+      .asFunction<ffi.Pointer<ffi.Uint16> Function(int)>();
+
+  ffi.Pointer<ffi.Uint32> bufferGetAttributesPtr(int buffer) {
+    return _bufferGetAttributesPtr(buffer);
+  }
+
+  late final _bufferGetAttributesPtrPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Pointer<ffi.Uint32> Function(OpenTuiHandle)>
+      >('bufferGetAttributesPtr');
+  late final _bufferGetAttributesPtr = _bufferGetAttributesPtrPtr
+      .asFunction<ffi.Pointer<ffi.Uint32> Function(int)>();
+
+  int bufferGetRealCharSize(int buffer) {
+    return _bufferGetRealCharSize(buffer);
+  }
+
+  late final _bufferGetRealCharSizePtr =
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(OpenTuiHandle)>>(
+        'bufferGetRealCharSize',
+      );
+  late final _bufferGetRealCharSize = _bufferGetRealCharSizePtr
+      .asFunction<int Function(int)>();
+
+  int bufferWriteResolvedChars(
+    int buffer,
+    ffi.Pointer<ffi.Uint8> output,
+    int outputLen,
+    bool addLineBreaks,
+  ) {
+    return _bufferWriteResolvedChars(buffer, output, outputLen, addLineBreaks);
+  }
+
+  late final _bufferWriteResolvedCharsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(
+            OpenTuiHandle,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
+            ffi.Bool,
+          )
+        >
+      >('bufferWriteResolvedChars');
+  late final _bufferWriteResolvedChars = _bufferWriteResolvedCharsPtr
+      .asFunction<int Function(int, ffi.Pointer<ffi.Uint8>, int, bool)>();
+
+  void bufferSetCellWithAlphaBlending(
+    int buffer,
+    int x,
+    int y,
+    int character,
+    ffi.Pointer<ffi.Uint16> fg,
+    ffi.Pointer<ffi.Uint16> bg,
+    int attributes,
+  ) {
+    return _bufferSetCellWithAlphaBlending(
+      buffer,
+      x,
+      y,
+      character,
+      fg,
+      bg,
+      attributes,
+    );
+  }
+
+  late final _bufferSetCellWithAlphaBlendingPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Uint32,
+            ffi.Uint32,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint16>,
+            ffi.Pointer<ffi.Uint16>,
             ffi.Uint32,
           )
         >
-      >('bufferResize');
-  late final _bufferResize = _bufferResizePtr
-      .asFunction<void Function(ffi.Pointer<OptimizedBuffer>, int, int)>();
+      >('bufferSetCellWithAlphaBlending');
+  late final _bufferSetCellWithAlphaBlending =
+      _bufferSetCellWithAlphaBlendingPtr
+          .asFunction<
+            void Function(
+              int,
+              int,
+              int,
+              int,
+              ffi.Pointer<ffi.Uint16>,
+              ffi.Pointer<ffi.Uint16>,
+              int,
+            )
+          >();
 
   void drawFrameBuffer(
-    ffi.Pointer<OptimizedBuffer> target,
+    int target,
     int destX,
     int destY,
-    ffi.Pointer<OptimizedBuffer> frameBuffer,
+    int frameBuffer,
     int sourceX,
     int sourceY,
     int sourceWidth,
@@ -789,10 +467,10 @@ class OpenTuiBindings {
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Int32,
             ffi.Int32,
-            ffi.Pointer<OptimizedBuffer>,
+            OpenTuiHandle,
             ffi.Uint32,
             ffi.Uint32,
             ffi.Uint32,
@@ -801,170 +479,105 @@ class OpenTuiBindings {
         >
       >('drawFrameBuffer');
   late final _drawFrameBuffer = _drawFrameBufferPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<OptimizedBuffer>,
-          int,
-          int,
-          ffi.Pointer<OptimizedBuffer>,
-          int,
-          int,
-          int,
-          int,
-        )
-      >();
+      .asFunction<void Function(int, int, int, int, int, int, int, int)>();
 
-  /// Cursor functions
-  void setCursorPosition(
-    ffi.Pointer<CliRenderer> renderer,
-    int x,
-    int y,
-    bool visible,
-  ) {
+  void bufferResize(int buffer, int width, int height) {
+    return _bufferResize(buffer, width, height);
+  }
+
+  late final _bufferResizePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)
+        >
+      >('bufferResize');
+  late final _bufferResize = _bufferResizePtr
+      .asFunction<void Function(int, int, int)>();
+
+  void setCursorPosition(int renderer, int x, int y, bool visible) {
     return _setCursorPosition(renderer, x, y, visible);
   }
 
   late final _setCursorPositionPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
-            ffi.Int32,
-            ffi.Int32,
-            ffi.Bool,
-          )
+          ffi.Void Function(OpenTuiHandle, ffi.Int32, ffi.Int32, ffi.Bool)
         >
       >('setCursorPosition');
   late final _setCursorPosition = _setCursorPositionPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int, int, bool)>();
+      .asFunction<void Function(int, int, int, bool)>();
 
-  void setCursorStyle(
-    ffi.Pointer<CliRenderer> renderer,
-    ffi.Pointer<ffi.Uint8> style,
-    int styleLen,
-    bool blinking,
+  void setCursorStyleOptions(
+    int renderer,
+    ffi.Pointer<CursorStyleOptions> options,
   ) {
-    return _setCursorStyle(renderer, style, styleLen, blinking);
+    return _setCursorStyleOptions(renderer, options);
   }
 
-  late final _setCursorStylePtr =
+  late final _setCursorStyleOptionsPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Size,
-            ffi.Bool,
-          )
+          ffi.Void Function(OpenTuiHandle, ffi.Pointer<CursorStyleOptions>)
         >
-      >('setCursorStyle');
-  late final _setCursorStyle = _setCursorStylePtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<CliRenderer>,
-          ffi.Pointer<ffi.Uint8>,
-          int,
-          bool,
-        )
-      >();
+      >('setCursorStyleOptions');
+  late final _setCursorStyleOptions = _setCursorStyleOptionsPtr
+      .asFunction<void Function(int, ffi.Pointer<CursorStyleOptions>)>();
 
-  void setCursorColor(
-    ffi.Pointer<CliRenderer> renderer,
-    ffi.Pointer<ffi.Float> color,
-  ) {
-    return _setCursorColor(renderer, color);
+  void enableMouse(int renderer, bool enableMovement) {
+    return _enableMouse(renderer, enableMovement);
   }
 
-  late final _setCursorColorPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
-        >
-      >('setCursorColor');
-  late final _setCursorColor = _setCursorColorPtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Float>)
-      >();
-
-  /// Terminal capability functions
-  void getTerminalCapabilities(
-    ffi.Pointer<CliRenderer> renderer,
-    ffi.Pointer<Capabilities> caps,
-  ) {
-    return _getTerminalCapabilities(renderer, caps);
-  }
-
-  late final _getTerminalCapabilitiesPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<Capabilities>)
-        >
-      >('getTerminalCapabilities');
-  late final _getTerminalCapabilities = _getTerminalCapabilitiesPtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<Capabilities>)
-      >();
-
-  void processCapabilityResponse(
-    ffi.Pointer<CliRenderer> renderer,
-    ffi.Pointer<ffi.Uint8> response,
-    int responseLen,
-  ) {
-    return _processCapabilityResponse(renderer, response, responseLen);
-  }
-
-  late final _processCapabilityResponsePtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Size,
-          )
-        >
-      >('processCapabilityResponse');
-  late final _processCapabilityResponse = _processCapabilityResponsePtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, ffi.Pointer<ffi.Uint8>, int)
-      >();
-
-  /// Debug and utility functions
-  void setDebugOverlay(
-    ffi.Pointer<CliRenderer> renderer,
-    bool enabled,
-    int corner,
-  ) {
-    return _setDebugOverlay(renderer, enabled, corner);
-  }
-
-  late final _setDebugOverlayPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool, ffi.Uint8)
-        >
-      >('setDebugOverlay');
-  late final _setDebugOverlay = _setDebugOverlayPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool, int)>();
-
-  void clearTerminal(ffi.Pointer<CliRenderer> renderer) {
-    return _clearTerminal(renderer);
-  }
-
-  late final _clearTerminalPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<CliRenderer>)>>(
-        'clearTerminal',
+  late final _enableMousePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle, ffi.Bool)>>(
+        'enableMouse',
       );
-  late final _clearTerminal = _clearTerminalPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>)>();
+  late final _enableMouse = _enableMousePtr
+      .asFunction<void Function(int, bool)>();
 
-  void addToHitGrid(
-    ffi.Pointer<CliRenderer> renderer,
-    int x,
-    int y,
-    int width,
-    int height,
-    int id,
-  ) {
+  void disableMouse(int renderer) {
+    return _disableMouse(renderer);
+  }
+
+  late final _disableMousePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'disableMouse',
+      );
+  late final _disableMouse = _disableMousePtr.asFunction<void Function(int)>();
+
+  void enableKittyKeyboard(int renderer, int flags) {
+    return _enableKittyKeyboard(renderer, flags);
+  }
+
+  late final _enableKittyKeyboardPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle, ffi.Uint8)>>(
+        'enableKittyKeyboard',
+      );
+  late final _enableKittyKeyboard = _enableKittyKeyboardPtr
+      .asFunction<void Function(int, int)>();
+
+  void disableKittyKeyboard(int renderer) {
+    return _disableKittyKeyboard(renderer);
+  }
+
+  late final _disableKittyKeyboardPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'disableKittyKeyboard',
+      );
+  late final _disableKittyKeyboard = _disableKittyKeyboardPtr
+      .asFunction<void Function(int)>();
+
+  void setupTerminal(int renderer, bool useAlternateScreen) {
+    return _setupTerminal(renderer, useAlternateScreen);
+  }
+
+  late final _setupTerminalPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle, ffi.Bool)>>(
+        'setupTerminal',
+      );
+  late final _setupTerminal = _setupTerminalPtr
+      .asFunction<void Function(int, bool)>();
+
+  void addToHitGrid(int renderer, int x, int y, int width, int height, int id) {
     return _addToHitGrid(renderer, x, y, width, height, id);
   }
 
@@ -972,7 +585,7 @@ class OpenTuiBindings {
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(
-            ffi.Pointer<CliRenderer>,
+            OpenTuiHandle,
             ffi.Int32,
             ffi.Int32,
             ffi.Uint32,
@@ -982,544 +595,36 @@ class OpenTuiBindings {
         >
       >('addToHitGrid');
   late final _addToHitGrid = _addToHitGridPtr
-      .asFunction<
-        void Function(ffi.Pointer<CliRenderer>, int, int, int, int, int)
-      >();
+      .asFunction<void Function(int, int, int, int, int, int)>();
 
-  int checkHit(ffi.Pointer<CliRenderer> renderer, int x, int y) {
+  int checkHit(int renderer, int x, int y) {
     return _checkHit(renderer, x, y);
   }
 
   late final _checkHitPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Uint32 Function(ffi.Pointer<CliRenderer>, ffi.Uint32, ffi.Uint32)
+          ffi.Uint32 Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)
         >
       >('checkHit');
-  late final _checkHit = _checkHitPtr
-      .asFunction<int Function(ffi.Pointer<CliRenderer>, int, int)>();
+  late final _checkHit = _checkHitPtr.asFunction<int Function(int, int, int)>();
 
-  void dumpHitGrid(ffi.Pointer<CliRenderer> renderer) {
-    return _dumpHitGrid(renderer);
-  }
-
-  late final _dumpHitGridPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<CliRenderer>)>>(
-        'dumpHitGrid',
-      );
-  late final _dumpHitGrid = _dumpHitGridPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>)>();
-
-  void dumpBuffers(ffi.Pointer<CliRenderer> renderer, int timestamp) {
-    return _dumpBuffers(renderer, timestamp);
-  }
-
-  late final _dumpBuffersPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Int64)
-        >
-      >('dumpBuffers');
-  late final _dumpBuffers = _dumpBuffersPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int)>();
-
-  void dumpStdoutBuffer(ffi.Pointer<CliRenderer> renderer, int timestamp) {
-    return _dumpStdoutBuffer(renderer, timestamp);
-  }
-
-  late final _dumpStdoutBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Int64)
-        >
-      >('dumpStdoutBuffer');
-  late final _dumpStdoutBuffer = _dumpStdoutBufferPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int)>();
-
-  /// Keyboard and terminal setup functions
-  void enableKittyKeyboard(ffi.Pointer<CliRenderer> renderer, int flags) {
-    return _enableKittyKeyboard(renderer, flags);
-  }
-
-  late final _enableKittyKeyboardPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Uint8)
-        >
-      >('enableKittyKeyboard');
-  late final _enableKittyKeyboard = _enableKittyKeyboardPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, int)>();
-
-  void disableKittyKeyboard(ffi.Pointer<CliRenderer> renderer) {
-    return _disableKittyKeyboard(renderer);
-  }
-
-  late final _disableKittyKeyboardPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<CliRenderer>)>>(
-        'disableKittyKeyboard',
-      );
-  late final _disableKittyKeyboard = _disableKittyKeyboardPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>)>();
-
-  void setupTerminal(
-    ffi.Pointer<CliRenderer> renderer,
-    bool useAlternateScreen,
+  void processCapabilityResponse(
+    int renderer,
+    ffi.Pointer<ffi.Uint8> response,
+    int responseLen,
   ) {
-    return _setupTerminal(renderer, useAlternateScreen);
+    return _processCapabilityResponse(renderer, response, responseLen);
   }
 
-  late final _setupTerminalPtr =
+  late final _processCapabilityResponsePtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<CliRenderer>, ffi.Bool)
+          ffi.Void Function(OpenTuiHandle, ffi.Pointer<ffi.Uint8>, ffi.Uint32)
         >
-      >('setupTerminal');
-  late final _setupTerminal = _setupTerminalPtr
-      .asFunction<void Function(ffi.Pointer<CliRenderer>, bool)>();
-
-  /// TextBuffer functions
-  ffi.Pointer<TextBuffer> createTextBuffer(int length, int widthMethod) {
-    return _createTextBuffer(length, widthMethod);
-  }
-
-  late final _createTextBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<TextBuffer> Function(ffi.Uint32, ffi.Uint8)
-        >
-      >('createTextBuffer');
-  late final _createTextBuffer = _createTextBufferPtr
-      .asFunction<ffi.Pointer<TextBuffer> Function(int, int)>();
-
-  void destroyTextBuffer(ffi.Pointer<TextBuffer> textBuffer) {
-    return _destroyTextBuffer(textBuffer);
-  }
-
-  late final _destroyTextBufferPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<TextBuffer>)>>(
-        'destroyTextBuffer',
-      );
-  late final _destroyTextBuffer = _destroyTextBufferPtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Uint32> textBufferGetCharPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetCharPtr(textBuffer);
-  }
-
-  late final _textBufferGetCharPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetCharPtr');
-  late final _textBufferGetCharPtr = _textBufferGetCharPtrPtr
-      .asFunction<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Float> textBufferGetFgPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetFgPtr(textBuffer);
-  }
-
-  late final _textBufferGetFgPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetFgPtr');
-  late final _textBufferGetFgPtr = _textBufferGetFgPtrPtr
-      .asFunction<ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Float> textBufferGetBgPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetBgPtr(textBuffer);
-  }
-
-  late final _textBufferGetBgPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetBgPtr');
-  late final _textBufferGetBgPtr = _textBufferGetBgPtrPtr
-      .asFunction<ffi.Pointer<ffi.Float> Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Uint16> textBufferGetAttributesPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetAttributesPtr(textBuffer);
-  }
-
-  late final _textBufferGetAttributesPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint16> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetAttributesPtr');
-  late final _textBufferGetAttributesPtr = _textBufferGetAttributesPtrPtr
-      .asFunction<ffi.Pointer<ffi.Uint16> Function(ffi.Pointer<TextBuffer>)>();
-
-  int textBufferGetLength(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferGetLength(textBuffer);
-  }
-
-  late final _textBufferGetLengthPtr =
-      _lookup<ffi.NativeFunction<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferGetLength',
-      );
-  late final _textBufferGetLength = _textBufferGetLengthPtr
-      .asFunction<int Function(ffi.Pointer<TextBuffer>)>();
-
-  void textBufferSetCell(
-    ffi.Pointer<TextBuffer> textBuffer,
-    int index,
-    int char_code,
-    ffi.Pointer<ffi.Float> fg,
-    ffi.Pointer<ffi.Float> bg,
-    int attr,
-  ) {
-    return _textBufferSetCell(textBuffer, index, char_code, fg, bg, attr);
-  }
-
-  late final _textBufferSetCellPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<TextBuffer>,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
-            ffi.Uint16,
-          )
-        >
-      >('textBufferSetCell');
-  late final _textBufferSetCell = _textBufferSetCellPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<TextBuffer>,
-          int,
-          int,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Float>,
-          int,
-        )
-      >();
-
-  ffi.Pointer<TextBuffer> textBufferConcat(
-    ffi.Pointer<TextBuffer> tb1,
-    ffi.Pointer<TextBuffer> tb2,
-  ) {
-    return _textBufferConcat(tb1, tb2);
-  }
-
-  late final _textBufferConcatPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<TextBuffer> Function(
-            ffi.Pointer<TextBuffer>,
-            ffi.Pointer<TextBuffer>,
-          )
-        >
-      >('textBufferConcat');
-  late final _textBufferConcat = _textBufferConcatPtr
-      .asFunction<
-        ffi.Pointer<TextBuffer> Function(
-          ffi.Pointer<TextBuffer>,
-          ffi.Pointer<TextBuffer>,
-        )
-      >();
-
-  void textBufferResize(ffi.Pointer<TextBuffer> textBuffer, int newLength) {
-    return _textBufferResize(textBuffer, newLength);
-  }
-
-  late final _textBufferResizePtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Uint32)
-        >
-      >('textBufferResize');
-  late final _textBufferResize = _textBufferResizePtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>, int)>();
-
-  void textBufferReset(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferReset(textBuffer);
-  }
-
-  late final _textBufferResetPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferReset',
-      );
-  late final _textBufferReset = _textBufferResetPtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>)>();
-
-  void textBufferSetSelection(
-    ffi.Pointer<TextBuffer> textBuffer,
-    int start,
-    int end,
-    ffi.Pointer<ffi.Float> bgColor,
-    ffi.Pointer<ffi.Float> fgColor,
-  ) {
-    return _textBufferSetSelection(textBuffer, start, end, bgColor, fgColor);
-  }
-
-  late final _textBufferSetSelectionPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<TextBuffer>,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
-          )
-        >
-      >('textBufferSetSelection');
-  late final _textBufferSetSelection = _textBufferSetSelectionPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<TextBuffer>,
-          int,
-          int,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Float>,
-        )
-      >();
-
-  void textBufferResetSelection(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferResetSelection(textBuffer);
-  }
-
-  late final _textBufferResetSelectionPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferResetSelection',
-      );
-  late final _textBufferResetSelection = _textBufferResetSelectionPtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>)>();
-
-  void textBufferSetDefaultFg(
-    ffi.Pointer<TextBuffer> textBuffer,
-    ffi.Pointer<ffi.Float> fg,
-  ) {
-    return _textBufferSetDefaultFg(textBuffer, fg);
-  }
-
-  late final _textBufferSetDefaultFgPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
-        >
-      >('textBufferSetDefaultFg');
-  late final _textBufferSetDefaultFg = _textBufferSetDefaultFgPtr
-      .asFunction<
-        void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
-      >();
-
-  void textBufferSetDefaultBg(
-    ffi.Pointer<TextBuffer> textBuffer,
-    ffi.Pointer<ffi.Float> bg,
-  ) {
-    return _textBufferSetDefaultBg(textBuffer, bg);
-  }
-
-  late final _textBufferSetDefaultBgPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
-        >
-      >('textBufferSetDefaultBg');
-  late final _textBufferSetDefaultBg = _textBufferSetDefaultBgPtr
-      .asFunction<
-        void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Float>)
-      >();
-
-  void textBufferSetDefaultAttributes(
-    ffi.Pointer<TextBuffer> textBuffer,
-    ffi.Pointer<ffi.Uint8> attr,
-  ) {
-    return _textBufferSetDefaultAttributes(textBuffer, attr);
-  }
-
-  late final _textBufferSetDefaultAttributesPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Uint8>)
-        >
-      >('textBufferSetDefaultAttributes');
-  late final _textBufferSetDefaultAttributes =
-      _textBufferSetDefaultAttributesPtr
-          .asFunction<
-            void Function(ffi.Pointer<TextBuffer>, ffi.Pointer<ffi.Uint8>)
-          >();
-
-  void textBufferResetDefaults(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferResetDefaults(textBuffer);
-  }
-
-  late final _textBufferResetDefaultsPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferResetDefaults',
-      );
-  late final _textBufferResetDefaults = _textBufferResetDefaultsPtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>)>();
-
-  int textBufferWriteChunk(
-    ffi.Pointer<TextBuffer> textBuffer,
-    ffi.Pointer<ffi.Uint8> textBytes,
-    int textLen,
-    ffi.Pointer<ffi.Float> fg,
-    ffi.Pointer<ffi.Float> bg,
-    ffi.Pointer<ffi.Uint8> attr,
-  ) {
-    return _textBufferWriteChunk(textBuffer, textBytes, textLen, fg, bg, attr);
-  }
-
-  late final _textBufferWriteChunkPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Uint32 Function(
-            ffi.Pointer<TextBuffer>,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Uint8>,
-          )
-        >
-      >('textBufferWriteChunk');
-  late final _textBufferWriteChunk = _textBufferWriteChunkPtr
-      .asFunction<
-        int Function(
-          ffi.Pointer<TextBuffer>,
-          ffi.Pointer<ffi.Uint8>,
-          int,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Float>,
-          ffi.Pointer<ffi.Uint8>,
-        )
-      >();
-
-  int textBufferGetCapacity(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferGetCapacity(textBuffer);
-  }
-
-  late final _textBufferGetCapacityPtr =
-      _lookup<ffi.NativeFunction<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferGetCapacity',
-      );
-  late final _textBufferGetCapacity = _textBufferGetCapacityPtr
-      .asFunction<int Function(ffi.Pointer<TextBuffer>)>();
-
-  void textBufferFinalizeLineInfo(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferFinalizeLineInfo(textBuffer);
-  }
-
-  late final _textBufferFinalizeLineInfoPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferFinalizeLineInfo',
-      );
-  late final _textBufferFinalizeLineInfo = _textBufferFinalizeLineInfoPtr
-      .asFunction<void Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Uint32> textBufferGetLineStartsPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetLineStartsPtr(textBuffer);
-  }
-
-  late final _textBufferGetLineStartsPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetLineStartsPtr');
-  late final _textBufferGetLineStartsPtr = _textBufferGetLineStartsPtrPtr
-      .asFunction<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>();
-
-  ffi.Pointer<ffi.Uint32> textBufferGetLineWidthsPtr(
-    ffi.Pointer<TextBuffer> textBuffer,
-  ) {
-    return _textBufferGetLineWidthsPtr(textBuffer);
-  }
-
-  late final _textBufferGetLineWidthsPtrPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)
-        >
-      >('textBufferGetLineWidthsPtr');
-  late final _textBufferGetLineWidthsPtr = _textBufferGetLineWidthsPtrPtr
-      .asFunction<ffi.Pointer<ffi.Uint32> Function(ffi.Pointer<TextBuffer>)>();
-
-  int textBufferGetLineCount(ffi.Pointer<TextBuffer> textBuffer) {
-    return _textBufferGetLineCount(textBuffer);
-  }
-
-  late final _textBufferGetLineCountPtr =
-      _lookup<ffi.NativeFunction<ffi.Uint32 Function(ffi.Pointer<TextBuffer>)>>(
-        'textBufferGetLineCount',
-      );
-  late final _textBufferGetLineCount = _textBufferGetLineCountPtr
-      .asFunction<int Function(ffi.Pointer<TextBuffer>)>();
-
-  void bufferDrawTextBuffer(
-    ffi.Pointer<OptimizedBuffer> buffer,
-    ffi.Pointer<TextBuffer> textBuffer,
-    int x,
-    int y,
-    int clipX,
-    int clipY,
-    int clipWidth,
-    int clipHeight,
-    bool hasClipRect,
-  ) {
-    return _bufferDrawTextBuffer(
-      buffer,
-      textBuffer,
-      x,
-      y,
-      clipX,
-      clipY,
-      clipWidth,
-      clipHeight,
-      hasClipRect,
-    );
-  }
-
-  late final _bufferDrawTextBufferPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Pointer<OptimizedBuffer>,
-            ffi.Pointer<TextBuffer>,
-            ffi.Int32,
-            ffi.Int32,
-            ffi.Int32,
-            ffi.Int32,
-            ffi.Uint32,
-            ffi.Uint32,
-            ffi.Bool,
-          )
-        >
-      >('bufferDrawTextBuffer');
-  late final _bufferDrawTextBuffer = _bufferDrawTextBufferPtr
-      .asFunction<
-        void Function(
-          ffi.Pointer<OptimizedBuffer>,
-          ffi.Pointer<TextBuffer>,
-          int,
-          int,
-          int,
-          int,
-          int,
-          int,
-          bool,
-        )
-      >();
+      >('processCapabilityResponse');
+  late final _processCapabilityResponse = _processCapabilityResponsePtr
+      .asFunction<void Function(int, ffi.Pointer<ffi.Uint8>, int)>();
 }
 
 /// mbstate_t is an opaque object to keep conversion state, during multibyte
@@ -1533,209 +638,21 @@ final class __mbstate_t extends ffi.Union {
   external int _mbstateL;
 }
 
-/// Terminal capabilities structure
-final class Capabilities extends ffi.Struct {
-  @ffi.Bool()
-  external bool supports_truecolor;
+final class CursorStyleOptions extends ffi.Struct {
+  @ffi.Uint8()
+  external int style;
 
-  @ffi.Bool()
-  external bool supports_mouse;
+  @ffi.Uint8()
+  external int blinking;
 
-  @ffi.Bool()
-  external bool supports_kitty_keyboard;
+  external ffi.Pointer<ffi.Uint16> color;
 
-  @ffi.Bool()
-  external bool supports_alternate_screen;
+  @ffi.Uint8()
+  external int cursor;
 }
 
-final class CliRenderer extends ffi.Opaque {}
-
-final class OptimizedBuffer extends ffi.Opaque {}
-
-final class TextBuffer extends ffi.Opaque {}
-
-const int __WORDSIZE = 64;
-
-const int __has_safe_buffers = 1;
-
-const int __DARWIN_ONLY_64_BIT_INO_T = 1;
-
-const int __DARWIN_ONLY_UNIX_CONFORMANCE = 1;
-
-const int __DARWIN_ONLY_VERS_1050 = 1;
-
-const int __DARWIN_UNIX03 = 1;
-
-const int __DARWIN_64_BIT_INO_T = 1;
-
-const int __DARWIN_VERS_1050 = 1;
-
-const int __DARWIN_NON_CANCELABLE = 0;
-
-const String __DARWIN_SUF_EXTSN = '\$DARWIN_EXTSN';
-
-const int __DARWIN_C_ANSI = 4096;
-
-const int __DARWIN_C_FULL = 900000;
-
-const int __DARWIN_C_LEVEL = 900000;
-
-const int __STDC_WANT_LIB_EXT1__ = 1;
-
-const int __DARWIN_NO_LONG_LONG = 0;
-
-const int _DARWIN_FEATURE_64_BIT_INODE = 1;
-
-const int _DARWIN_FEATURE_ONLY_64_BIT_INODE = 1;
-
-const int _DARWIN_FEATURE_ONLY_VERS_1050 = 1;
-
-const int _DARWIN_FEATURE_ONLY_UNIX_CONFORMANCE = 1;
-
-const int _DARWIN_FEATURE_UNIX_CONFORMANCE = 3;
-
-const int __has_ptrcheck = 0;
-
-const int __has_bounds_safety_attributes = 0;
-
-const int __DARWIN_NULL = 0;
-
-const int __PTHREAD_SIZE__ = 8176;
-
-const int __PTHREAD_ATTR_SIZE__ = 56;
-
-const int __PTHREAD_MUTEXATTR_SIZE__ = 8;
-
-const int __PTHREAD_MUTEX_SIZE__ = 56;
-
-const int __PTHREAD_CONDATTR_SIZE__ = 8;
-
-const int __PTHREAD_COND_SIZE__ = 40;
-
-const int __PTHREAD_ONCE_SIZE__ = 8;
-
-const int __PTHREAD_RWLOCK_SIZE__ = 192;
-
-const int __PTHREAD_RWLOCKATTR_SIZE__ = 16;
-
-const int INT8_MAX = 127;
-
-const int INT16_MAX = 32767;
-
-const int INT32_MAX = 2147483647;
-
-const int INT64_MAX = 9223372036854775807;
-
-const int INT8_MIN = -128;
-
-const int INT16_MIN = -32768;
-
-const int INT32_MIN = -2147483648;
-
-const int INT64_MIN = -9223372036854775808;
-
-const int UINT8_MAX = 255;
-
-const int UINT16_MAX = 65535;
-
-const int UINT32_MAX = 4294967295;
-
-const int UINT64_MAX = -1;
-
-const int INT_LEAST8_MIN = -128;
-
-const int INT_LEAST16_MIN = -32768;
-
-const int INT_LEAST32_MIN = -2147483648;
-
-const int INT_LEAST64_MIN = -9223372036854775808;
-
-const int INT_LEAST8_MAX = 127;
-
-const int INT_LEAST16_MAX = 32767;
-
-const int INT_LEAST32_MAX = 2147483647;
-
-const int INT_LEAST64_MAX = 9223372036854775807;
-
-const int UINT_LEAST8_MAX = 255;
-
-const int UINT_LEAST16_MAX = 65535;
-
-const int UINT_LEAST32_MAX = 4294967295;
-
-const int UINT_LEAST64_MAX = -1;
-
-const int INT_FAST8_MIN = -128;
-
-const int INT_FAST16_MIN = -32768;
-
-const int INT_FAST32_MIN = -2147483648;
-
-const int INT_FAST64_MIN = -9223372036854775808;
-
-const int INT_FAST8_MAX = 127;
-
-const int INT_FAST16_MAX = 32767;
-
-const int INT_FAST32_MAX = 2147483647;
-
-const int INT_FAST64_MAX = 9223372036854775807;
-
-const int UINT_FAST8_MAX = 255;
-
-const int UINT_FAST16_MAX = 65535;
-
-const int UINT_FAST32_MAX = 4294967295;
-
-const int UINT_FAST64_MAX = -1;
-
-const int INTPTR_MAX = 9223372036854775807;
-
-const int INTPTR_MIN = -9223372036854775808;
-
-const int UINTPTR_MAX = -1;
-
-const int INTMAX_MAX = 9223372036854775807;
-
-const int UINTMAX_MAX = -1;
-
-const int INTMAX_MIN = -9223372036854775808;
-
-const int PTRDIFF_MIN = -9223372036854775808;
-
-const int PTRDIFF_MAX = 9223372036854775807;
-
-const int SIZE_MAX = -1;
-
-const int RSIZE_MAX = 9223372036854775807;
-
-const int WCHAR_MAX = 2147483647;
-
-const int WCHAR_MIN = -2147483648;
-
-const int WINT_MIN = -2147483648;
-
-const int WINT_MAX = 2147483647;
-
-const int SIG_ATOMIC_MIN = -2147483648;
-
-const int SIG_ATOMIC_MAX = 2147483647;
-
-const int __bool_true_false_are_defined = 1;
-
-const int true1 = 1;
-
-const int false1 = 0;
-
-const int __DARWIN_WCHAR_MAX = 2147483647;
-
-const int __DARWIN_WCHAR_MIN = -2147483648;
-
-const int __DARWIN_WEOF = -1;
-
-const int _FORTIFY_SOURCE = 2;
-
-const int NULL = 0;
-
-const int USER_ADDR_NULL = 0;
+/// Noir-owned declaration of the canonical OpenTUI v0.5.1 exports selected by
+/// this package. The source of truth is external/opentui/packages/core/src/zig/
+/// lib.zig at ad9a818d7a9d73f3386e92a445d0feb4b395c69e.
+typedef OpenTuiHandle = ffi.Uint32;
+typedef DartOpenTuiHandle = int;

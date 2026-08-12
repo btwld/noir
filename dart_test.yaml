@@ -12,5 +12,3 @@ add_tags:
 tags:
   safe-process-spawning:
     skip: false
-  restricted-process-lifecycle:
-    skip: Requires explicit authorization for signal and process lifecycle testing.

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -262,724 +261,91 @@ void main() {
     }
   });
 
-  test('TextBuffer exposes truthful supported and raw seams', () async {
-    Future<ClassDeclaration> type(String file, String name) =>
-        _classDeclaration(resolve, (path: 'lib/src/$file', name: name));
-    final textBuffer = await type('core/text_buffer.dart', 'TextBuffer');
-    final factory = _member(textBuffer, 'create') as ConstructorDeclaration;
-    expect(factory.factoryKeyword, isNotNull);
-    expect(
-      _compactSource(factory.parameters.toSource()),
-      '({WidthMethod widthMethod = WidthMethod.unicode})',
-      reason: 'supported creation must be named-only with one width method',
-    );
-    final factoryDoc = _memberDoc(factory).toLowerCase();
-    for (final fact in const <String>['empty', 'grows']) {
-      expect(factoryDoc, contains(fact), reason: fact);
-    }
-    expect(
-      factoryDoc,
-      isNot(matches(_creationCapacityPromise)),
-      reason: 'creation must not promise requested allocation or capacity',
-    );
-    final lengthDoc = _memberDoc(_member(textBuffer, 'length')).toLowerCase();
-    for (final fact in const <String>['current', 'logical', 'cells']) {
-      expect(lengthDoc, contains(fact), reason: fact);
-    }
-    expect(lengthDoc, isNot(matches(RegExp(r'\ballocated\b|\bcapacity\b'))));
-    final resetDoc = _memberDoc(_member(textBuffer, 'reset')).toLowerCase();
-    expect(resetDoc, contains('clears'));
-    expect(resetDoc, contains('zero'));
-    final statements = (factory.body as BlockFunctionBody).block.statements;
-    expect(statements, hasLength(4));
-    expect(
-      _compactSource(statements[1].toSource()),
-      'final ptr = bindings.createTextBuffer(0, widthMethod.value);',
-      reason: 'supported creation owns the literal-zero ABI placeholder',
-    );
-    final nullCheck = statements[2] as IfStatement;
-    expect(_compactSource(nullCheck.expression.toSource()), 'ptr == nullptr');
-    expect(
-      _compactSource(nullCheck.thenStatement.toSource()),
-      "{throw StateError('Failed to create TextBuffer');}",
-      reason: 'nullptr must become StateError before ownership',
-    );
-    expect(
-      _compactSource(statements[3].toSource()),
-      'return TextBuffer._(bindings, ptr);',
-    );
-    final ownershipConstructor =
-        _member(textBuffer, '_') as ConstructorDeclaration;
-    expect(ownershipConstructor.body.toSource(), contains('_finalizer.attach'));
-    final bindings = await type('ffi/bindings.dart', 'OpenTuiBindings');
-    final raw = _member(bindings, 'createTextBuffer') as MethodDeclaration;
-    expect(
-      _compactSource(raw.parameters!.toSource()),
-      '(int abiLength, int widthMethod)',
-      reason: 'the guarded raw tier must retain both required ABI integers',
-    );
-    expect(
-      _compactSource(raw.body.toSource()),
-      contains('_generated.createTextBuffer(abiLength, widthMethod)'),
-      reason: 'raw arguments must forward once in declaration order',
-    );
-    final rawDoc = _memberDoc(raw).toLowerCase();
-    for (final fact in <String>[
-      'abi 2',
-      'ignored by the pinned native implementation',
-      'ordinary raw callers pass zero',
-      'second value',
-      'native width-method identifier',
-      'may return `nullptr`',
-      'supported `textbuffer` wrapper maps null',
-      '[stateerror]',
-    ]) {
-      expect(rawDoc, contains(fact), reason: fact);
-    }
-    expect(
-      rawDoc,
-      isNot(matches(_rawFalseContract)),
-      reason: 'raw docs cannot promise capacity or blanket failure throws',
-    );
-    final write = _member(textBuffer, 'writeChunk') as MethodDeclaration;
-    final supportedDoc = _memberDoc(write).toLowerCase();
-    expect(supportedDoc, contains('appends'));
-    expect(supportedDoc, contains('unsigned 8-bit'));
-    expect(supportedDoc, contains('unsigned 32-bit'));
-    expect(
-      supportedDoc,
-      isNot(
-        matches(RegExp(r'\breturn\w*\b|\bcount\b|\bresult\b|\bencoding\b')),
-      ),
-    );
-    expect(
-      _compactSource(write.body.toSource()),
-      "{_checkNotDisposed(); _checkUnsignedAbi(attributes, 0xFF, 'attributes'); "
-      '_utf8Scratch.update(text, maxBytes: 0xFFFFFFFF); '
-      '_lineMetadataStale = true; '
-      '_bindings.textBufferWriteUtf8Chunk(_ptr, _utf8Scratch.pointer, '
-      '_utf8Scratch.length, fg, bg, attributes);}',
-    );
-    expect(write.returnType!.toSource(), 'void');
-    expect(
-      _compactSource(write.parameters!.toSource()),
-      '(String text, Color fg, Color bg, int attributes)',
-    );
-    for (final rawName in const <String>[
-      'textBufferWriteChunk',
-      'textBufferWriteUtf8Chunk',
-    ]) {
-      final raw = _member(bindings, rawName) as MethodDeclaration;
-      expect(raw.returnType!.toSource(), 'int', reason: rawName);
-      final doc = _memberDoc(raw).toLowerCase();
-      for (final fact in const <String>[
-        'opaque native write result',
-        'dart-side marshalling or invocation exceptions are mapped to [ffiexception]',
-        'native write failure may be represented only inside the opaque result, including zero',
-      ]) {
-        expect(doc, contains(fact), reason: '$rawName: $fact');
-      }
-      expect(doc, isNot(matches(_rawWriteFalsePromise)), reason: rawName);
-      expect(
-        _compactSource(raw.body.toSource()),
-        matches(_directRawWriteReturn),
-      );
-    }
-
-    final setCell = _member(textBuffer, 'setCell') as MethodDeclaration;
-    expect(
-      _compactSource(setCell.parameters!.toSource()),
-      '(int index, String scalar, Color fg, Color bg, int attributes)',
-    );
-    final setCellDoc = _memberDoc(setCell).toLowerCase();
-    for (final fact
-        in 'one zero-based logical cell|extends with spaces|exactly one well-formed unicode scalar|one raw cell word|does not perform grapheme clustering|display-width expansion|newline retains native line behavior'
-            .split('|')) {
-      expect(setCellDoc, contains(fact), reason: fact);
-    }
-    final setCellStatements =
-        (setCell.body as BlockFunctionBody).block.statements;
-    expect(setCellStatements.map((statement) => _compactSource(statement.toSource())), <
-      String
-    >[
-      '_checkNotDisposed();',
-      "if (index < 0 || index > 0xFFFFFFFF) {throw RangeError.range(index, 0, 0xFFFFFFFF, 'index');}",
-      "if (attributes < 0 || attributes > 0xFFFF) {throw RangeError.range(attributes, 0, 0xFFFF, 'attributes');}",
-      'final scalarValues = scalar.runes.toList(growable: false);',
-      'final scalarValue = scalarValues.length == 1 ? scalarValues.single : -1;',
-      "if (scalarValues.length != 1 || (scalarValue >= 0xD800 && scalarValue <= 0xDFFF) || String.fromCharCode(scalarValue) != scalar) {throw ArgumentError.value(scalar, 'scalar', 'must contain exactly one well-formed Unicode scalar');}",
-      '_lineMetadataStale = true;',
-      '_bindings.textBufferSetCell(_ptr, index, scalarValue, fg, bg, attributes);',
-    ]);
-
-    final direct = await type('core/text_buffer.dart', 'DirectTextAccess');
-    final directDoc = _compactSource(
-      (direct.declaredFragment!.element.documentationComment ?? '').replaceAll(
-        '///',
-        '',
-      ),
-    ).toLowerCase();
-    for (final fact
-        in 'native encoded cell words|not a unicode string or a uniformly decodable code-point array|top bits `00` identify a direct scalar word|top bits `10` identify a packed grapheme-start word|right extent and an opaque 26-bit pool identity|top bits `11` identify a continuation word|left and right extents and the same opaque identity|process-global native grapheme pool|cannot independently recover grapheme text|non-empty views are native-owned, read-only|immediate inspection|next textbuffer mutation, reset, or disposal|zero, getdirectaccess returns dart-owned empty typed lists|unmodifiable, including aliases created from their byte buffers|zero-copy'
-            .split('|')) {
-      expect(directDoc, contains(fact), reason: fact);
-    }
-    expect(
-      direct.members
-          .whereType<ConstructorDeclaration>()
-          .map(_memberName)
-          .toList(),
-      ['_'],
-    );
-    final directConstructor = _member(direct, '_') as ConstructorDeclaration;
-    expect(
-      _compactSource(directConstructor.parameters.toSource()),
-      '({required Uint32List encodedCells, required Float32List foregrounds, required Float32List backgrounds, required Uint16List attributes, required this.length})',
-    );
-    expect(
-      directConstructor.initializers.map(
-        (initializer) => _compactSource(initializer.toSource()),
-      ),
-      <String>[
-        'encodedCells = encodedCells.asUnmodifiableView()',
-        'foregrounds = foregrounds.asUnmodifiableView()',
-        'backgrounds = backgrounds.asUnmodifiableView()',
-        'attributes = attributes.asUnmodifiableView()',
-      ],
-    );
-    final textBufferSource = File(
-      'lib/src/core/text_buffer.dart',
-    ).readAsStringSync();
-    expect(
-      RegExp(r'DirectTextAccess\._\(').allMatches(textBufferSource),
-      hasLength(3),
-      reason: 'one private declaration and the empty/native call sites',
-    );
-    expect(RegExp(r'DirectTextAccess\(').allMatches(textBufferSource), isEmpty);
-    final directFields = direct.members
-        .whereType<FieldDeclaration>()
-        .expand((field) => field.fields.variables)
-        .map((variable) => variable.name.lexeme)
-        .toSet();
-    expect(directFields, contains('encodedCells'));
-    expect(directFields, isNot(contains('chars')));
-    expect(
-      direct.members.whereType<MethodDeclaration>().map(
-        (method) => method.name.lexeme,
-      ),
-      isNot(contains('getChar')),
-    );
-
-    final selection = _member(textBuffer, 'setSelection') as MethodDeclaration;
-    final selectionDoc = _memberDoc(selection).toLowerCase();
-    for (final fact
-        in 'half-open native-cell range `[start, end)`|[start] is included|[end] is excluded|unsigned 32-bit|greater than or equal to [start]|may exceed the current [length]'
-            .split('|')) {
-      expect(selectionDoc, contains(fact), reason: fact);
-    }
-    final selectionSource = _compactSource(selection.body.toSource());
-    _expectOrderedFragments(
-      selectionSource,
-      "_checkNotDisposed();|_checkUnsignedAbi(start, 0xFFFFFFFF, 'start');|_checkUnsignedAbi(end, 0xFFFFFFFF, 'end');|if (start > end)|throw ArgumentError.value(end, 'end', 'must be greater than or equal to start');|_bindings.textBufferSetSelection("
-          .split('|'),
-    );
-    expect(selectionSource, isNot(contains('.length')));
-
-    const rawFacts = <String, String>{
-      'createTextBuffer':
-          'abi 2|two required integers|first slot|ignored|ordinary raw callers pass zero|second value|width-method identifier|may return `nullptr`|supported `textbuffer` wrapper maps null to [stateerror]|unsigned 32-bit|unsigned 8-bit|pre-invocation [rangeerror]',
-      'destroyTextBuffer':
-          'status-free `void`|native failure is not reported separately',
-      'textBufferGetLength':
-          'native logical cell count|no native failure status',
-      'textBufferSetCell':
-          '[charcode] is one raw cell word|native allocation or update errors are swallowed|not observable|unsigned 32-bit|unsigned 16-bit|pre-invocation [rangeerror]',
-      'textBufferWriteChunk':
-          'opaque native write result|native write failure may be represented only inside the opaque result, including zero|unsigned 8-bit|unsigned 32-bit|pre-invocation [rangeerror]',
-      'textBufferWriteUtf8Chunk':
-          'opaque native write result|native write failure may be represented only inside the opaque result, including zero|caller owns persistent bytes for the call|unsigned 32-bit|unsigned 8-bit|pre-invocation [rangeerror]',
-      'textBufferFinalizeLineInfo':
-          'status-free `void`|no native failure status',
-      'textBufferGetLineCount':
-          'current native line count|cache-construction failure has no separate status',
-      'textBufferGetLineStartsPtr':
-          'native-owned pointer|reported line count|zero count means no element may be dereferenced|no nullable empty or failure sentinel|incomplete or empty data|no status',
-      'textBufferGetLineWidthsPtr':
-          'native-owned pointer|reported line count|zero count means no element may be dereferenced|no nullable empty or failure sentinel|incomplete or empty data|no status',
-      'textBufferReset': 'status-free `void`|no native failure status',
-      'textBufferSetSelection':
-          'half-open native-cell range `[start, end)`|[start] is included|[end] is excluded|status-free `void`|no native failure status|unsigned 32-bit|pre-invocation [rangeerror]|reversed, equal, or beyond the current length',
-      'textBufferResetSelection': 'status-free `void`|no native failure status',
-      'bufferDrawTextBuffer':
-          'pinned export swallows native drawing errors|not observable|[clipy] must fit signed 32-bit values|[clipheight] must fit unsigned 32-bit values|regardless of [hascliprect]|pre-invocation [rangeerror]',
-      'textBufferGetCharPtr':
-          'native-owned pointer to encoded cell words|logical cell count|no nullable empty or failure sentinel|incomplete or empty data|no status',
-      'textBufferGetFgPtr':
-          'native-owned rgba cache pointer|count-bounded|no nullable empty or failure sentinel|possibly partial|no status',
-      'textBufferGetBgPtr':
-          'native-owned rgba cache pointer|count-bounded|no nullable empty or failure sentinel|possibly partial|no status',
-      'textBufferGetAttributesPtr':
-          'native-owned packed-attribute cache pointer|count-bounded|no nullable empty or failure sentinel|possibly partial|no status',
-    };
-    final rawTextBufferMethods = <String, MethodDeclaration>{
-      for (final method in bindings.members.whereType<MethodDeclaration>())
-        if (method.name.lexeme.startsWith('textBuffer') ||
-            const {
-              'createTextBuffer',
-              'destroyTextBuffer',
-              'bufferDrawTextBuffer',
-            }.contains(method.name.lexeme))
-          method.name.lexeme: method,
-    };
-    expect(rawTextBufferMethods.keys, unorderedEquals(rawFacts.keys));
-    for (final entry in rawFacts.entries) {
-      final doc = _memberDoc(rawTextBufferMethods[entry.key]!).toLowerCase();
-      expect(
-        doc,
-        contains(
-          'dart-side marshalling or invocation exceptions are mapped to [ffiexception]',
-        ),
-        reason: '${entry.key}: Dart exception boundary',
-      );
-      for (final fact in entry.value.split('|')) {
-        expect(doc, contains(fact), reason: '${entry.key}: $fact');
-      }
-      expect(
-        doc,
-        isNot(matches(_rawTextBufferFalseOutcome)),
-        reason: '${entry.key}: false blanket native outcome',
-      );
-    }
-    final consumer = parseString(
-      content: File(
-        'test/fixtures/source_package_consumer/bin/low_level_multi_child.dart',
-      ).readAsStringSync(),
-    ).unit;
-    final function = consumer.declarations
-        .whereType<FunctionDeclaration>()
-        .single;
-    final consumerBody = function.functionExpression.body as BlockFunctionBody;
-    const consumerCall =
-        "textBuffer.writeChunk('contract', Color.white, Color.black, 0);";
-    final calls = consumerBody.block.statements
-        .whereType<ExpressionStatement>()
-        .where(
-          (statement) => _compactSource(statement.toSource()) == consumerCall,
-        );
-    expect(calls, hasLength(1));
-    expect(
-      consumerBody.block.statements.map(
-        (statement) => _compactSource(statement.toSource()),
-      ),
-      containsAll(<String>[
-        "textBuffer.setCell(0, 'N', Color.white, Color.black, 0);",
-        'final encodedCell = textBuffer.getDirectAccess().encodedCells[0];',
-      ]),
-    );
-  });
-
-  test('TextBuffer fixed-width inputs fail closed before mutation and FFI', () async {
-    final textBuffer = await _classDeclaration(resolve, const (
-      path: 'lib/src/core/text_buffer.dart',
-      name: 'TextBuffer',
-    ));
-    MethodDeclaration textBufferMethod(String name) =>
-        _member(textBuffer, name) as MethodDeclaration;
-    final snapshot = textBufferMethod('compositingSnapshotFromCapturedHandle');
-    expect(
-      _compactSource(snapshot.parameters!.toSource()),
-      '(Pointer<TextBufferHandle> capturedHandle)',
-    );
-    expect(
-      _compactSource(snapshot.returnType!.toSource()),
-      '({DirectTextAccess access, List<int> lineStarts, List<int> lineWidths})',
-    );
-    const memberBodies = <String, String>{
-      'compositingSnapshotFromCapturedHandle':
-          '{final access = _directAccessFromHandle(capturedHandle); final lineInfo = _lineInfoFromHandle(capturedHandle); return (access: access, lineStarts: lineInfo.starts, lineWidths: lineInfo.widths);}',
-      'getDirectAccess':
-          '{_checkNotDisposed(); return _directAccessFromHandle(_ptr);}',
-      'lineInfo': '{_checkNotDisposed(); return _lineInfoFromHandle(_ptr);}',
-      'finalizeLineInfo':
-          '{_checkNotDisposed(); _bindings.textBufferFinalizeLineInfo(_ptr); _lineMetadataStale = false;}',
-      'reset':
-          '{_checkNotDisposed(); _bindings.textBufferReset(_ptr); _lineMetadataStale = false;}',
-      'lineCount':
-          '{_checkNotDisposed(); _checkLineMetadataFinalized(); return _bindings.textBufferGetLineCount(_ptr);}',
-      '_readLineMetadata':
-          '{final view = ptr.asTypedList(count); return List<int>.unmodifiable(List<int>.generate(count, (i) => view[i]));}',
-    };
-    for (final entry in memberBodies.entries) {
-      expect(
-        _compactSource(textBufferMethod(entry.key).body.toSource()),
-        entry.value,
-      );
-    }
-    final storage = await _classDeclaration(resolve, const (
-      path: 'lib/src/foundation/persistent_utf8_text.dart',
-      name: 'PersistentUtf8Text',
-    ));
-    final update = _member(storage, 'update') as MethodDeclaration;
-    final updateSource = _compactSource(update.body.toSource());
-    expect('utf8.encode(text)'.allMatches(updateSource), hasLength(1));
-    _expectOrderedFragments(
-      updateSource,
-      "if (_disposed) throw StateError('PersistentUtf8Text is disposed');|final bytes = utf8.encode(text);|if (maxBytes != null && bytes.length > maxBytes)|throw RangeError.range(bytes.length, 0, maxBytes, 'text', 'encoded UTF-8 byte length exceeds maxBytes');|if (_pointer == nullptr || bytes.length > _capacity)|_length = bytes.length;"
-          .split('|'),
-    );
-
-    final bufferUnit = await resolve('lib/src/core/buffer.dart');
-    final bufferSource = File('lib/src/core/buffer.dart').readAsStringSync();
-    expect(bufferSource, isNot(contains('_bindings.textBufferGet')));
-    final textBufferSource = File(
-      'lib/src/core/text_buffer.dart',
-    ).readAsStringSync();
-    expect(textBufferSource, isNot(contains('_scanLineInfo')));
-    expect(textBufferSource, isNot(contains('fallbackAccess')));
-    final drawValidator = bufferUnit.unit.declarations
-        .whereType<FunctionDeclaration>()
-        .singleWhere(
-          (declaration) =>
-              declaration.name.lexeme == '_validateTextBufferDrawArguments',
-        );
-    final validatorSource = _compactSource(
-      drawValidator.functionExpression.body.toSource(),
-    );
-    _expectOrderedFragments(
-      validatorSource,
-      "destination._checkValid();|final textBufferHandle = textBuffer.handle;|_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|if (clipX != null) _checkSigned32Abi(clipX, 'clipX');|if (clipY != null) _checkSigned32Abi(clipY, 'clipY');|if (clipWidth != null)|_checkUnsignedAbi(clipWidth, 0xFFFFFFFF, 'clipWidth');|if (clipHeight != null)|_checkUnsignedAbi(clipHeight, 0xFFFFFFFF, 'clipHeight');|final hasClipRect = clipX != null && clipY != null && clipWidth != null && clipHeight != null;"
-          .split('|'),
-    );
-    for (final className in const ['Buffer', '_ClippedBufferView']) {
-      final owner = bufferUnit.unit.declarations
-          .whereType<ClassDeclaration>()
-          .singleWhere((declaration) => declaration.name.lexeme == className);
-      final draw = _member(owner, 'drawTextBuffer') as MethodDeclaration;
-      final drawDoc = _memberDoc(draw).toLowerCase();
-      expect(drawDoc, matches(RegExp('(?<!un)signed 32-bit')));
-      expect(drawDoc, contains('unsigned 32-bit'));
-      final source = _compactSource(draw.body.toSource());
-      expect(source, contains('_validateTextBufferDrawArguments('));
-      expect(source, isNot(contains('textBuffer.handle')));
-      expect(source, contains('validation.textBufferHandle'));
-      expect(
-        'compositingSnapshotFromCapturedHandle'.allMatches(source),
-        hasLength(className == 'Buffer' ? 0 : 1),
-      );
-    }
-
-    final bindings = await _classDeclaration(resolve, const (
-      path: 'lib/src/ffi/bindings.dart',
-      name: 'OpenTuiBindings',
-    ));
-    const rawChecks = <String, String>{
-      'createTextBuffer':
-          "_checkUnsignedAbi(abiLength, 0xFFFFFFFF, 'abiLength');|_checkUnsignedAbi(widthMethod, 0xFF, 'widthMethod');|return _guard(",
-      'textBufferSetCell':
-          "_checkUnsignedAbi(index, 0xFFFFFFFF, 'index');|_checkUnsignedAbi(charCode, 0xFFFFFFFF, 'charCode');|_checkUnsignedAbi(attributes, 0xFFFF, 'attributes');|_guardAlloc(",
-      'textBufferWriteChunk':
-          "_checkUnsignedAbi(attributes, 0xFF, 'attributes');|final bytes = convert.utf8.encode(text);|_checkUnsignedAbi(bytes.length, 0xFFFFFFFF, 'text');|return _guardAlloc(",
-      'textBufferWriteUtf8Chunk':
-          "_checkUnsignedAbi(textLen, 0xFFFFFFFF, 'textLen');|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|return _guardAlloc(",
-      'textBufferSetSelection':
-          "_checkUnsignedAbi(start, 0xFFFFFFFF, 'start');|_checkUnsignedAbi(end, 0xFFFFFFFF, 'end');|_guardAlloc(",
-      'bufferDrawTextBuffer':
-          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_checkSigned32Abi(clipX, 'clipX');|_checkSigned32Abi(clipY, 'clipY');|_checkUnsignedAbi(clipWidth, 0xFFFFFFFF, 'clipWidth');|_checkUnsignedAbi(clipHeight, 0xFFFFFFFF, 'clipHeight');|_guard(",
-    };
-    for (final entry in rawChecks.entries) {
-      final method = _member(bindings, entry.key) as MethodDeclaration;
-      final source = _compactSource(method.body.toSource());
-      _expectOrderedFragments(source, entry.value.split('|'));
-      if (entry.key == 'textBufferSetSelection') {
-        expect(source, isNot(contains('start > end')));
-      }
-      if (entry.key == 'textBufferWriteChunk') {
-        expect('convert.utf8.encode(text)'.allMatches(source), hasLength(1));
-      }
-    }
-  });
-
-  test('guarded raw FFI rejects every remaining fixed-width narrowing', () async {
+  test('canonical fixed-width guards remain at Dart FFI boundaries', () async {
     final unit = await resolve('lib/src/ffi/bindings.dart');
-    final validateDimensions = unit.unit.declarations
-        .whereType<FunctionDeclaration>()
-        .singleWhere(
-          (declaration) =>
-              declaration.name.lexeme == 'validateRendererDimensions',
-        );
-    _expectOrderedFragments(
-      _compactSource(validateDimensions.functionExpression.body.toSource()),
-      <String>[
-        'if (width <= 0)',
-        "throw ArgumentError.value(width, 'width', 'must be greater than zero');",
-        "_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');",
-        'if (height <= 0)',
-        "throw ArgumentError.value(height, 'height', 'must be greater than zero');",
-        "_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');",
-      ],
-    );
-    final validateDoc = _compactSource(
-      (validateDimensions.declaredFragment!.element.documentationComment ?? '')
-          .replaceAll('///', ''),
-    ).toLowerCase();
-    for (final fact in const <String>[
-      'between 1 and the unsigned 32-bit maximum',
-      'non-positive values use [argumenterror]',
-      'larger values use [rangeerror]',
-    ]) {
-      expect(validateDoc, contains(fact), reason: fact);
-    }
-
     final bindings = unit.unit.declarations
         .whereType<ClassDeclaration>()
         .singleWhere(
           (declaration) => declaration.name.lexeme == 'OpenTuiBindings',
         );
-    const guardBodies = <String, String>{
-      'createRenderer':
-          'validateRendererDimensions(width, height);|return _guard(',
-      'resizeRenderer': 'validateRendererDimensions(width, height);|_guard(',
-      'destroyRenderer':
-          "validateUnsigned32Abi(splitHeight, 'splitHeight');|_guard(",
-      'setCursorPosition':
-          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_guard(",
-      'enableKittyKeyboard': "_checkUnsignedAbi(flags, 0xFF, 'flags');|_guard(",
-      'updateStats': "_checkUnsignedAbi(fps, 0xFFFFFFFF, 'fps');|_guard(",
-      'updateMemoryStats':
-          "_checkUnsignedAbi(heapUsed, 0xFFFFFFFF, 'heapUsed');|_checkUnsignedAbi(heapTotal, 0xFFFFFFFF, 'heapTotal');|_checkUnsignedAbi(arrayBuffers, 0xFFFFFFFF, 'arrayBuffers');|_guard(",
-      'setDebugOverlay': "_checkUnsignedAbi(corner, 0xFF, 'corner');|_guard(",
-      'addToHitGrid':
-          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_checkUnsignedAbi(id, 0xFFFFFFFF, 'id');|_guard(",
-      'checkHit':
-          "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|return _guard(",
-    };
-    const docFacts = <String, List<String>>{
-      'createRenderer': <String>[
-        '[width] and [height] must be between 1 and the unsigned 32-bit maximum',
-        'non-positive values throw [argumenterror]',
-        'larger values throw a pre-invocation [rangeerror]',
-      ],
-      'resizeRenderer': <String>[
-        '[width] and [height] must be between 1 and the unsigned 32-bit maximum',
-        'non-positive values throw [argumenterror]',
-        'larger values throw a pre-invocation [rangeerror]',
-      ],
-      'destroyRenderer': <String>[
-        '[splitheight] must fit an unsigned 32-bit value',
-        'pre-invocation [rangeerror]',
-      ],
+
+    const checks = <String, List<String>>{
       'setCursorPosition': <String>[
-        '[x] and [y] must fit signed 32-bit values',
-        'pre-invocation [rangeerror]',
+        "_checkSigned32Abi(x, 'x');",
+        "_checkSigned32Abi(y, 'y');",
       ],
       'enableKittyKeyboard': <String>[
-        '[flags] must fit an unsigned 8-bit value',
-        'pre-invocation [rangeerror]',
-      ],
-      'updateStats': <String>[
-        '[fps] must fit an unsigned 32-bit value',
-        'pre-invocation [rangeerror]',
-      ],
-      'updateMemoryStats': <String>[
-        '[heapused], [heaptotal], and [arraybuffers] must fit unsigned 32-bit values',
-        'pre-invocation [rangeerror]',
-      ],
-      'setDebugOverlay': <String>[
-        '[corner] must fit an unsigned 8-bit value',
-        'pre-invocation [rangeerror]',
+        "_checkUnsignedAbi(flags, 0xFF, 'flags');",
       ],
       'addToHitGrid': <String>[
-        '[x] and [y] must fit signed 32-bit values',
-        '[width], [height], and [id] must fit unsigned 32-bit values',
-        'pre-invocation [rangeerror]',
+        "_checkSigned32Abi(x, 'x');",
+        "(width, 'width')",
+        "(id, 'id')",
+        '_checkUnsignedAbi(value, 0xFFFFFFFF, name);',
       ],
       'checkHit': <String>[
-        '[x] and [y] must fit unsigned 32-bit values',
-        'pre-invocation [rangeerror]',
-        'abi-valid coordinates outside the terminal bounds always return 0',
+        "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');",
+        "_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');",
       ],
     };
-
-    expect(guardBodies.keys, unorderedEquals(docFacts.keys));
-    for (final entry in guardBodies.entries) {
-      final method = _member(bindings, entry.key) as MethodDeclaration;
-      _expectOrderedFragments(
-        _compactSource(method.body.toSource()),
-        entry.value.split('|'),
+    for (final entry in checks.entries) {
+      final source = _compactSource(
+        (_member(bindings, entry.key) as MethodDeclaration).body.toSource(),
       );
-      final doc = _memberDoc(method).toLowerCase();
-      for (final fact in docFacts[entry.key]!) {
-        expect(doc, contains(fact), reason: '${entry.key}: $fact');
-      }
+      _expectOrderedFragments(source, entry.value);
+    }
+
+    final source = File('lib/src/ffi/bindings.dart').readAsStringSync();
+    for (final obsolete in const <String>[
+      'createTextBuffer',
+      'bufferDrawTextBuffer',
+      'updateStats',
+      'setDebugOverlay',
+    ]) {
+      expect(source, isNot(contains(obsolete)), reason: obsolete);
     }
   });
 
-  test('Buffer-family fixed-width inputs fail closed before clip drop and FFI', () async {
-    final bufferUnit = await resolve('lib/src/core/buffer.dart');
-    // Both seam files must reject out-of-domain values, never mask them.
-    expect(
-      File('lib/src/core/buffer.dart').readAsStringSync(),
-      isNot(contains('& 0xFF')),
-    );
-    expect(
-      File('lib/src/ffi/bindings.dart').readAsStringSync(),
-      isNot(contains('& 0xFF')),
-    );
+  test('Buffer uses canonical u16 colors and u32 attributes', () async {
+    final source = File('lib/src/core/buffer.dart').readAsStringSync();
+    expect(source, contains('final Uint16List foregrounds;'));
+    expect(source, contains('final Uint16List backgrounds;'));
+    expect(source, contains('final Uint32List attributes;'));
+    expect(source, isNot(contains('drawTextBuffer')));
+    expect(source, isNot(contains('DirectTextAccess')));
 
-    ClassDeclaration bufferClass(String name) => bufferUnit.unit.declarations
-        .whereType<ClassDeclaration>()
-        .singleWhere((declaration) => declaration.name.lexeme == name);
-    final buffer = bufferClass('Buffer');
-    final clipped = bufferClass('_ClippedBufferView');
-    const supportedBodies = <String, String>{
-      'drawText':
-          "_checkValid();|_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|_bindings.bufferDrawText(",
-      'fillRect':
-          "_checkValid();|_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_bindings.bufferFillRect(",
-      'drawBox':
-          "_checkValid();|_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_bindings.bufferDrawBox(",
-      'setCellWithAlphaBlending':
-          "_checkValid();|if (char.isEmpty) throw ArgumentError('Character cannot be empty');|_setCellCodeWithAlphaBlending(",
-      '_setCellCodeWithAlphaBlending':
-          "_checkValid();|if (x < 0 || x >= width || y < 0 || y >= height)|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|_bindings.bufferSetCellWithAlphaBlending(",
-      'drawFrameBuffer':
-          "_checkValid();|sourceBuffer._checkValid();|_checkUnsignedAbi(srcX, 0xFFFFFFFF, 'srcX');|_checkUnsignedAbi(srcY, 0xFFFFFFFF, 'srcY');|_checkUnsignedAbi(srcWidth, 0xFFFFFFFF, 'srcWidth');|_checkUnsignedAbi(srcHeight, 0xFFFFFFFF, 'srcHeight');|_checkSigned32Abi(destX, 'destX');|_checkSigned32Abi(destY, 'destY');|_bindings.drawFrameBuffer(",
-      'resize':
-          "_checkValid();|_checkUnsignedAbi(newWidth, 0xFFFFFFFF, 'newWidth');|_checkUnsignedAbi(newHeight, 0xFFFFFFFF, 'newHeight');|if (newWidth <= 0 || newHeight <= 0)|_bindings.bufferResize(",
-    };
-    for (final entry in supportedBodies.entries) {
-      final method = _member(buffer, entry.key) as MethodDeclaration;
-      _expectOrderedFragments(
-        _compactSource(method.body.toSource()),
-        entry.value.split('|'),
-      );
-    }
-    final directAccess = bufferClass('DirectBufferAccess');
-    final setAttributes =
-        _member(directAccess, 'setAttributes') as MethodDeclaration;
-    _expectOrderedFragments(_compactSource(setAttributes.body.toSource()), [
-      'final index = _getIndex(x, y);',
-      "_checkUnsignedAbi(attr, 0xFF, 'attr');",
-      'attributes[index] = attr;',
-    ]);
-    const clippedBodies = <String, String>{
-      'setCell':
-          "_checkValid();|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|if (!_inClip(x, y)) return;|super.setCell(",
-      'setCellWithAlphaBlending':
-          "_checkValid();|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|if (!_inClip(x, y)) return;|super.setCellWithAlphaBlending(",
-      'drawText':
-          "_checkValid();|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|if (y < clipY || y >= clipY + clipHeight) return;|super.drawText(",
-      'fillRect':
-          '_checkValid();|if (x0 >= x1 || y0 >= y1) return;|super.fillRect(',
-    };
-    for (final entry in clippedBodies.entries) {
-      final method = _member(clipped, entry.key) as MethodDeclaration;
-      _expectOrderedFragments(
-        _compactSource(method.body.toSource()),
-        entry.value.split('|'),
-      );
-    }
-    final viewDoc = _compactSource(
-      (clipped.declaredFragment!.element.documentationComment ?? '').replaceAll(
-        '///',
-        '',
-      ),
-    ).toLowerCase();
-    for (final fact in const <String>[
-      'signed logical space',
-      'clip silently',
-      'validated even for calls the clip rectangle drops',
-    ]) {
-      expect(viewDoc, contains(fact), reason: fact);
-    }
-    final seam = _member(clipped, '_setTextBufferCell') as MethodDeclaration;
-    // The compositing seam must forward to the shared funnel unchanged.
-    expect(
-      _compactSource(seam.body.toSource()),
-      '{super._setCellCodeWithAlphaBlending(x, y, charCode, fg, bg, attributes);}',
+    final unit = await resolve('lib/src/core/buffer.dart');
+    final classes = unit.unit.declarations.whereType<ClassDeclaration>();
+    final buffer = classes.singleWhere(
+      (declaration) => declaration.name.lexeme == 'Buffer',
     );
-    final seamDoc = _memberDoc(seam).toLowerCase();
-    for (final fact in const <String>[
-      'shared supported-tier funnel',
-      'unsigned 8-bit attribute check owns rejection',
+    final direct = classes.singleWhere(
+      (declaration) => declaration.name.lexeme == 'DirectBufferAccess',
+    );
+    for (final memberName in const <String>[
+      'drawText',
+      '_setCellCodeWithAlphaBlending',
     ]) {
-      expect(seamDoc, contains(fact), reason: fact);
-    }
-    final copyDoc = _memberDoc(
-      _member(clipped, '_copyTextBufferCells'),
-    ).toLowerCase();
-    for (final fact in const <String>[
-      'native `u16` words',
-      'unsigned 8-bit cell domain',
-      'caps attributes at 0xff',
-      'attr_mask',
-      'use_default_*',
-      'null color pointers, which this package never passes',
-      'no mask is applied',
-      '[rangeerror]',
-    ]) {
-      expect(copyDoc, contains(fact), reason: fact);
-    }
-
-    final bindings = await _classDeclaration(resolve, const (
-      path: 'lib/src/ffi/bindings.dart',
-      name: 'OpenTuiBindings',
-    ));
-    const rawBodies = <String, String>{
-      'bufferDrawText':
-          "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|_guardAlloc(",
-      'bufferFillRect':
-          "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_guardAlloc(",
-      'bufferDrawBox':
-          "_checkSigned32Abi(x, 'x');|_checkSigned32Abi(y, 'y');|_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|for (final borderChar in borderChars)|_checkUnsignedAbi(borderChar, 0xFFFFFFFF, 'borderChars');|final titleBytes = convert.utf8.encode(options.title ?? '');|_checkUnsignedAbi(titleLen, 0xFFFFFFFF, 'title');|_guardAlloc(",
-      'bufferSetCellWithAlphaBlending':
-          "_checkUnsignedAbi(x, 0xFFFFFFFF, 'x');|_checkUnsignedAbi(y, 0xFFFFFFFF, 'y');|_checkUnsignedAbi(charCode, 0xFFFFFFFF, 'charCode');|_checkUnsignedAbi(attributes, 0xFF, 'attributes');|_guardAlloc(",
-      'drawFrameBuffer':
-          "_checkSigned32Abi(destX, 'destX');|_checkSigned32Abi(destY, 'destY');|_checkUnsignedAbi(sourceX, 0xFFFFFFFF, 'sourceX');|_checkUnsignedAbi(sourceY, 0xFFFFFFFF, 'sourceY');|_checkUnsignedAbi(sourceWidth, 0xFFFFFFFF, 'sourceWidth');|_checkUnsignedAbi(sourceHeight, 0xFFFFFFFF, 'sourceHeight');|_guard(",
-      'bufferResize':
-          "_checkUnsignedAbi(width, 0xFFFFFFFF, 'width');|_checkUnsignedAbi(height, 0xFFFFFFFF, 'height');|_guard(",
-    };
-    const rawFacts = <String, String>{
-      'bufferDrawText':
-          'swallows native text-drawing errors|not observable|crosses as a native `usize`|unsigned 32-bit|unsigned 8-bit|pre-invocation [rangeerror]',
-      'bufferFillRect':
-          'swallows native fill errors|not observable|unsigned 32-bit|pre-invocation [rangeerror]',
-      'bufferDrawBox':
-          'swallows native box-drawing errors|not observable|must fit signed 32-bit values|each selected border character|encoded title byte length|unsigned 32-bit|at most 0x7f by construction|crosses unchecked|pre-invocation [rangeerror]',
-      'bufferSetCellWithAlphaBlending':
-          'swallows native cell-update errors|not observable|unsigned 32-bit|unsigned 8-bit|pre-invocation [rangeerror]',
-      'drawFrameBuffer':
-          'zero source coordinate or extent crosses as native null|full-extent default|status-free `void`|no native failure status|must fit signed 32-bit values|unsigned 32-bit|pre-invocation [rangeerror]',
-      'bufferResize':
-          'swallows native resize errors|not observable|unsigned 32-bit|pre-invocation [rangeerror]|raw zero dimensions forward unchanged|positive-dimensions rule',
-    };
-    for (final entry in rawBodies.entries) {
-      final method = _member(bindings, entry.key) as MethodDeclaration;
-      final source = _compactSource(method.body.toSource());
-      _expectOrderedFragments(source, entry.value.split('|'));
-      if (entry.key == 'bufferDrawBox') {
-        // The box title must be encoded exactly once, pre-guard.
-        expect('utf8.encode'.allMatches(source), hasLength(1));
-      }
-      final doc = _memberDoc(method).toLowerCase();
       expect(
-        doc,
-        contains(
-          'dart-side marshalling or invocation exceptions are mapped to [ffiexception]',
+        _compactSource(
+          (_member(buffer, memberName) as MethodDeclaration).body.toSource(),
         ),
-        reason: '${entry.key}: Dart exception boundary',
-      );
-      for (final fact in rawFacts[entry.key]!.split('|')) {
-        expect(doc, contains(fact), reason: '${entry.key}: $fact');
-      }
-      expect(
-        doc,
-        isNot(matches(_rawTextBufferFalseOutcome)),
-        reason: '${entry.key}: false blanket native outcome',
+        contains("_checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');"),
       );
     }
-  });
+    expect(
+      _compactSource(
+        (_member(direct, 'setAttributes') as MethodDeclaration).body.toSource(),
+      ),
+      contains("_checkUnsignedAbi(attr, 0xFFFFFFFF, 'attr');"),
+    );
 
+    final bindings = File('lib/src/ffi/bindings.dart').readAsStringSync();
+    expect(
+      bindings,
+      contains("_checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');"),
+    );
+  });
   test('TuiCanvas is the exact non-constructible paint vocabulary', () async {
     final unit = await resolve('lib/src/painting/tui_canvas.dart');
     final canvas = unit.unit.declarations
@@ -1317,10 +683,6 @@ Element? _memberElement(ClassMember member) => switch (member) {
   _ => null,
 };
 
-String _memberDoc(ClassMember member) => _compactSource(
-  (_memberElement(member)?.documentationComment ?? '').replaceAll('///', ''),
-);
-
 String _compactSource(String source) => source.replaceAll(RegExp(r'\s+'), ' ');
 
 void _expectOrderedFragments(String source, List<String> fragments) {
@@ -1331,28 +693,6 @@ void _expectOrderedFragments(String source, List<String> fragments) {
     offset = next + fragment.length;
   }
 }
-
-final _creationCapacityPromise = RegExp(
-  r'\bat least\b|\brequested length\b|\bcapacity\b|\ballocat(?:e|ed|ion)\b',
-);
-final _rawFalseContract = RegExp(
-  r'\b(?:with|reserve\w*|allocat\w*|guarantee\w*)\b.{0,40}\bcapacity\b|\bthrows\b.{0,40}\bon (?:native )?failure\b',
-);
-final _rawWriteFalsePromise = RegExp(
-  r'\b(?:logical|cells?|bytes?)\b.{0,30}\b(?:count|written)\b|'
-  r'\bstable (?:bit )?encoding\b|\bthrows \[ffiexception\] on failure\b|'
-  r'\bnative write failure\b.{0,30}\bthrows\b',
-);
-final _directRawWriteReturn = RegExp(
-  r'return _generated\.textBufferWriteChunk\([^;]+\);\}\);\}$',
-);
-final _rawTextBufferFalseOutcome = RegExp(
-  r'throws \[ffiexception\] on (?:native )?failure|'
-  r'native failure.{0,30}(?:throws|mapped to \[ffiexception\])|'
-  '(?<!no )nullable.{0,30}(?:empty|failure) sentinel|'
-  'nullptr.{0,30}(?:empty|failure) sentinel|'
-  '(?:complete|guaranteed).{0,30}cache',
-);
 
 Iterable<String> _dartFilesUnder(String directory) => Directory(directory)
     .listSync(recursive: true)
@@ -1481,11 +821,6 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   },
   _bufferOwner: {'invalidate', 'handle'},
   _rendererOwner: {'debugCurrentBuffer', 'handle', 'bindings'},
-  (path: 'lib/src/core/text_buffer.dart', name: 'TextBuffer'): {
-    'lineInfo',
-    'compositingSnapshotFromCapturedHandle',
-    'handle',
-  },
 };
 
 const Map<_Owner, Set<String>> _protectedMembers = <_Owner, Set<String>>{

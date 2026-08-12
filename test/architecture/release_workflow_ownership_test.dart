@@ -49,9 +49,7 @@ void main() {
     final verify = workflow.indexOf(
       'dart run scripts/fetch_opentui_binaries.dart --verify-only',
     );
-    final ordinaryTests = workflow.indexOf(
-      'dart test --exclude-tags restricted-process-lifecycle --concurrency=1',
-    );
+    final ordinaryTests = workflow.indexOf('dart test --concurrency=1');
     final docs = workflow.indexOf(
       'dart doc --validate-links --output .context/dartdoc',
     );
@@ -75,6 +73,15 @@ void main() {
     expect(workflow, contains('macos-latest'));
     expect(workflow, contains('windows-latest'));
     expect(workflow, contains('dart build cli -t bin/health_check.dart'));
+    expect(workflow, contains('  verify:'));
+    expect(workflow, contains('timeout-minutes: 15'));
+    expect(workflow, contains('timeout-minutes: 12'));
+    expect(workflow, contains('timeout-minutes: 5'));
+    expect('actions/cache@'.allMatches(workflow), hasLength(2));
+    expect(
+      r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+      hasLength(2),
+    );
   });
 
   test('tag releases require an exact semantic-version/package match', () {
@@ -92,7 +99,7 @@ void main() {
     expect(workflow, contains(r"prerelease: ${{ contains(inputs.tag, '-') }}"));
     expect(workflow, contains(r'tag_name: ${{ inputs.tag }}'));
     expect(workflow, contains('generate_release_notes: true'));
-    expect(workflow, contains('macOS 15.0 or later (x64, arm64)'));
+    expect(workflow, contains('macOS 13.0 or later (x64, arm64)'));
     expect(workflow, isNot(contains('dart run example/')));
   });
 }

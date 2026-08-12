@@ -36,6 +36,7 @@ void main() {
         'bin/high_level.dart',
         'bin/low_level_multi_child.dart',
         'bin/low_level_single_child.dart',
+        'bin/render.dart',
         'probes/internal_seams.dart',
       }),
     );
@@ -59,7 +60,11 @@ void main() {
         'package:noir/noir.dart',
         'package:noir/noir_low_level.dart',
       },
-      'ffi.dart': {'dart:ffi', 'package:noir/noir_ffi.dart'},
+      'ffi.dart': {'package:noir/noir_ffi.dart'},
+      'render.dart': {
+        'package:noir/noir.dart',
+        'package:noir/noir_low_level.dart',
+      },
     };
     for (final entry in expectedImports.entries) {
       final source = File(
@@ -81,7 +86,7 @@ void main() {
     }
   });
 
-  test('source consumer proof stays offline and analyzer-only', () {
+  test('source consumer resolves offline, analyzes, and renders in place', () {
     final runner = File('test/source_package_consumer_test.dart');
 
     expect(runner.existsSync(), isTrue);
@@ -93,13 +98,18 @@ void main() {
     final processCalls = RegExp(
       r'\bProcess\.(run|runSync|start|startSync)\s*\(',
     ).allMatches(source).toList();
-    expect(processCalls, hasLength(2));
+    expect(processCalls, hasLength(8));
     expect(processCalls.map((match) => match.group(1)), everyElement('run'));
     expect(
       source,
       matches(RegExp(r"'pub',\s*'get',\s*'--offline'", multiLine: true)),
     );
     expect(source, contains("_analyze(sandbox, 'bin')"));
+    expect(source, contains("'bin/render.dart'"));
+    expect(source, contains("'build',\n      'cli'"));
+    expect(source, contains('noir_relocated_consumer.'));
+    expect(source, contains("'-D'"));
+    expect(source, contains("'@rpath/lib/'"));
     expect(source, contains("'--fatal-infos'"));
     expect(source, contains("'--fatal-warnings'"));
     expect(source, contains("'--format=machine'"));
@@ -130,23 +140,32 @@ void main() {
     () {
       final noticeFile = File('THIRD_PARTY_NOTICES.md');
       expect(noticeFile.existsSync(), isTrue);
-      final notice = noticeFile.readAsStringSync();
-      final upstreamLicense = File(
-        'external/opentui/LICENSE',
-      ).readAsStringSync();
-      final revisions = _manifestAssets()
-          .map((asset) => asset['url']! as String)
-          .map(
-            (url) =>
-                RegExp('/opentui/([0-9a-f]{40})/').firstMatch(url)!.group(1)!,
-          )
-          .toSet();
+      final notice = _normalizeLineEndings(noticeFile.readAsStringSync());
+      final upstreamLicense = _normalizeLineEndings(
+        File('external/opentui/LICENSE').readAsStringSync(),
+      );
+      final packagedLicense = _normalizeLineEndings(
+        File('third_party/opentui-v0.5.1/LICENSE').readAsStringSync(),
+      );
+      final manifest =
+          jsonDecode(File('native_manifest.json').readAsStringSync())
+              as Map<String, Object?>;
 
-      expect(revisions, hasLength(1));
       expect(notice, contains('OpenTUI'));
-      expect(notice, contains('https://github.com/leoafarias/opentui'));
-      expect(notice, contains(revisions.single));
-      expect(notice.split(upstreamLicense), hasLength(2));
+      expect(notice, contains('https://github.com/anomalyco/opentui'));
+      expect(notice, contains(manifest['commit']! as String));
+      expect(packagedLicense, upstreamLicense);
+      for (final fileName in <String>[
+        'LICENSE',
+        'LICENSE-WUFFS',
+        'LICENSE-LIBWEBP',
+        'AUTHORS-LIBWEBP',
+        'PATENTS-LIBWEBP',
+        'LICENSE-STB',
+        'LICENSE-LCMS2',
+      ]) {
+        expect(notice, contains('third_party/opentui-v0.5.1/$fileName'));
+      }
     },
     skip: File('external/opentui/LICENSE').existsSync()
         ? false
@@ -207,7 +226,8 @@ void main() {
     ).toLowerCase();
     for (final disclosure in <String>[
       'multi-code-point graphemes',
-      'selection and caret behavior',
+      'selection ranges',
+      'native encoded storage',
       'escape a clipped viewport',
       'low-level native operation failures',
       'main-screen row 1/column 1',
@@ -324,7 +344,7 @@ void main() {
     expect(
       readme,
       contains(
-        'The bundled macOS x64 and arm64 libraries require macOS 15.0 or later.',
+        'The bundled macOS x64 and arm64 libraries require macOS 13.0 or later.',
       ),
     );
     expect(
@@ -352,6 +372,12 @@ void main() {
         'pubspec.yaml',
         'native_manifest.json',
         'hook/build.dart',
+        ...Directory('third_party/opentui-v0.5.1')
+            .listSync()
+            .whereType<File>()
+            .map((file) => file.path.replaceAll(Platform.pathSeparator, '/')),
+        'third_party/uucode-84ceda/LICENSE.md',
+        'third_party/uucode-84ceda/LICENSE_unicode',
         ..._manifestAssets().map((asset) => asset['path']! as String),
       ];
 
@@ -376,6 +402,10 @@ void main() {
       );
     },
   );
+
+  test('notice comparisons normalize Windows and classic line endings', () {
+    expect(_normalizeLineEndings('a\r\nb\rc\n'), 'a\nb\nc\n');
+  });
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
@@ -551,6 +581,9 @@ void main() {
 }
 
 String _normalized(String source) => source.replaceAll(RegExp(r'\s+'), ' ');
+
+String _normalizeLineEndings(String source) =>
+    source.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
 String _read(String path) => File(path).readAsStringSync();
 

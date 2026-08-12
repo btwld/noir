@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
@@ -111,6 +112,124 @@ void main() {
           'stdout:\n${analysis.stdout}\n'
           'stderr:\n${analysis.stderr}',
     );
+  });
+
+  test(
+    'consumer renders and captures a frame from its own directory',
+    () async {
+      final render = await Process.run(Platform.resolvedExecutable, <String>[
+        'run',
+        'bin/render.dart',
+      ], workingDirectory: sandbox.path);
+      expect(
+        render.exitCode,
+        0,
+        reason:
+            'source consumer render failed\n'
+            'stdout:\n${render.stdout}\n'
+            'stderr:\n${render.stderr}',
+      );
+    },
+  );
+
+  test('consumer CLI bundle runs after relocation', () async {
+    final officialHashesBefore = _officialNativeHashes(sourceRoot);
+    final buildDirectory = Directory(
+      path.join(sandbox.path, 'relocatable_build'),
+    );
+    final build = await Process.run(Platform.resolvedExecutable, <String>[
+      'build',
+      'cli',
+      '-t',
+      'bin/render.dart',
+      '--output',
+      buildDirectory.path,
+    ], workingDirectory: sandbox.path);
+    expect(
+      build.exitCode,
+      0,
+      reason:
+          'source consumer CLI build failed\n'
+          'stdout:\n${build.stdout}\n'
+          'stderr:\n${build.stderr}',
+    );
+    expect(_officialNativeHashes(sourceRoot), officialHashesBefore);
+
+    final builtBundle = Directory(path.join(buildDirectory.path, 'bundle'));
+    expect(builtBundle.existsSync(), isTrue);
+    final bundledLibraries = builtBundle
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where(
+          (file) =>
+              path.basename(file.path).contains('libopentui') ||
+              path.basename(file.path) == 'opentui.dll',
+        )
+        .toList();
+    expect(bundledLibraries, isNotEmpty);
+
+    final relocated = Directory.systemTemp.createTempSync(
+      'noir_relocated_consumer.',
+    );
+    try {
+      _copyDirectory(builtBundle, relocated);
+      final executable = File(
+        path.join(
+          relocated.path,
+          'bin',
+          Platform.isWindows ? 'render.exe' : 'render',
+        ),
+      );
+      expect(executable.existsSync(), isTrue);
+      if (!Platform.isWindows) {
+        final chmod = await Process.run('chmod', <String>[
+          'u+x',
+          executable.path,
+        ]);
+        expect(chmod.exitCode, 0, reason: chmod.stderr.toString());
+      }
+
+      if (Platform.isMacOS) {
+        final installName = await Process.run('otool', <String>[
+          '-D',
+          path.join(
+            relocated.path,
+            path.relative(bundledLibraries.single.path, from: builtBundle.path),
+          ),
+        ]);
+        expect(installName.exitCode, 0, reason: installName.stderr.toString());
+        expect(installName.stdout, contains('@rpath/lib/'));
+        expect(installName.stdout, isNot(contains(sourceRoot.path)));
+
+        final loadCommands = await Process.run('otool', <String>[
+          '-l',
+          executable.path,
+        ]);
+        expect(
+          loadCommands.exitCode,
+          0,
+          reason: loadCommands.stderr.toString(),
+        );
+        expect(loadCommands.stdout, contains('@executable_path/..'));
+      }
+
+      final run = await Process.run(
+        executable.path,
+        const <String>[],
+        workingDirectory: relocated.path,
+      );
+      expect(
+        run.exitCode,
+        0,
+        reason:
+            'relocated source consumer bundle failed\n'
+            'stdout:\n${run.stdout}\n'
+            'stderr:\n${run.stderr}',
+      );
+    } finally {
+      relocated.deleteSync(recursive: true);
+    }
+    expect(_officialNativeHashes(sourceRoot), officialHashesBefore);
   });
 
   test('removed names are unreachable one identifier per probe', () async {
@@ -220,11 +339,26 @@ void _copyDirectory(Directory source, Directory destination) {
   }
 }
 
+Map<String, String> _officialNativeHashes(Directory sourceRoot) {
+  final nativeRoot = Directory(path.join(sourceRoot.path, 'native'));
+  return <String, String>{
+    for (final file
+        in nativeRoot
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((file) => path.basename(file.path).startsWith('libopentui')))
+      path.relative(file.path, from: sourceRoot.path): sha256
+          .convert(file.readAsBytesSync())
+          .toString(),
+  };
+}
+
 const Set<String> _retainedFixtureFiles = <String>{
   'bin/ffi.dart',
   'bin/high_level.dart',
   'bin/low_level_multi_child.dart',
   'bin/low_level_single_child.dart',
+  'bin/render.dart',
   'probes/internal_seams.dart',
   'pubspec.yaml',
 };
@@ -247,6 +381,8 @@ const Map<String, _NegativeTier> _negativeTiers = <String, _NegativeTier>{
       'TextLayoutEngine',
       'TickerScheduler',
       'WidthMethod',
+      'TextBuffer',
+      'DirectTextAccess',
       'RenderObject',
       'PipelineOwner',
       'OpenTuiBindings',
@@ -275,6 +411,9 @@ import 'package:noir/noir_low_level.dart';
       'OptimizedBufferHandle',
       'TextBufferHandle',
       'CapabilitiesHandle',
+      'TextBuffer',
+      'DirectTextAccess',
+      'WidthMethod',
       'TextAlignment',
       'TuiDisplayList',
       'TuiDrawCommand',
@@ -329,8 +468,6 @@ const Set<String> _internalSeamMarkers = <String>{
   'Renderer.debugCurrentBuffer',
   'Renderer.handle',
   'Renderer.bindings',
-  'TextBuffer.lineInfo',
-  'TextBuffer.handle',
 };
 
 final class _NegativeTier {

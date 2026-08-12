@@ -22,7 +22,9 @@ jobs:
   preflight:
     name: Validate package
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    env:
+      PUB_CACHE: ${{ runner.temp }}/pub-cache
 
     steps:
       - name: Checkout repository
@@ -53,25 +55,38 @@ jobs:
         with:
           sdk: '3.10.0'
 
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+
       - name: Install dependencies
+        timeout-minutes: 3
         run: dart pub get
 
       - name: Verify bundled native assets
+        timeout-minutes: 2
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
+        timeout-minutes: 2
         run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
 
       - name: Run strict analysis
+        timeout-minutes: 4
         run: dart analyze --fatal-infos
 
       - name: Run ordinary tests
-        run: dart test --exclude-tags restricted-process-lifecycle --concurrency=1
+        timeout-minutes: 8
+        run: dart test --concurrency=1
 
       - name: Validate documentation links
+        timeout-minutes: 5
         run: dart doc --validate-links --output .context/dartdoc
 
       - name: Validate publish archive
+        timeout-minutes: 5
         run: dart pub publish --dry-run
 
   publish:

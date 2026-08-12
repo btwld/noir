@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/core/buffer.dart' show debugResolveBufferCell;
 import 'package:test/test.dart';
 
 import 'test_element_host.dart';
@@ -82,27 +83,11 @@ class CapturedBuffer {
 
     // Extract real cell data from buffer using DirectBufferAccess
     final direct = buffer.getDirectAccess();
-
     for (var y = 0; y < buffer.height; y++) {
       final row = <CapturedCell>[];
       for (var x = 0; x < buffer.width; x++) {
-        // Read actual buffer content. The framework's native side packs
-        // non-ASCII glyphs into a grapheme table; those cells contain a
-        // 32-bit packed marker (high bit set) instead of a raw codepoint.
-        // BufferCapture has no access to the grapheme table, so for packed
-        // cells we substitute a single ASCII placeholder ('*') that
-        // preserves cell alignment for text-position assertions without
-        // exploding `String.fromCharCode`.
         final index = y * buffer.width + x;
-        final code = direct.chars[index];
-        final String char;
-        if ((code & 0xC0000000) != 0) {
-          char = '*';
-        } else if (code == 0) {
-          char = ' ';
-        } else {
-          char = String.fromCharCode(code);
-        }
+        final char = debugResolveBufferCell(buffer, index);
         final fg = direct.getForeground(x, y);
         final bg = direct.getBackground(x, y);
         final attr = direct.getAttributes(x, y);
@@ -282,7 +267,7 @@ class CapturedCursor {
   /// Compact serialised form used by golden `<name>.cursor.txt` sidecars.
   String toGolden() {
     if (!visible) return 'hidden';
-    return 'visible at ($x,$y) style=${style.value} '
+    return 'visible at ($x,$y) style=${style.name} '
         'color=${color.toHex(includeAlpha: false)} blinking=$blinking';
   }
 }

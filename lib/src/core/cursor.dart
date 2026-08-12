@@ -5,18 +5,18 @@ import 'renderer.dart';
 /// Cursor styles supported by terminals
 enum CursorStyle {
   /// Block cursor shape.
-  block('block'),
+  block(0),
 
   /// Underline cursor shape.
-  underline('underline'),
+  underline(2),
 
   /// Vertical bar cursor shape.
-  bar('bar');
+  bar(1);
 
   const CursorStyle(this.value);
 
-  /// Native cursor-style name passed to OpenTUI.
-  final String value;
+  /// Canonical OpenTUI cursor-style tag.
+  final int value;
 }
 
 /// Cursor-management methods added to [Renderer].

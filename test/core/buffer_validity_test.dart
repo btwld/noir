@@ -1,11 +1,12 @@
 import 'package:noir/noir_ffi.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/core/renderer.dart' show createRendererForTesting;
+import 'package:noir/src/ffi/native_symbols.dart';
 import 'package:test/test.dart';
 
 const _fg = Color.white;
 const _bg = Color.black;
 const _box = BoxOptions();
-const _u8Outside = [-1, 0x100];
 const _u32Outside = [-1, 0x100000000];
 const _i32Outside = [-0x80000001, 0x80000000];
 
@@ -83,6 +84,25 @@ void main() {
       expect(root.isInvalidated, isTrue);
       expect(view.isInvalidated, isTrue);
     });
+
+    test('failed render invalidates a possibly mutated native buffer', () {
+      final bindings = OpenTuiBindings.fromNativeSymbols(
+        _FailingRenderNativeSymbols(),
+      );
+      final renderer = createRendererForTesting(
+        bindings,
+        RendererHandle.fromNative(1),
+      );
+      addTearDown(renderer.dispose);
+
+      final failedFrame = renderer.nextBuffer;
+      expect(
+        () => renderer.render(force: true, autoFlush: false),
+        throwsA(isA<FFIException>()),
+      );
+      expect(failedFrame.isInvalidated, isTrue);
+      expect(renderer.nextBuffer.isInvalidated, isFalse);
+    });
   });
 
   group('Buffer fixed-width boundaries', () {
@@ -102,17 +122,17 @@ void main() {
       void put(int a) => buffer.setCell(0, 0, 'A', _fg, _bg, a);
       void blend(int a) =>
           buffer.setCellWithAlphaBlending(0, 0, 'A', _fg, _bg, a);
-      _expectBounds('attributes', _u8Outside, put);
-      _expectBounds('attributes', _u8Outside, blend);
-      blend(0xFF);
-      expect(buffer.getDirectAccess().attributes[0], 0xFF);
+      _expectBounds('attributes', _u32Outside, put);
+      _expectBounds('attributes', _u32Outside, blend);
+      blend(0xFFFFFFFF);
+      expect(buffer.getDirectAccess().attributes[0], 0xFFFFFFFF);
     });
 
     test('direct access setAttributes rejects out-of-domain values', () {
       final access = buffer.getDirectAccess();
-      _expectBounds('attr', _u8Outside, (v) => access.setAttributes(0, 0, v));
-      access.setAttributes(0, 0, 0xFF);
-      expect(access.getAttributes(0, 0), 0xFF);
+      _expectBounds('attr', _u32Outside, (v) => access.setAttributes(0, 0, v));
+      access.setAttributes(0, 0, 0xFFFFFFFF);
+      expect(access.getAttributes(0, 0), 0xFFFFFFFF);
       // setChar needs no domain check: Dart runes are bounded by 0x10FFFF,
       // inside the u32 domain of the chars view.
       access.setChar(0, 0, '\u{1F600}');
@@ -124,7 +144,7 @@ void main() {
           buffer.drawText('x', x, y, _fg, attributes: a);
       _expectBounds('x', _u32Outside, (v) => draw(v, 0, 0));
       _expectBounds('y', _u32Outside, (v) => draw(0, v, 0));
-      _expectBounds('attributes', _u8Outside, (v) => draw(0, 0, v));
+      _expectBounds('attributes', _u32Outside, (v) => draw(0, 0, v));
       // In-domain coordinates beyond the buffer clip natively.
       expect(() => draw(0xFFFFFFFF, 0xFFFFFFFF, 0xFF), returnsNormally);
     });
@@ -164,7 +184,7 @@ void main() {
         () => buffer.drawText('x', -1, 0, _fg),
         () => buffer.fillRect(-1, 0, 1, 1, _bg),
         () => buffer.drawBox(-0x80000001, 0, 0, 0, _box, _fg, _bg),
-        () => buffer.setCellWithAlphaBlending(0, 0, 'A', _fg, _bg, 0x100),
+        () => buffer.setCellWithAlphaBlending(0, 0, 'A', _fg, _bg, 0x100000000),
         () => buffer.resize(-5, 5),
       ]) {
         expect(call, throwsA(_invalidatedState));
@@ -179,11 +199,11 @@ void main() {
       void draw(int x, int y, int a) =>
           view.drawText('x', x, y, _fg, attributes: a);
       // (0, 0) sits outside the clip; the drop happens after validation.
-      _expectBounds('attributes', _u8Outside, put);
-      _expectBounds('attributes', _u8Outside, (v) => blend(0, 0, v));
-      _expectBounds('attributes', _u8Outside, (v) => draw(0, 0, v));
+      _expectBounds('attributes', _u32Outside, put);
+      _expectBounds('attributes', _u32Outside, (v) => blend(0, 0, v));
+      _expectBounds('attributes', _u32Outside, (v) => draw(0, 0, v));
       // In-clip writes reject identically.
-      _expectBounds('attributes', _u8Outside, (v) => blend(2, 1, v));
+      _expectBounds('attributes', _u32Outside, (v) => blend(2, 1, v));
       // Signed logical coordinates outside the clip still drop silently.
       expect(() => view.setCell(-3, -3, 'A', _fg, _bg, 0xFF), returnsNormally);
       expect(() => draw(-5, -5, 0xFF), returnsNormally);
@@ -205,16 +225,17 @@ void main() {
       }
     });
 
-    test('compositing preserves full 8-bit attributes without masking', () {
-      final textBuffer = TextBuffer.create()
-        ..writeChunk('AB', _fg, _bg, 0xFF)
-        ..finalizeLineInfo();
-      addTearDown(textBuffer.dispose);
-      clip(0, 0, 10, 2).drawTextBuffer(textBuffer, 0, 0);
+    test('clipped text preserves full 32-bit attributes without masking', () {
+      clip(
+        0,
+        0,
+        10,
+        2,
+      ).drawText('AB', 0, 0, _fg, bg: _bg, attributes: 0xFFFFFFFF);
       final direct = buffer.getDirectAccess();
       expect(direct.getChar(0, 0), 'A');
-      expect(direct.attributes[0], 0xFF);
-      expect(direct.attributes[1], 0xFF);
+      expect(direct.attributes[0], 0xFFFFFFFF);
+      expect(direct.attributes[1], 0xFFFFFFFF);
     });
   });
 
@@ -362,7 +383,7 @@ void main() {
 
       _expectBounds('x', _u32Outside, (v) => drawText(v, 0, 0));
       _expectBounds('y', _u32Outside, (v) => drawText(0, v, 0));
-      _expectBounds('attributes', _u8Outside, (v) => drawText(0, 0, v));
+      _expectBounds('attributes', _u32Outside, (v) => drawText(0, 0, v));
       _expectBounds('x', _u32Outside, (v) => fill(v, 0, 1, 1));
       _expectBounds('y', _u32Outside, (v) => fill(0, v, 1, 1));
       _expectBounds('width', _u32Outside, (v) => fill(0, 0, v, 1));
@@ -377,8 +398,8 @@ void main() {
       });
       _expectBounds('x', _u32Outside, (v) => cell(v, 0, 65, 0));
       _expectBounds('y', _u32Outside, (v) => cell(0, v, 65, 0));
-      _expectBounds('charCode', _u32Outside, (v) => cell(0, 0, v, 0));
-      _expectBounds('attributes', _u8Outside, (v) => cell(0, 0, 65, v));
+      _expectBounds('character', _u32Outside, (v) => cell(0, 0, v, 0));
+      _expectBounds('attributes', _u32Outside, (v) => cell(0, 0, 65, v));
       _expectBounds('destX', _i32Outside, (v) => copy(v, 0, 0, 0, 1, 1));
       _expectBounds('destY', _i32Outside, (v) => copy(0, v, 0, 0, 1, 1));
       _expectBounds('sourceX', _u32Outside, (v) => copy(0, 0, v, 0, 1, 1));
@@ -389,15 +410,33 @@ void main() {
       _expectBounds('height', _u32Outside, (v) => grow(5, v));
 
       // Accepts at exact bounds where the pinned native math stays in domain.
-      expect(() => drawText(0xFFFFFFFF, 0xFFFFFFFF, 0xFF), returnsNormally);
+      expect(
+        () => drawText(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF),
+        returnsNormally,
+      );
       expect(
         () => fill(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 1),
         returnsNormally,
       );
-      expect(() => cell(0, 0, 65, 0xFF), returnsNormally);
+      expect(() => cell(0, 0, 65, 0xFFFFFFFF), returnsNormally);
       expect(() => copy(-0x80000000, 0, 0xFFFFFFFF, 1, 1, 1), returnsNormally);
     });
   });
+}
+
+final class _FailingRenderNativeSymbols implements OpenTuiNativeSymbols {
+  @override
+  int getNextBuffer(int renderer) => 2;
+
+  @override
+  int render(int renderer, bool force) => 2;
+
+  @override
+  void destroyRenderer(int renderer) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError(invocation.memberName.toString());
 }
 
 Matcher _rangeNamed(String name) =>
