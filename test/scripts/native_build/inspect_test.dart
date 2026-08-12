@@ -116,6 +116,19 @@ void main() {
     }
   });
 
+  test('allows URL schemes without treating their suffix as a drive path', () {
+    expect(
+      () => inspectArtifact(
+        _inspection(
+          linuxX64,
+          printableStrings:
+              'https://github.com/ziglang/zig-bootstrap\nOpenTUI\n',
+        ),
+      ),
+      returnsNormally,
+    );
+  });
+
   test('rejects nonidentical or incomplete root hash tables', () {
     final rootA = <String, String>{
       for (final target in nativeBuildTargets)

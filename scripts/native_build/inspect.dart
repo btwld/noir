@@ -103,7 +103,9 @@ void _rejectPathLeaks(ArtifactInspection inspection) {
     }
   }
   final windowsBuildPath = RegExp(
+    '(?:^|[^A-Za-z0-9])'
     r'[A-Za-z]:[\\/](?!Windows[\\/]System32[\\/])',
+    multiLine: true,
   );
   if (windowsBuildPath.hasMatch(inspection.printableStrings)) {
     throw ArtifactInspectionException(
