@@ -46,7 +46,7 @@ void main() {
     }
   });
 
-  test('CI is staged through bounded analyze, Ubuntu, and desktop jobs', () {
+  test('CI gates bounded platform jobs behind analysis', () {
     final analyze = _job(workflow, 'analyze');
     final ubuntu = _job(workflow, 'ubuntu-test');
     final desktop = _job(workflow, 'desktop-test');
@@ -70,7 +70,8 @@ void main() {
       contains('timeout-minutes: 8\n        run: dart test --concurrency=1'),
     );
 
-    expect(desktop, contains('needs: ubuntu-test'));
+    expect(desktop, contains('needs: analyze'));
+    expect(desktop, isNot(contains('needs: ubuntu-test')));
     expect(desktop, contains('timeout-minutes: 12'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
