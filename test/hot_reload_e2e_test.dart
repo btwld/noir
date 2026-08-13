@@ -18,11 +18,7 @@ void main() {
       final consumer = await Directory.systemTemp.createTemp(
         'noir_hot_reload_consumer_',
       );
-      addTearDown(() async {
-        if (consumer.existsSync()) {
-          await consumer.delete(recursive: true);
-        }
-      });
+      addTearDown(() => _deleteTempDirectory(consumer));
 
       await File('${consumer.path}/pubspec.yaml').writeAsString('''
 name: noir_hot_reload_consumer
@@ -88,7 +84,14 @@ class Probe extends StatelessWidget {
         '--write-service-info=${serviceInfo.path}',
         'bin/app.dart',
       ], workingDirectory: consumer.path);
-      addTearDown(() => process.kill(ProcessSignal.sigkill));
+      addTearDown(() async {
+        process.kill(ProcessSignal.sigkill);
+        // Await the exit rather than just signalling it. Windows refuses to
+        // delete a directory another process still holds a handle in, and the
+        // child runs `bin/app.dart` from inside the temp directory this test
+        // deletes in a later teardown.
+        await process.exitCode;
+      });
 
       final diagnostics = StringBuffer();
       final frames = <String>[];
@@ -158,6 +161,26 @@ class Probe extends StatelessWidget {
     },
     timeout: const Timeout(Duration(minutes: 4)),
   );
+}
+
+/// Removes [directory], retrying briefly while the filesystem still refuses.
+///
+/// The child process has already exited by the time this runs, but Windows can
+/// hold its handles a moment longer, which surfaces as a `FileSystemException`.
+/// A temp directory that outlives the run is not worth failing a green
+/// hot-reload result over, so this gives up quietly once the retries are spent.
+Future<void> _deleteTempDirectory(Directory directory) async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    if (!directory.existsSync()) {
+      return;
+    }
+    try {
+      await directory.delete(recursive: true);
+      return;
+    } on FileSystemException {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+  }
 }
 
 Future<void> _waitForFrames(

@@ -2,7 +2,14 @@
 import 'package:noir/noir.dart';
 
 void main() {
-  runTuiApp(const CounterApp());
+  final app = runTuiApp(const CounterApp());
+  // Lets a hot-reload driver rebuild this app after it swaps sources:
+  //
+  //     dart run scripts/hot_reload_driver.dart example/counter.dart
+  //
+  // Edit any `build()` below and save to see it repaint. Registering costs
+  // nothing when no driver is attached.
+  registerHotReloadExtension(app);
 }
 
 class CounterApp extends StatefulWidget {
