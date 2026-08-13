@@ -71,8 +71,7 @@ The complete version is available in
 [the hello example](https://github.com/leoafarias/noir/blob/main/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
-`setState` after changing local state, and check `mounted` before updating from
-an asynchronous callback:
+`setState` after changing local state:
 
 ```dart
 import 'package:noir/noir.dart';
@@ -89,24 +88,35 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (!event.isPress) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+        event.character == '+') {
       setState(() => _count++);
-    });
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+        event.character == '-') {
+      setState(() => _count--);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(1),
-    child: Column(
-      spacing: 1,
-      children: [
-        const Text('Counter', style: TextStyle(color: Color.green)),
-        Text('Count: $_count'),
-      ],
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: _handleKey,
+    child: Container(
+      padding: const EdgeInsets.all(1),
+      child: Column(
+        spacing: 1,
+        children: [
+          const Text('Counter', style: TextStyle(color: Color.green)),
+          Text('Count: $_count'),
+          const Text('Up/+ increment | Down/- decrement'),
+        ],
+      ),
     ),
   );
 }
@@ -114,7 +124,7 @@ class _CounterAppState extends State<CounterApp> {
 
 See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
-for the package version.
+for the complete version with hot-reload registration.
 
 ## Application Lifecycle and API Tiers
 
@@ -126,7 +136,10 @@ handlers, and each returns an idempotent canceler.
 `TuiApp.dispose()` is idempotent. It cancels every still-owned registration
 before disposing the mounted app, input modes, and renderer resources. Always
 dispose the handle before a programmatic process exit. The default POSIX
-signal handling also performs cleanup for SIGINT, SIGTERM, and SIGHUP.
+signal handling performs cleanup for SIGINT, SIGTERM, and SIGHUP. In raw input
+mode, an unconsumed Ctrl+C key follows the same interrupt cleanup path and exits
+with status 130; an app or focused widget can consume it first to override that
+default.
 
 `headless: true` creates no owned terminal renderer and is exposed through
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
@@ -152,7 +165,8 @@ backend remain framework-owned; they are not supported package surfaces.
 ## Example Apps
 
 - [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
-- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — stateful rebuilds with `setState`.
+- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — interactive stateful rebuilds with
+  Up/Down and `+`/`-` controls.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
@@ -162,8 +176,10 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart) — keyboard and mouse option selection.
 - [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped scrolling and
   scrollbars.
-- [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing and submission.
-- [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set.
+- [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing with portable
+  Ctrl+D submission.
+- [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set with
+  selection, scrolling, and text submission.
 - [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
   and animation.
 - [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
@@ -188,11 +204,12 @@ includes the command for every app.
 | Ctrl + letter | `KeyEvent` with `KeyModifiers.ctrl` |
 | Arrow keys | `arrowUp`, `arrowDown`, `arrowLeft`, `arrowRight` |
 | Home / End | `home`, `end` |
-| Delete / PageUp / PageDown | `delete`, `pageUp`, `pageDown` |
+| Insert / Delete / PageUp / PageDown | `insert`, `delete`, `pageUp`, `pageDown` |
 | Function keys | `f1`–`f12` |
 | Mouse SGR | `MouseEvent` with type, button, cell position, modifiers, and directional scroll magnitude |
 | Bracketed paste | one `PasteEvent` per block through `app.onPaste` |
-| Kitty CSI-u | full Kitty modifiers after `app.enableKittyKeyboard()` |
+| xterm `modifyOtherKeys` | modified named and printable keys, including Ctrl+Enter |
+| Kitty keyboard | modifiers and press/repeat/release metadata after `app.enableKittyKeyboard()` |
 
 SIGWINCH resizes the terminal buffer and lays out the widget tree again.
 
@@ -248,8 +265,9 @@ corrupt package.
 
 - High-level layout and painting keep multi-code-point graphemes intact and
   expand intersecting selection ranges to whole grapheme clusters.
-  `DirectBufferAccess.chars` remains native encoded storage: packed grapheme
-  words are not independently decodable Unicode scalars.
+  `DirectBufferAccess.getEncodedCellAt()` exposes guarded access to native
+  encoded storage; packed grapheme words are not independently decodable
+  Unicode scalars.
 - OpenTUI v0.5.1's native `bufferDrawText` path mishandles a run whose first
   grapheme has source-level width zero: it can emit UTF-8 continuation bytes as
   cells and advance before the following text. Noir keeps the pinned source's
@@ -268,6 +286,5 @@ corrupt package.
   held by a frame on the stack, to an enum converted into a class, or to the
   bundled OpenTUI native library still require a full restart.
 - The current Linux libraries retain absolute build/debug paths. They pass
-  static integrity checks, but are not cleared for public publication or
-  runtime acceptance until an explicitly authorized artifact refresh or
-  provenance decision and a Linux execution pass.
+  static integrity checks; this is visible upstream artifact metadata rather
+  than a Noir rebuild output.

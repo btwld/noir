@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 const _fg = Color.white;
 const _bg = Color.black;
-const _box = BoxOptions();
+final _box = BoxOptions();
 const _u32Outside = [-1, 0x100000000];
 const _i32Outside = [-0x80000001, 0x80000000];
 
@@ -85,6 +85,73 @@ void main() {
       expect(view.isInvalidated, isTrue);
     });
 
+    test('renderer disposal closes non-frame buffer wrappers too', () {
+      final renderer = Renderer.create(20, 5, testing: true);
+      final current = renderer.debugCurrentBuffer;
+      final access = current.getDirectAccess();
+
+      renderer.dispose();
+
+      expect(current.isInvalidated, isTrue);
+      expect(() => current.clear(Color.black), throwsA(isA<StateError>()));
+      expect(() => access.getChar(0, 0), throwsA(isA<StateError>()));
+    });
+
+    test('render and resize invalidate current-buffer wrappers', () {
+      final renderer = Renderer.create(20, 5, testing: true);
+      addTearDown(renderer.dispose);
+
+      final beforeRender = renderer.debugCurrentBuffer;
+      renderer.render(force: true);
+      expect(beforeRender.isInvalidated, isTrue);
+
+      final beforeResize = renderer.debugCurrentBuffer;
+      renderer.resize(10, 2);
+      expect(beforeResize.isInvalidated, isTrue);
+    });
+
+    test('buffer resize invalidates issued direct access only', () {
+      final renderer = Renderer.create(20, 5, testing: true);
+      addTearDown(renderer.dispose);
+      final buffer = renderer.nextBuffer;
+      final beforeResize = buffer.getDirectAccess();
+
+      buffer.resize(10, 2);
+
+      expect(() => beforeResize.width, throwsA(_invalidatedState));
+      expect(buffer.isInvalidated, isFalse);
+      final afterResize = buffer.getDirectAccess();
+      expect((afterResize.width, afterResize.height), (10, 2));
+      afterResize.setChar(9, 1, 'x');
+      expect(afterResize.getChar(9, 1), 'x');
+    });
+
+    test('direct access checks buffer validity on every operation', () {
+      final renderer = Renderer.create(20, 5, testing: true);
+      addTearDown(renderer.dispose);
+      final access = renderer.nextBuffer.getDirectAccess();
+
+      renderer.render(force: true);
+
+      for (final operation in <void Function()>[
+        () => access.width,
+        () => access.height,
+        () => access.length,
+        () => access.getEncodedCellAt(0),
+        () => access.setEncodedCellAt(0, 0),
+        () => access.getChar(0, 0),
+        () => access.setChar(0, 0, 'x'),
+        () => access.getForeground(0, 0),
+        () => access.setForeground(0, 0, Color.white),
+        () => access.getBackground(0, 0),
+        () => access.setBackground(0, 0, Color.black),
+        () => access.getAttributes(0, 0),
+        () => access.setAttributes(0, 0, Attr.bold),
+      ]) {
+        expect(operation, throwsA(_invalidatedState));
+      }
+    });
+
     test('failed render invalidates a possibly mutated native buffer', () {
       final bindings = OpenTuiBindings.fromNativeSymbols(
         _FailingRenderNativeSymbols(),
@@ -125,7 +192,7 @@ void main() {
       _expectBounds('attributes', _u32Outside, put);
       _expectBounds('attributes', _u32Outside, blend);
       blend(0xFFFFFFFF);
-      expect(buffer.getDirectAccess().attributes[0], 0xFFFFFFFF);
+      expect(buffer.getDirectAccess().getAttributes(0, 0), 0xFFFFFFFF);
     });
 
     test('direct access setAttributes rejects out-of-domain values', () {
@@ -137,6 +204,9 @@ void main() {
       // inside the u32 domain of the chars view.
       access.setChar(0, 0, '\u{1F600}');
       expect(access.getChar(0, 0), '\u{1F600}');
+      access.setEncodedCellAt(0, 0xFFFFFFFF);
+      expect(access.getEncodedCellAt(0), 0xFFFFFFFF);
+      _expectBounds('value', _u32Outside, (v) => access.setEncodedCellAt(0, v));
     });
 
     test('drawText validates origins and attributes before native clips', () {
@@ -209,7 +279,7 @@ void main() {
       expect(() => draw(-5, -5, 0xFF), returnsNormally);
       expect(() => view.fillRect(-4, -4, 2, 2, _bg), returnsNormally);
       blend(2, 1, 0xFF);
-      expect(buffer.getDirectAccess().attributes[1 * 20 + 2], 0xFF);
+      expect(buffer.getDirectAccess().getAttributes(2, 1), 0xFF);
     });
 
     test('invalidated clipped views fail closed even outside the clip', () {
@@ -234,8 +304,8 @@ void main() {
       ).drawText('AB', 0, 0, _fg, bg: _bg, attributes: 0xFFFFFFFF);
       final direct = buffer.getDirectAccess();
       expect(direct.getChar(0, 0), 'A');
-      expect(direct.attributes[0], 0xFFFFFFFF);
-      expect(direct.attributes[1], 0xFFFFFFFF);
+      expect(direct.getAttributes(0, 0), 0xFFFFFFFF);
+      expect(direct.getAttributes(1, 0), 0xFFFFFFFF);
     });
   });
 
@@ -244,7 +314,8 @@ void main() {
     late Buffer buffer;
     Buffer clip(int x, int y, int w, int h) =>
         buffer.clipped(clipX: x, clipY: y, clipWidth: w, clipHeight: h);
-    int cell(int x, int y) => buffer.getDirectAccess().chars[y * 20 + x];
+    int cell(int x, int y) =>
+        buffer.getDirectAccess().getEncodedCellAt(y * 20 + x);
 
     setUp(() {
       renderer = Renderer.create(20, 5, testing: true);

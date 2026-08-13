@@ -110,6 +110,10 @@ class TerminalSession {
           processRendererCapabilityResponse(sessionRenderer, event.raw);
         }, priority: _capabilityRoutingPriority);
       }
+      _interruptKeySubscription = inputDispatcher.onKey(
+        _handleInterruptKey,
+        priority: _interruptKeyRoutingPriority,
+      );
 
       final inputAcquired = inputDriver.start();
       if (_useTerminalSession && !inputAcquired) {
@@ -132,6 +136,9 @@ class TerminalSession {
   }
 
   static const int _capabilityRoutingPriority = InputPriority.app + 1;
+  // Terminal shutdown is the final fallback so app, focus, and widget
+  // handlers can consume Ctrl+C first when they intentionally override it.
+  static const int _interruptKeyRoutingPriority = InputPriority.widget - 1;
 
   final bool _isHeadless;
   final void Function() _scheduleFrame;
@@ -146,6 +153,7 @@ class TerminalSession {
   bool _ownsRenderer = false;
   TerminalInputDriver? _inputDriver;
   InputSubscription? _capabilitySubscription;
+  InputSubscription? _interruptKeySubscription;
   bool _useTerminalSession = false;
   bool _terminalSetupAttempted = false;
   bool _closing = false;
@@ -231,6 +239,7 @@ class TerminalSession {
     );
     final inputDriver = _inputDriver;
     final capabilitySubscription = _capabilitySubscription;
+    final interruptKeySubscription = _interruptKeySubscription;
     final renderer = _renderer;
     final ownsRenderer = _ownsRenderer;
 
@@ -245,6 +254,9 @@ class TerminalSession {
       if (capabilitySubscription != null) {
         failures.attempt(capabilitySubscription.cancel);
       }
+      if (interruptKeySubscription != null) {
+        failures.attempt(interruptKeySubscription.cancel);
+      }
       failures.attempt(_restoreTerminalSession);
       if (renderer != null && ownsRenderer) {
         failures.attempt(renderer.dispose);
@@ -253,6 +265,7 @@ class TerminalSession {
       _signalSubscriptions.clear();
       _inputDriver = null;
       _capabilitySubscription = null;
+      _interruptKeySubscription = null;
       _ownsRenderer = false;
       _useTerminalSession = false;
       _terminalSetupAttempted = false;
@@ -327,6 +340,16 @@ class TerminalSession {
         TerminalSignal.resize => 143, // never an exit signal; defensive default
       });
     }
+  }
+
+  void _handleInterruptKey(KeyEvent event) {
+    if (!event.isPress ||
+        event.logicalKey != LogicalKeyboardKey.keyC ||
+        !event.isControlPressed) {
+      return;
+    }
+    event.consume();
+    _handleExitSignal(TerminalSignal.interrupt);
   }
 
   void _restoreTerminalSession() {

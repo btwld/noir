@@ -37,6 +37,7 @@ Color _readRgba(Uint16List values, int cellIndex) {
 }
 
 void _writeRgba(Uint16List values, int cellIndex, Color color) {
+  validateColorChannels(color);
   final offset = _rgbaOffset(cellIndex);
   values[offset] = (color.r * 255).round();
   values[offset + 1] = (color.g * 255).round();
@@ -49,6 +50,7 @@ void _writeRgba(Uint16List values, int cellIndex, Color color) {
 /// flips this once and every consumer fails on the next access.
 class _BufferValidity {
   bool isValid = true;
+  int directAccessGeneration = 0;
 }
 
 /// Creates a buffer wrapper for a native frame owned by the renderer.
@@ -56,7 +58,8 @@ class _BufferValidity {
 Buffer createBufferFromNative(
   OptimizedBufferHandle pointer,
   OpenTuiBindings bindings,
-) => Buffer._(pointer, bindings);
+  bool Function() ownerIsDisposed,
+) => Buffer._(pointer, bindings, ownerIsDisposed);
 
 /// Resolves native grapheme-table cells for framework capture tests.
 @internal
@@ -85,11 +88,11 @@ String debugResolveBufferCharacters(
 String debugResolveBufferCell(Buffer buffer, int cellIndex) {
   buffer._checkValid();
   final direct = buffer.getDirectAccess();
-  if (cellIndex < 0 || cellIndex >= direct.chars.length) {
-    throw RangeError.range(cellIndex, 0, direct.chars.length - 1, 'cellIndex');
+  if (cellIndex < 0 || cellIndex >= direct.length) {
+    throw RangeError.range(cellIndex, 0, direct.length - 1, 'cellIndex');
   }
 
-  final character = direct.chars[cellIndex];
+  final character = direct._chars[cellIndex];
   final kind = character & 0xC0000000;
   if (kind == 0xC0000000) return '';
   if (kind == 0) {
@@ -98,14 +101,14 @@ String debugResolveBufferCell(Buffer buffer, int cellIndex) {
         : String.fromCharCode(character);
   }
 
-  final original = Uint32List.fromList(direct.chars);
+  final original = Uint32List.fromList(direct._chars);
   try {
-    direct.chars
-      ..fillRange(0, direct.chars.length, 0xC0000000)
+    direct._chars
+      ..fillRange(0, direct._chars.length, 0xC0000000)
       ..[cellIndex] = character;
     return debugResolveBufferCharacters(buffer);
   } finally {
-    direct.chars.setAll(0, original);
+    direct._chars.setAll(0, original);
   }
 }
 
@@ -135,7 +138,7 @@ String debugResolveBufferCell(Buffer buffer, int cellIndex) {
 ///
 /// // Draw a bordered panel
 /// buffer.drawBox(5, 2, 30, 15,
-///     const BoxOptions(title: 'Settings'),
+///     BoxOptions(title: 'Settings'),
 ///     Color.cyan, Color.darkGray);
 ///
 /// // Add content text
@@ -145,11 +148,18 @@ String debugResolveBufferCell(Buffer buffer, int cellIndex) {
 /// buffer.fillRect(10, 8, 20, 1, Color.green);
 /// ```
 class Buffer {
-  Buffer._(this._ptr, this._bindings) : _validity = _BufferValidity();
+  Buffer._(this._ptr, this._bindings, this._ownerIsDisposed)
+    : _validity = _BufferValidity();
 
-  Buffer._withValidity(this._ptr, this._bindings, this._validity);
+  Buffer._withValidity(
+    this._ptr,
+    this._bindings,
+    this._ownerIsDisposed,
+    this._validity,
+  );
   final OpenTuiBindings _bindings;
   final OptimizedBufferHandle _ptr;
+  final bool Function() _ownerIsDisposed;
   final _BufferValidity _validity;
 
   /// Returns a [Buffer] view that silently drops draw calls outside the
@@ -165,6 +175,7 @@ class Buffer {
   }) => _ClippedBufferView(
     _ptr,
     _bindings,
+    _ownerIsDisposed,
     _validity,
     clipX: clipX,
     clipY: clipY,
@@ -173,9 +184,19 @@ class Buffer {
   );
 
   void _checkValid() {
-    if (!_validity.isValid) {
+    if (!_validity.isValid || _ownerIsDisposed()) {
       throw StateError(
         'Buffer has been invalidated. Get a fresh buffer from renderer.nextBuffer.',
+      );
+    }
+  }
+
+  void _checkDirectAccessGeneration(int generation) {
+    _checkValid();
+    if (generation != _validity.directAccessGeneration) {
+      throw StateError(
+        'Buffer has been invalidated by resize. '
+        'Get fresh direct access from buffer.getDirectAccess().',
       );
     }
   }
@@ -189,7 +210,7 @@ class Buffer {
   }
 
   /// Whether this buffer has been invalidated.
-  bool get isInvalidated => !_validity.isValid;
+  bool get isInvalidated => !_validity.isValid || _ownerIsDisposed();
 
   /// Width of the buffer in terminal columns.
   int get width {
@@ -288,12 +309,12 @@ class Buffer {
   /// ```dart
   /// // Simple bordered box
   /// buffer.drawBox(10, 5, 25, 12,
-  ///     const BoxOptions(),
+  ///     BoxOptions(),
   ///     Color.white, Color.transparent);
   ///
   /// // Dialog with title
   /// buffer.drawBox(15, 8, 35, 18,
-  ///     const BoxOptions(
+  ///     BoxOptions(
   ///         title: 'Confirm Action',
   ///         titleAlignment: TextAlign.center,
   ///         fill: true
@@ -439,15 +460,21 @@ class Buffer {
         'Invalid dimensions: width and height must be greater than 0',
       );
     }
-    _bindings.bufferResize(_ptr, newWidth, newHeight);
+    try {
+      _bindings.bufferResize(_ptr, newWidth, newHeight);
+    } finally {
+      // OpenTUI reallocates every cell array during resize. Existing typed
+      // list views must fail before their next read even if native resizing
+      // reports an error after partially mutating storage.
+      _validity.directAccessGeneration++;
+    }
   }
 
   /// Get direct access to internal arrays for performance-critical operations.
   ///
-  /// **WARNING**: The returned [DirectBufferAccess] contains views into native
-  /// memory. These views are only valid until the buffer is invalidated (i.e.,
-  /// until the next call to [Renderer.render()]). Accessing the views after
-  /// invalidation may cause runtime failure or undefined behavior.
+  /// The returned object performs a lifecycle check before every native-memory
+  /// read or write. It becomes unusable when this buffer is invalidated (for
+  /// example by the next `Renderer.render()` call).
   DirectBufferAccess getDirectAccess() {
     _checkValid();
     final w = _bindings.getBufferWidth(_ptr);
@@ -463,7 +490,9 @@ class Buffer {
     final bgPtr = _bindings.bufferGetBgPtr(_ptr);
     final attrPtr = _bindings.bufferGetAttributesPtr(_ptr);
 
-    return DirectBufferAccess(
+    return DirectBufferAccess._(
+      owner: this,
+      generation: _validity.directAccessGeneration,
       chars: charPtr.asTypedList(len),
       foregrounds: fgPtr.asTypedList(len * 4), // 4 u16 values per Color
       backgrounds: bgPtr.asTypedList(len * 4),
@@ -484,58 +513,95 @@ class Buffer {
 
 /// Direct access to Buffer internal arrays for advanced operations.
 class DirectBufferAccess {
-  /// Bundles cell-array views and dimensions for direct buffer operations.
-  const DirectBufferAccess({
-    required this.chars,
-    required this.foregrounds,
-    required this.backgrounds,
-    required this.attributes,
-    required this.width,
-    required this.height,
-  });
+  DirectBufferAccess._({
+    required Buffer owner,
+    required int generation,
+    required Uint32List chars,
+    required Uint16List foregrounds,
+    required Uint16List backgrounds,
+    required Uint32List attributes,
+    required int width,
+    required int height,
+  }) : _owner = owner,
+       _generation = generation,
+       _chars = chars,
+       _foregrounds = foregrounds,
+       _backgrounds = backgrounds,
+       _attributes = attributes,
+       _width = width,
+       _height = height;
 
-  /// Native encoded cell words in row-major order.
-  ///
-  /// A word may be a direct Unicode scalar or a native packed-grapheme value.
-  /// Treat this field as encoded storage rather than a Unicode-code-point
-  /// array.
-  final Uint32List chars;
-
-  /// Foreground [Color] channels packed as four `u16` values per cell (RGBA).
-  final Uint16List foregrounds;
-
-  /// Background [Color] channels packed as four `u16` values per cell (RGBA).
-  final Uint16List backgrounds;
-
-  /// Text attributes bitmask for each cell.
-  final Uint32List attributes;
+  final Buffer _owner;
+  final int _generation;
+  final Uint32List _chars;
+  final Uint16List _foregrounds;
+  final Uint16List _backgrounds;
+  final Uint32List _attributes;
+  final int _width;
+  final int _height;
 
   /// Width of the buffer in cells.
-  final int width;
+  int get width {
+    _checkValid();
+    return _width;
+  }
 
   /// Height of the buffer in cells.
-  final int height;
+  int get height {
+    _checkValid();
+    return _height;
+  }
 
-  /// Get buffer length (width * height)
-  int get length => width * height;
+  /// Get buffer length (width * height).
+  int get length {
+    _checkValid();
+    return _width * _height;
+  }
 
-  /// Convert 2D coordinates to flat index
+  /// Reads one native encoded cell word by row-major [cellIndex].
+  ///
+  /// A word may be a direct Unicode scalar or a native packed-grapheme value.
+  int getEncodedCellAt(int cellIndex) {
+    _checkCellIndex(cellIndex);
+    return _chars[cellIndex];
+  }
+
+  /// Writes one native encoded cell word by row-major [cellIndex].
+  void setEncodedCellAt(int cellIndex, int value) {
+    _checkCellIndex(cellIndex);
+    _checkUnsignedAbi(value, 0xFFFFFFFF, 'value');
+    _chars[cellIndex] = value;
+  }
+
+  void _checkCellIndex(int cellIndex) {
+    _checkValid();
+    if (cellIndex < 0 || cellIndex >= _chars.length) {
+      throw RangeError.range(cellIndex, 0, _chars.length - 1, 'cellIndex');
+    }
+  }
+
+  /// Convert 2D coordinates to flat index.
   int _getIndex(int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height) {
+    _checkValid();
+    if (x < 0 || x >= _width || y < 0 || y >= _height) {
       throw RangeError(
-        'Coordinates ($x, $y) out of bounds for ${width}x$height buffer',
+        'Coordinates ($x, $y) out of bounds for ${_width}x$_height buffer',
       );
     }
-    return y * width + x;
+    return y * _width + x;
+  }
+
+  void _checkValid() {
+    _owner._checkDirectAccessGeneration(_generation);
   }
 
   /// Decodes a direct Unicode-scalar cell at the specified coordinates.
   ///
-  /// Do not call this for a native packed-grapheme cell; inspect [chars]
-  /// directly when working with encoded cell words.
+  /// Do not call this for a native packed-grapheme cell; use
+  /// [getEncodedCellAt] when working with encoded cell words.
   String getChar(int x, int y) {
     final index = _getIndex(x, y);
-    return String.fromCharCode(chars[index]);
+    return String.fromCharCode(_chars[index]);
   }
 
   /// Stores the first Unicode scalar from a non-empty [char].
@@ -543,37 +609,37 @@ class DirectBufferAccess {
     final index = _getIndex(x, y);
     if (char.isEmpty) throw ArgumentError('Character cannot be empty');
 
-    chars[index] = char.runes.first;
+    _chars[index] = char.runes.first;
   }
 
-  /// Get foreground color at the specified coordinates
+  /// Get foreground color at the specified coordinates.
   Color getForeground(int x, int y) {
     final index = _getIndex(x, y);
-    return _readRgba(foregrounds, index);
+    return _readRgba(_foregrounds, index);
   }
 
-  /// Set foreground color at the specified coordinates
+  /// Set foreground color at the specified coordinates.
   void setForeground(int x, int y, Color color) {
     final index = _getIndex(x, y);
-    _writeRgba(foregrounds, index, color);
+    _writeRgba(_foregrounds, index, color);
   }
 
-  /// Get background color at the specified coordinates
+  /// Get background color at the specified coordinates.
   Color getBackground(int x, int y) {
     final index = _getIndex(x, y);
-    return _readRgba(backgrounds, index);
+    return _readRgba(_backgrounds, index);
   }
 
-  /// Set background color at the specified coordinates
+  /// Set background color at the specified coordinates.
   void setBackground(int x, int y, Color color) {
     final index = _getIndex(x, y);
-    _writeRgba(backgrounds, index, color);
+    _writeRgba(_backgrounds, index, color);
   }
 
-  /// Get text attributes at the specified coordinates
+  /// Get text attributes at the specified coordinates.
   int getAttributes(int x, int y) {
     final index = _getIndex(x, y);
-    return attributes[index];
+    return _attributes[index];
   }
 
   /// Set text attributes at the specified coordinates.
@@ -583,7 +649,7 @@ class DirectBufferAccess {
   void setAttributes(int x, int y, int attr) {
     final index = _getIndex(x, y);
     _checkUnsignedAbi(attr, 0xFFFFFFFF, 'attr');
-    attributes[index] = attr;
+    _attributes[index] = attr;
   }
 }
 
@@ -598,6 +664,7 @@ class _ClippedBufferView extends Buffer {
   _ClippedBufferView(
     super.ptr,
     super.bindings,
+    super.ownerIsDisposed,
     super.validity, {
     required this.clipX,
     required this.clipY,

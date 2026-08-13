@@ -194,7 +194,7 @@ class HealthCheckRunner {
       }
 
       try {
-        const boxOptions = BoxOptions(title: 'Test', fill: true);
+        final boxOptions = BoxOptions(title: 'Test', fill: true);
         buffer.drawBox(0, 4, 15, 6, boxOptions, Color.green, Color.blue);
         _pass('Box drawing working');
       } on Object catch (error) {

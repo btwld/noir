@@ -308,9 +308,13 @@ void main() {
 
   test('Buffer uses canonical u16 colors and u32 attributes', () async {
     final source = File('lib/src/core/buffer.dart').readAsStringSync();
-    expect(source, contains('final Uint16List foregrounds;'));
-    expect(source, contains('final Uint16List backgrounds;'));
-    expect(source, contains('final Uint32List attributes;'));
+    expect(source, contains('final Uint16List _foregrounds;'));
+    expect(source, contains('final Uint16List _backgrounds;'));
+    expect(source, contains('final Uint32List _attributes;'));
+    expect(source, isNot(contains('final Uint32List chars;')));
+    expect(source, isNot(contains('final Uint16List foregrounds;')));
+    expect(source, isNot(contains('final Uint16List backgrounds;')));
+    expect(source, isNot(contains('final Uint32List attributes;')));
     expect(source, isNot(contains('drawTextBuffer')));
     expect(source, isNot(contains('DirectTextAccess')));
 

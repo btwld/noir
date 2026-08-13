@@ -88,7 +88,8 @@ PatchManagerView _workspace({required int layoutWidth}) {
   );
 }
 
-const _splitDiff = '''
+const _splitDiff =
+    '''
 diff --git a/lib/app.dart b/lib/app.dart
 index 1111111..2222222 100644
 --- a/lib/app.dart
@@ -98,13 +99,13 @@ index 1111111..2222222 100644
 -  print('old');
 +  print('new');
  }
- 
+${' '}
  void layout() {
    final columns = 3;
 +  final rows = 8;
    print(columns);
  }
- 
+${' '}
  void footer() {
 -  print('draft');
 +  print('ready');

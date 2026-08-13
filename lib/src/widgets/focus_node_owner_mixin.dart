@@ -64,10 +64,13 @@ mixin FocusNodeOwnerStateMixin<T extends StatefulWidget> on State<T> {
   void syncFocusNode(FocusNode? oldWidgetFocusNode) {
     if (!identical(oldWidgetFocusNode, widgetFocusNode)) {
       final old = _focusNode;
+      final supplied = widgetFocusNode;
+      if (supplied != null) {
+        validateFocusNodeReplacementTarget(supplied, old, context);
+      }
       if (_ownsFocusNode) {
         old.dispose();
       }
-      final supplied = widgetFocusNode;
       _focusNode = supplied ?? createDefaultFocusNode();
       _ownsFocusNode = supplied == null;
       onFocusNodeReplaced(old);

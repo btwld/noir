@@ -14,6 +14,7 @@ void main() {
 
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});
+
   @override
   State<CounterApp> createState() => _CounterAppState();
 }
@@ -21,31 +22,42 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(1),
-    decoration: BoxDecoration(
-      color: Color.rgb(0.05, 0.05, 0.12),
-      border: Border.all(),
-    ),
-    child: Column(
-      spacing: 1,
-      children: [
-        const Text('Counter Demo', style: TextStyle(color: Color.green)),
-        Text('Count: $_count'),
-        const Text('(Press Ctrl+C to exit)'),
-      ],
-    ),
-  );
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (!event.isPress) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+        event.character == '+') {
+      setState(() => _count++);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+        event.character == '-') {
+      setState(() => _count--);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
-  void initState() {
-    super.initState();
-    // Auto-increment once shortly after mount to demonstrate setState-driven
-    // rebuilds.
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
-      setState(() => _count++);
-    });
-  }
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: _handleKey,
+    child: Container(
+      padding: const EdgeInsets.all(1),
+      decoration: BoxDecoration(
+        color: Color.rgb(0.05, 0.05, 0.12),
+        border: Border.all(color: const Color(0.2, 0.25, 0.35)),
+      ),
+      child: Column(
+        spacing: 1,
+        children: [
+          const Text('Counter Demo', style: TextStyle(color: Color.green)),
+          Text('Count: $_count'),
+          const Text('Up/+ increment | Down/- decrement'),
+          const Text('Ctrl+C exit'),
+        ],
+      ),
+    ),
+  );
 }

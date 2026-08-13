@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../core/color.dart';
 import '../core/terminal_style.dart';
 
@@ -32,7 +34,7 @@ class TextStyle {
   final FontStyle? fontStyle;
 
   /// Text decorations such as underline or line-through.
-  final List<TextDecoration>? decoration;
+  final TextDecoration? decoration;
 
   /// Terminal-specific text effects (blink, reverse video).
   ///
@@ -67,19 +69,7 @@ class TextStyle {
       attrs |= Attr.italic;
     }
 
-    if (decoration != null) {
-      for (final dec in decoration!) {
-        switch (dec) {
-          case TextDecoration.none:
-            // No decoration, do nothing
-            break;
-          case TextDecoration.underline:
-            attrs |= Attr.underline;
-          case TextDecoration.lineThrough:
-            attrs |= Attr.strike;
-        }
-      }
-    }
+    attrs |= decoration?._attributes ?? 0;
 
     // Handle terminal-specific effects
     switch (effect) {
@@ -102,7 +92,7 @@ class TextStyle {
     Color? backgroundColor,
     FontWeight? fontWeight,
     FontStyle? fontStyle,
-    List<TextDecoration>? decoration,
+    TextDecoration? decoration,
     TextEffect? effect,
     int? attributes,
   }) => TextStyle(
@@ -249,21 +239,36 @@ enum FontStyle {
 ///
 /// Flutter compatibility note: overline removed because terminal character cells
 /// have fixed height with no space above text for overline rendering.
-enum TextDecoration {
-  /// Do not draw a decoration
-  /// Maps to: No OpenTUI attributes (0)
-  none,
+@immutable
+final class TextDecoration {
+  const TextDecoration._(this._attributes);
 
-  /// Draw a line underneath each line of text
-  /// Maps to: OpenTUI Attr.underline (1 << 3)
-  underline,
+  /// Combines multiple immutable decorations into one value.
+  factory TextDecoration.combine(Iterable<TextDecoration> decorations) {
+    var attributes = 0;
+    for (final decoration in decorations) {
+      attributes |= decoration._attributes;
+    }
+    return TextDecoration._(attributes);
+  }
 
-  /// Draw a line through each line of text (strikethrough)
-  /// Maps to: OpenTUI Attr.strike (1 << 6)
-  lineThrough,
+  final int _attributes;
 
-  // overline removed - terminals cannot render above text line
-  // Use backgroundColor or reverse video for emphasis instead
+  /// Do not draw a decoration.
+  static const none = TextDecoration._(0);
+
+  /// Draw a line underneath each line of text.
+  static const underline = TextDecoration._(Attr.underline);
+
+  /// Draw a line through each line of text (strikethrough).
+  static const lineThrough = TextDecoration._(Attr.strike);
+
+  @override
+  bool operator ==(Object other) =>
+      other is TextDecoration && other._attributes == _attributes;
+
+  @override
+  int get hashCode => _attributes.hashCode;
 }
 
 /// Terminal-specific text effects not available in Flutter.

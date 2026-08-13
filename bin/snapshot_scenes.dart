@@ -14,9 +14,7 @@ import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:noir/noir.dart' as ui;
-import 'package:noir/noir_ffi.dart';
 import 'package:noir/noir_low_level.dart';
-import 'package:noir/src/core/buffer.dart' show createBufferFromNative;
 
 import '../test/helpers/buffer_capture.dart';
 
@@ -79,13 +77,9 @@ Map<String, dynamic> captureWidgetSceneSnapshot(
 }
 
 Map<String, dynamic> _capturePrimitiveScene(_Args argz) {
-  final bindings = OpenTuiBindings();
-  final renderer = bindings.createRenderer(argz.width, argz.height);
+  final renderer = Renderer.create(argz.width, argz.height);
   try {
-    final buffer = createBufferFromNative(
-      bindings.getNextBuffer(renderer),
-      bindings,
-    )..clear(ui.Color.transparent);
+    final buffer = renderer.nextBuffer..clear(ui.Color.transparent);
 
     switch (argz.scene) {
       case 'S1':
@@ -100,7 +94,7 @@ Map<String, dynamic> _capturePrimitiveScene(_Args argz) {
 
     return _snapshotFromBuffer(buffer);
   } finally {
-    bindings.destroyRenderer(renderer);
+    renderer.dispose();
   }
 }
 
@@ -170,7 +164,7 @@ void _sceneBox(Buffer buffer) {
     0,
     20,
     5,
-    const BoxOptions(fill: true),
+    ui.BoxOptions(fill: true),
     ui.Color.cyan, // cyan border
     const ui.Color(0.1, 0.1, 0.15), // dark fill
   );

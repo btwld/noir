@@ -20,13 +20,13 @@ enum TextOverflow {
 /// A laid-out text snapshot.
 final class TextLayout {
   /// Creates a text layout.
-  const TextLayout({
+  TextLayout({
     required this.text,
     required this.style,
     required this.indexMap,
-    required this.lines,
+    required List<TextLayoutLine> lines,
     required this.size,
-  });
+  }) : lines = List<TextLayoutLine>.unmodifiable(lines);
 
   /// Plain source text before soft wrapping.
   final String text;
@@ -54,7 +54,8 @@ final class TextLayout {
 /// One laid-out terminal text line.
 final class TextLayoutLine {
   /// Creates a laid-out text line.
-  const TextLayoutLine({required this.runs, required this.width});
+  TextLayoutLine({required List<TextLayoutRun> runs, required this.width})
+    : runs = List<TextLayoutRun>.unmodifiable(runs);
 
   /// Styled runs on this line.
   final List<TextLayoutRun> runs;

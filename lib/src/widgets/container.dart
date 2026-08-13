@@ -117,12 +117,17 @@ class Container extends StatelessWidget {
   /// outermost around [child].
   @override
   Widget build(BuildContext context) {
+    if (color != null && decoration != null) {
+      throw ArgumentError(
+        'Cannot provide both a color and a decoration. '
+        'Use BoxDecoration(color: color) instead.',
+      );
+    }
     var current = child;
 
     // Build effective decoration from properties
     var effectiveDecoration = decoration;
     if (color != null) {
-      assert(decoration == null);
       effectiveDecoration = BoxDecoration(color: color);
     }
 

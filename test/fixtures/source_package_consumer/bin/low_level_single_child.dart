@@ -62,7 +62,7 @@ TuiBinding createConsumerBinding(Renderer renderer, InputManager inputManager) {
     0,
     8,
     3,
-    const BoxOptions(title: 'Noir', titleAlignment: TextAlign.center),
+    BoxOptions(title: 'Noir', titleAlignment: TextAlign.center),
     Color.white,
     Color.black,
   );

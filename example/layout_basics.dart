@@ -1,29 +1,16 @@
 // ignore_for_file: cascade_invocations
-import 'dart:async';
-import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
-Future<void> main() async {
-  final app = runTuiApp(const LayoutBasics());
+void main() {
+  late final TuiApp app;
+  void quit() {
+    app.dispose();
+    io.exit(0);
+  }
 
-  // Enable keyboard so we can exit (q or Ctrl+C)
-  app.enableKittyKeyboard();
-
-  final exitCompleter = Completer<void>();
-  app.onKey((event) {
-    if (event.isPress &&
-        (event.character == 'q' ||
-            (event.logicalKey == LogicalKeyboardKey.keyC &&
-                event.isControlPressed))) {
-      event.consume();
-      if (!exitCompleter.isCompleted) exitCompleter.complete();
-    }
-  });
-
-  await Future.any([exitCompleter.future, ProcessSignal.sigint.watch().first]);
-
-  app.dispose();
+  app = runTuiApp(LayoutBasics(onQuit: quit));
 }
 
 /// A compact demo showcasing core layout behaviors:
@@ -31,23 +18,37 @@ Future<void> main() async {
 /// - MainAxisAlignment variants (no stretch)
 /// - Flex distribution with Expanded/Flexible
 class LayoutBasics extends StatelessWidget {
-  const LayoutBasics({super.key});
+  const LayoutBasics({required this.onQuit, super.key});
+
+  final VoidCallback onQuit;
+
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event.isPress && event.character == 'q') {
+      onQuit();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
-  Widget build(BuildContext context) => Container(
-    color: Color.rgb(0.05, 0.05, 0.12),
-    padding: const EdgeInsets.all(1),
-    child: Column(
-      children: const [
-        _Section(title: 'MainAxis: center'),
-        _MainAxisCenterRow(),
-        SizedBox(height: 1),
-        _Section(title: 'MainAxis: spaceBetween'),
-        _MainAxisSpaceBetweenRow(),
-        SizedBox(height: 1),
-        _Section(title: 'Flex distribution'),
-        _FlexRow(),
-      ],
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: _handleKey,
+    child: Container(
+      color: Color.rgb(0.05, 0.05, 0.12),
+      padding: const EdgeInsets.all(1),
+      child: Column(
+        children: const [
+          _Section(title: 'MainAxis: center'),
+          _MainAxisCenterRow(),
+          SizedBox(height: 1),
+          _Section(title: 'MainAxis: spaceBetween'),
+          _MainAxisSpaceBetweenRow(),
+          SizedBox(height: 1),
+          _Section(title: 'Flex distribution'),
+          _FlexRow(),
+        ],
+      ),
     ),
   );
 }

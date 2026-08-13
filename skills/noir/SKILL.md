@@ -58,8 +58,9 @@ These catch the mistakes that don't surface until runtime:
    owns `onKey()`, `onMouse()`, and `onPaste()` app-priority registrations
    (each returns an idempotent canceler) and the terminal session.
    `dispose()` is idempotent. Calling `io.exit()` without it
-   leaves the terminal in raw mode. Ctrl+C exits with cleanup by default; to
-   quit from code, `app.dispose()` then `io.exit(0)`.
+   leaves the terminal in raw mode. An unconsumed Ctrl+C key exits with cleanup
+   by default; app and focused-widget handlers may consume it to override that
+   fallback. To quit from code, `app.dispose()` then `io.exit(0)`.
 5. **Input is one ordered pipeline, and `app.onKey` runs before the focused
    widget.** This decides whether your key handler ever fires — see
    [Input routing](#input-routing-one-ordered-pipeline) below.
@@ -208,6 +209,8 @@ Every key event walks the same path, and the first handler that returns
    (`Focus`, `FocusScope`), bubbling up.
 5. **Default Tab / Shift+Tab focus traversal** — only if nothing above handled
    the event.
+6. **Terminal-session Ctrl+C fallback** — an unconsumed key press restores the
+   terminal and exits with interrupt status 130.
 
 Two consequences worth internalizing:
 
@@ -219,6 +222,9 @@ Two consequences worth internalizing:
   focused `TextInput` does, which makes the letter untypable. Use a modifier
   (`Ctrl+Q`) for app-level bindings, or scope the binding with `Shortcuts`
   inside the tree so it only applies where focus is.
+- **Ctrl+C is overridable.** Consume it in an app, shortcut, or focused-widget
+  handler when the application needs different behavior; otherwise the final
+  terminal-session fallback shuts down cleanly.
 
 ### State: StatefulWidget + setState
 

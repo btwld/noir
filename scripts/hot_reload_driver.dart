@@ -32,6 +32,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir/src/app/hot_reload_response.dart';
 import 'package:vm_service/utils.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
@@ -177,11 +178,18 @@ Future<void> _reloadAndReassemble(VmService service, String isolateId) async {
   }
 
   try {
-    await service.callServiceExtension(
+    final response = await service.callServiceExtension(
       'ext.noir.reassemble',
       isolateId: isolateId,
     );
-    _log('reloaded');
+    if (hotReloadResponseSucceeded(response.json)) {
+      _log('reloaded');
+    } else {
+      _log(
+        'sources reloaded, but the app was not reassembled. '
+        'The registered app may already be disposed.',
+      );
+    }
   } on RPCError catch (error) {
     _log(
       'sources reloaded, but ext.noir.reassemble is unavailable '

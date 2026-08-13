@@ -24,7 +24,7 @@ void drawConsumerBox(OpenTuiBindings bindings, RendererHandle renderer) {
       0,
       8,
       3,
-      const BoxOptions(
+      BoxOptions(
         sides: BorderSides(right: false),
         titleAlignment: TextAlign.center,
       ),

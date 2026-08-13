@@ -25,7 +25,7 @@ class RenderParagraph extends RenderBox {
     bool softWrap = true,
     TextOverflow overflow = TextOverflow.clip,
     TextHighlight? selection,
-  }) : _text = text,
+  }) : _text = snapshotInlineSpan(text),
        _style = style,
        _alignment = alignment,
        _maxLines = _validatedMaxLines(maxLines),
@@ -46,10 +46,7 @@ class RenderParagraph extends RenderBox {
   /// The inline span tree to render.
   InlineSpan get text => _text;
   set text(InlineSpan value) {
-    if (identical(_text, value)) {
-      return;
-    }
-    _text = value;
+    _text = snapshotInlineSpan(value);
     _markTextLayoutDirty();
   }
 

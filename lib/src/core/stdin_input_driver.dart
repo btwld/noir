@@ -113,11 +113,13 @@ final class _IoStdinInputSource implements StdinInputSource {
 /// - CSI cursor keys: `ESC[A/B/C/D` → logical arrow keys
 /// - CSI Home/End: `ESC[H` / `ESC[F`
 /// - CSI tilde keys: `ESC[3~`/`ESC[5~`/`ESC[6~` → logical Delete/Page keys
+/// - xterm modifyOtherKeys: `ESC[27;modifier;code~`
 /// - Function keys F1–F12 via `ESC O P/Q/R/S` and `ESC[N~`
 /// - SGR mouse: `ESC[<Cb;Cx;CyM/m` for press/release, drag, and wheel
 /// - Bracketed paste: `ESC[200~...ESC[201~` accumulated into a single event
 /// - Kitty keyboard CSI-u:
 ///   `ESC[keycode[:alternate];modifiers[:event-type];text u`
+/// - Kitty functional and tilde keys with press/repeat/release event types
 class StdinInputDriver {
   /// Routes parsed stdin events to [_inputDispatcher] when input is started.
   StdinInputDriver(
@@ -161,7 +163,7 @@ class StdinInputDriver {
     return true;
   }
 
-  /// Stops consuming stdin and exactly restores the acquired terminal modes.
+  /// Restores the acquired terminal modes, then stops consuming stdin.
   void stop() {
     final escapeTimer = _escapeTimer;
     final subscription = _sub;
@@ -174,14 +176,14 @@ class StdinInputDriver {
     escapeTimer?.cancel();
 
     final failures = FirstErrorRecorder();
+    if (lease != null) {
+      failures.attempt(lease.restore);
+    }
     if (subscription != null) {
       failures.attempt(() {
         final cancellation = subscription.cancel();
         cancellation.ignore();
       });
-    }
-    if (lease != null) {
-      failures.attempt(lease.restore);
     }
     failures.rethrowFirst();
   }
@@ -464,7 +466,8 @@ KeyEvent _key(
   isRepeat: isRepeat,
 );
 
-int _decodeModifierField(int modField) {
+int? _decodeModifierField(int modField) {
+  if (modField < 1) return null;
   final raw = modField - 1;
   var mods = 0;
   if (raw & 1 != 0) mods |= KeyModifiers.shift;
@@ -477,6 +480,8 @@ int _decodeModifierField(int modField) {
   if (raw & 128 != 0) mods |= KeyModifiers.numLock;
   return mods;
 }
+
+typedef _CsiKeyMetadata = ({int modifiers, bool isPress, bool isRepeat});
 
 /// Parse a chunk of raw bytes into key, mouse, paste, and terminal capability
 /// inputs. Pure function, side-effect free — exposed for unit testing without
@@ -871,32 +876,21 @@ int _parseCsi(
   }
 
   KeyEvent? evt;
-  final modifiers = _csiModifiers(params);
+  final metadata = _csiKeyMetadata(params);
+  if (metadata == null) return i + 1 - start;
   switch (finalByte) {
     case 0x41: // 'A'
-      evt = _key(LogicalKeyboardKey.arrowUp, keyCode: 0, modifiers: modifiers);
+      evt = _csiKey(LogicalKeyboardKey.arrowUp, metadata);
     case 0x42: // 'B'
-      evt = _key(
-        LogicalKeyboardKey.arrowDown,
-        keyCode: 0,
-        modifiers: modifiers,
-      );
+      evt = _csiKey(LogicalKeyboardKey.arrowDown, metadata);
     case 0x43: // 'C'
-      evt = _key(
-        LogicalKeyboardKey.arrowRight,
-        keyCode: 0,
-        modifiers: modifiers,
-      );
+      evt = _csiKey(LogicalKeyboardKey.arrowRight, metadata);
     case 0x44: // 'D'
-      evt = _key(
-        LogicalKeyboardKey.arrowLeft,
-        keyCode: 0,
-        modifiers: modifiers,
-      );
+      evt = _csiKey(LogicalKeyboardKey.arrowLeft, metadata);
     case 0x48: // 'H'
-      evt = _key(LogicalKeyboardKey.home, keyCode: 0, modifiers: modifiers);
+      evt = _csiKey(LogicalKeyboardKey.home, metadata);
     case 0x46: // 'F'
-      evt = _key(LogicalKeyboardKey.end, keyCode: 0, modifiers: modifiers);
+      evt = _csiKey(LogicalKeyboardKey.end, metadata);
     case 0x5a: // 'Z' — Shift+Tab
       evt = _key(
         LogicalKeyboardKey.tab,
@@ -906,7 +900,7 @@ int _parseCsi(
     case 0x75: // 'u' — Kitty CSI-u keyboard report
       evt = _parseKittyCsiU(params);
     case 0x7e: // '~' — extended keys parameterised by leading number
-      evt = _tildeKey(params, modifiers);
+      evt = _modifyOtherKeysKey(params) ?? _tildeKey(params, metadata);
     // Other final bytes: not handled; drop.
   }
   if (evt != null) out.add(KeyInput(evt));
@@ -917,11 +911,22 @@ final RegExp _privateModeReport = RegExp(r'^\?[0-9]+;[0-9]+$');
 final RegExp _cursorPositionReport = RegExp(r'^[0-9]+;[0-9]+$');
 final RegExp _kittyKeyboardStatus = RegExp(r'^\?[0-9]+$');
 
-int _csiModifiers(String params) {
+_CsiKeyMetadata? _csiKeyMetadata(String params) {
   final parts = params.split(';');
-  if (parts.length < 2) return 0;
-  final modField = int.tryParse(parts[1]);
-  return modField == null ? 0 : _decodeModifierField(modField);
+  if (parts.length < 2 || parts[1].isEmpty) {
+    return (modifiers: 0, isPress: true, isRepeat: false);
+  }
+  final fields = parts[1].split(':');
+  final modField = int.tryParse(fields.first);
+  if (modField == null) return null;
+  final modifiers = _decodeModifierField(modField);
+  if (modifiers == null) return null;
+  final eventType = fields.length > 1 ? fields[1] : null;
+  return (
+    modifiers: modifiers,
+    isPress: eventType != '3',
+    isRepeat: eventType == '2',
+  );
 }
 
 TerminalCapabilityKind? _deviceAttributesKind(String params) {
@@ -972,48 +977,97 @@ int _parseSs3(List<int> bytes, int start, List<ParsedInput> out) {
   return 3;
 }
 
-KeyEvent? _tildeKey(String params, int modifiers) {
-  // params can be "N" or "N;M" where M encodes modifiers (xterm-style);
-  // the caller has already decoded M via _csiModifiers.
+KeyEvent _csiKey(LogicalKeyboardKey logicalKey, _CsiKeyMetadata metadata) =>
+    _key(
+      logicalKey,
+      keyCode: 0,
+      modifiers: metadata.modifiers,
+      isPress: metadata.isPress,
+      isRepeat: metadata.isRepeat,
+    );
+
+KeyEvent? _tildeKey(String params, _CsiKeyMetadata metadata) {
+  // params can be "N", "N;M", or Kitty's "N;M:eventType" form. The caller
+  // has already decoded modifiers and event state into metadata.
   final n = int.tryParse(params.split(';').first);
   if (n == null) return null;
   switch (n) {
+    case 1:
+    case 7: // rxvt
+      return _csiKey(LogicalKeyboardKey.home, metadata);
+    case 2:
+      return _csiKey(LogicalKeyboardKey.insert, metadata);
     case 3:
-      return _key(LogicalKeyboardKey.delete, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.delete, metadata);
+    case 4:
+    case 8: // rxvt
+      return _csiKey(LogicalKeyboardKey.end, metadata);
     case 5:
-      return _key(LogicalKeyboardKey.pageUp, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.pageUp, metadata);
     case 6:
-      return _key(
-        LogicalKeyboardKey.pageDown,
-        keyCode: 0,
-        modifiers: modifiers,
-      );
+      return _csiKey(LogicalKeyboardKey.pageDown, metadata);
     case 11:
-    case 1: // some terminals send ESC[1~ for F1
-      return _key(LogicalKeyboardKey.f1, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f1, metadata);
     case 12:
-    case 2: // ESC[2~ for F2 (rare)
-      return _key(LogicalKeyboardKey.f2, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f2, metadata);
     case 13:
-      return _key(LogicalKeyboardKey.f3, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f3, metadata);
     case 14:
-      return _key(LogicalKeyboardKey.f4, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f4, metadata);
     case 15:
-      return _key(LogicalKeyboardKey.f5, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f5, metadata);
     case 17:
-      return _key(LogicalKeyboardKey.f6, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f6, metadata);
     case 18:
-      return _key(LogicalKeyboardKey.f7, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f7, metadata);
     case 19:
-      return _key(LogicalKeyboardKey.f8, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f8, metadata);
     case 20:
-      return _key(LogicalKeyboardKey.f9, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f9, metadata);
     case 21:
-      return _key(LogicalKeyboardKey.f10, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f10, metadata);
     case 23:
-      return _key(LogicalKeyboardKey.f11, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f11, metadata);
     case 24:
-      return _key(LogicalKeyboardKey.f12, keyCode: 0, modifiers: modifiers);
+      return _csiKey(LogicalKeyboardKey.f12, metadata);
+  }
+  return null;
+}
+
+/// Decode xterm modifyOtherKeys: `ESC [ 27 ; modifiers ; code ~`.
+///
+/// The modifier field is 1-based, matching Kitty CSI-u. OpenTUI enables this
+/// mode when Kitty keyboard reporting is unavailable, so it must preserve the
+/// same logical key and modifier information.
+KeyEvent? _modifyOtherKeysKey(String params) {
+  final fields = params.split(';');
+  if (fields.length != 3 || fields.first != '27') return null;
+
+  final modifierField = int.tryParse(fields[1]);
+  final code = int.tryParse(fields[2]);
+  if (modifierField == null || code == null) return null;
+
+  final modifiers = _decodeModifierField(modifierField);
+  if (modifiers == null) return null;
+  final namedKey = switch (code) {
+    9 => LogicalKeyboardKey.tab,
+    13 => LogicalKeyboardKey.enter,
+    27 => LogicalKeyboardKey.escape,
+    32 => LogicalKeyboardKey.space,
+    8 || 127 => LogicalKeyboardKey.backspace,
+    _ => null,
+  };
+  if (namedKey != null) {
+    return _key(namedKey, keyCode: code, modifiers: modifiers);
+  }
+  if (code >= 0x20 && _isUnicodeScalarValue(code)) {
+    final character = String.fromCharCode(code);
+    return _key(
+      LogicalKeyboardKey.forCharacter(character),
+      keyCode: code,
+      character: character,
+      modifiers: modifiers,
+    );
   }
   return null;
 }
@@ -1037,6 +1091,7 @@ KeyEvent? _parseKittyCsiU(String params) {
       ? int.tryParse(modifierFields.first) ?? 1
       : 1;
   final mods = _decodeModifierField(modField);
+  if (mods == null) return null;
   final eventType = modifierFields.length > 1 ? modifierFields[1] : null;
   final isRepeat = eventType == '2';
   final isPress = eventType != '3';
@@ -1135,6 +1190,8 @@ LogicalKeyboardKey? _kittyNamedKey(int code) {
       return LogicalKeyboardKey.tab;
     case 57347:
       return LogicalKeyboardKey.backspace;
+    case 57348:
+      return LogicalKeyboardKey.insert;
     case 57349:
       return LogicalKeyboardKey.delete;
     case 57350:

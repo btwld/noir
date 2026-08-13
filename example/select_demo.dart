@@ -16,19 +16,19 @@ void main() {
     io.exit(0);
   }
 
-  app = runTuiApp(_SelectDemoApp(onQuit: quit));
+  app = runTuiApp(SelectDemoApp(onQuit: quit));
 }
 
-class _SelectDemoApp extends StatefulWidget {
-  const _SelectDemoApp({required this.onQuit});
+class SelectDemoApp extends StatefulWidget {
+  const SelectDemoApp({required this.onQuit, super.key});
 
   final void Function() onQuit;
 
   @override
-  State<_SelectDemoApp> createState() => _SelectDemoAppState();
+  State<SelectDemoApp> createState() => _SelectDemoAppState();
 }
 
-class _SelectDemoAppState extends State<_SelectDemoApp> {
+class _SelectDemoAppState extends State<SelectDemoApp> {
   String _status = 'Move with ↑/↓ or j/k. Enter to confirm. q to quit.';
   String? _confirmed;
   final _focusNode = FocusNode();

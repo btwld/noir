@@ -7,8 +7,10 @@ void main() {
     final buffer = renderer.nextBuffer
       ..clear(Color.black)
       ..drawText('Noir', 1, 1, Color.white);
-    final chars = buffer.getDirectAccess().chars;
-    final captured = String.fromCharCodes(chars.skip(13).take(4));
+    final access = buffer.getDirectAccess();
+    final captured = String.fromCharCodes(
+      List<int>.generate(4, (index) => access.getEncodedCellAt(13 + index)),
+    );
     if (captured != 'Noir') {
       throw StateError('unexpected captured frame: $captured');
     }

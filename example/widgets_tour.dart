@@ -2,8 +2,8 @@
 // Run with: dart run example/widgets_tour.dart
 //
 // Combined tour of Select, ScrollBox, and TextArea — the Ink-equivalent
-// showcase. Press Tab to move focus between widgets. Press q (when no
-// TextArea is focused) or Esc to quit.
+// showcase. Press Tab to move focus between widgets. Ctrl+D submits the
+// TextArea. Press q (when no TextArea is focused) or Esc to quit.
 
 import 'dart:io' as io;
 
@@ -16,19 +16,19 @@ void main() {
     io.exit(0);
   }
 
-  app = runTuiApp(_TourApp(onQuit: quit));
+  app = runTuiApp(WidgetsTourApp(onQuit: quit));
 }
 
-class _TourApp extends StatefulWidget {
-  const _TourApp({required this.onQuit});
+class WidgetsTourApp extends StatefulWidget {
+  const WidgetsTourApp({required this.onQuit, super.key});
 
   final void Function() onQuit;
 
   @override
-  State<_TourApp> createState() => _TourAppState();
+  State<WidgetsTourApp> createState() => _TourAppState();
 }
 
-class _TourAppState extends State<_TourApp> {
+class _TourAppState extends State<WidgetsTourApp> {
   final _scope = FocusScopeNode();
   final _selectFocus = FocusNode();
   final _scrollFocus = FocusNode();
@@ -38,6 +38,11 @@ class _TourAppState extends State<_TourApp> {
   String _selected = '(none)';
   int _scrollOffset = 0;
   String _typed = '';
+  int? _submittedLength;
+
+  int get _typedGraphemeCount => TextIndexMap(_typed).graphemeCount;
+
+  void _submitText() => setState(() => _submittedLength = _typedGraphemeCount);
 
   static const _options = <SelectOption<String>>[
     SelectOption(name: 'Red', value: 'red'),
@@ -71,6 +76,12 @@ class _TourAppState extends State<_TourApp> {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       widget.onQuit();
+      return KeyEventResult.handled;
+    }
+    if (_textFocus.hasFocus &&
+        event.isControlPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyD) {
+      _submitText();
       return KeyEventResult.handled;
     }
     if (event.character == 'q' && !_textFocus.hasFocus) {
@@ -131,7 +142,7 @@ class _TourAppState extends State<_TourApp> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const Text(
-            'Tab to switch panel. Esc/q to quit.',
+            'Tab switches panel. Ctrl+D submits text. Esc/q quits.',
             style: TextStyle(color: Color(0.7, 0.7, 0.7)),
           ),
           const SizedBox(height: 1),
@@ -191,17 +202,23 @@ class _TourAppState extends State<_TourApp> {
                 focusNode: _textFocus,
                 height: 3,
                 width: 44,
-                placeholder: 'Type… Ctrl+Enter to submit',
+                placeholder: 'Type… Ctrl+D to submit',
                 onChanged: (v) => setState(() => _typed = v),
+                onSubmit: _submitText,
               ),
             ),
           ),
           const SizedBox(height: 1),
           Text(
             'Selected: $_selected   ScrollY: $_scrollOffset   '
-            'Typed: ${_typed.length} chars',
+            'Typed: $_typedGraphemeCount chars',
             style: const TextStyle(color: Color(0.7, 0.9, 1)),
           ),
+          if (_submittedLength case final length?)
+            Text(
+              'Submitted: $length chars',
+              style: const TextStyle(color: Color(0.4, 1, 0.4)),
+            ),
         ],
       ),
     ),

@@ -169,3 +169,23 @@ class Color {
 
   static double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
 }
+
+/// Rejects colors that cannot be represented by OpenTUI's normalized RGBA
+/// boundary, including when Dart assertions are disabled.
+@internal
+void validateColorChannels(Color color, {String name = 'color'}) {
+  _validateColorChannel(color.r, name, 'r');
+  _validateColorChannel(color.g, name, 'g');
+  _validateColorChannel(color.b, name, 'b');
+  _validateColorChannel(color.a, name, 'a');
+}
+
+void _validateColorChannel(double value, String colorName, String channel) {
+  if (!value.isFinite || value < 0 || value > 1) {
+    throw ArgumentError.value(
+      value,
+      '$colorName.$channel',
+      'must be finite and between 0 and 1',
+    );
+  }
+}
