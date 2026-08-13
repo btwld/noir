@@ -221,6 +221,29 @@ void main() {
     expect(exits, [130]);
   });
 
+  test('parsed Ctrl+C uses the terminal-session cleanup fallback', () {
+    final exits = <int>[];
+    final disposals = <String>[];
+    final inputDriver = _ProbeInputDriver();
+    final app = createTuiTestApp(
+      _DisposeProbe(onDispose: () => disposals.add('dispose')),
+      headless: false,
+      terminalPlatform: _RecordingTerminalPlatform(),
+      inputDriverFactory: (_) => inputDriver,
+      exitProcess: exits.add,
+    );
+
+    try {
+      app.mockInput.pressCtrl('c');
+
+      expect(disposals, ['dispose']);
+      expect(inputDriver.stops, 1);
+      expect(exits, [130]);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('parser-roundtrip key dispatch preserves priority ordering', () {
     final app = createTuiTestApp(const Text('priority'));
     final order = <String>[];

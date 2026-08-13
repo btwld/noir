@@ -15,19 +15,19 @@ void main() {
     io.exit(0);
   }
 
-  app = runTuiApp(_ScrollDemoApp(onQuit: quit));
+  app = runTuiApp(ScrollDemoApp(onQuit: quit));
 }
 
-class _ScrollDemoApp extends StatefulWidget {
-  const _ScrollDemoApp({required this.onQuit});
+class ScrollDemoApp extends StatefulWidget {
+  const ScrollDemoApp({required this.onQuit, super.key});
 
   final void Function() onQuit;
 
   @override
-  State<_ScrollDemoApp> createState() => _ScrollDemoAppState();
+  State<ScrollDemoApp> createState() => _ScrollDemoAppState();
 }
 
-class _ScrollDemoAppState extends State<_ScrollDemoApp> {
+class _ScrollDemoAppState extends State<ScrollDemoApp> {
   final _scrollController = ScrollController();
 
   @override

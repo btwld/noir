@@ -146,6 +146,22 @@ void main() {
       }
     });
 
+    test('Escape invokes the documented quit callback', () async {
+      var quits = 0;
+      final app = createTuiTestApp(
+        ChatDemoApp(onQuit: () => quits++, enableAnimation: false),
+      );
+
+      try {
+        await _settleAutofocus(app);
+        app.mockInput.pressEscape();
+
+        expect(quits, 1);
+      } finally {
+        app.dispose();
+      }
+    });
+
     test('real terminal entrypoint enables interactive input modes', () {
       final source = io.File('example/chat_demo.dart').readAsStringSync();
 

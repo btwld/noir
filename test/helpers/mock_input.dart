@@ -64,6 +64,11 @@ class MockInput {
     _feedString('\x1b[$keyCode;$modifierField${eventSuffix}u');
   }
 
+  void pressModifyOtherKey(int keyCode, {int modifiers = 0}) {
+    final modifierField = modifiers + 1;
+    _feedString('\x1b[27;$modifierField;$keyCode~');
+  }
+
   void paste(String text) {
     _feed(<int>[
       ...utf8.encode('\x1b[200~'),

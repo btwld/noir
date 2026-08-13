@@ -1,7 +1,8 @@
 // ignore_for_file: cascade_invocations
 // Run with: dart run example/textarea_demo.dart
 //
-// Type to insert text. Enter inserts a newline. Ctrl+Enter submits.
+// Type to insert text. Enter inserts a newline. Ctrl+D submits. Ctrl+Enter
+// also submits when the terminal reports modified Enter keys.
 // Backspace, arrows, Home/End, PgUp/PgDn, Ctrl+Home/End all work.
 // Press Esc to quit.
 
@@ -16,25 +17,32 @@ void main() {
     io.exit(0);
   }
 
-  app = runTuiApp(_TextAreaDemoApp(onQuit: quit));
+  app = runTuiApp(TextAreaDemoApp(onQuit: quit));
 }
 
-class _TextAreaDemoApp extends StatefulWidget {
-  const _TextAreaDemoApp({required this.onQuit});
+class TextAreaDemoApp extends StatefulWidget {
+  const TextAreaDemoApp({required this.onQuit, super.key});
 
   final void Function() onQuit;
 
   @override
-  State<_TextAreaDemoApp> createState() => _TextAreaDemoAppState();
+  State<TextAreaDemoApp> createState() => _TextAreaDemoAppState();
 }
 
-class _TextAreaDemoAppState extends State<_TextAreaDemoApp> {
+class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   String _value = '';
   String _lastSubmitted = '';
 
-  KeyEventResult _quitOnEsc(FocusNode node, KeyEvent event) {
-    if (event.isPress && event.logicalKey == LogicalKeyboardKey.escape) {
+  void _submit() => setState(() => _lastSubmitted = _value);
+
+  KeyEventResult _handleAppKey(FocusNode node, KeyEvent event) {
+    if (!event.isPress) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
       widget.onQuit();
+      return KeyEventResult.handled;
+    }
+    if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyD) {
+      _submit();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -43,7 +51,7 @@ class _TextAreaDemoAppState extends State<_TextAreaDemoApp> {
   @override
   Widget build(BuildContext context) => Focus(
     autofocus: true,
-    onKeyEvent: _quitOnEsc,
+    onKeyEvent: _handleAppKey,
     child: Container(
       padding: const EdgeInsets.all(1),
       child: Column(
@@ -54,7 +62,7 @@ class _TextAreaDemoAppState extends State<_TextAreaDemoApp> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const Text(
-            'Type. Enter=newline. Ctrl+Enter=submit. Esc=quit.',
+            'Type. Enter=newline. Ctrl+D=submit. Esc=quit.',
             style: TextStyle(color: Color(0.7, 0.7, 0.7)),
           ),
           const SizedBox(height: 1),
@@ -69,7 +77,7 @@ class _TextAreaDemoAppState extends State<_TextAreaDemoApp> {
               height: 6,
               placeholder: 'Write something multi-line here…',
               onChanged: (v) => setState(() => _value = v),
-              onSubmit: () => setState(() => _lastSubmitted = _value),
+              onSubmit: _submit,
             ),
           ),
           const SizedBox(height: 1),
@@ -80,7 +88,7 @@ class _TextAreaDemoAppState extends State<_TextAreaDemoApp> {
           if (_lastSubmitted.isNotEmpty) ...[
             const SizedBox(height: 1),
             const Text(
-              'Last submitted (Ctrl+Enter):',
+              'Last submitted:',
               style: TextStyle(color: Color(0.4, 1, 0.4)),
             ),
             Text(_lastSubmitted),

@@ -16,7 +16,7 @@ dart run example/main.dart
 | ------- | ---------- |
 | `dart run example/main.dart` | Canonical entry point — minimal Flutter-like terminal app. |
 | `dart run example/hello.dart` | Minimal renderer + widget pipeline smoke test. |
-| `dart run example/counter.dart` | Stateful rebuilds via `setState`. |
+| `dart run example/counter.dart` | Interactive `setState` rebuilds via Up/Down and `+`/`-`. |
 | `dart run example/layout_basics.dart` | Basic `Container`, `Row`, `Column`, spacing, and flex usage. |
 | `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
@@ -26,8 +26,8 @@ dart run example/main.dart
 | `dart run example/pulse_animation.dart` | `AnimationController`, ticker scheduling, and frame-driven updates. |
 | `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
 | `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
-| `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with `TextEditingController`. |
-| `dart run example/widgets_tour.dart` | Combined tour of the interactive widget set. |
+| `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
+| `dart run example/widgets_tour.dart` | Combined Select, ScrollBox, and TextArea tour with Ctrl+D submission. |
 
 ## Tips
 
@@ -35,7 +35,11 @@ dart run example/main.dart
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.
-- Examples typically exit with `Ctrl+C` unless the example itself handles input and shutdown.
+- Examples typically exit with `Ctrl+C`; a handler may consume it to override
+  the default terminal-session shutdown.
+- `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The
+  multiline examples also bind Ctrl+D so submission works in terminals that
+  encode Ctrl+Enter as an ordinary Enter.
 
 Tree inspection is an advanced-tier API:
 

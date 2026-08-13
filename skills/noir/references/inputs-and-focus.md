@@ -33,6 +33,7 @@ returns `KeyEventResult.handled` (or calls `event.consume()`) stops the walk;
 | 3 | Printable character → `InsertTextIntent` | how `TextInput`/`TextArea` receive typing |
 | 4 | `onKeyEvent` on the focused `FocusNode`, then each ancestor node | `Focus`, `FocusScope`, or a bare `FocusNode` |
 | 5 | Default Tab / Shift+Tab traversal | built in; runs only if 1–4 all ignored |
+| 6 | Ctrl+C terminal-session fallback | built in; runs only if 1–5 all ignored |
 
 Practical consequences:
 
@@ -53,6 +54,9 @@ Practical consequences:
 - **Stage 4 bubbles**, so a `FocusScope` near the root is the right place for
   form-wide keys such as Enter-to-submit, and it sees them regardless of which
   field is focused.
+- **Ctrl+C is a final fallback, not an unconditionally reserved key.** Consume
+  it at stages 1–4 when the application needs different behavior; otherwise
+  the terminal session restores its modes and exits with interrupt status 130.
 
 ---
 
@@ -111,7 +115,10 @@ TextInput(
 ## TextArea
 
 Multi-line editor backed by a `TextEditingController` internally. **Enter inserts
-a newline; `Ctrl+Enter` fires `onSubmit`.**
+a newline; a reported `Ctrl+Enter` fires `onSubmit`.** Some terminals encode
+Ctrl+Enter as ordinary Enter even after keyboard enhancement is requested, so
+bind a second control key at an ancestor `Focus` when submission must work
+there. The shipped multiline examples use Ctrl+D.
 
 ```dart
 const TextArea({
@@ -128,7 +135,7 @@ const TextArea({
   CursorStyle cursorStyle = CursorStyle.block,
   int? maxLength,                       // null = unlimited
   void Function(String)? onChanged,
-  void Function()? onSubmit,            // Ctrl+Enter
+  void Function()? onSubmit,            // reported Ctrl+Enter
   FocusNode? focusNode,
   bool autofocus = false,
   Key? key,

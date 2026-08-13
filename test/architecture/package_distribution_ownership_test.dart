@@ -218,6 +218,21 @@ void main() {
     );
   });
 
+  test('example catalog lists every shipped entrypoint exactly once', () {
+    final shippedExamples = Directory('example')
+        .listSync()
+        .whereType<File>()
+        .map((file) => file.path.split(Platform.pathSeparator).last)
+        .where((name) => name.endsWith('.dart'))
+        .toSet();
+    final catalogEntries = RegExp(
+      r'`dart run example/([^`]+\.dart)`',
+    ).allMatches(exampleGuide).map((match) => match.group(1)!).toList();
+
+    expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
+    expect(catalogEntries, unorderedEquals(shippedExamples));
+  });
+
   test('README preserves known limitations without internal ticket IDs', () {
     final limitationsStart = readme.indexOf('## Known Limitations');
     expect(limitationsStart, greaterThanOrEqualTo(0));

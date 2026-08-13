@@ -7,6 +7,12 @@ import 'package:noir/src/core/input.dart';
 import 'package:noir/src/core/renderer.dart';
 import 'package:test/test.dart';
 
+KeyEvent _ctrlC() => KeyEvent(
+  logicalKey: LogicalKeyboardKey.keyC,
+  keyCode: 3,
+  modifiers: KeyModifiers.ctrl,
+);
+
 void main() {
   test(
     'headless session does not create renderer, start stdin, install signals, '
@@ -237,6 +243,80 @@ void main() {
       expect(exits, [130]);
     },
   );
+
+  test(
+    'unhandled Ctrl+C key event closes and restores the terminal session',
+    () {
+      final dispatcher = _dispatcher();
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      final driver = _FakeTerminalInputDriver();
+      final exits = <int>[];
+      final session = TerminalSession(
+        width: 6,
+        height: 2,
+        headless: false,
+        inputDispatcher: dispatcher,
+        scheduleFrame: () {},
+        platform: platform,
+        inputDriverFactory: (_) => driver,
+        rendererFactory: (width, height) =>
+            Renderer.create(width, height, testing: true),
+        exitProcess: exits.add,
+      );
+      final event = _ctrlC();
+
+      dispatcher.dispatchKeyEvent(event);
+
+      expect(event.isConsumed, isTrue);
+      expect(driver.stops, 1);
+      expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
+      expect(exits, [130]);
+
+      session.close();
+      expect(driver.stops, 1);
+      expect(exits, [130]);
+    },
+  );
+
+  test('a higher-priority Ctrl+C handler overrides the session fallback', () {
+    final dispatcher = _dispatcher();
+    final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+    final driver = _FakeTerminalInputDriver();
+    final exits = <int>[];
+    var handled = 0;
+    final override = dispatcher.onKey((event) {
+      if (event.logicalKey == LogicalKeyboardKey.keyC &&
+          event.isControlPressed) {
+        handled++;
+        event.consume();
+      }
+    }, priority: InputPriority.app);
+    final session = TerminalSession(
+      width: 6,
+      height: 2,
+      headless: false,
+      inputDispatcher: dispatcher,
+      scheduleFrame: () {},
+      platform: platform,
+      inputDriverFactory: (_) => driver,
+      rendererFactory: (width, height) =>
+          Renderer.create(width, height, testing: true),
+      exitProcess: exits.add,
+    );
+
+    try {
+      final event = _ctrlC();
+      dispatcher.dispatchKeyEvent(event);
+
+      expect(handled, 1);
+      expect(event.isConsumed, isTrue);
+      expect(driver.stops, 0);
+      expect(exits, isEmpty);
+    } finally {
+      override.cancel();
+      session.close();
+    }
+  });
 
   test(
     'renderer factory failure escapes before input or signal acquisition',

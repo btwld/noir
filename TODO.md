@@ -36,7 +36,7 @@ below are closed.
       and immutable-action pinned. Manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1212 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1233 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Staged CI on `main` is green across format/analyze, Ubuntu, macOS, and
       Windows.
