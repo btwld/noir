@@ -15,6 +15,9 @@
 - The counter example is keyboard-driven with Up/Down and `+`/`-`; an
   unconsumed Ctrl+C key follows the terminal session's cleanup and interrupt
   exit path while higher-priority handlers can override it.
+- Terminal shutdown restores inherited line and echo modes before cancelling
+  the stdin subscription, avoiding Dart/macOS `EBADF` errors during Escape or
+  other normal disposal paths.
 - Terminal input preserves modifiers from xterm `modifyOtherKeys` reports and
   press/repeat/release metadata from Kitty functional and tilde key reports.
   The multiline examples use Ctrl+D as a portable submit key while `TextArea`

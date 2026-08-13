@@ -189,6 +189,23 @@ void main() {
       expect(source.echoMode, isFalse);
     });
 
+    test('stop restores modes before cancellation invalidates the source', () {
+      final source = _FakeStdinInputSource(
+        lineMode: true,
+        echoMode: true,
+        invalidateModeWritesOnCancel: true,
+      );
+      addTearDown(source.close);
+      final driver = StdinInputDriver(InputDispatcher(), source: source);
+      expect(driver.start(), isTrue);
+
+      expect(driver.stop, returnsNormally);
+
+      expect(source.lineMode, isTrue);
+      expect(source.echoMode, isTrue);
+      expect(source.cancelAttempts, 1);
+    });
+
     test('start and stop are idempotent', () {
       final source = _FakeStdinInputSource(lineMode: true, echoMode: true);
       addTearDown(source.close);
@@ -241,12 +258,18 @@ final class _FakeStdinInputSource implements StdinInputSource {
     required bool echoMode,
     bool hasTerminal = true,
     this.listenFailure,
+    this.invalidateModeWritesOnCancel = false,
   }) : _hasTerminal = hasTerminal,
        _lineMode = lineMode,
        _echoMode = echoMode {
     _controller = StreamController<List<int>>.broadcast(
       sync: true,
-      onCancel: () => cancelAttempts++,
+      onCancel: () {
+        cancelAttempts++;
+        if (invalidateModeWritesOnCancel) {
+          _modeWritesAvailable = false;
+        }
+      },
     );
   }
 
@@ -257,6 +280,8 @@ final class _FakeStdinInputSource implements StdinInputSource {
   late final StreamController<List<int>> _controller;
   final List<String> modeMutations = <String>[];
   final _Failure? listenFailure;
+  final bool invalidateModeWritesOnCancel;
+  bool _modeWritesAvailable = true;
   int hasTerminalReads = 0;
   int lineModeReads = 0;
   int echoModeReads = 0;
@@ -287,6 +312,7 @@ final class _FakeStdinInputSource implements StdinInputSource {
 
   @override
   set lineMode(bool value) {
+    _checkModeWritesAvailable();
     final mutation = 'line=$value';
     modeMutations.add(mutation);
     final failure = _modeFailures.remove(mutation);
@@ -304,6 +330,7 @@ final class _FakeStdinInputSource implements StdinInputSource {
 
   @override
   set echoMode(bool value) {
+    _checkModeWritesAvailable();
     final mutation = 'echo=$value';
     modeMutations.add(mutation);
     final failure = _modeFailures.remove(mutation);
@@ -321,6 +348,12 @@ final class _FakeStdinInputSource implements StdinInputSource {
       Error.throwWithStackTrace(failure.error, failure.stackTrace);
     }
     return _controller.stream.listen(onData);
+  }
+
+  void _checkModeWritesAvailable() {
+    if (!_modeWritesAvailable) {
+      throw StateError('terminal modes unavailable after stdin cancellation');
+    }
   }
 
   Future<void> close() => _controller.close();

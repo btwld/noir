@@ -36,8 +36,11 @@ below are closed.
       and immutable-action pinned. Manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1233 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1234 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
+- [x] Authorized Conductor-terminal checks render the counter, textarea, and
+      widgets tour, then return to a usable shell without stack traces through
+      both normal Escape disposal and unconsumed Ctrl+C interruption.
 - [x] Staged CI on `main` is green across format/analyze, Ubuntu, macOS, and
       Windows.
 

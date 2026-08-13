@@ -163,7 +163,7 @@ class StdinInputDriver {
     return true;
   }
 
-  /// Stops consuming stdin and exactly restores the acquired terminal modes.
+  /// Restores the acquired terminal modes, then stops consuming stdin.
   void stop() {
     final escapeTimer = _escapeTimer;
     final subscription = _sub;
@@ -176,14 +176,14 @@ class StdinInputDriver {
     escapeTimer?.cancel();
 
     final failures = FirstErrorRecorder();
+    if (lease != null) {
+      failures.attempt(lease.restore);
+    }
     if (subscription != null) {
       failures.attempt(() {
         final cancellation = subscription.cancel();
         cancellation.ignore();
       });
-    }
-    if (lease != null) {
-      failures.attempt(lease.restore);
     }
     failures.rethrowFirst();
   }
