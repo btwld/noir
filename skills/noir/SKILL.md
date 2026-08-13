@@ -331,9 +331,8 @@ deliberately does not cover:
   repository's contributor guide and change-workflow entry point at the repo
   root, which own architecture boundaries, authorized verification commands,
   and widget/test rules. Read those instead of extrapolating from this skill.
-  One rule
-  that reaches app code too: this is a prerelease, so prefer the current API and
-  do not add backwards-compatibility shims.
+  One rule that reaches app code too: this is a prerelease, so prefer the
+  current API and do not add backwards-compatibility shims.
 - **OpenTUI's TypeScript bindings** — `@opentui/react`, `@opentui/core`,
   `@opentui/solid`, JSX elements like `<box>`/`<text>`, Bun or Node projects.
   Those are a separate implementation that shares only the native renderer.
