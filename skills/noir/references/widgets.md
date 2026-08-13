@@ -55,8 +55,11 @@ Container(
 
 ### Row / Column / Flex
 
-`Row` (horizontal) and `Column` (vertical) both extend `Flex`. `spacing` inserts
-a gap between adjacent children — prefer it over manual `SizedBox` separators.
+`Row` (horizontal) and `Column` (vertical) are the two concrete subclasses of
+the **abstract** `Flex`. `Flex` is exported so you can name it in a type
+position, but it cannot be constructed — reach for `Row` or `Column`.
+`spacing` inserts a gap between adjacent children; prefer it over manual
+`SizedBox` separators.
 
 ```dart
 const Row({
@@ -67,7 +70,7 @@ const Row({
   List<Widget> children = const [],
   int spacing = 0,
 })
-// Column has the same parameters; Flex adds `required Axis direction`.
+// Column takes exactly the same parameters; each fixes `direction` for you.
 ```
 
 `spacing` must be a non-negative number of whole terminal cells.
@@ -251,14 +254,31 @@ const Border.all({
   List<int>? borderChars,                 // 11 custom box-drawing codepoints
 })
 Border.symmetric({ bool vertical = true, bool horizontal = true, /* + same styling args */ })
+
+// Unnamed constructor: pick individual edges via `sides`.
+const Border({
+  Color color = Color.black,
+  BorderStyle style = BorderStyle.solid,
+  BorderSides sides = const BorderSides(),  // all four true by default
+  String? title,
+  TextAlign titleAlignment = TextAlign.left,
+  bool fill = false,
+  List<int>? borderChars,
+})
+const BorderSides({ bool top = true, bool right = true, bool bottom = true, bool left = true })
 ```
 
 `Border.symmetric` is a regular generative constructor. This constructor is
-not `const`.
+not `const`. `Border.all` and the unnamed `Border` are.
 
 ```dart
 Border.all(color: Color.cyan, title: 'Logs')
+
+// A single rule above a status bar — one edge only:
+const Border(color: Color.gray, sides: BorderSides(left: false, right: false, bottom: false))
 ```
+
+`title` only renders when the top side is drawn.
 
 ---
 
