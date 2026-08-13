@@ -1,0 +1,273 @@
+# Noir
+
+Noir is a Flutter-like reactive terminal UI framework for Dart, powered by
+OpenTUI. It combines declarative widgets, integer-cell layout, stateful
+rebuilds, focus and input routing, animation, and bundled native rendering in
+one package.
+
+`1.0.0-alpha.1` is a prerelease. APIs and platform guarantees may change
+before stable 1.0.
+
+- Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
+  and `setState`.
+- Compose layouts with `Row`, `Column`, `Container`, `Padding`, `SizedBox`,
+  `Align`, `Flexible`, and `Expanded`.
+- Handle text editing, selection, scrolling, keyboard focus, mouse input, and
+  application-wide shortcuts.
+- Drop to supported renderer, buffer, or raw FFI APIs when an application
+  needs more control.
+
+## Install
+
+Use the explicitly versioned prerelease after it is available on pub.dev:
+
+    dart pub add noir:^1.0.0-alpha.1
+
+Before publication, clone this repository and use a path dependency:
+
+    dependencies:
+      noir:
+        path: ../noir
+
+Private Git consumers need access to `leoafarias/noir` and should pin an exact
+commit or release tag rather than a moving branch.
+
+## Quick Start
+
+Import `package:noir/noir.dart` and mount a widget tree with `runTuiApp`:
+
+```dart
+import 'package:noir/noir.dart';
+
+void main() => runTuiApp(const HelloApp());
+
+class HelloApp extends StatelessWidget {
+  const HelloApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: Color.rgb(0.05, 0.06, 0.1),
+    padding: const EdgeInsets.all(2),
+    child: const Column(
+      spacing: 1,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Noir',
+          style: TextStyle(
+            color: Color.yellow,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text('Flutter-like widgets for terminal apps.'),
+        Text('Press Ctrl+C to exit.'),
+      ],
+    ),
+  );
+}
+```
+
+The complete version is available in
+[the hello example](https://github.com/leoafarias/noir/blob/main/example/hello.dart).
+
+Stateful widgets persist a `State` object between supported rebuilds. Call
+`setState` after changing local state, and check `mounted` before updating from
+an asynchronous callback:
+
+```dart
+import 'package:noir/noir.dart';
+
+void main() => runTuiApp(const CounterApp());
+
+class CounterApp extends StatefulWidget {
+  const CounterApp({super.key});
+
+  @override
+  State<CounterApp> createState() => _CounterAppState();
+}
+
+class _CounterAppState extends State<CounterApp> {
+  int _count = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      setState(() => _count++);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(1),
+    child: Column(
+      spacing: 1,
+      children: [
+        const Text('Counter', style: TextStyle(color: Color.green)),
+        Text('Count: $_count'),
+      ],
+    ),
+  );
+}
+```
+
+See
+[the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
+for the package version.
+
+## Application Lifecycle and API Tiers
+
+`runTuiApp` mounts the root widget and returns a `TuiApp` handle synchronously.
+Keep that handle when you register application-wide input or exit
+programmatically. `onKey`, `onMouse`, and `onPaste` install app-priority
+handlers, and each returns an idempotent canceler.
+
+`TuiApp.dispose()` is idempotent. It cancels every still-owned registration
+before disposing the mounted app, input modes, and renderer resources. Always
+dispose the handle before a programmatic process exit. The default POSIX
+signal handling also performs cleanup for SIGINT, SIGTERM, and SIGHUP.
+
+`headless: true` creates no owned terminal renderer and is exposed through
+`TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
+are unavailable in that mode.
+
+`TuiApp.reassemble()` rebuilds the whole widget tree and forces a full layout
+and paint pass without recreating any `State`, terminal, or native resource.
+It is the hot-reload hook: call it after a source swap succeeds, or call
+`registerHotReloadExtension(app)` once from `main()` with the handle
+`runTuiApp` returned, so a development driver can invoke it over the VM
+service extension `ext.noir.reassemble`.
+
+Noir has three supported import tiers:
+
+- `package:noir/noir.dart` — ordinary application and widget authoring.
+- `package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer
+  access, and supported custom rendering.
+- `package:noir/noir_ffi.dart` — ABI-unstable raw FFI access.
+
+Concrete Element implementations and the recorder/display-list/compositor
+backend remain framework-owned; they are not supported package surfaces.
+
+## Example Apps
+
+- [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
+- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — stateful rebuilds with `setState`.
+- [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
+- [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
+  flex combinations.
+- [Inherited state](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart) — inherited dependencies
+  and rebuild propagation.
+- [Focus form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart) — focus management and text input.
+- [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart) — keyboard and mouse option selection.
+- [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped scrolling and
+  scrollbars.
+- [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing and submission.
+- [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set.
+- [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
+  and animation.
+- [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
+  ticker-driven updates.
+- [Bindings validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart) — interactive
+  advanced renderer/buffer and ABI-unstable FFI validation in a terminal at
+  least 120×40 cells.
+
+The
+[example guide](https://github.com/leoafarias/noir/blob/main/example/README.md)
+includes the command for every app.
+
+## Supported Keyboard and Mouse Input
+
+| Input | Result |
+| --- | --- |
+| Printable ASCII / UTF-8 | `KeyEvent` with the typed character |
+| Backspace (BS / DEL) | `LogicalKeyboardKey.backspace` |
+| Tab | `LogicalKeyboardKey.tab` |
+| Enter (CR / LF) | `LogicalKeyboardKey.enter` |
+| Escape | `LogicalKeyboardKey.escape` |
+| Ctrl + letter | `KeyEvent` with `KeyModifiers.ctrl` |
+| Arrow keys | `arrowUp`, `arrowDown`, `arrowLeft`, `arrowRight` |
+| Home / End | `home`, `end` |
+| Delete / PageUp / PageDown | `delete`, `pageUp`, `pageDown` |
+| Function keys | `f1`–`f12` |
+| Mouse SGR | `MouseEvent` with type, button, cell position, modifiers, and directional scroll magnitude |
+| Bracketed paste | one `PasteEvent` per block through `app.onPaste` |
+| Kitty CSI-u | full Kitty modifiers after `app.enableKittyKeyboard()` |
+
+SIGWINCH resizes the terminal buffer and lays out the widget tree again.
+
+## Native Libraries
+
+Noir ships bundled native libraries for supported desktop targets. The build
+hook selects and SHA-256 verifies the bundled target before exposing it as a
+Dart native asset. If a library is missing or its checksum mismatches, the
+package is incomplete or corrupt and the build fails.
+
+| Operating system | Architectures |
+| --- | --- |
+| macOS | `x64`, `arm64` |
+| Linux | `x64`, `arm64` |
+| Windows | `x64`, `arm64` |
+
+The bundled macOS x64 and arm64 libraries require macOS 13.0 or later.
+For linked macOS applications, Dart must rewrite the dylib install name for a
+relocatable bundle. The official dylib has no load-command padding, so Noir
+removes its optional source-version load command from a temporary hook output
+copy before Dart rewrites and signs that copy. The six tracked release assets
+remain byte-for-byte identical to the hashes in `native_manifest.json`.
+
+Run the packaged diagnostic to check bundled native asset resolution without
+writing terminal controls:
+
+```bash
+dart run noir:health_check
+```
+
+The diagnostic uses OpenTUI's native testing mode to exercise the bundled
+native asset and headless buffer/render lifecycle. It does not validate real
+terminal escape rendering.
+
+Android, iOS, and web are not supported targets. See
+[Third-Party Notices](https://github.com/leoafarias/noir/blob/main/THIRD_PARTY_NOTICES.md)
+for OpenTUI provenance and license terms.
+
+High-level Unicode cell measurement uses a compact pure-Dart range table
+derived from the exact `uucode` revision pinned by OpenTUI v0.5.1 (Unicode
+16.0) plus OpenTUI's width overrides. This keeps widget layout out of FFI while
+matching the pinned native release's code-point and grapheme rules.
+
+The URLs in `native_manifest.json` record immutable provenance for the
+currently bundled artifacts. They are not an update instruction or a runtime
+recovery path.
+
+`OPENTUI_LIBRARY_PATH` is the exact development override for a compatible
+custom library. It is not a search path and not a remedy for an incomplete or
+corrupt package.
+
+## Known Limitations
+
+- High-level layout and painting keep multi-code-point graphemes intact and
+  expand intersecting selection ranges to whole grapheme clusters.
+  `DirectBufferAccess.chars` remains native encoded storage: packed grapheme
+  words are not independently decodable Unicode scalars.
+- OpenTUI v0.5.1's native `bufferDrawText` path mishandles a run whose first
+  grapheme has source-level width zero: it can emit UTF-8 continuation bytes as
+  cells and advance before the following text. Noir keeps the pinned source's
+  correct zero-width layout semantics; leading zero-width graphemes, including
+  ones isolated by a style boundary, can therefore diverge from native paint.
+- Decorated box content can escape a clipped viewport in some overflow cases.
+- Some low-level native operation failures cannot be reported precisely to
+  Dart.
+- On the observed macOS/iTerm path, the pinned alternate-screen lifecycle can
+  return to main-screen row 1/column 1 instead of the launch cursor and
+  overwrite prior shell rows. Callers must still dispose `TuiApp` so all owned
+  resources and terminal modes are released.
+- Hot reload is bounded by what the Dart VM can swap into a live isolate.
+  `TuiApp.reassemble()` re-runs `build()`, layout, and paint bodies only: it
+  never re-runs `main()` or `initState`, so changes to those, to a signature
+  held by a frame on the stack, to an enum converted into a class, or to the
+  bundled OpenTUI native library still require a full restart.
+- The current Linux libraries retain absolute build/debug paths. They pass
+  static integrity checks, but are not cleared for public publication or
+  runtime acceptance until an explicitly authorized artifact refresh or
+  provenance decision and a Linux execution pass.

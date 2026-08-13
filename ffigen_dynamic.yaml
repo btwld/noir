@@ -1,0 +1,29 @@
+name: OpenTuiBindings
+description: Auto-generated bindings for OpenTUI
+output: 'lib/src/ffi/generated_bindings.dart'
+
+headers:
+  entry-points:
+    - 'native/opentui_v0_5_1.h'
+
+functions:
+  include:
+    - '.*'
+
+structs:
+  include:
+    - 'CursorStyleOptions'
+
+macros:
+  exclude:
+    - '.*'
+
+comments:
+  style: any
+  length: full
+
+preamble: |
+  // Generated FFI bindings from Noir's selected OpenTUI v0.5.1 declarations.
+  // Regenerate with: dart run ffigen --config ffigen_dynamic.yaml
+  // Do not edit manually.
+  // ignore_for_file: unused_element, unused_field

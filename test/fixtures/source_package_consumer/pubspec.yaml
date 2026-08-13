@@ -1,0 +1,9 @@
+name: noir_source_consumer
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  noir:
+    path: ../../..

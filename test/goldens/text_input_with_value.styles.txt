@@ -1,0 +1,4 @@
+0,0:#ffffffff|#000000ff|0 * 30
+0,1:#ffffffff|#000000ff|0 * 30
+0,2:#ffffffff|#000000ff|0 * 30
+0,3:#ffffffff|#000000ff|0 * 30

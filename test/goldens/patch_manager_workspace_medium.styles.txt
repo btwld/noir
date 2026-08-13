@@ -1,0 +1,406 @@
+0,0:#ffffffff|#090a0bff|0 * 100
+0,1:#ffffffff|#090a0bff|0
+1,1:#d1f0ffff|#090a0bff|1 * 13
+14,1:#ffffffff|#090a0bff|0 * 66
+80,1:#ffffffff|#66d9ffff|0
+81,1:#051a29ff|#66d9ffff|1 * 10
+91,1:#ffffffff|#66d9ffff|0
+92,1:#ffffffff|#090a0bff|0
+93,1:#ffffffff|#131417ff|0
+94,1:#bdccdbff|#131417ff|0 * 4
+98,1:#ffffffff|#131417ff|0
+99,1:#ffffffff|#090a0bff|0
+0,2:#ffffffff|#090a0bff|0
+1,2:#8a96a6ff|#090a0bff|0 * 82
+83,2:#ffffffff|#090a0bff|0 * 17
+0,3:#ffffffff|#090a0bff|0 * 100
+0,4:#ffffffff|#090a0bff|0
+1,4:#2e3847ff|#0f1013ff|0 * 30
+31,4:#ffffffff|#090a0bff|0
+32,4:#2e3847ff|#0f1013ff|0 * 67
+99,4:#ffffffff|#090a0bff|0
+0,5:#ffffffff|#090a0bff|0
+1,5:#2e3847ff|#0f1013ff|0
+2,5:#2e3847ff|#0f1013ff|1 * 13
+15,5:#ffffffff|#0f1013ff|0 * 15
+30,5:#2e3847ff|#0f1013ff|0
+31,5:#ffffffff|#090a0bff|0
+32,5:#2e3847ff|#0f1013ff|0
+33,5:#2e3847ff|#0f1013ff|1 * 11
+44,5:#ffffffff|#0f1013ff|0 * 54
+98,5:#2e3847ff|#0f1013ff|0
+99,5:#ffffffff|#090a0bff|0
+0,6:#ffffffff|#090a0bff|0
+1,6:#2e3847ff|#0f1013ff|0
+2,6:#66d9ffff|#131417ff|0
+3,6:#ffffffff|#131417ff|0
+4,6:#8cd1ffff|#131417ff|1
+5,6:#ffffffff|#131417ff|0
+6,6:#d1f0ffff|#131417ff|1 * 8
+14,6:#ffffffff|#131417ff|0 * 2
+16,6:#8a96a6ff|#131417ff|0 * 3
+19,6:#ffffffff|#131417ff|0
+20,6:#80eb9eff|#131417ff|1 * 2
+22,6:#ffffffff|#131417ff|0
+23,6:#f57a75ff|#131417ff|1 * 2
+25,6:#ffffffff|#131417ff|0
+26,6:#ffffffff|#f57a75ff|0
+27,6:#d1f0ffff|#f57a75ff|1
+28,6:#ffffffff|#f57a75ff|0
+29,6:#ffffffff|#131417ff|0
+30,6:#2e3847ff|#0f1013ff|0
+31,6:#ffffffff|#090a0bff|0
+32,6:#2e3847ff|#0f1013ff|0
+33,6:#d1f0ffff|#0f1013ff|1 * 12
+45,6:#ffffffff|#0f1013ff|0 * 53
+98,6:#2e3847ff|#0f1013ff|0
+99,6:#ffffffff|#090a0bff|0
+0,7:#ffffffff|#090a0bff|0
+1,7:#2e3847ff|#0f1013ff|0
+2,7:#0f1013ff|#0f1013ff|0
+3,7:#ffffffff|#0f1013ff|0
+4,7:#80eb9eff|#0f1013ff|1
+5,7:#ffffffff|#0f1013ff|0
+6,7:#bdccdbff|#0f1013ff|0 * 9
+15,7:#ffffffff|#0f1013ff|0
+16,7:#8a96a6ff|#0f1013ff|0 * 4
+20,7:#ffffffff|#0f1013ff|0
+21,7:#8a96a6ff|#0f1013ff|0 * 4
+25,7:#ffffffff|#0f1013ff|0
+26,7:#ffffffff|#80eb9eff|0
+27,7:#051a29ff|#80eb9eff|1
+28,7:#ffffffff|#80eb9eff|0
+29,7:#ffffffff|#0f1013ff|0
+30,7:#2e3847ff|#0f1013ff|0
+31,7:#ffffffff|#090a0bff|0
+32,7:#2e3847ff|#0f1013ff|0
+33,7:#94a3b3ff|#0f1013ff|0 * 24
+57,7:#80eb9eff|#0f1013ff|0 * 2
+59,7:#ffffffff|#0f1013ff|0
+60,7:#f57a75ff|#0f1013ff|0 * 2
+62,7:#ffffffff|#0f1013ff|0 * 36
+98,7:#2e3847ff|#0f1013ff|0
+99,7:#ffffffff|#090a0bff|0
+0,8:#ffffffff|#090a0bff|0
+1,8:#2e3847ff|#0f1013ff|0
+2,8:#0f1013ff|#0f1013ff|0
+3,8:#ffffffff|#0f1013ff|0
+4,8:#e6bd6bff|#0f1013ff|1
+5,8:#ffffffff|#0f1013ff|0
+6,8:#bdccdbff|#0f1013ff|0 * 8
+14,8:#ffffffff|#0f1013ff|0
+15,8:#8a96a6ff|#0f1013ff|0 * 3
+18,8:#ffffffff|#0f1013ff|0
+19,8:#8a96a6ff|#0f1013ff|0 * 6
+25,8:#ffffffff|#0f1013ff|0
+26,8:#ffffffff|#8cd1ffff|0
+27,8:#051a29ff|#8cd1ffff|1
+28,8:#ffffffff|#8cd1ffff|0
+29,8:#ffffffff|#0f1013ff|0
+30,8:#2e3847ff|#0f1013ff|0
+31,8:#ffffffff|#090a0bff|0
+32,8:#2e3847ff|#0f1013ff|0
+33,8:#ffffffff|#131417ff|0
+34,8:#8cd1ffff|#131417ff|0
+35,8:#ffffffff|#131417ff|0
+36,8:#8a96a6ff|#131417ff|0 * 8
+44,8:#ffffffff|#131417ff|0
+45,8:#ffffffff|#0f1013ff|0
+46,8:#ffffffff|#131417ff|0
+47,8:#e6bd6bff|#131417ff|0
+48,8:#ffffffff|#131417ff|0
+49,8:#8a96a6ff|#131417ff|0 * 9
+58,8:#ffffffff|#131417ff|0
+59,8:#ffffffff|#0f1013ff|0
+60,8:#ffffffff|#131417ff|0
+61,8:#73808fff|#131417ff|0
+62,8:#ffffffff|#131417ff|0
+63,8:#8a96a6ff|#131417ff|0 * 9
+72,8:#ffffffff|#131417ff|0
+73,8:#ffffffff|#0f1013ff|0 * 25
+98,8:#2e3847ff|#0f1013ff|0
+99,8:#ffffffff|#090a0bff|0
+0,9:#ffffffff|#090a0bff|0
+1,9:#2e3847ff|#0f1013ff|0
+2,9:#0f1013ff|#0f1013ff|0
+3,9:#ffffffff|#0f1013ff|0
+4,9:#80eb9eff|#0f1013ff|1
+5,9:#ffffffff|#0f1013ff|0
+6,9:#bdccdbff|#0f1013ff|0 * 13
+19,9:#ffffffff|#0f1013ff|0
+20,9:#80eb9eff|#0f1013ff|1 * 2
+22,9:#ffffffff|#0f1013ff|0
+23,9:#f57a75ff|#0f1013ff|1 * 2
+25,9:#ffffffff|#0f1013ff|0
+26,9:#ffffffff|#80eb9eff|0
+27,9:#051a29ff|#80eb9eff|1
+28,9:#ffffffff|#80eb9eff|0
+29,9:#ffffffff|#0f1013ff|0
+30,9:#2e3847ff|#0f1013ff|0
+31,9:#ffffffff|#090a0bff|0
+32,9:#2e3847ff|#0f1013ff|0
+33,9:#ffffffff|#0f1013ff|0 * 65
+98,9:#2e3847ff|#0f1013ff|0
+99,9:#ffffffff|#090a0bff|0
+0,10:#ffffffff|#090a0bff|0
+1,10:#2e3847ff|#0f1013ff|0
+2,10:#0f1013ff|#0f1013ff|0
+3,10:#ffffffff|#0f1013ff|0
+4,10:#e6bd6bff|#0f1013ff|1
+5,10:#ffffffff|#0f1013ff|0
+6,10:#bdccdbff|#0f1013ff|0
+7,10:#ffffffff|#0f1013ff|0 * 2
+9,10:#8a96a6ff|#0f1013ff|0 * 16
+25,10:#ffffffff|#0f1013ff|0
+26,10:#ffffffff|#80eb9eff|0
+27,10:#051a29ff|#80eb9eff|1
+28,10:#ffffffff|#80eb9eff|0
+29,10:#ffffffff|#0f1013ff|0
+30,10:#2e3847ff|#0f1013ff|0
+31,10:#ffffffff|#090a0bff|0
+32,10:#2e3847ff|#0f1013ff|0
+33,10:#52c7ffff|#0f1013ff|0 * 64
+97,10:#ffffffff|#b3b3b3ff|0
+98,10:#2e3847ff|#0f1013ff|0
+99,10:#ffffffff|#090a0bff|0
+0,11:#ffffffff|#090a0bff|0
+1,11:#2e3847ff|#0f1013ff|0
+2,11:#0f1013ff|#0f1013ff|0
+3,11:#ffffffff|#0f1013ff|0
+4,11:#80eb9eff|#0f1013ff|1
+5,11:#ffffffff|#0f1013ff|0
+6,11:#bdccdbff|#0f1013ff|0 * 5
+11,11:#ffffffff|#0f1013ff|0
+12,11:#8a96a6ff|#0f1013ff|0 * 2
+14,11:#ffffffff|#0f1013ff|0
+15,11:#8a96a6ff|#0f1013ff|0 * 10
+25,11:#ffffffff|#0f1013ff|0
+26,11:#ffffffff|#80eb9eff|0
+27,11:#051a29ff|#80eb9eff|1
+28,11:#ffffffff|#80eb9eff|0
+29,11:#ffffffff|#0f1013ff|0
+30,11:#2e3847ff|#0f1013ff|0
+31,11:#ffffffff|#090a0bff|0
+32,11:#2e3847ff|#0f1013ff|0
+33,11:#52c7ffff|#1a2e3dff|0
+34,11:#ffffffff|#1a2e3dff|0
+35,11:#f57a75ff|#1a2e3dff|0
+36,11:#ffffffff|#1a2e3dff|0
+37,11:#d1f0ffff|#1a2e3dff|1 * 17
+54,11:#ffffffff|#1a2e3dff|0 * 20
+74,11:#ffffffff|#66d9ffff|0
+75,11:#051a29ff|#66d9ffff|1 * 10
+85,11:#ffffffff|#66d9ffff|0
+86,11:#ffffffff|#1a2e3dff|0 * 2
+88,11:#8a96a6ff|#1a2e3dff|1 * 6
+94,11:#ffffffff|#1a2e3dff|0 * 2
+96,11:#52c7ffff|#1a2e3dff|0
+97,11:#ffffffff|#b3b3b3ff|0
+98,11:#2e3847ff|#0f1013ff|0
+99,11:#ffffffff|#090a0bff|0
+0,12:#ffffffff|#090a0bff|0
+1,12:#2e3847ff|#0f1013ff|0
+2,12:#ffffffff|#0f1013ff|0 * 28
+30,12:#2e3847ff|#0f1013ff|0
+31,12:#ffffffff|#090a0bff|0
+32,12:#2e3847ff|#0f1013ff|0
+33,12:#52c7ffff|#0f1013ff|0
+34,12:#ffffffff|#0f1013ff|0
+35,12:#bdccdbff|#0f1013ff|0 * 22
+57,12:#ffffffff|#0f1013ff|0 * 39
+96,12:#52c7ffff|#0f1013ff|0
+97,12:#ffffffff|#b3b3b3ff|0
+98,12:#2e3847ff|#0f1013ff|0
+99,12:#ffffffff|#090a0bff|0
+0,13:#ffffffff|#090a0bff|0
+1,13:#2e3847ff|#0f1013ff|0
+2,13:#ffffffff|#0f1013ff|0 * 28
+30,13:#2e3847ff|#0f1013ff|0
+31,13:#ffffffff|#090a0bff|0
+32,13:#2e3847ff|#0f1013ff|0
+33,13:#52c7ffff|#0f1013ff|0
+34,13:#ffffffff|#ff666bff|0
+35,13:#fa9e99ff|#331214ff|0 * 24
+59,13:#ffffffff|#331214ff|0 * 37
+96,13:#52c7ffff|#0f1013ff|0
+97,13:#ffffffff|#b3b3b3ff|0
+98,13:#2e3847ff|#0f1013ff|0
+99,13:#ffffffff|#090a0bff|0
+0,14:#ffffffff|#090a0bff|0
+1,14:#2e3847ff|#0f1013ff|0
+2,14:#ffffffff|#0f1013ff|0 * 28
+30,14:#2e3847ff|#0f1013ff|0
+31,14:#ffffffff|#090a0bff|0
+32,14:#2e3847ff|#0f1013ff|0
+33,14:#52c7ffff|#0f1013ff|0
+34,14:#ffffffff|#4ddb73ff|0
+35,14:#9eebb3ff|#0d2b17ff|0 * 24
+59,14:#ffffffff|#0d2b17ff|0 * 37
+96,14:#52c7ffff|#0f1013ff|0
+97,14:#ffffffff|#b3b3b3ff|0
+98,14:#2e3847ff|#0f1013ff|0
+99,14:#ffffffff|#090a0bff|0
+0,15:#ffffffff|#090a0bff|0
+1,15:#2e3847ff|#0f1013ff|0
+2,15:#ffffffff|#0f1013ff|0 * 28
+30,15:#2e3847ff|#0f1013ff|0
+31,15:#ffffffff|#090a0bff|0
+32,15:#2e3847ff|#0f1013ff|0
+33,15:#52c7ffff|#0f1013ff|0
+34,15:#ffffffff|#0f1013ff|0
+35,15:#bdccdbff|#0f1013ff|0 * 10
+45,15:#ffffffff|#0f1013ff|0 * 51
+96,15:#52c7ffff|#0f1013ff|0
+97,15:#ffffffff|#b3b3b3ff|0
+98,15:#2e3847ff|#0f1013ff|0
+99,15:#ffffffff|#090a0bff|0
+0,16:#ffffffff|#090a0bff|0
+1,16:#2e3847ff|#0f1013ff|0
+2,16:#ffffffff|#0f1013ff|0 * 28
+30,16:#2e3847ff|#0f1013ff|0
+31,16:#ffffffff|#090a0bff|0
+32,16:#2e3847ff|#0f1013ff|0
+33,16:#52c7ffff|#0f1013ff|0
+34,16:#ffffffff|#0f1013ff|0
+35,16:#bdccdbff|#0f1013ff|0 * 9
+44,16:#ffffffff|#0f1013ff|0 * 52
+96,16:#52c7ffff|#0f1013ff|0
+97,16:#ffffffff|#b3b3b3ff|0
+98,16:#2e3847ff|#0f1013ff|0
+99,16:#ffffffff|#090a0bff|0
+0,17:#ffffffff|#090a0bff|0
+1,17:#2e3847ff|#0f1013ff|0
+2,17:#ffffffff|#0f1013ff|0 * 28
+30,17:#2e3847ff|#0f1013ff|0
+31,17:#ffffffff|#090a0bff|0
+32,17:#2e3847ff|#0f1013ff|0
+33,17:#52c7ffff|#0f1013ff|0
+34,17:#ffffffff|#0f1013ff|0
+35,17:#bdccdbff|#0f1013ff|0 * 24
+59,17:#ffffffff|#0f1013ff|0 * 37
+96,17:#52c7ffff|#0f1013ff|0
+97,17:#ffffffff|#b3b3b3ff|0
+98,17:#2e3847ff|#0f1013ff|0
+99,17:#ffffffff|#090a0bff|0
+0,18:#ffffffff|#090a0bff|0
+1,18:#2e3847ff|#0f1013ff|0
+2,18:#ffffffff|#0f1013ff|0 * 28
+30,18:#2e3847ff|#0f1013ff|0
+31,18:#ffffffff|#090a0bff|0
+32,18:#2e3847ff|#0f1013ff|0
+33,18:#52c7ffff|#0f1013ff|0
+34,18:#ffffffff|#0f1013ff|0
+35,18:#bdccdbff|#0f1013ff|0 * 29
+64,18:#ffffffff|#0f1013ff|0 * 32
+96,18:#52c7ffff|#0f1013ff|0
+97,18:#ffffffff|#b3b3b3ff|0
+98,18:#2e3847ff|#0f1013ff|0
+99,18:#ffffffff|#090a0bff|0
+0,19:#ffffffff|#090a0bff|0
+1,19:#2e3847ff|#0f1013ff|0
+2,19:#ffffffff|#0f1013ff|0 * 28
+30,19:#2e3847ff|#0f1013ff|0
+31,19:#ffffffff|#090a0bff|0
+32,19:#2e3847ff|#0f1013ff|0
+33,19:#52c7ffff|#0f1013ff|0
+34,19:#ffffffff|#4ddb73ff|0
+35,19:#9eebb3ff|#0d2b17ff|0 * 26
+61,19:#ffffffff|#0d2b17ff|0 * 35
+96,19:#52c7ffff|#0f1013ff|0
+97,19:#ffffffff|#b3b3b3ff|0
+98,19:#2e3847ff|#0f1013ff|0
+99,19:#ffffffff|#090a0bff|0
+0,20:#ffffffff|#090a0bff|0
+1,20:#2e3847ff|#0f1013ff|0
+2,20:#ffffffff|#0f1013ff|0 * 28
+30,20:#2e3847ff|#0f1013ff|0
+31,20:#ffffffff|#090a0bff|0
+32,20:#2e3847ff|#0f1013ff|0
+33,20:#52c7ffff|#0f1013ff|0
+34,20:#ffffffff|#0f1013ff|0
+35,20:#bdccdbff|#0f1013ff|0 * 26
+61,20:#ffffffff|#0f1013ff|0 * 35
+96,20:#52c7ffff|#0f1013ff|0
+97,20:#ffffffff|#b3b3b3ff|0
+98,20:#2e3847ff|#0f1013ff|0
+99,20:#ffffffff|#090a0bff|0
+0,21:#ffffffff|#090a0bff|0
+1,21:#2e3847ff|#0f1013ff|0
+2,21:#ffffffff|#0f1013ff|0 * 28
+30,21:#2e3847ff|#0f1013ff|0
+31,21:#ffffffff|#090a0bff|0
+32,21:#2e3847ff|#0f1013ff|0
+33,21:#52c7ffff|#0f1013ff|0
+34,21:#ffffffff|#0f1013ff|0
+35,21:#bdccdbff|#0f1013ff|0 * 10
+45,21:#ffffffff|#0f1013ff|0 * 51
+96,21:#52c7ffff|#0f1013ff|0
+97,21:#ffffffff|#b3b3b3ff|0
+98,21:#2e3847ff|#0f1013ff|0
+99,21:#ffffffff|#090a0bff|0
+0,22:#ffffffff|#090a0bff|0
+1,22:#2e3847ff|#0f1013ff|0
+2,22:#ffffffff|#0f1013ff|0 * 28
+30,22:#2e3847ff|#0f1013ff|0
+31,22:#ffffffff|#090a0bff|0
+32,22:#2e3847ff|#0f1013ff|0
+33,22:#52c7ffff|#0f1013ff|0
+34,22:#ffffffff|#0f1013ff|0
+35,22:#bdccdbff|#0f1013ff|0 * 9
+44,22:#ffffffff|#0f1013ff|0 * 52
+96,22:#52c7ffff|#0f1013ff|0
+97,22:#ffffffff|#b3b3b3ff|0
+98,22:#2e3847ff|#0f1013ff|0
+99,22:#ffffffff|#090a0bff|0
+0,23:#ffffffff|#090a0bff|0
+1,23:#2e3847ff|#0f1013ff|0
+2,23:#ffffffff|#0f1013ff|0 * 28
+30,23:#2e3847ff|#0f1013ff|0
+31,23:#ffffffff|#090a0bff|0
+32,23:#2e3847ff|#0f1013ff|0
+33,23:#52c7ffff|#0f1013ff|0
+34,23:#ffffffff|#0f1013ff|0
+35,23:#bdccdbff|#0f1013ff|0 * 24
+59,23:#ffffffff|#0f1013ff|0 * 37
+96,23:#52c7ffff|#0f1013ff|0
+97,23:#ffffffff|#333333ff|0
+98,23:#2e3847ff|#0f1013ff|0
+99,23:#ffffffff|#090a0bff|0
+0,24:#ffffffff|#090a0bff|0
+1,24:#2e3847ff|#0f1013ff|0
+2,24:#ffffffff|#0f1013ff|0 * 28
+30,24:#2e3847ff|#0f1013ff|0
+31,24:#ffffffff|#090a0bff|0
+32,24:#2e3847ff|#0f1013ff|0
+33,24:#52c7ffff|#0f1013ff|0
+34,24:#ffffffff|#ff666bff|0
+35,24:#fa9e99ff|#331214ff|0 * 26
+61,24:#ffffffff|#331214ff|0 * 35
+96,24:#52c7ffff|#0f1013ff|0
+97,24:#ffffffff|#333333ff|0
+98,24:#2e3847ff|#0f1013ff|0
+99,24:#ffffffff|#090a0bff|0
+0,25:#ffffffff|#090a0bff|0
+1,25:#2e3847ff|#0f1013ff|0
+2,25:#ffffffff|#0f1013ff|0 * 28
+30,25:#2e3847ff|#0f1013ff|0
+31,25:#ffffffff|#090a0bff|0
+32,25:#2e3847ff|#0f1013ff|0
+33,25:#52c7ffff|#0f1013ff|0
+34,25:#ffffffff|#4ddb73ff|0
+35,25:#9eebb3ff|#0d2b17ff|0 * 26
+61,25:#ffffffff|#0d2b17ff|0 * 35
+96,25:#52c7ffff|#0f1013ff|0
+97,25:#ffffffff|#333333ff|0
+98,25:#2e3847ff|#0f1013ff|0
+99,25:#ffffffff|#090a0bff|0
+0,26:#ffffffff|#090a0bff|0
+1,26:#2e3847ff|#0f1013ff|0 * 30
+31,26:#ffffffff|#090a0bff|0
+32,26:#2e3847ff|#0f1013ff|0 * 67
+99,26:#ffffffff|#090a0bff|0
+0,27:#ffffffff|#090a0bff|0 * 100
+0,28:#ffffffff|#090a0bff|0
+1,28:#bdccdbff|#090a0bff|0 * 98
+99,28:#ffffffff|#090a0bff|0
+0,29:#ffffffff|#090a0bff|0 * 100

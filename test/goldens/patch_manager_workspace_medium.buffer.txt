@@ -1,0 +1,30 @@
+                                                                                                    
+ Patch Manager                                                                   stage hunk   skip  
+ [###---------------------]  6 files  4 untracked  staged 1/8  skipped 0  pending 7                 
+                                                                                                    
+ ┌────────────────────────────┐ ┌─────────────────────────────────────────────────────────────────┐ 
+ │Changed Files               │ │Diff Review                                                      │ 
+ │▎ D app.dart  lib +3 -2  !  │ │lib/app.dart                                                     │ 
+ │▎ L current.l link link  U  │ │hunk 1 of 1  3 changes  +3 -2                                    │ 
+ │▎ B logo.png ass binary  M  │ │ ◆ 1 staged   ✗ 0 skipped   ○ 2 pending                          │ 
+ │▎ T notes draft.t +2 -0  U  │ │                                                                 │ 
+ │▎ B r  untracked binary  U  │ │╭──────────────────────────────────────────────────────────────╮ │ 
+ │▎ T trunc do preview +1  U  │ ││ ! @@ -1,12 +1,14 @@                     stage hunk   failed  │ │ 
+ │                            │ ││       1  void main() {                                       │ │ 
+ │                            │ ││ ▶ -   2    print('old');                                     │ │ 
+ │                            │ ││ ▶ +   2    print('new');                                     │ │ 
+ │                            │ ││       3  }                                                   │ │ 
+ │                            │ ││       4                                                      │ │ 
+ │                            │ ││       5  void layout() {                                     │ │ 
+ │                            │ ││       6    final columns = 3;                                │ │ 
+ │                            │ ││   +   7    final rows = 8;                                   │ │ 
+ │                            │ ││       8    print(columns);                                   │ │ 
+ │                            │ ││       9  }                                                   │ │ 
+ │                            │ ││      10                                                      │ │ 
+ │                            │ ││      11  void footer() {                                     │ │ 
+ │                            │ ││   -  11    print('draft');                                   │ │ 
+ │                            │ ││   +  12    print('ready');                                   │ │ 
+ └────────────────────────────┘ └─────────────────────────────────────────────────────────────────┘ 
+                                                                                                    
+ Stage content or whole-file changes directly, or skip them.  |  More: f file | r refresh | Tab pan 
+                                                                                                    
