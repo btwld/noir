@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+const _cacheAction =
+    'uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0';
+
 void main() {
   final workflows = <String, String>{
     for (final name in <String>['ci', 'release', 'publish'])
@@ -20,6 +23,22 @@ void main() {
         entry.value,
         isNot(matches(RegExp(r'\bgit(?:-|\s+)lfs\b'))),
         reason: '${entry.key}.yml must not invoke Git LFS',
+      );
+    }
+  });
+
+  test('workflows pin the official Node 24 cache action consistently', () {
+    for (final entry in workflows.entries) {
+      final cacheLines = entry.value
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.startsWith('uses: actions/cache@'))
+          .toList();
+      expect(cacheLines, isNotEmpty, reason: '${entry.key}.yml has no cache');
+      expect(
+        cacheLines,
+        everyElement(equals(_cacheAction)),
+        reason: '${entry.key}.yml has a stale or inconsistent cache pin',
       );
     }
   });
