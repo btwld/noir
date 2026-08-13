@@ -298,8 +298,9 @@ event.keyCode           // int
 ```
 
 `LogicalKeyboardKey` constants you'll use most: `tab`, `enter`, `escape`,
-`space`, `backspace`, `delete`, `arrowUp`/`arrowDown`/`arrowLeft`/`arrowRight`,
-`home`, `end`, `pageUp`, `pageDown`, `keyA`–`keyZ`, `digit0`–`digit9`, `f1`–`f12`.
+`space`, `backspace`, `delete`, `insert`,
+`arrowUp`/`arrowDown`/`arrowLeft`/`arrowRight`, `home`, `end`, `pageUp`,
+`pageDown`, `keyA`–`keyZ`, `digit0`–`digit9`, `f1`–`f12`.
 For dynamic matching: `LogicalKeyboardKey.forCharacter('q')`.
 
 Tip: to catch a plain letter, compare `event.character == 'q'` (simplest) or

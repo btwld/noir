@@ -11,6 +11,7 @@ void main() {
       LogicalKeyboardKey.tab,
       LogicalKeyboardKey.backspace,
       LogicalKeyboardKey.delete,
+      LogicalKeyboardKey.insert,
       LogicalKeyboardKey.arrowUp,
       LogicalKeyboardKey.arrowDown,
       LogicalKeyboardKey.arrowLeft,

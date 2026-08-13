@@ -3,59 +3,57 @@
 library;
 
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
-import 'dart:async';
-import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
-Future<void> main() async {
-  final app = runTuiApp(const FlexLayoutShowcase());
-
-  if (!app.isHeadless) {
-    app.enableKittyKeyboard();
+void main() {
+  late final TuiApp app;
+  void quit() {
+    app.dispose();
+    io.exit(0);
   }
 
-  final exitCompleter = Completer<void>();
-  app.onKey((event) {
-    if (event.isPress &&
-        (event.character == 'q' ||
-            (event.logicalKey == LogicalKeyboardKey.keyC &&
-                event.isControlPressed))) {
-      event.consume();
-      if (!exitCompleter.isCompleted) {
-        exitCompleter.complete();
-      }
-    }
-  });
-
-  await Future.any([exitCompleter.future, ProcessSignal.sigint.watch().first]);
-
-  app.dispose();
+  app = runTuiApp(FlexLayoutShowcase(onQuit: quit));
 }
 
 class FlexLayoutShowcase extends StatelessWidget {
-  const FlexLayoutShowcase({super.key});
+  const FlexLayoutShowcase({required this.onQuit, super.key});
+
+  final VoidCallback onQuit;
+
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event.isPress && event.character == 'q') {
+      onQuit();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
-  Widget build(BuildContext context) => Container(
-    color: Color.rgb(0.05, 0.05, 0.12),
-    padding: EdgeInsets.all(1),
-    child: Column(
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 1),
-        Expanded(
-          child: Row(
-            children: [
-              _buildNavigationPane(),
-              const SizedBox(width: 1),
-              Expanded(child: _buildContentArea()),
-            ],
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: _handleKey,
+    child: Container(
+      color: Color.rgb(0.05, 0.05, 0.12),
+      padding: EdgeInsets.all(1),
+      child: Column(
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 1),
+          Expanded(
+            child: Row(
+              children: [
+                _buildNavigationPane(),
+                const SizedBox(width: 1),
+                Expanded(child: _buildContentArea()),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 1),
-        _buildFooter(),
-      ],
+          const SizedBox(height: 1),
+          _buildFooter(),
+        ],
+      ),
     ),
   );
 

@@ -68,19 +68,39 @@ void main() {
       );
     });
 
-    test('CSI tilde keys map to Delete/PageUp/PageDown', () {
-      expect(
-        _keyEventsFor([0x1b, 0x5b, 0x33, 0x7e]).single.logicalKey,
-        LogicalKeyboardKey.delete,
-      );
-      expect(
-        _keyEventsFor([0x1b, 0x5b, 0x35, 0x7e]).single.logicalKey,
-        LogicalKeyboardKey.pageUp,
-      );
-      expect(
-        _keyEventsFor([0x1b, 0x5b, 0x36, 0x7e]).single.logicalKey,
-        LogicalKeyboardKey.pageDown,
-      );
+    test('CSI tilde keys match the pinned OpenTUI map', () {
+      const cases = <int, LogicalKeyboardKey>{
+        1: LogicalKeyboardKey.home,
+        2: LogicalKeyboardKey.insert,
+        3: LogicalKeyboardKey.delete,
+        4: LogicalKeyboardKey.end,
+        5: LogicalKeyboardKey.pageUp,
+        6: LogicalKeyboardKey.pageDown,
+        7: LogicalKeyboardKey.home,
+        8: LogicalKeyboardKey.end,
+        11: LogicalKeyboardKey.f1,
+        12: LogicalKeyboardKey.f2,
+        13: LogicalKeyboardKey.f3,
+        14: LogicalKeyboardKey.f4,
+        15: LogicalKeyboardKey.f5,
+        17: LogicalKeyboardKey.f6,
+        18: LogicalKeyboardKey.f7,
+        19: LogicalKeyboardKey.f8,
+        20: LogicalKeyboardKey.f9,
+        21: LogicalKeyboardKey.f10,
+        23: LogicalKeyboardKey.f11,
+        24: LogicalKeyboardKey.f12,
+      };
+
+      for (final entry in cases.entries) {
+        final events = _keyEventsFor('\x1b[${entry.key}~'.codeUnits);
+        expect(events, hasLength(1), reason: 'CSI ${entry.key}~');
+        expect(
+          events.single.logicalKey,
+          entry.value,
+          reason: 'CSI ${entry.key}~',
+        );
+      }
     });
 
     test('Ctrl+letter sets ctrl modifier and lowercase key', () {
@@ -708,6 +728,13 @@ void main() {
 
       expect(up.logicalKey, LogicalKeyboardKey.arrowUp);
       expect(down.logicalKey, LogicalKeyboardKey.arrowDown);
+    });
+
+    test('Kitty named Insert follows the OpenTUI key map', () {
+      final event = _keyEventsFor('\x1b[57348u'.codeUnits).single;
+
+      expect(event.logicalKey, LogicalKeyboardKey.insert);
+      expect(event.character, isNull);
     });
 
     test('Kitty event types set press and repeat state', () {

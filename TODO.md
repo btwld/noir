@@ -36,11 +36,13 @@ below are closed.
       and immutable-action pinned. Manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1234 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1238 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
-- [x] Authorized Conductor-terminal checks render the counter, textarea, and
-      widgets tour, then return to a usable shell without stack traces through
-      both normal Escape disposal and unconsumed Ctrl+C interruption.
+- [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
+      Regression checks on the repaired tree confirm both layout examples exit
+      immediately through `q`, unconsumed Ctrl+C exits with status 130, and the
+      textarea/widgets-tour counters report and submit Unicode grapheme counts;
+      every path returns to a usable shell without a stack trace.
 - [x] Staged CI on `main` is green across format/analyze, Ubuntu, macOS, and
       Windows.
 

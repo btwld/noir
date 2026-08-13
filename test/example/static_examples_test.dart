@@ -54,7 +54,7 @@ void main() {
 
   test('layout showcase renders all major regions in one terminal frame', () {
     final app = createTuiTestApp(
-      const layout_demo.FlexLayoutShowcase(),
+      const layout_demo.FlexLayoutShowcase(onQuit: _noop),
       width: 100,
       height: 40,
     );
@@ -71,6 +71,8 @@ void main() {
     }
   });
 }
+
+void _noop() {}
 
 CapturedBuffer _render(TuiTestApp app) {
   app.pumpFrame();

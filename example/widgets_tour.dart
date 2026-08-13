@@ -40,7 +40,9 @@ class _TourAppState extends State<WidgetsTourApp> {
   String _typed = '';
   int? _submittedLength;
 
-  void _submitText() => setState(() => _submittedLength = _typed.length);
+  int get _typedGraphemeCount => TextIndexMap(_typed).graphemeCount;
+
+  void _submitText() => setState(() => _submittedLength = _typedGraphemeCount);
 
   static const _options = <SelectOption<String>>[
     SelectOption(name: 'Red', value: 'red'),
@@ -209,7 +211,7 @@ class _TourAppState extends State<WidgetsTourApp> {
           const SizedBox(height: 1),
           Text(
             'Selected: $_selected   ScrollY: $_scrollOffset   '
-            'Typed: ${_typed.length} chars',
+            'Typed: $_typedGraphemeCount chars',
             style: const TextStyle(color: Color(0.7, 0.9, 1)),
           ),
           if (_submittedLength case final length?)

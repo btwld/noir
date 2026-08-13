@@ -204,7 +204,7 @@ includes the command for every app.
 | Ctrl + letter | `KeyEvent` with `KeyModifiers.ctrl` |
 | Arrow keys | `arrowUp`, `arrowDown`, `arrowLeft`, `arrowRight` |
 | Home / End | `home`, `end` |
-| Delete / PageUp / PageDown | `delete`, `pageUp`, `pageDown` |
+| Insert / Delete / PageUp / PageDown | `insert`, `delete`, `pageUp`, `pageDown` |
 | Function keys | `f1`–`f12` |
 | Mouse SGR | `MouseEvent` with type, button, cell position, modifiers, and directional scroll magnitude |
 | Bracketed paste | one `PasteEvent` per block through `app.onPaste` |

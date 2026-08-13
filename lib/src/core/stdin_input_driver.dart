@@ -992,17 +992,23 @@ KeyEvent? _tildeKey(String params, _CsiKeyMetadata metadata) {
   final n = int.tryParse(params.split(';').first);
   if (n == null) return null;
   switch (n) {
+    case 1:
+    case 7: // rxvt
+      return _csiKey(LogicalKeyboardKey.home, metadata);
+    case 2:
+      return _csiKey(LogicalKeyboardKey.insert, metadata);
     case 3:
       return _csiKey(LogicalKeyboardKey.delete, metadata);
+    case 4:
+    case 8: // rxvt
+      return _csiKey(LogicalKeyboardKey.end, metadata);
     case 5:
       return _csiKey(LogicalKeyboardKey.pageUp, metadata);
     case 6:
       return _csiKey(LogicalKeyboardKey.pageDown, metadata);
     case 11:
-    case 1: // some terminals send ESC[1~ for F1
       return _csiKey(LogicalKeyboardKey.f1, metadata);
     case 12:
-    case 2: // ESC[2~ for F2 (rare)
       return _csiKey(LogicalKeyboardKey.f2, metadata);
     case 13:
       return _csiKey(LogicalKeyboardKey.f3, metadata);
@@ -1184,6 +1190,8 @@ LogicalKeyboardKey? _kittyNamedKey(int code) {
       return LogicalKeyboardKey.tab;
     case 57347:
       return LogicalKeyboardKey.backspace;
+    case 57348:
+      return LogicalKeyboardKey.insert;
     case 57349:
       return LogicalKeyboardKey.delete;
     case 57350:

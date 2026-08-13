@@ -33,6 +33,8 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   String _value = '';
   String _lastSubmitted = '';
 
+  int get _graphemeLength => TextIndexMap(_value).graphemeCount;
+
   void _submit() => setState(() => _lastSubmitted = _value);
 
   KeyEventResult _handleAppKey(FocusNode node, KeyEvent event) {
@@ -82,7 +84,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
           ),
           const SizedBox(height: 1),
           Text(
-            'Length: ${_value.length}',
+            'Length: $_graphemeLength',
             style: const TextStyle(color: Color(0.7, 0.9, 1)),
           ),
           if (_lastSubmitted.isNotEmpty) ...[

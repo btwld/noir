@@ -133,6 +133,12 @@ final class LogicalKeyboardKey {
   /// Delete key.
   static const LogicalKeyboardKey delete = LogicalKeyboardKey._(0x7f, 'Delete');
 
+  /// Insert key.
+  static const LogicalKeyboardKey insert = LogicalKeyboardKey._(
+    0x1009,
+    'Insert',
+  );
+
   /// Arrow-up key.
   static const LogicalKeyboardKey arrowUp = LogicalKeyboardKey._(
     0x1001,

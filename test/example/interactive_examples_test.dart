@@ -2,6 +2,8 @@ import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../../example/focus_form.dart';
+import '../../example/layout_basics.dart';
+import '../../example/layout_demo.dart';
 import '../../example/scrollbox_demo.dart';
 import '../../example/select_demo.dart';
 import '../../example/textarea_demo.dart';
@@ -9,6 +11,31 @@ import '../../example/widgets_tour.dart';
 import '../helpers/tui_test_app.dart';
 
 void main() {
+  test('layout examples delegate q to their quit owner exactly once', () async {
+    final cases = <(String, Widget Function(VoidCallback))>[
+      ('layout basics', (onQuit) => LayoutBasics(onQuit: onQuit)),
+      ('layout showcase', (onQuit) => FlexLayoutShowcase(onQuit: onQuit)),
+    ];
+
+    for (final (name, build) in cases) {
+      var quits = 0;
+      final app = createTuiTestApp(
+        build(() => quits++),
+        width: 100,
+        height: 40,
+      );
+
+      try {
+        await _settleAutofocus(app);
+        app.mockInput.typeText('q');
+        await _settleInput();
+        expect(quits, 1, reason: name);
+      } finally {
+        app.dispose();
+      }
+    }
+  });
+
   test('focus form types across Tab and submits the email field', () async {
     final app = createTuiTestApp(const FocusFormApp());
 
@@ -124,6 +151,24 @@ void main() {
     }
   });
 
+  test('textarea demo reports grapheme clusters as its length', () async {
+    final app = createTuiTestApp(
+      TextAreaDemoApp(onQuit: () {}),
+      width: 64,
+      height: 22,
+    );
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput.typeText('👩‍💻e\u0301');
+      await _settleInput();
+
+      expect(_render(app), contains('Length: 2'));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test(
     'widget tour drives all panels and submits text before quitting',
     () async {
@@ -160,6 +205,26 @@ void main() {
       }
     },
   );
+
+  test('widget tour reports and submits grapheme-cluster counts', () async {
+    final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..typeText('👩‍💻e\u0301')
+        ..pressCtrl('d');
+      await _settleInput();
+
+      final frame = _render(app);
+      expect(frame, contains('Typed: 2 chars'));
+      expect(frame, contains('Submitted: 2 chars'));
+    } finally {
+      app.dispose();
+    }
+  });
 }
 
 String _render(TuiTestApp app) {

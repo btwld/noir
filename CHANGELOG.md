@@ -18,10 +18,11 @@
 - Terminal shutdown restores inherited line and echo modes before cancelling
   the stdin subscription, avoiding Dart/macOS `EBADF` errors during Escape or
   other normal disposal paths.
-- Terminal input preserves modifiers from xterm `modifyOtherKeys` reports and
-  press/repeat/release metadata from Kitty functional and tilde key reports.
-  The multiline examples use Ctrl+D as a portable submit key while `TextArea`
-  still accepts Ctrl+Enter when the terminal reports that chord.
+- Terminal input preserves modifiers from xterm `modifyOtherKeys` reports,
+  maps Home/Insert/End and function-key reports to pinned OpenTUI semantics,
+  and retains press/repeat/release metadata from Kitty functional and tilde
+  reports. The multiline examples use Ctrl+D as a portable submit key while
+  `TextArea` still accepts Ctrl+Enter when the terminal reports that chord.
 - Bundled, SHA-256-verified OpenTUI native libraries for macOS, Linux, and
   Windows on x64 and arm64.
 - Canonical OpenTUI v0.5.1 source and unchanged official release assets.

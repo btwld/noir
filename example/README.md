@@ -35,8 +35,8 @@ dart run example/main.dart
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.
-- Examples typically exit with `Ctrl+C`; a handler may consume it to override
-  the default terminal-session shutdown.
+- Examples exit with `Ctrl+C` through the default terminal-session shutdown.
+  The layout examples also accept `q` through their widget-owned quit callback.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The
   multiline examples also bind Ctrl+D so submission works in terminals that
   encode Ctrl+Enter as an ordinary Enter.
