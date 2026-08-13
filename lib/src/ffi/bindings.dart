@@ -173,6 +173,7 @@ class OpenTuiBindings {
 
   /// Sets the terminal background color.
   void setBackgroundColor(RendererHandle renderer, Color color) {
+    validateColorChannels(color);
     _guardAlloc('Failed to set background color', (allocator) {
       _native.setBackgroundColor(
         renderer.value,
@@ -202,6 +203,7 @@ class OpenTuiBindings {
 
   /// Clears [buffer] to [background].
   void bufferClear(OptimizedBufferHandle buffer, Color background) {
+    validateColorChannels(background, name: 'background');
     _guardAlloc('Failed to clear buffer', (allocator) {
       _native.bufferClear(buffer.value, _colorToNative(background, allocator));
     });
@@ -220,6 +222,10 @@ class OpenTuiBindings {
     _checkUnsignedAbi(x, 0xFFFFFFFF, 'x');
     _checkUnsignedAbi(y, 0xFFFFFFFF, 'y');
     _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
+    validateColorChannels(foreground, name: 'foreground');
+    if (background != null) {
+      validateColorChannels(background, name: 'background');
+    }
     _guardAlloc('Failed to draw text', (allocator) {
       final (textPointer, textLength) = _utf8(allocator, text);
       _native.bufferDrawText(
@@ -248,6 +254,7 @@ class OpenTuiBindings {
     _checkUnsignedAbi(y, 0xFFFFFFFF, 'y');
     _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
     _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    validateColorChannels(background, name: 'background');
     _guardAlloc('Failed to fill rectangle', (allocator) {
       _native.bufferFillRect(
         buffer.value,
@@ -275,6 +282,8 @@ class OpenTuiBindings {
     _checkSigned32Abi(y, 'y');
     _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
     _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    validateColorChannels(borderColor, name: 'borderColor');
+    validateColorChannels(backgroundColor, name: 'backgroundColor');
     const defaults = <int>[
       0x250C,
       0x2510,
@@ -288,9 +297,7 @@ class OpenTuiBindings {
       0x2524,
       0x253C,
     ];
-    final borderChars = options.borderChars?.length == 11
-        ? options.borderChars!
-        : defaults;
+    final borderChars = options.borderChars ?? defaults;
     for (final character in borderChars) {
       _checkUnsignedAbi(character, 0xFFFFFFFF, 'borderChars');
     }
@@ -387,6 +394,8 @@ class OpenTuiBindings {
     _checkUnsignedAbi(y, 0xFFFFFFFF, 'y');
     _checkUnsignedAbi(character, 0xFFFFFFFF, 'character');
     _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
+    validateColorChannels(foreground, name: 'foreground');
+    validateColorChannels(background, name: 'background');
     _guardAlloc('Failed to set buffer cell', (allocator) {
       _native.bufferSetCellWithAlphaBlending(
         buffer.value,
@@ -468,6 +477,7 @@ class OpenTuiBindings {
 
   /// Sets cursor color through `setCursorStyleOptions`.
   void setCursorColor(RendererHandle renderer, Color color) {
+    validateColorChannels(color);
     _guardAlloc('Failed to set cursor color', (allocator) {
       _native.setCursorStyleOptions(
         renderer.value,

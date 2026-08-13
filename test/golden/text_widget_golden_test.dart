@@ -62,7 +62,7 @@ void main() {
         ),
         'underlined_text': const Text(
           'Underlined Text',
-          style: TextStyle(decoration: [TextDecoration.underline]),
+          style: TextStyle(decoration: TextDecoration.underline),
         ),
         'styled_combination': const Text(
           'Styled Text',

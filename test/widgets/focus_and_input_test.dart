@@ -2,10 +2,131 @@
 import 'dart:async';
 
 import 'package:noir/noir.dart';
+import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;
 import 'package:test/test.dart';
 
 void main() {
+  test('one FocusNode cannot be attached to two live sibling widgets', () {
+    final node = FocusNode();
+    final owner = BuildOwner();
+    addTearDown(node.dispose);
+    addTearDown(owner.dispose);
+    final first = Focus(
+      focusNode: node,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    final second = Focus(
+      focusNode: node,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    first.mount(null, owner);
+
+    expect(() => second.mount(null, owner), throwsA(isA<StateError>()));
+    second.unmount();
+    expect(node.isAttached, isTrue);
+    node.requestFocus();
+    expect(owner.focusManager.primaryFocus, same(node));
+
+    first.unmount();
+    expect(node.isAttached, isFalse);
+  });
+
+  test('one FocusNode cannot migrate between live focus managers', () {
+    final node = FocusNode();
+    final firstOwner = BuildOwner();
+    final secondOwner = BuildOwner();
+    addTearDown(node.dispose);
+    addTearDown(firstOwner.dispose);
+    addTearDown(secondOwner.dispose);
+    final first = Focus(
+      focusNode: node,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    final second = Focus(
+      focusNode: node,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    first.mount(null, firstOwner);
+
+    expect(() => second.mount(null, secondOwner), throwsA(isA<StateError>()));
+    second.unmount();
+    node.requestFocus();
+    expect(firstOwner.focusManager.primaryFocus, same(node));
+    expect(secondOwner.focusManager.primaryFocus, isNull);
+
+    first.unmount();
+    expect(node.isAttached, isFalse);
+  });
+
+  test('a rejected live-node replacement preserves both attachments', () {
+    final currentNode = FocusNode();
+    final occupiedNode = FocusNode();
+    final currentOwner = BuildOwner();
+    final occupiedOwner = BuildOwner();
+    final currentElement = Focus(
+      focusNode: currentNode,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    final occupiedElement = Focus(
+      focusNode: occupiedNode,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    addTearDown(currentElement.unmount);
+    addTearDown(occupiedElement.unmount);
+    addTearDown(currentOwner.dispose);
+    addTearDown(occupiedOwner.dispose);
+    addTearDown(currentNode.dispose);
+    addTearDown(occupiedNode.dispose);
+    currentElement.mount(null, currentOwner);
+    occupiedElement.mount(null, occupiedOwner);
+
+    expect(
+      () => currentElement.update(
+        Focus(
+          focusNode: occupiedNode,
+          child: const SizedBox(width: 1, height: 1),
+        ),
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(currentNode.isAttached, isTrue);
+    expect(occupiedNode.isAttached, isTrue);
+    currentNode.requestFocus();
+    occupiedNode.requestFocus();
+    expect(currentOwner.focusManager.primaryFocus, same(currentNode));
+    expect(occupiedOwner.focusManager.primaryFocus, same(occupiedNode));
+  });
+
+  test('a rejected disposed-node replacement preserves the attachment', () {
+    final currentNode = FocusNode();
+    final disposedNode = FocusNode()..dispose();
+    final owner = BuildOwner();
+    final element = Focus(
+      focusNode: currentNode,
+      child: const SizedBox(width: 1, height: 1),
+    ).createElement();
+    addTearDown(element.unmount);
+    addTearDown(owner.dispose);
+    addTearDown(currentNode.dispose);
+    element.mount(null, owner);
+
+    expect(
+      () => element.update(
+        Focus(
+          focusNode: disposedNode,
+          child: const SizedBox(width: 1, height: 1),
+        ),
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(currentNode.isAttached, isTrue);
+    currentNode.requestFocus();
+    expect(owner.focusManager.primaryFocus, same(currentNode));
+  });
+
   test('FocusNode handles key events once focused', () async {
     final focusNode = FocusNode();
     final handled = <String>[];

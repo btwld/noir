@@ -485,11 +485,12 @@ void main() {
     final editingSource = _read('lib/src/widgets/text_input_connection.dart');
     final stateSource = _read('lib/src/framework/widget.dart');
     final shortcutTests = _read('test/widgets/shortcuts_actions_test.dart');
+    final borderSource = _read('lib/src/painting/box_border.dart');
 
     final layoutEvidence = [
       _read('lib/src/widgets/row_column.dart'),
       _read('lib/src/widgets/flexible.dart'),
-      _read('lib/src/painting/box_border.dart'),
+      borderSource,
       skill,
       widgetsGuide,
     ].join('\n');
@@ -497,10 +498,33 @@ void main() {
       _normalized(layoutEvidence),
       matches(
         RegExp(
-          r'^(?![\s\S]*const Border\.symmetric\(\{ bool vertical = true, bool horizontal = true, /\* \+ same styling args \*/ \}\))(?=[\s\S]*final int spacing;)(?=[\s\S]*this\.spacing = 0)(?=[\s\S]*final int flex;)(?=[\s\S]*this\.flex = 1)(?=[\s\S]*`Flex\.spacing` is a non-negative `int`)(?=[\s\S]*int spacing = 0)(?=[\s\S]*const Flexible\(\{ required Widget child, int flex = 1, FlexFit fit = FlexFit\.loose, Key\? key \}\))(?=[\s\S]*const Expanded\(\{ required Widget child, int flex = 1, Key\? key \}\))(?=[\s\S]*Border\.symmetric\(\{ bool vertical = true, bool horizontal = true, /\* \+ same styling args \*/ \}\))(?=[\s\S]*This constructor is not `const`\.)',
+          r'^(?=[\s\S]*final int spacing;)(?=[\s\S]*this\.spacing = 0)(?=[\s\S]*final int flex;)(?=[\s\S]*this\.flex = 1)(?=[\s\S]*`Flex\.spacing` is a non-negative `int`)(?=[\s\S]*int spacing = 0)(?=[\s\S]*const Flexible\(\{ required Widget child, int flex = 1, FlexFit fit = FlexFit\.loose, Key\? key \}\))(?=[\s\S]*const Expanded\(\{ required Widget child, int flex = 1, Key\? key \}\))',
         ),
       ),
     );
+    for (final signature in const <String>[
+      'Border.all({',
+      'Border.symmetric({',
+      'Border({',
+      'TextDecoration? decoration',
+    ]) {
+      expect(widgetsGuide, contains(signature), reason: signature);
+    }
+    for (final staleSignature in const <String>[
+      'const Border.all({',
+      'const Border.symmetric({',
+      'const Border({',
+      'List<TextDecoration>? decoration',
+    ]) {
+      expect(
+        widgetsGuide,
+        isNot(contains(staleSignature)),
+        reason: staleSignature,
+      );
+    }
+    expect(borderSource, isNot(contains('const Border({')));
+    expect(borderSource, isNot(contains('const Border.all({')));
+    expect(borderSource, isNot(contains('const Border.symmetric({')));
 
     expect(editingSource, isNot(contains('LogicalKeyboardKey.tab')));
     expect(editingSource, contains('InsertTabIntent:'));

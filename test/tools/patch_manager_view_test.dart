@@ -1841,7 +1841,8 @@ final class _ThrowingToString extends Error {
   String toString() => throw StateError('toString must not escape');
 }
 
-const _twoHunkDiff = '''
+const _twoHunkDiff =
+    '''
 diff --git a/lib/app.dart b/lib/app.dart
 index 1111111..2222222 100644
 --- a/lib/app.dart
@@ -1851,7 +1852,7 @@ index 1111111..2222222 100644
 -  print('old');
 +  print('new');
  }
- 
+${' '}
  void untouched() {}
 @@ -20,4 +20,5 @@ void later() {
    final value = 1;

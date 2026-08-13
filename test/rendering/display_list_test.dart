@@ -122,7 +122,7 @@ void main() {
     commitTuiCanvas(buffer, canvas);
 
     final direct = buffer.getDirectAccess();
-    expect(_isPackedGraphemeStart(direct.chars[0]), isTrue);
+    expect(_isPackedGraphemeStart(direct.getEncodedCellAt(0)), isTrue);
     expect(direct.getChar(1, 0), 'C');
     expect(direct.getChar(2, 0), ' ');
   });
@@ -152,12 +152,12 @@ void main() {
 
     final direct = buffer.getDirectAccess();
     expect(direct.getChar(0, 0), 'A');
-    expect(_isPackedGraphemeStart(direct.chars[1]), isTrue);
-    expect(_isPackedContinuation(direct.chars[2]), isTrue);
+    expect(_isPackedGraphemeStart(direct.getEncodedCellAt(1)), isTrue);
+    expect(_isPackedContinuation(direct.getEncodedCellAt(2)), isTrue);
     expect(direct.getForeground(1, 0), Color.black);
     expect(direct.getBackground(1, 0), Color.blue);
-    expect(_isPackedGraphemeStart(direct.chars[3]), isTrue);
-    expect(_isPackedContinuation(direct.chars[4]), isTrue);
+    expect(_isPackedGraphemeStart(direct.getEncodedCellAt(3)), isTrue);
+    expect(_isPackedContinuation(direct.getEncodedCellAt(4)), isTrue);
     expect(direct.getChar(5, 0), 'B');
   });
 
@@ -181,8 +181,8 @@ void main() {
 
     final direct = buffer.getDirectAccess();
     expect(direct.getChar(0, 0), ' ');
-    expect(_isPackedGraphemeStart(direct.chars[1]), isTrue);
-    expect(_isPackedContinuation(direct.chars[2]), isTrue);
+    expect(_isPackedGraphemeStart(direct.getEncodedCellAt(1)), isTrue);
+    expect(_isPackedContinuation(direct.getEncodedCellAt(2)), isTrue);
     expect(direct.getChar(3, 0), 'B');
   });
 }

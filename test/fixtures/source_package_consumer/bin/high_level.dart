@@ -7,9 +7,9 @@ void main() {
 Widget _buildConsumerTree() => ScrollBox(
   scrollDirection: Axis.horizontal,
   child: Container(
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       border: Border(
-        sides: BorderSides(left: false),
+        sides: const BorderSides(left: false),
         title: 'consumer',
         titleAlignment: TextAlign.center,
       ),
@@ -61,7 +61,7 @@ final class ConsumerDecoration extends Decoration {
       ..drawText('Noir', Offset(rect.left, rect.top), Color.white)
       ..drawBox(
         rect,
-        const BoxOptions(
+        BoxOptions(
           sides: BorderSides(bottom: false),
           titleAlignment: TextAlign.right,
         ),

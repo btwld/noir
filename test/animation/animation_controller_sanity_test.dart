@@ -26,6 +26,45 @@ void main() {
     });
 
     test(
+      'negative durations are rejected without disturbing an active run',
+      () {
+        expect(
+          () => AnimationController(
+            vsync: vsync,
+            duration: const Duration(microseconds: -1),
+          ),
+          throwsArgumentError,
+        );
+        expect(
+          () => AnimationController(
+            vsync: vsync,
+            reverseDuration: const Duration(microseconds: -1),
+          ),
+          throwsArgumentError,
+        );
+
+        final controller = AnimationController(
+          vsync: vsync,
+          duration: const Duration(milliseconds: 100),
+        );
+        addTearDown(controller.dispose);
+        controller.forward();
+
+        expect(
+          () => controller.duration = const Duration(microseconds: -1),
+          throwsArgumentError,
+        );
+        expect(
+          () => controller.reverseDuration = const Duration(microseconds: -1),
+          throwsArgumentError,
+        );
+        expect(controller.duration, const Duration(milliseconds: 100));
+        expect(controller.reverseDuration, isNull);
+        expect(controller.isAnimating, isTrue);
+      },
+    );
+
+    test(
       'reverse(from:) sets reverse first status (no transient forward)',
       () async {
         final controller = AnimationController(

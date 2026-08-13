@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import 'disposable.dart';
 import 'listenable.dart';
 
@@ -50,5 +52,17 @@ class ChangeNotifier implements Listenable, Disposable {
     if (_disposed) return;
     _disposed = true;
     _listeners.clear();
+  }
+}
+
+/// Rejects an already-disposed notifier before a caller mutates related
+/// ownership state.
+@internal
+void validateChangeNotifierNotDisposed(
+  ChangeNotifier notifier, {
+  String name = 'ChangeNotifier',
+}) {
+  if (notifier._disposed) {
+    throw StateError('$name has already been disposed.');
   }
 }

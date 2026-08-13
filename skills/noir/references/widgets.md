@@ -245,7 +245,7 @@ Default color is **black** — pass `color:` explicitly for visible borders on d
 backgrounds.
 
 ```dart
-const Border.all({
+Border.all({
   Color color = Color.black,
   BorderStyle style = BorderStyle.solid,  // or BorderStyle.none
   String? title,                          // optional label drawn on the top edge
@@ -256,7 +256,7 @@ const Border.all({
 Border.symmetric({ bool vertical = true, bool horizontal = true, /* + same styling args */ })
 
 // Unnamed constructor: pick individual edges via `sides`.
-const Border({
+Border({
   Color color = Color.black,
   BorderStyle style = BorderStyle.solid,
   BorderSides sides = const BorderSides(),  // all four true by default
@@ -268,14 +268,14 @@ const Border({
 const BorderSides({ bool top = true, bool right = true, bool bottom = true, bool left = true })
 ```
 
-`Border.symmetric` is a regular generative constructor. This constructor is
-not `const`. `Border.all` and the unnamed `Border` are.
+All three `Border` constructors are regular, non-`const` constructors because
+they validate and snapshot a caller-supplied `borderChars` list.
 
 ```dart
 Border.all(color: Color.cyan, title: 'Logs')
 
 // A single rule above a status bar — one edge only:
-const Border(color: Color.gray, sides: BorderSides(left: false, right: false, bottom: false))
+Border(color: Color.gray, sides: const BorderSides(left: false, right: false, bottom: false))
 ```
 
 `title` only renders when the top side is drawn.
@@ -310,7 +310,7 @@ const TextStyle({
   Color? backgroundColor,
   FontWeight? fontWeight,                  // normal | bold | dim
   FontStyle? fontStyle,                    // normal | italic
-  List<TextDecoration>? decoration,        // none | underline | lineThrough
+  TextDecoration? decoration,              // none | underline | lineThrough
   TextEffect? effect,                      // none | blink | reverse
   int? attributes,
 })
@@ -318,6 +318,8 @@ const TextStyle({
 
 Chainable helpers exist: `style.bold()`, `.italic()`, `.underline()`, `.dim()`,
 `.blink()`, `.reverse()`, `.strikethrough()`, plus `copyWith(...)`.
+Combine underline and line-through with
+`TextDecoration.combine([TextDecoration.underline, TextDecoration.lineThrough])`.
 
 ```dart
 Text('Saved', style: TextStyle(color: Color.green, fontWeight: FontWeight.bold))

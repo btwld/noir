@@ -6,7 +6,8 @@ import '../helpers/patch_manager_fixtures.dart';
 void main() {
   group('UnifiedDiffParser', () {
     test('parses modified files with multiple hunks', () {
-      const rawDiff = '''
+      const rawDiff =
+          '''
 diff --git a/lib/app.dart b/lib/app.dart
 index 1111111..2222222 100644
 --- a/lib/app.dart
@@ -16,7 +17,7 @@ index 1111111..2222222 100644
 -  print('old');
 +  print('new');
  }
- 
+${' '}
  void untouched() {}
 @@ -20,4 +20,5 @@ void later() {
    final value = 1;
@@ -740,7 +741,8 @@ diff --git a/story.txt b/story.txt
 
   group('PatchGenerator', () {
     test('builds a patch from every section in only the selected hunk', () {
-      const rawDiff = '''
+      const rawDiff =
+          '''
 diff --git a/lib/app.dart b/lib/app.dart
 index 1111111..2222222 100644
 --- a/lib/app.dart
@@ -750,7 +752,7 @@ index 1111111..2222222 100644
 -  print('old');
 +  print('new');
  }
- 
+${' '}
  void untouched() {}
 @@ -20,4 +20,5 @@ void later() {
    final value = 1;

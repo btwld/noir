@@ -439,13 +439,13 @@ Future<void> _demoBoxDrawing(Renderer renderer) async {
   );
 
   // Simple box
-  const simpleBox = BoxOptions();
+  final simpleBox = BoxOptions();
   buf.drawBox(5, 3, 20, 8, simpleBox, Color.white, Color.black);
   buf.drawText('Simple Box', 8, 5, Color.yellow);
   buf.drawText('Default borders', 7, 7, Color.white);
 
   // Titled box with fill
-  const titledBox = BoxOptions(
+  final titledBox = BoxOptions(
     title: 'Information Panel',
     titleAlignment: TextAlign.center,
     fill: true,
@@ -456,7 +456,7 @@ Future<void> _demoBoxDrawing(Renderer renderer) async {
   buf.drawText('and background', 32, 7, Color.white);
 
   // Custom border sides
-  const partialBox = BoxOptions(
+  final partialBox = BoxOptions(
     title: 'Partial',
     sides: BorderSides(left: false, right: false),
     fill: true,
@@ -473,18 +473,18 @@ Future<void> _demoBoxDrawing(Renderer renderer) async {
   buf.drawText('Top/Bottom', 62, 5, Color.white);
 
   // Complex nested layout
-  const outerBox = BoxOptions(title: 'Outer Container', fill: true);
+  final outerBox = BoxOptions(title: 'Outer Container', fill: true);
   buf.drawBox(5, 13, 70, 12, outerBox, Color.yellow, Color.rgb(0.1, 0.1, 0.05));
 
-  const innerBox1 = BoxOptions(title: 'Panel 1');
+  final innerBox1 = BoxOptions(title: 'Panel 1');
   buf.drawBox(8, 16, 20, 6, innerBox1, Color.white, Color.black);
   buf.drawText('Content A', 12, 18, Color.green);
 
-  const innerBox2 = BoxOptions(title: 'Panel 2');
+  final innerBox2 = BoxOptions(title: 'Panel 2');
   buf.drawBox(32, 16, 20, 6, innerBox2, Color.white, Color.black);
   buf.drawText('Content B', 36, 18, Color.red);
 
-  const innerBox3 = BoxOptions(title: 'Panel 3');
+  final innerBox3 = BoxOptions(title: 'Panel 3');
   buf.drawBox(56, 16, 15, 6, innerBox3, Color.white, Color.black);
   buf.drawText('Content C', 58, 18, Color.blue);
 

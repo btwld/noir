@@ -87,13 +87,16 @@ void main() {
       test('should support custom border characters', () {
         final customChars = [
           0x2554,
-          0x2550,
           0x2557,
-          0x2551,
           0x255A,
-          0x2550,
           0x255D,
+          0x2550,
           0x2551,
+          0x2566,
+          0x2569,
+          0x2560,
+          0x2563,
+          0x256C,
         ];
         final border = Border.all(color: Color.white, borderChars: customChars);
 

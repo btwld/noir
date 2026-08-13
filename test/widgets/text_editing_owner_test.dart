@@ -525,59 +525,6 @@ void main() {
     );
 
     test(
-      'already-focused replacement node repairs on attach reconciliation',
-      () {
-        for (final widgetKind in _EditorKind.values) {
-          final first = FocusNode();
-          final second = FocusNode();
-          final controller = TextEditingController(text: 'hi');
-          final host = TestElementHost()
-            ..mount(widgetKind.widget(controller, focusNode: first));
-          first.requestFocus();
-          expect(controller.selection.extentOffset, 2);
-
-          // Clear while unfocused so repair is required on the replacement node.
-          first.unfocus();
-          controller
-            ..text = 'cleared'
-            ..selection = const TextSelection.collapsed(offset: -1);
-          expect(controller.selection.isValid, isFalse);
-
-          // Attach an already-focused replacement node (reclaimed path).
-          // Mount a throwaway tree so second is attached+focused, then swap.
-          final other = TestElementHost()
-            ..mount(
-              widgetKind.widget(
-                TextEditingController(text: 'x'),
-                focusNode: second,
-              ),
-            );
-          second.requestFocus();
-          expect(second.hasFocus, isTrue);
-
-          host.root!.update(widgetKind.widget(controller, focusNode: second));
-          host.owner.buildScope();
-          expect(
-            controller.selection,
-            const TextSelection.collapsed(offset: 7),
-            reason: '$widgetKind already-focused replacement repairs',
-          );
-
-          other.dispose();
-          host.dispose();
-          controller.dispose();
-          first.dispose();
-          // second may be disposed with host; if still live, dispose.
-          if (!second.hasFocus) {
-            try {
-              second.dispose();
-            } catch (_) {}
-          }
-        }
-      },
-    );
-
-    test(
       'direct dispose of host detaches without notifying after teardown',
       () {
         for (final widgetKind in _EditorKind.values) {

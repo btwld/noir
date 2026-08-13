@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'text_style.dart';
 
 /// Base class for inline text content.
@@ -43,4 +45,21 @@ final class TextSpan extends InlineSpan {
     computePlainText(buffer);
     return buffer.toString();
   }
+}
+
+/// Creates an owned recursive snapshot for a long-lived rendering boundary.
+@internal
+InlineSpan snapshotInlineSpan(InlineSpan span) {
+  if (span is TextSpan) {
+    return TextSpan(
+      text: span.text,
+      style: span.style,
+      children: List<InlineSpan>.unmodifiable(
+        span.children.map(snapshotInlineSpan),
+      ),
+    );
+  }
+  final buffer = StringBuffer();
+  span.computePlainText(buffer);
+  return TextSpan(text: buffer.toString());
 }

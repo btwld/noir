@@ -3,26 +3,63 @@ import 'dart:async';
 import 'animation.dart';
 import 'ticker.dart';
 
+void _validateBoundsAndValue(double lower, double upper, double value) {
+  if (!lower.isFinite) {
+    throw ArgumentError.value(lower, 'lowerBound', 'must be finite');
+  }
+  if (!upper.isFinite) {
+    throw ArgumentError.value(upper, 'upperBound', 'must be finite');
+  }
+  if (upper < lower) {
+    throw ArgumentError.value(
+      upper,
+      'upperBound',
+      'must be greater than or equal to lowerBound',
+    );
+  }
+  _validateAnimationValue(value, lower, upper);
+}
+
+void _validateAnimationValue(double value, double lower, double upper) {
+  if (!value.isFinite || value < lower || value > upper) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'must be finite and between lowerBound and upperBound',
+    );
+  }
+}
+
+void _validateDuration(Duration? value, String name) {
+  if (value?.isNegative ?? false) {
+    throw ArgumentError.value(value, name, 'must not be negative');
+  }
+}
+
 /// Drives a value between [lowerBound] and [upperBound] on ticks from
 /// [vsync].
 class AnimationController extends Animation<double> {
   /// Validates bounds and initial value, with a 300 ms forward duration by default.
   AnimationController({
     required this.vsync,
-    this.duration = const Duration(milliseconds: 300),
-    this.reverseDuration,
+    Duration duration = const Duration(milliseconds: 300),
+    Duration? reverseDuration,
     this.lowerBound = 0.0,
     this.upperBound = 1.0,
     double value = 0.0,
     this.debugLabel,
-  }) : assert(upperBound >= lowerBound),
-       assert(value >= lowerBound && value <= upperBound),
+  }) : _duration = duration,
+       _reverseDuration = reverseDuration,
        _value = value,
        _status = (value <= lowerBound)
            ? AnimationStatus.dismissed
            : (value >= upperBound
                  ? AnimationStatus.completed
-                 : AnimationStatus.forward);
+                 : AnimationStatus.forward) {
+    _validateDuration(duration, 'duration');
+    _validateDuration(reverseDuration, 'reverseDuration');
+    _validateBoundsAndValue(lowerBound, upperBound, value);
+  }
 
   /// Provider used to create the frame-driven ticker for this controller.
   final TickerProvider vsync;
@@ -36,11 +73,25 @@ class AnimationController extends Animation<double> {
   /// Optional diagnostic label forwarded to the controller's ticker.
   final String? debugLabel;
 
+  Duration _duration;
+
   /// Full-range forward duration; partial-distance runs scale proportionally.
-  Duration duration;
+  Duration get duration => _duration;
+
+  set duration(Duration value) {
+    _validateDuration(value, 'duration');
+    _duration = value;
+  }
+
+  Duration? _reverseDuration;
 
   /// Full-range reverse duration, or `null` to use [duration].
-  Duration? reverseDuration;
+  Duration? get reverseDuration => _reverseDuration;
+
+  set reverseDuration(Duration? value) {
+    _validateDuration(value, 'reverseDuration');
+    _reverseDuration = value;
+  }
 
   late final Ticker _ticker = vsync.createTicker(_tick, debugLabel: debugLabel);
   final List<AnimationStatusListener> _statusListeners =
@@ -66,6 +117,9 @@ class AnimationController extends Animation<double> {
   double get value => _value;
 
   set value(double newValue) {
+    if (!newValue.isFinite) {
+      throw ArgumentError.value(newValue, 'value', 'must be finite');
+    }
     final clamped = newValue.clamp(lowerBound, upperBound);
     if ((clamped - _value).abs() < _completionTolerance) {
       return;

@@ -84,8 +84,8 @@ class FocusAttachment {
   /// Binds the node to [context]'s element in this attachment's manager.
   void attach(BuildContext context) {
     final element = context.element;
-    _element = element;
     _manager._attachNode(_node, element);
+    _element = element;
   }
 
   /// Remaps the node to [context], attaching it first when necessary.
@@ -98,14 +98,15 @@ class FocusAttachment {
     if (identical(_element, element)) {
       return;
     }
+    _manager._reparentNode(_node, _element!, element);
     _element = element;
-    _manager._reparentNode(_node, element);
   }
 
   /// Removes the node mapping; does nothing when already detached.
   void detach() {
-    if (!isAttached) return;
-    _manager._detachNode(_node);
+    final element = _element;
+    if (element == null) return;
+    _manager._detachNode(_node, expectedElement: element);
     _element = null;
   }
 
@@ -349,13 +350,10 @@ class FocusManager {
   }
 
   void _attachNode(FocusNode node, Element element) {
+    _validateNodeAttachment(node, element);
     if (identical(node._manager, this) &&
         identical(_nodeToElement[node], element)) {
       return;
-    }
-
-    if (node._manager != null && !identical(node._manager, this)) {
-      node._manager!._detachNode(node);
     }
 
     node._manager = this;
@@ -363,8 +361,36 @@ class FocusManager {
     _bindNodeToElement(node, element);
   }
 
-  void _reparentNode(FocusNode node, Element element) {
+  void _validateNodeAttachment(
+    FocusNode node,
+    Element element, {
+    FocusNode? replacing,
+  }) {
+    validateChangeNotifierNotDisposed(node, name: 'FocusNode');
+    if (identical(node._manager, this) &&
+        identical(_nodeToElement[node], element)) {
+      return;
+    }
+    if (node._manager != null) {
+      throw StateError(
+        'FocusNode${node.debugLabel == null ? '' : ' "${node.debugLabel}"'} '
+        'is already attached to a live Focus widget. Detach it before reuse.',
+      );
+    }
+    final elementNode = _elementToNode[element];
+    if (elementNode != null &&
+        !identical(elementNode, node) &&
+        !identical(elementNode, replacing)) {
+      throw StateError('The target element already owns a FocusNode.');
+    }
+  }
+
+  void _reparentNode(FocusNode node, Element expectedElement, Element element) {
     final oldElement = _nodeToElement[node];
+    if (!identical(node._manager, this) ||
+        !identical(oldElement, expectedElement)) {
+      throw StateError('Cannot reparent a stale FocusNode attachment.');
+    }
     if (identical(oldElement, element)) {
       return;
     }
@@ -388,7 +414,11 @@ class FocusManager {
     }
   }
 
-  void _detachNode(FocusNode node) {
+  void _detachNode(FocusNode node, {Element? expectedElement}) {
+    if (expectedElement != null &&
+        !identical(_nodeToElement[node], expectedElement)) {
+      return;
+    }
     final element = _nodeToElement.remove(node);
     if (element != null) {
       _elementToNode[element] = null;
@@ -712,4 +742,20 @@ class FocusManager {
   /// Returns the focus node attached to [element], or `null` when absent.
   @internal
   FocusNode? nodeForElement(Element element) => _elementToNode[element];
+}
+
+/// Validates a widget-driven node replacement before the current attachment
+/// is detached, so a rejected duplicate leaves both live trees authoritative.
+@internal
+void validateFocusNodeReplacementTarget(
+  FocusNode nextNode,
+  FocusNode currentNode,
+  BuildContext context,
+) {
+  final manager = FocusManager.of(context);
+  manager._validateNodeAttachment(
+    nextNode,
+    context.element,
+    replacing: currentNode,
+  );
 }

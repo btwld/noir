@@ -156,17 +156,17 @@ void main() {
         'Column shrink-wraps decorated non-flex children on the main axis',
         () {
           final result = capture.capture(
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _FieldBox(label: 'Name', value: 'Ada Lovelace'),
-                _FieldBox(label: 'Email', value: 'ada@example.dev'),
+                const _FieldBox(label: 'Name', value: 'Ada Lovelace'),
+                const _FieldBox(label: 'Email', value: 'ada@example.dev'),
                 Container(
-                  padding: EdgeInsets.all(1),
+                  padding: const EdgeInsets.all(1),
                   decoration: BoxDecoration(
                     border: Border.all(color: Color.white),
                   ),
-                  child: Text('Saved'),
+                  child: const Text('Saved'),
                 ),
               ],
             ),
@@ -187,8 +187,8 @@ void main() {
               padding: const EdgeInsets.all(1),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text('Pulse'),
+                children: [
+                  const Text('Pulse'),
                   Container(
                     width: 12,
                     height: 4,
@@ -197,7 +197,7 @@ void main() {
                       border: Border.all(color: Color.white),
                     ),
                   ),
-                  Text('value: 0.50'),
+                  const Text('value: 0.50'),
                 ],
               ),
             ),

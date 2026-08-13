@@ -48,6 +48,7 @@ class Renderer {
   final OpenTuiBindings _bindings;
   final RendererHandle _handle;
   Buffer? _nextBuffer;
+  Buffer? _currentBuffer;
   bool _disposed = false;
   bool _autoFlush = true;
   final Object _finalizerKey = Object();
@@ -69,9 +70,11 @@ class Renderer {
   void resize(int width, int height) {
     _checkNotDisposed();
     validateRendererDimensions(width, height);
-    _bindings.resizeRenderer(_handle, width, height);
-    _nextBuffer?.invalidate();
-    _nextBuffer = null;
+    try {
+      _bindings.resizeRenderer(_handle, width, height);
+    } finally {
+      _invalidateBorrowedBuffers();
+    }
   }
 
   /// The buffer for the next frame, created lazily and invalidated after each [render] call.
@@ -80,6 +83,7 @@ class Renderer {
     _nextBuffer ??= createBufferFromNative(
       _bindings.getNextBuffer(_handle),
       _bindings,
+      () => _disposed,
     );
     return _nextBuffer!;
   }
@@ -89,10 +93,12 @@ class Renderer {
   @internal
   Buffer get debugCurrentBuffer {
     _checkNotDisposed();
-    return createBufferFromNative(
+    _currentBuffer ??= createBufferFromNative(
       _bindings.getCurrentBuffer(_handle),
       _bindings,
+      () => _disposed,
     );
+    return _currentBuffer!;
   }
 
   /// Renders the current buffer to the terminal.
@@ -119,8 +125,7 @@ class Renderer {
       // OpenTUI may have cleared or otherwise mutated the frame before it
       // reports failure. Never let callers reuse a potentially stale native
       // view, including when rendering or flushing throws.
-      _nextBuffer?.invalidate();
-      _nextBuffer = null;
+      _invalidateBorrowedBuffers();
     }
   }
 
@@ -174,9 +179,15 @@ class Renderer {
     _finalizer.detach(_finalizerKey);
     // Invalidate before destroying native handle so any stragglers (clipped
     // views, etc.) fail fast instead of touching freed memory.
-    _nextBuffer?.invalidate();
+    _invalidateBorrowedBuffers();
     _bindings.destroyRenderer(_handle);
+  }
+
+  void _invalidateBorrowedBuffers() {
+    _nextBuffer?.invalidate();
+    _currentBuffer?.invalidate();
     _nextBuffer = null;
+    _currentBuffer = null;
   }
 
   /// Internal: raw native renderer handle. Used by `CursorManagement`,

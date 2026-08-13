@@ -16,8 +16,7 @@ enum BorderStyle {
 
 /// Base class for box borders (like [Border]).
 abstract class BoxBorder {
-  /// Abstract const constructor. This constructor enables subclasses to provide
-  /// const constructors so that they can be used in const expressions.
+  /// Abstract const constructor for immutable border implementations.
   const BoxBorder();
 
   /// The widths of the sides of this border represented as an [EdgeInsets].
@@ -44,18 +43,18 @@ abstract class BoxBorder {
 class Border extends BoxBorder {
   /// Creates a border that draws the sides described by [sides] in the given
   /// [color] and [style].
-  const Border({
+  Border({
     this.color = Color.black,
     this.style = BorderStyle.solid,
     this.sides = const BorderSides(),
     this.title,
     this.titleAlignment = TextAlign.left,
     this.fill = false,
-    this.borderChars,
-  });
+    List<int>? borderChars,
+  }) : borderChars = snapshotBorderChars(borderChars);
 
   /// All four sides on, with the given [color] and [style].
-  const Border.all({
+  Border.all({
     Color color = Color.black,
     BorderStyle style = BorderStyle.solid,
     String? title,

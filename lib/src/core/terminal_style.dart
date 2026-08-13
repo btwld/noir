@@ -1,3 +1,23 @@
+import 'package:meta/meta.dart';
+
+const _borderCharacterCount = 11;
+
+/// Validates and snapshots a custom OpenTUI border character table.
+@internal
+List<int>? snapshotBorderChars(List<int>? borderChars) {
+  if (borderChars == null) {
+    return null;
+  }
+  if (borderChars.length != _borderCharacterCount) {
+    throw ArgumentError.value(
+      borderChars.length,
+      'borderChars',
+      'must contain exactly $_borderCharacterCount code points',
+    );
+  }
+  return List<int>.unmodifiable(borderChars);
+}
+
 /// How terminal text should be aligned horizontally.
 enum TextAlign {
   /// Align content to the left edge.
@@ -36,13 +56,13 @@ final class BorderSides {
 /// Semantic options for drawing a terminal box.
 final class BoxOptions {
   /// Creates box drawing options.
-  const BoxOptions({
+  BoxOptions({
     this.sides = const BorderSides(),
     this.fill = false,
     this.title,
     this.titleAlignment = TextAlign.left,
-    this.borderChars,
-  });
+    List<int>? borderChars,
+  }) : borderChars = snapshotBorderChars(borderChars);
 
   /// The sides to draw.
   final BorderSides sides;

@@ -248,8 +248,9 @@ corrupt package.
 
 - High-level layout and painting keep multi-code-point graphemes intact and
   expand intersecting selection ranges to whole grapheme clusters.
-  `DirectBufferAccess.chars` remains native encoded storage: packed grapheme
-  words are not independently decodable Unicode scalars.
+  `DirectBufferAccess.getEncodedCellAt()` exposes guarded access to native
+  encoded storage; packed grapheme words are not independently decodable
+  Unicode scalars.
 - OpenTUI v0.5.1's native `bufferDrawText` path mishandles a run whose first
   grapheme has source-level width zero: it can emit UTF-8 continuation bytes as
   cells and advance before the following text. Noir keeps the pinned source's
@@ -268,6 +269,5 @@ corrupt package.
   held by a frame on the stack, to an enum converted into a class, or to the
   bundled OpenTUI native library still require a full restart.
 - The current Linux libraries retain absolute build/debug paths. They pass
-  static integrity checks, but are not cleared for public publication or
-  runtime acceptance until an explicitly authorized artifact refresh or
-  provenance decision and a Linux execution pass.
+  static integrity checks; this is visible upstream artifact metadata rather
+  than a Noir rebuild output.

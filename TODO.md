@@ -9,12 +9,12 @@ below are closed.
 
 ## Open — required before publishing
 
-- [ ] **Independent behavior and full-diff review** of the release tree, with
+- [x] **Independent behavior and full-diff review** of the release tree, with
       no unresolved finding.
-- [ ] **Recovery bundle and clean-clone verification** recorded: clone the
+- [x] **Recovery bundle and clean-clone verification** recorded: clone the
       repository fresh, run the verification commands below, and confirm the
       bundled binaries verify against `native_manifest.json`.
-- [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
+- [x] **Manual real-terminal check** of hot reload. Ordinary verification is
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
@@ -36,7 +36,7 @@ below are closed.
       and immutable-action pinned. Manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1197 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1212 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Staged CI on `main` is green across format/analyze, Ubuntu, macOS, and
       Windows.
@@ -83,6 +83,9 @@ authorization.
   duplicate native ownership with an ANSI workaround.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
+- Decorated box content can escape a clipped viewport in some overflow cases.
+- Some low-level native operation failures cannot be reported precisely to
+  Dart.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
   `TuiApp.reassemble()` re-runs `build()`, layout, and paint bodies only; it
   never re-runs `main()` or `initState`, so changes to those, to a signature
