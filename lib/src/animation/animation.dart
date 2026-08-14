@@ -33,6 +33,10 @@ abstract class Animation<T> extends ChangeNotifier
   AnimationStatus get status;
 
   /// Registers [listener] for later status transitions.
+  ///
+  /// Listener failures are reported with their original stack traces to the
+  /// zone in which status notification began. A failure does not prevent
+  /// later listeners in that notification snapshot from running.
   void addStatusListener(AnimationStatusListener listener);
 
   /// Removes a matching status-listener registration.

@@ -1,4 +1,6 @@
 // ignore_for_file: use_setters_to_change_properties
+import 'dart:async';
+
 import '../framework/widget.dart';
 
 /// Signature of a per-frame tick given the time elapsed since the ticker
@@ -58,14 +60,23 @@ class TickerScheduler {
   }
 
   /// Ticks an active snapshot and requests another frame while work remains.
+  ///
+  /// Callback failures are reported with their original stack traces to the
+  /// zone in which this frame dispatch began. One ticker cannot starve a
+  /// sibling or suppress the next frame while active work remains.
   void handleFrame(Duration timeStamp) {
     if (_activeTickers.isEmpty) {
       return;
     }
 
+    final reportingZone = Zone.current;
     final tickers = List<Ticker>.from(_activeTickers);
     for (final ticker in tickers) {
-      ticker._tick(timeStamp);
+      try {
+        ticker._tick(timeStamp);
+      } on Object catch (error, stackTrace) {
+        reportingZone.handleUncaughtError(error, stackTrace);
+      }
     }
 
     if (_activeTickers.isNotEmpty) {
