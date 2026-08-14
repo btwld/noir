@@ -25,6 +25,7 @@ dart run example/main.dart
 | `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
 | `dart run example/bindings_validation.dart` | Interactive alternate-screen validation of advanced renderer/buffer APIs and ABI-unstable FFI values; requires a terminal at least 120x40. |
 | `dart run example/pulse_animation.dart` | `AnimationController`, ticker scheduling, and frame-driven updates. |
+| `dart run example/love_reactor.dart` | Interactive `AnimationController` particle reactor with overlapping keyboard and mouse-triggered heart bursts. |
 | `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
 | `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
 | `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
