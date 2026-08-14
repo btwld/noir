@@ -76,7 +76,10 @@ Stateful widgets persist a `State` object between supported rebuilds. Call
 ```dart
 import 'package:noir/noir.dart';
 
-void main() => runTuiApp(const CounterApp());
+void main() {
+  final app = runTuiApp(const CounterApp());
+  app.enableMouse();
+}
 
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});
@@ -88,19 +91,29 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
+  void _incrementCounter() => setState(() => _count++);
+
+  void _decrementCounter() => setState(() => _count--);
+
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
-        event.character == '+') {
-      setState(() => _count++);
+        event.character == '+' ||
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.space) {
+      _incrementCounter();
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
         event.character == '-') {
-      setState(() => _count--);
+      _decrementCounter();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  void _handlePointerDown(MouseEvent event) {
+    if (event.button == MouseButton.left) _incrementCounter();
   }
 
   @override
@@ -108,13 +121,55 @@ class _CounterAppState extends State<CounterApp> {
     autofocus: true,
     onKeyEvent: _handleKey,
     child: Container(
-      padding: const EdgeInsets.all(1),
+      color: Color.fromHex('#FAFAFA'),
       child: Column(
-        spacing: 1,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Counter', style: TextStyle(color: Color.green)),
-          Text('Count: $_count'),
-          const Text('Up/+ increment | Down/- decrement'),
+          Container(
+            height: 3,
+            color: Color.fromHex('#1976D2'),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: const Text(
+              'Noir Counter',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'You have pushed the button this many times:',
+                  style: TextStyle(color: Color.fromHex('#424242')),
+                ),
+                Text(
+                  '$_count',
+                  style: TextStyle(color: Color.fromHex('#1976D2')),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Up/+ | Down/- | Enter/Space | Ctrl+C',
+                  style: TextStyle(color: Color.gray),
+                ),
+              ),
+              PointerListener(
+                onPointerDown: _handlePointerDown,
+                child: Container(
+                  width: 7,
+                  height: 3,
+                  alignment: Alignment.center,
+                  color: Color.fromHex('#1976D2'),
+                  child: const Text('+'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     ),
@@ -124,7 +179,8 @@ class _CounterAppState extends State<CounterApp> {
 
 See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
-for the complete version with hot-reload registration.
+for the complete styled version with a rounded action surface and hot-reload
+registration.
 
 ## Application Lifecycle and API Tiers
 
@@ -165,8 +221,9 @@ backend remain framework-owned; they are not supported package surfaces.
 ## Example Apps
 
 - [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
-- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — interactive stateful rebuilds with
-  Up/Down and `+`/`-` controls.
+- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
+  stateful body, and rounded action surface controlled by Up/Down, `+`/`-`,
+  Enter/Space, or click.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.

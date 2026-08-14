@@ -12,9 +12,11 @@
 - Opt-in `registerHotReloadExtension(app)` publishes the `ext.noir.reassemble`
   VM service extension so a development driver can rebuild a running app after
   `reloadSources`.
-- The counter example is keyboard-driven with Up/Down and `+`/`-`; an
-  unconsumed Ctrl+C key follows the terminal session's cleanup and interrupt
-  exit path while higher-priority handlers can override it.
+- The Flutter-inspired counter example composes a blue app bar, centered body,
+  and rounded clickable action surface. Up/Down, `+`/`-`, Enter, Space, and
+  left click drive its state; an unconsumed Ctrl+C key follows the terminal
+  session's cleanup and interrupt exit path while higher-priority handlers can
+  override it.
 - Terminal shutdown restores inherited line and echo modes before cancelling
   the stdin subscription, avoiding Dart/macOS `EBADF` errors during Escape or
   other normal disposal paths.

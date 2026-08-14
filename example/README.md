@@ -16,7 +16,7 @@ dart run example/main.dart
 | ------- | ---------- |
 | `dart run example/main.dart` | Canonical entry point — minimal Flutter-like terminal app. |
 | `dart run example/hello.dart` | Minimal renderer + widget pipeline smoke test. |
-| `dart run example/counter.dart` | Interactive `setState` rebuilds via Up/Down and `+`/`-`. |
+| `dart run example/counter.dart` | Flutter-inspired full-screen `setState` counter with an app bar, centered body, and Up/Down, `+`/`-`, Enter/Space, and click controls. |
 | `dart run example/layout_basics.dart` | Basic `Container`, `Row`, `Column`, spacing, and flex usage. |
 | `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
