@@ -127,9 +127,9 @@ void main() {
       multiLine: true,
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
-    expect(version, '1.0.0-alpha.1');
-    expect(changelogVersions, <String>['1.0.0-alpha.1']);
-    expect(changelog, contains('First 1.0 prerelease'));
+    expect(version, '0.0.1-alpha.0');
+    expect(changelogVersions, <String>['0.0.1-alpha.0']);
+    expect(changelog, contains('First public alpha'));
     expect(changelog, isNot(contains('Initial public release')));
     expect(changelog.toLowerCase(), isNot(contains('muse')));
     expect(changelog.toLowerCase(), isNot(contains('pixel')));
@@ -180,13 +180,13 @@ void main() {
     final install = readme.substring(installStart, quickStartIndex);
 
     expect(installStart, greaterThanOrEqualTo(0));
-    expect(install, contains('dart pub add noir:^1.0.0-alpha.1'));
+    expect(install, contains('dart pub add noir:^0.0.1-alpha.0'));
     expect(install, contains('path: ../noir'));
     expect(
       _normalized(install),
       contains('pin an exact commit or release tag'),
     );
-    expect(readme, contains('`1.0.0-alpha.1` is a prerelease'));
+    expect(readme, contains('`0.0.1-alpha.0` is a prerelease'));
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
       hasLength(2),

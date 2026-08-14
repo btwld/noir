@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.0.0-alpha.1
+## 0.0.1-alpha.0
 
-- First 1.0 prerelease of Noir's Flutter-like reactive widget framework for
+- First public alpha of Noir's Flutter-like reactive widget framework for
   terminal applications.
 - Declarative stateless and stateful widgets, `setState`, layout, text styling,
   focus, keyboard and mouse input, text editing, scrolling, and animation.

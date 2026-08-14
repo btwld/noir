@@ -5,7 +5,7 @@ OpenTUI. It combines declarative widgets, integer-cell layout, stateful
 rebuilds, focus and input routing, animation, and bundled native rendering in
 one package.
 
-`1.0.0-alpha.1` is a prerelease. APIs and platform guarantees may change
+`0.0.1-alpha.0` is a prerelease. APIs and platform guarantees may change
 before stable 1.0.
 
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
@@ -21,7 +21,7 @@ before stable 1.0.
 
 Use the explicitly versioned prerelease after it is available on pub.dev:
 
-    dart pub add noir:^1.0.0-alpha.1
+    dart pub add noir:^0.0.1-alpha.0
 
 Before publication, clone this repository and use a path dependency:
 

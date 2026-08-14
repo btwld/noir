@@ -115,6 +115,6 @@ deliberately exercise a restricted behavior.
 
 ## Current release boundary
 
-The target is a core-framework `1.0.0-alpha.1` candidate, not a stable 1.0
+The target is a core-framework `0.0.1-alpha.0` candidate, not a stable 1.0
 claim. The live gates and known native limitations are in
 [`TODO.md`](TODO.md).

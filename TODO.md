@@ -1,4 +1,4 @@
-# Release TODO — `1.0.0-alpha.1`
+# Release TODO — `0.0.1-alpha.0`
 
 The single record of what remains before Noir is published. Update it only with
 evidence from the exact reviewed tree.

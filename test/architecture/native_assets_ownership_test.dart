@@ -154,7 +154,7 @@ void main() {
         .toSet();
 
     for (final clause in <String>[
-      'dart pub add noir:^1.0.0-alpha.1',
+      'dart pub add noir:^0.0.1-alpha.0',
       'package:noir/noir.dart',
       'runTuiApp',
       'ships bundled native libraries',
