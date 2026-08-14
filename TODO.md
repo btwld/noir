@@ -37,13 +37,18 @@ below are closed.
       parallel after the gate; manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1248 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1253 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
-      Regression checks on the repaired tree confirm both layout examples exit
-      immediately through `q`, unconsumed Ctrl+C exits with status 130, and the
-      textarea/widgets-tour counters report and submit Unicode grapheme counts;
-      every path returns to a usable shell without a stack trace.
+      Post-change VS Code checks exercised Select keyboard selection, ScrollBox
+      navigation, the inherited `t` toggle, a sustained pulse run, and
+      framework-primitives Enter/Space activation; each returned to a usable
+      shell without a stack trace. Parser-backed widget checks separately prove
+      Select click selection, ScrollBox wheel movement, the inherited
+      ocean/white-to-forest/yellow rebuild, pulse completion/reversal, and the
+      framework-primitives local-pointer path. The Computer Use bridge did not
+      expose framed pointer actions, so those pointer assertions are automated,
+      not recorded as manual click or wheel observations.
 - [x] Analysis-gated CI on `main` is green across format/analyze, Ubuntu,
       macOS, and Windows.
 
