@@ -26,10 +26,13 @@
 **Files:**
 - Modify: `test/rendering/align_offset_test.dart`
 - Modify: `lib/src/rendering/positioned_box.dart`
+- Modify if the corrected centering exposes the existing 24-row overflow: `example/layout_basics.dart`
 - Regenerate if changed by corrected semantics: `test/goldens/text_widgets.buffer.txt`
 - Regenerate if changed by corrected semantics: `test/goldens/text_widgets.styles.txt`
 - Regenerate if changed by corrected semantics: `test/goldens/alignment_combinations.buffer.txt`
 - Regenerate if changed by corrected semantics: `test/goldens/alignment_combinations.styles.txt`
+- Regenerate if changed by corrected semantics: `test/goldens/layout_basics.buffer.txt`
+- Regenerate if changed by corrected semantics: `test/goldens/layout_basics.styles.txt`
 
 **Interfaces:**
 - Consumes: `BoxConstraints.loose({int? maxWidth, int? maxHeight})`, `Alignment`, `RenderBox.layout`, and `positionChild`.
@@ -162,6 +165,47 @@ Accept only coordinate/style relocation consistent with the declared
 alignment, then rerun the two golden test files without `UPDATE_GOLDENS` and
 expect all tests to pass.
 
+- [ ] **Step 6a: Preserve the compact layout-basics demonstration**
+
+If `test/example/layout_basics_golden_test.dart` shows that correct centering
+pushes `Flex 1`, `Flex 2`, and `Loose` beyond the default 80x24 capture, retain
+the existing golden as the failing compatibility test. In
+`example/layout_basics.dart`, reduce only the explicit vertical extents:
+
+```dart
+// _Section
+height: 1,
+
+// _MainAxisCenterRow and _MainAxisSpaceBetweenRow
+height: 5,
+
+// _FlexRow
+height: 6,
+```
+
+These children then consume 21 of the 22 rows available inside the root's
+one-cell top/bottom padding, while preserving one interior breathing row around
+the two-row blocks and the three-row flex blocks.
+
+Run the golden test without updating and inspect the actual buffer first:
+
+```bash
+dart test test/example/layout_basics_golden_test.dart --concurrency=1
+diff -u test/goldens/layout_basics.buffer.txt test/failures/layout_basics.actual.buffer.txt
+```
+
+Require the actual frame to contain `MainAxis: center`,
+`MainAxis: spaceBetween`, `Flex distribution`, `Flex 1`, `Flex 2`, and `Loose`.
+Then regenerate and rerun:
+
+```bash
+UPDATE_GOLDENS=1 dart test test/example/layout_basics_golden_test.dart --concurrency=1
+dart test test/example/layout_basics_golden_test.dart --concurrency=1
+```
+
+Inspect the buffer and style sidecars and accept only the intentional compact
+vertical relocation and corrected block-label centering.
+
 - [ ] **Step 7: Format and commit the framework slice**
 
 Run:
@@ -169,7 +213,7 @@ Run:
 ```bash
 dart format lib/src/rendering/positioned_box.dart test/rendering/align_offset_test.dart
 git diff --check
-git add lib/src/rendering/positioned_box.dart test/rendering/align_offset_test.dart test/goldens/text_widgets.buffer.txt test/goldens/text_widgets.styles.txt test/goldens/alignment_combinations.buffer.txt test/goldens/alignment_combinations.styles.txt
+git add lib/src/rendering/positioned_box.dart test/rendering/align_offset_test.dart example/layout_basics.dart test/goldens/text_widgets.buffer.txt test/goldens/text_widgets.styles.txt test/goldens/alignment_combinations.buffer.txt test/goldens/alignment_combinations.styles.txt test/goldens/layout_basics.buffer.txt test/goldens/layout_basics.styles.txt
 git commit -m "fix(rendering): honor bounded Align positioning"
 ```
 
