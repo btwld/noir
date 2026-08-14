@@ -79,7 +79,7 @@ void main() {
   });
 
   test('focus form fields can be selected and submitted by mouse', () async {
-    final app = createTuiTestApp(const FocusFormApp(), width: 80, height: 24);
+    final app = createTuiTestApp(const FocusFormApp());
     try {
       await _settleAutofocus(app);
       var frame = app.captureFrame();
