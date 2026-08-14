@@ -191,6 +191,20 @@ void main() {
     }
   });
 
+  test('select demo clips safely in a terminal shorter than its content', () {
+    final app = createTuiTestApp(
+      SelectDemoApp(onQuit: () {}),
+      width: 35,
+      height: 9,
+    );
+    try {
+      expect(app.pumpFrame, returnsNormally);
+      expect(app.captureFrame().toText(), contains('Select demo'));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('textarea demo submits portable and xterm modified input', () async {
     var quits = 0;
     final app = createTuiTestApp(

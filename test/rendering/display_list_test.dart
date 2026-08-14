@@ -54,6 +54,23 @@ void main() {
     expect(direct.getChar(5, 0), 'Z');
   });
 
+  test('TuiCanvas clips unscoped commands to the destination buffer', () {
+    final renderer = Renderer.create(3, 2, testing: true);
+    final buffer = renderer.nextBuffer;
+    addTearDown(renderer.dispose);
+
+    final canvas = createTuiCanvas()
+      ..setCell(const Offset(3, 1), '!', Color.green, Color.black, 0)
+      ..setCell(const Offset(2, 2), '?', Color.red, Color.black, 0)
+      ..drawText('ABCDE', const Offset(1, 0), Color.yellow);
+
+    expect(() => commitTuiCanvas(buffer, canvas), returnsNormally);
+
+    final direct = buffer.getDirectAccess();
+    expect(direct.getChar(1, 0), 'A');
+    expect(direct.getChar(2, 0), 'B');
+  });
+
   test('TuiCanvas encodes text layouts with styles and selection', () {
     final renderer = Renderer.create(8, 2, testing: true);
     final buffer = renderer.nextBuffer;
