@@ -41,6 +41,7 @@ void main() {
         expect(frame, BufferMatchers.containsText('Theme: ocean'));
         expect(frame, BufferMatchers.containsText('Welcome to OpenTUI'));
         final oceanMessage = frame.findText('Welcome to OpenTUI').single;
+        final oceanUpdates = frame.findText('Dependency updates: 1').single;
         expect(
           frame.getForegroundColor(oceanMessage.x, oceanMessage.y),
           Color.white,
@@ -49,6 +50,10 @@ void main() {
           frame.getBackgroundColor(oceanMessage.x, oceanMessage.y),
           const Color(0.2, 0.4, 0.8),
         );
+        expect(
+          frame.getForegroundColor(oceanUpdates.x, oceanUpdates.y),
+          Color.white,
+        );
 
         app.mockInput.typeText('t');
         await Future<void>.delayed(Duration.zero);
@@ -56,6 +61,7 @@ void main() {
 
         expect(frame, BufferMatchers.containsText('Theme: forest'));
         final forestMessage = frame.findText('Welcome to OpenTUI').single;
+        final forestUpdates = frame.findText('Dependency updates: 2').single;
         expect(
           frame.getForegroundColor(forestMessage.x, forestMessage.y),
           Color.yellow,
@@ -64,6 +70,14 @@ void main() {
           frame.getBackgroundColor(forestMessage.x, forestMessage.y),
           Color.fromHex('#1a8040'),
           reason: 'rendered cells store normalized colors at 8-bit precision',
+        );
+        expect(
+          frame.getForegroundColor(forestUpdates.x, forestUpdates.y),
+          Color.yellow,
+        );
+        expect(
+          frame.getBackgroundColor(forestUpdates.x, forestUpdates.y),
+          Color.fromHex('#1a8040'),
         );
       } finally {
         app.dispose();

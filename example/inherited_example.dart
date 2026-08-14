@@ -36,6 +36,36 @@ class ThemedText extends StatelessWidget {
   }
 }
 
+class _ThemeDependencyStatus extends StatefulWidget {
+  const _ThemeDependencyStatus();
+
+  @override
+  State<_ThemeDependencyStatus> createState() => _ThemeDependencyStatusState();
+}
+
+class _ThemeDependencyStatusState extends State<_ThemeDependencyStatus> {
+  late Color _derivedTextColor;
+  var _dependencyUpdates = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _derivedTextColor = ThemeData.of(context).textColor;
+    _dependencyUpdates++;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Noir snapshots dependencies per build, so reassert the registration
+    // without deriving presentation state during ordinary reconciliation.
+    ThemeData.of(context);
+    return Text(
+      'Dependency updates: $_dependencyUpdates',
+      style: TextStyle(color: _derivedTextColor),
+    );
+  }
+}
+
 final class _ThemeSnapshot {
   const _ThemeSnapshot({
     required this.name,
@@ -93,6 +123,7 @@ class _ThemedAppState extends State<ThemedApp> {
               ThemedText('Theme: ${theme.name} (press t to toggle)'),
               const ThemedText('Welcome to OpenTUI'),
               const ThemedText('This text uses inherited theme colors'),
+              const _ThemeDependencyStatus(),
             ],
           ),
         ),

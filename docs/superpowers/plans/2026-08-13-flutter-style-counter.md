@@ -263,14 +263,22 @@ class _ThemeDependencyStatusState extends State<_ThemeDependencyStatus> {
   }
 
   @override
-  Widget build(BuildContext context) => Text(
-    'Dependency updates: $_dependencyUpdates',
-    style: TextStyle(color: _derivedTextColor),
-  );
+  Widget build(BuildContext context) {
+    ThemeData.of(context);
+    return Text(
+      'Dependency updates: $_dependencyUpdates',
+      style: TextStyle(color: _derivedTextColor),
+    );
+  }
 }
 ```
 
-The `build` method must not call `ThemeData.of`; it renders only the cached value and count. Add `const _ThemeDependencyStatus()` to the existing themed column without changing the ocean/forest values.
+Noir snapshots dependency registrations per build, so `build` must reassert
+`ThemeData.of(context)` without reading it into presentation state. It renders
+only the color cached by `didChangeDependencies` and the notification count;
+an ordinary reconciliation can therefore preserve the dependency but cannot
+fabricate either derived update. Add `const _ThemeDependencyStatus()` to the
+existing themed column without changing the ocean/forest values.
 
 - [ ] **Step 4: Format and turn inherited coverage green**
 
