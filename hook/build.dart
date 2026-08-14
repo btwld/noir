@@ -24,9 +24,9 @@ Future<void> buildOpenTuiNativeAsset(
     return;
   }
 
-  final manifest = NativeManifest.fromFile(
-    File.fromUri(input.packageRoot.resolve(_manifestPath)),
-  );
+  final manifestUri = input.packageRoot.resolve(_manifestPath);
+  output.dependencies.add(manifestUri);
+  final manifest = NativeManifest.fromFile(File.fromUri(manifestUri));
   final entry = manifest.entryFor(
     input.config.code.targetOS,
     input.config.code.targetArchitecture,
@@ -36,6 +36,7 @@ Future<void> buildOpenTuiNativeAsset(
     entry: entry,
     environment: environment,
   );
+  output.dependencies.add(library);
 
   if (!input.config.linkingEnabled) {
     output.assets.code.add(

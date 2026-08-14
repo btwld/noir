@@ -33,6 +33,11 @@ dart run example/main.dart
 ## Tips
 
 - Use a wide terminal for the layout demos to reduce clipping.
+- Dart checks Noir's native-asset build hook before a run and may print
+  `Running build hooks...`. To hide routine compiler/hook status while keeping
+  errors visible, run `dart run --verbosity=error example/counter.dart`; this
+  still runs and verifies the native asset whenever Dart invalidates the
+  build-hook cache.
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.

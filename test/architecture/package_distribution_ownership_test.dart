@@ -233,6 +233,15 @@ void main() {
     expect(catalogEntries, unorderedEquals(shippedExamples));
   });
 
+  test('example guide explains optional quiet build-hook status', () {
+    expect(
+      exampleGuide,
+      contains('dart run --verbosity=error example/counter.dart'),
+    );
+    expect(exampleGuide, contains('still runs and verifies the native asset'));
+    expect(exampleGuide, contains('Dart invalidates the\n  build-hook cache'));
+  });
+
   test('README preserves known limitations without internal ticket IDs', () {
     final limitationsStart = readme.indexOf('## Known Limitations');
     expect(limitationsStart, greaterThanOrEqualTo(0));
