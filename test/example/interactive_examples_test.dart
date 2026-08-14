@@ -1,3 +1,5 @@
+import 'dart:io' as io;
+
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
@@ -11,6 +13,25 @@ import '../../example/widgets_tour.dart';
 import '../helpers/tui_test_app.dart';
 
 void main() {
+  test('mouse-capable example entrypoints enable mouse reporting once', () {
+    for (final path in <String>[
+      'example/select_demo.dart',
+      'example/scrollbox_demo.dart',
+    ]) {
+      final source = io.File(path).readAsStringSync();
+      expect(
+        RegExp(r'app\.enableMouse\(\);').allMatches(source),
+        hasLength(1),
+        reason: path,
+      );
+      expect(
+        source,
+        isNot(contains('enableMouse(enableMovement: true)')),
+        reason: '$path does not need movement reports',
+      );
+    }
+  });
+
   test('layout examples delegate q to their quit owner exactly once', () async {
     final cases = <(String, Widget Function(VoidCallback))>[
       ('layout basics', (onQuit) => LayoutBasics(onQuit: onQuit)),
@@ -57,6 +78,31 @@ void main() {
     }
   });
 
+  test('focus form fields can be selected and submitted by mouse', () async {
+    final app = createTuiTestApp(const FocusFormApp(), width: 80, height: 24);
+    try {
+      await _settleAutofocus(app);
+      var frame = app.captureFrame();
+      final name = frame.findText('Jane Doe').single;
+      app.mockMouse.click(name.x, name.y);
+      app.mockInput.typeText('Ada');
+      await _settleInput();
+      app.pumpFrame();
+
+      frame = app.captureFrame();
+      final email = frame.findText('jane@example.com').single;
+      app.mockMouse.click(email.x, email.y);
+      app.mockInput
+        ..typeText('ada@example.com')
+        ..pressEnter();
+      await _settleInput();
+
+      expect(_render(app), contains('Saved: Ada - ada@example.com'));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('scroll demo reaches the final row and q invokes quit', () async {
     var quits = 0;
     final app = createTuiTestApp(
@@ -77,6 +123,24 @@ void main() {
 
       app.mockInput.typeText('q');
       expect(quits, 1);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('scrollbox responds to a wheel event inside its viewport', () async {
+    final app = createTuiTestApp(
+      ScrollDemoApp(onQuit: () {}),
+      width: 56,
+      height: 18,
+    );
+    try {
+      await _settleAutofocus(app);
+      final firstLine = app.captureFrame().findText('Line 1').single;
+      app.mockMouse.scroll(firstLine.x, firstLine.y, ScrollDirection.down);
+      await _settleInput();
+
+      expect(_render(app), isNot(contains('offset: 0 /')));
     } finally {
       app.dispose();
     }
@@ -104,6 +168,24 @@ void main() {
 
       app.mockInput.typeText('q');
       expect(quits, 1);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('select option can be confirmed by mouse', () async {
+    final app = createTuiTestApp(
+      SelectDemoApp(onQuit: () {}),
+      width: 56,
+      height: 20,
+    );
+    try {
+      await _settleAutofocus(app);
+      final cherry = app.captureFrame().findText('Cherry').single;
+      app.mockMouse.click(cherry.x, cherry.y);
+      await _settleInput();
+
+      expect(_render(app), contains('You picked: cherry'));
     } finally {
       app.dispose();
     }

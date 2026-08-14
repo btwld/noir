@@ -16,6 +16,7 @@ void main() {
   }
 
   app = runTuiApp(ScrollDemoApp(onQuit: quit));
+  app.enableMouse();
 }
 
 class ScrollDemoApp extends StatefulWidget {
