@@ -37,18 +37,21 @@ below are closed.
       parallel after the gate; manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1253 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1256 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and
-      framework-primitives Enter/Space activation; each returned to a usable
-      shell without a stack trace. Parser-backed widget checks separately prove
-      Select click selection, ScrollBox wheel movement, the inherited
-      ocean/white-to-forest/yellow rebuild, pulse completion/reversal, and the
-      framework-primitives local-pointer path. The Computer Use bridge did not
-      expose framed pointer actions, so those pointer assertions are automated,
-      not recorded as manual click or wheel observations.
+      framework-primitives Enter/Space activation. The Flutter-style counter's
+      live sequence was `0 -> 1 -> 0 -> 1 -> 0 -> 1 -> 2 -> 3` across Up, Down,
+      `+`, `-`, Enter, Space, and a real left click for the final `2 -> 3`
+      transition. Initial and incremented VS Code frames were captured, and
+      Ctrl+C restored a usable shell without a stack trace. Parser-backed widget
+      checks separately prove Select click selection, ScrollBox wheel movement,
+      the inherited ocean/white-to-forest/yellow notification, pulse
+      completion/reversal, and the framework-primitives local-pointer path.
+      Direct pointer observation is recorded for the counter only; the Select,
+      ScrollBox, and framework-primitives pointer assertions remain automated.
 - [x] Analysis-gated CI on `main` is green across format/analyze, Ubuntu,
       macOS, and Windows.
 
