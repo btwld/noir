@@ -48,8 +48,8 @@ The ASCII outline above describes placement, not literal outer borders. The
 rendered app uses these terminal-native equivalents of Material styling:
 
 - Root surface: full-frame warm white (`#FAFAFA`).
-- App bar: Material-like blue (`#1976D2`), three rows high, with a darker blue
-  bottom rule and a left-aligned bold white `Noir Counter` title.
+- App bar: one flat Material-like blue (`#1976D2`) surface, three rows high,
+  with a vertically centered, left-aligned bold white `Noir Counter` title.
 - Body: an `Expanded` region with the standard counter sentence and current
   value centered as a single visual group.
 - Counter value: bold blue text with surrounding whitespace for hierarchy;
@@ -58,13 +58,14 @@ rendered app uses these terminal-native equivalents of Material styling:
 - Action area: a muted one-line keyboard hint on the left and a 7x3 blue
   increment surface on the right, separated from the terminal edges by two
   horizontal cells and one bottom row.
-- Action surface: white bold `+`, solid blue body, and rounded box-drawing
-  corners (`╭╮╰╯`) so it reads as a terminal floating action button.
+- Action surface: one solid 7x3 blue body with a centered white bold `+` and no
+  box-drawing outline.
 
 Noir's `BoxShape.circle` does not paint a circular body, and terminal cells
 cannot reproduce Material elevation or a true circle. The design therefore
-uses coherent palette, hierarchy, spacing, bottom-right placement, and rounded
-glyphs rather than claiming unsupported pixel geometry.
+uses coherent palette, hierarchy, spacing, bottom-right placement, and a 7x3
+filled region that reads approximately square at the observed terminal cell
+ratio rather than claiming unsupported pixel geometry.
 
 ## Widget composition and ownership
 
@@ -79,7 +80,7 @@ The tree uses only `package:noir/noir.dart`:
 - `Expanded` plus `Align` centers the body independently of terminal height.
 - `Row` keeps the muted control hint and action surface in one bottom region.
 - A private stateless `_IncrementButton` composes `PointerListener`,
-  `Container`, `BoxDecoration`, `Border`, `Align`, and `Text`.
+  `Container`, `Align`, and `Text`.
 
 The button receives a callback; it does not reach into the parent's state.
 Its pointer handler accepts only `MouseButton.left` and uses the listener's
@@ -100,7 +101,7 @@ Every increment route calls one `_incrementCounter()` method and therefore one
 - `+`
 - Enter
 - Space
-- left-click anywhere inside the rounded increment surface
+- left-click anywhere inside the solid increment surface
 
 Down arrow and `-` call one `_decrementCounter()` method. Key releases are
 ignored, unrelated keys bubble, and middle/right clicks do not change state.
@@ -169,8 +170,8 @@ Code integrated terminal and run `dart run example/counter.dart`.
 
 The visual pass must:
 
-1. Capture the initial full application showing the blue app bar, centered
-   zero, light body, bottom hint, and rounded blue action surface.
+1. Capture the initial full application showing the flat blue app bar, centered
+   zero, light body, bottom hint, and solid blue action surface.
 2. Activate the action by keyboard and by a real click inside the surface,
    confirming exactly one increment for each action.
 3. Exercise Up, Down, `+`, `-`, Enter, and Space and observe the expected count.

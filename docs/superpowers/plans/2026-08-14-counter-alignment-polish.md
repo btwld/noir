@@ -390,10 +390,11 @@ behavior bullet after the general widget-framework bullet:
 Run:
 
 ```bash
-rg -n "rounded action|rounded increment|dark.*bottom rule|rounded blue action|╭|╮|╰|╯" README.md example/README.md CHANGELOG.md docs/superpowers/specs/2026-08-13-flutter-style-counter-design.md example/counter.dart test/example/counter_test.dart
+rg -n "rounded action|rounded increment|dark.*bottom rule|rounded blue action|╭|╮|╰|╯" README.md example/README.md CHANGELOG.md docs/superpowers/specs/2026-08-13-flutter-style-counter-design.md example/counter.dart
 ```
 
-Expected: no matches.
+Expected: no matches. The counter regression test intentionally retains the
+removed glyphs as negative assertions and is not part of this stale-copy scan.
 
 Run:
 

@@ -179,8 +179,8 @@ class _CounterAppState extends State<CounterApp> {
 
 See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
-for the complete styled version with a rounded action surface and hot-reload
-registration.
+for the complete styled version with a solid square-style action surface and
+hot-reload registration.
 
 ## Application Lifecycle and API Tiers
 
@@ -222,8 +222,8 @@ backend remain framework-owned; they are not supported package surfaces.
 
 - [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
-  stateful body, and rounded action surface controlled by Up/Down, `+`/`-`,
-  Enter/Space, or click.
+  stateful body, and solid square-style action surface controlled by Up/Down,
+  `+`/`-`, Enter/Space, or click.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
