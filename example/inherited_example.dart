@@ -36,23 +36,69 @@ class ThemedText extends StatelessWidget {
   }
 }
 
-class ThemedApp extends StatelessWidget {
+final class _ThemeSnapshot {
+  const _ThemeSnapshot({
+    required this.name,
+    required this.primaryColor,
+    required this.textColor,
+  });
+
+  final String name;
+  final Color primaryColor;
+  final Color textColor;
+}
+
+class ThemedApp extends StatefulWidget {
   const ThemedApp({super.key});
 
   @override
-  Widget build(BuildContext context) => ThemeData(
+  State<ThemedApp> createState() => _ThemedAppState();
+}
+
+class _ThemedAppState extends State<ThemedApp> {
+  static const _ocean = _ThemeSnapshot(
+    name: 'ocean',
     primaryColor: Color(0.2, 0.4, 0.8),
     textColor: Color.white,
-    child: const _ThemeSurface(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ThemedText('Welcome to OpenTUI'),
-          ThemedText('This text uses inherited theme colors'),
-        ],
-      ),
-    ),
   );
+  static const _forest = _ThemeSnapshot(
+    name: 'forest',
+    primaryColor: Color(0.1, 0.5, 0.25),
+    textColor: Color.yellow,
+  );
+
+  var _isForest = false;
+
+  KeyEventResult _toggleTheme(FocusNode node, KeyEvent event) {
+    if (event.isPress && event.character == 't') {
+      setState(() => _isForest = !_isForest);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = _isForest ? _forest : _ocean;
+    return ThemeData(
+      primaryColor: theme.primaryColor,
+      textColor: theme.textColor,
+      child: Focus(
+        autofocus: true,
+        onKeyEvent: _toggleTheme,
+        child: _ThemeSurface(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ThemedText('Theme: ${theme.name} (press t to toggle)'),
+              const ThemedText('Welcome to OpenTUI'),
+              const ThemedText('This text uses inherited theme colors'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ThemeSurface extends StatelessWidget {
