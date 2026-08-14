@@ -316,9 +316,10 @@ Load the file that matches your task — each is self-contained:
   render the caret through terminal cursor state rather than a character cell.
   Design tests around controller selection and observable callbacks instead of
   expecting a caret glyph in text output.
-- **Mouse reporting is opt-in.** Call `app.enableMouse(enableMovement: true)`
-  once at startup, and use `MouseEvent.localPosition` for hit logic rather than
-  recomputing absolute origins.
+- **Mouse reporting is opt-in.** Call `app.enableMouse()` once at startup for
+  clicks and wheel events. Pass `enableMovement: true` only when the app needs
+  hover, drag, or other pointer-move events. Use `MouseEvent.localPosition` for
+  hit logic rather than recomputing absolute origins.
 - **Headless mode has no renderer.** `runTuiApp(..., headless: true)` mounts the
   widget tree with `isHeadless == true` and no owned terminal renderer, so
   mouse and Kitty keyboard mode controls are unavailable. It is a lifecycle
