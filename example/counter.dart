@@ -3,23 +3,8 @@ import 'package:noir/noir.dart';
 
 final _surfaceColor = Color.fromHex('#FAFAFA');
 final _materialBlue = Color.fromHex('#1976D2');
-final _darkMaterialBlue = Color.fromHex('#0D47A1');
 final _bodyTextColor = Color.fromHex('#424242');
 final _mutedTextColor = Color.fromHex('#616161');
-
-const _roundedBorderCharacters = <int>[
-  0x256D,
-  0x256E,
-  0x2570,
-  0x256F,
-  0x2500,
-  0x2502,
-  0x252C,
-  0x2534,
-  0x251C,
-  0x2524,
-  0x253C,
-];
 
 void main() {
   final app = runTuiApp(const CounterApp());
@@ -80,17 +65,7 @@ class _CounterAppState extends State<CounterApp> {
             child: Container(
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _materialBlue,
-                border: Border(
-                  color: _darkMaterialBlue,
-                  sides: const BorderSides(
-                    top: false,
-                    right: false,
-                    left: false,
-                  ),
-                ),
-              ),
+              color: _materialBlue,
               child: const Text(
                 'Noir Counter',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -159,29 +134,12 @@ class _IncrementButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PointerListener(
     onPointerDown: _handlePointerDown,
-    child: SizedBox(
+    child: Container(
       width: 7,
       height: 3,
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: _materialBlue,
-            borderChars: _roundedBorderCharacters,
-          ),
-        ),
-        child: Container(
-          alignment: Alignment.center,
-          color: _materialBlue,
-          width: 5,
-          height: 1,
-          child: const Text(
-            '+',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      alignment: Alignment.center,
+      color: _materialBlue,
+      child: const Text('+', style: TextStyle(fontWeight: FontWeight.bold)),
     ),
   );
 }

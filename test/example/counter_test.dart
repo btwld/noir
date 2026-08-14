@@ -9,7 +9,6 @@ import '../helpers/tui_test_app.dart';
 
 final _surface = Color.fromHex('#FAFAFA');
 final _materialBlue = Color.fromHex('#1976D2');
-final _darkMaterialBlue = Color.fromHex('#0D47A1');
 final _mutedText = Color.fromHex('#616161');
 
 void main() {
@@ -34,12 +33,20 @@ void main() {
       );
 
       expect(title.x, 2);
-      expect(title.y, lessThan(firstLine.y));
+      expect(title.y, 1);
       expect(frame.getForegroundColor(title.x, title.y), Color.white);
       expect(frame.getBackgroundColor(title.x, title.y), _materialBlue);
       expect(frame.getCell(title.x, title.y).isBold, isTrue);
-      expect(frame.getChar(0, 2), '─');
-      expect(frame.getForegroundColor(0, 2), _darkMaterialBlue);
+      for (var y = 0; y < 3; y++) {
+        for (var x = 0; x < frame.width; x++) {
+          expect(
+            frame.getBackgroundColor(x, y),
+            _materialBlue,
+            reason: 'app-bar cell ($x, $y) must use one flat blue surface',
+          );
+        }
+      }
+      expect(frame.getChar(0, 2), ' ');
       expect(frame.getBackgroundColor(0, 3), _surface);
 
       expect(
@@ -54,16 +61,26 @@ void main() {
 
       expect(hint.y, greaterThan(count.y));
       expect(frame.getForegroundColor(hint.x, hint.y), _mutedText);
-      expect(increment.x, greaterThanOrEqualTo(frame.width - 8));
-      expect(increment.y, greaterThanOrEqualTo(frame.height - 4));
-      expect(increment.y, lessThan(frame.height - 1));
+      final actionLeft = increment.x - 3;
+      final actionTop = increment.y - 1;
+      expect(actionLeft, frame.width - 9);
+      expect(actionTop, frame.height - 4);
       expect(frame.getForegroundColor(increment.x, increment.y), Color.white);
       expect(frame.getBackgroundColor(increment.x, increment.y), _materialBlue);
       expect(frame.getCell(increment.x, increment.y).isBold, isTrue);
-      expect(frame.getChar(increment.x - 3, increment.y - 1), '╭');
-      expect(frame.getChar(increment.x + 3, increment.y - 1), '╮');
-      expect(frame.getChar(increment.x - 3, increment.y + 1), '╰');
-      expect(frame.getChar(increment.x + 3, increment.y + 1), '╯');
+      for (var y = actionTop; y < actionTop + 3; y++) {
+        for (var x = actionLeft; x < actionLeft + 7; x++) {
+          expect(
+            frame.getBackgroundColor(x, y),
+            _materialBlue,
+            reason: 'action cell ($x, $y) must be part of the solid surface',
+          );
+        }
+      }
+      final actionRegion = frame.getRegion(actionLeft, actionTop, 7, 3);
+      for (final borderGlyph in ['╭', '╮', '╰', '╯', '─', '│']) {
+        expect(actionRegion, isNot(contains(borderGlyph)));
+      }
       expect(frame.getBackgroundColor(0, frame.height - 1), _surface);
     } finally {
       app.dispose();
@@ -121,12 +138,14 @@ void main() {
       try {
         await _settle(app);
         final increment = _incrementGlyph(app.captureFrame());
+        final actionLeft = increment.x - 3;
+        final actionTop = increment.y - 1;
 
-        app.mockMouse.pressDown(increment.x, increment.y);
+        app.mockMouse.pressDown(actionLeft, actionTop);
         await _settle(app);
         _expectCount(app, 1);
 
-        app.mockMouse.release(increment.x, increment.y);
+        app.mockMouse.release(actionLeft, actionTop);
         await _settle(app);
         _expectCount(app, 1);
 
