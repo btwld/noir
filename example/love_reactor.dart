@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:noir/noir.dart';
 
 final _reactorSurface = Color.fromHex('#070812');
-final _reactorHeader = Color.fromHex('#45163F');
 final _reactorCore = Color.fromHex('#F72585');
 final _reactorCorePulse = Color.fromHex('#FF70B7');
 final _reactorMuted = Color.fromHex('#B7A4C1');
@@ -18,21 +17,51 @@ final _reactorPalette = <Color>[
 ];
 
 const _stageWidth = 56;
-const _stageHeight = 12;
+const _stageHeight = 8;
+const _heartFootprintWidth = 17;
+const _heartFootprintHeight = 8;
 const _particlesPerBurst = 9;
 const _maximumParticles = 72;
 const _pulseSeconds = 0.35;
 
+const _compactHeart = <String>[
+  '███   ███',
+  '█████ █████',
+  '█████████████',
+  '███████████',
+  '███████',
+  '█',
+];
+const _mediumHeart = <String>[
+  '█████   █████',
+  '██████ ██████',
+  '███████████████',
+  '███████████████',
+  '█████████████',
+  '███████',
+  '█',
+];
+const _fullHeart = <String>[
+  '█████   █████',
+  '███████ ███████',
+  '█████████████████',
+  '█████████████████',
+  '███████████████',
+  '███████████',
+  '█████',
+  '█',
+];
+
 const _launchPatterns = <_LaunchPattern>[
-  _LaunchPattern(-4, -1.1, 1.4, 2.4, 0.1, 2.2, 0),
-  _LaunchPattern(-3, -0.6, 2, 2, 0.8, 2.5, 1),
-  _LaunchPattern(-2, -0.2, 1.2, 3.1, 1.4, 2.8, 2),
-  _LaunchPattern(-1, 0.3, 1.8, 2.7, 2, 2.4, 3),
+  _LaunchPattern(-8, -1.1, 1.4, 2.4, 0.1, 2.2, 0),
+  _LaunchPattern(-6, -0.6, 2, 2, 0.8, 2.5, 1),
+  _LaunchPattern(-4, -0.2, 1.2, 3.1, 1.4, 2.8, 2),
+  _LaunchPattern(-2, 0.3, 1.8, 2.7, 2, 2.4, 3),
   _LaunchPattern(0, 0, 0.8, 3.6, 2.6, 3, 4),
-  _LaunchPattern(1, -0.3, 1.8, 2.7, 3.2, 2.4, 5),
-  _LaunchPattern(2, 0.2, 1.2, 3.1, 3.8, 2.8, 0),
-  _LaunchPattern(3, 0.6, 2, 2, 4.4, 2.5, 1),
-  _LaunchPattern(4, 1.1, 1.4, 2.4, 5, 2.2, 2),
+  _LaunchPattern(2, -0.3, 1.8, 2.7, 3.2, 2.4, 5),
+  _LaunchPattern(4, 0.2, 1.2, 3.1, 3.8, 2.8, 0),
+  _LaunchPattern(6, 0.6, 2, 2, 4.4, 2.5, 1),
+  _LaunchPattern(8, 1.1, 1.4, 2.4, 5, 2.2, 2),
 ];
 
 void main() {
@@ -87,7 +116,7 @@ class LoveReactorSimulation {
   void clear() => _particles.clear();
 
   void _emitBurst({required bool animateCore}) {
-    final burstIndex = _burstCount;
+    final burstIndex = burstCount;
     _burstCount++;
 
     for (var index = 0; index < _particlesPerBurst; index++) {
@@ -185,7 +214,10 @@ class LoveParticle {
 }
 
 class LoveReactorApp extends StatefulWidget {
-  const LoveReactorApp({super.key});
+  const LoveReactorApp({this.simulation, super.key});
+
+  /// Optional externally owned simulation, useful for observing commands.
+  final LoveReactorSimulation? simulation;
 
   @override
   State<LoveReactorApp> createState() => _LoveReactorAppState();
@@ -193,9 +225,12 @@ class LoveReactorApp extends StatefulWidget {
 
 class _LoveReactorAppState extends State<LoveReactorApp>
     with SingleTickerProviderStateMixin<LoveReactorApp> {
-  final LoveReactorSimulation _simulation = LoveReactorSimulation();
+  LoveReactorSimulation? _ownedSimulation;
   late final AnimationController _controller;
   double _previousControllerValue = 0;
+
+  LoveReactorSimulation get _simulation =>
+      widget.simulation ?? (_ownedSimulation ??= LoveReactorSimulation());
 
   @override
   void initState() {
@@ -247,7 +282,7 @@ class _LoveReactorAppState extends State<LoveReactorApp>
 
   @override
   void dispose() {
-    _simulation.clear();
+    _ownedSimulation?.clear();
     _controller.removeListener(_onTick);
     _controller.removeStatusListener(_onStatusChanged);
     _controller.dispose();
@@ -264,13 +299,15 @@ class _LoveReactorAppState extends State<LoveReactorApp>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 3,
-            child: Container(
-              alignment: Alignment.center,
-              color: _reactorHeader,
-              child: const Text(
+            height: 2,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Text(
                 'NOIR · LOVE REACTOR',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: _reactorMuted,
+                  fontWeight: FontWeight.bold,
+                ),
                 maxLines: 1,
                 softWrap: false,
               ),
@@ -283,21 +320,16 @@ class _LoveReactorAppState extends State<LoveReactorApp>
                 children: [
                   _ParticleStage(particles: _simulation.particles),
                   const SizedBox(height: 1),
-                  _HeartCore(pulse: _simulation.corePulse, onPressed: _burst),
-                  Text(
-                    'BURSTS ${_simulation.burstCount.toString().padLeft(3, '0')}'
-                    ' · ACTIVE '
-                    '${_simulation.particles.length.toString().padLeft(2, '0')}',
-                    style: TextStyle(color: _reactorMuted),
-                    maxLines: 1,
-                    softWrap: false,
+                  _HeartReactor(
+                    pulse: _simulation.corePulse,
+                    onPressed: _burst,
                   ),
                 ],
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 1),
+            padding: const EdgeInsets.only(top: 2),
             child: Text(
               'Space/Enter/click burst · Ctrl+C exit',
               style: TextStyle(color: _reactorMuted),
@@ -389,8 +421,8 @@ class _ParticleRow extends StatelessWidget {
   }
 }
 
-class _HeartCore extends StatelessWidget {
-  const _HeartCore({required this.pulse, required this.onPressed});
+class _HeartReactor extends StatelessWidget {
+  const _HeartReactor({required this.pulse, required this.onPressed});
 
   final double pulse;
   final VoidCallback onPressed;
@@ -401,15 +433,37 @@ class _HeartCore extends StatelessWidget {
     }
   }
 
+  List<String> get _rows {
+    if (pulse > 2 / 3) return _fullHeart;
+    if (pulse > 1 / 3) return _mediumHeart;
+    return _compactHeart;
+  }
+
   @override
   Widget build(BuildContext context) => PointerListener(
     onPointerDown: _handlePointerDown,
-    child: Container(
-      width: 9 + (pulse * 4).round(),
-      height: 3,
-      alignment: Alignment.center,
-      color: Color.lerp(_reactorCore, _reactorCorePulse, pulse),
-      child: const Text('♥', style: TextStyle(fontWeight: FontWeight.bold)),
+    child: SizedBox(
+      width: _heartFootprintWidth,
+      height: _heartFootprintHeight,
+      child: Align(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final row in _rows)
+              Text(
+                row,
+                style: TextStyle(
+                  color: Color.lerp(_reactorCore, _reactorCorePulse, pulse),
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                softWrap: false,
+              ),
+          ],
+        ),
+      ),
     ),
   );
 }
