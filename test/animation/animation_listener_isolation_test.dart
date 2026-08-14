@@ -16,6 +16,57 @@ final class _TestTickerProvider implements TickerProvider {
 }
 
 void main() {
+  test('status listener removed during notification is no longer eligible', () {
+    final scheduler = TickerScheduler();
+    final controller = AnimationController(
+      vsync: _TestTickerProvider(scheduler),
+      duration: const Duration(milliseconds: 100),
+    );
+    addTearDown(controller.dispose);
+    final log = <String>[];
+
+    void later(AnimationStatus status) => log.add('later:$status');
+    controller
+      ..addStatusListener((status) {
+        log.add('remover:$status');
+        controller.removeStatusListener(later);
+      })
+      ..addStatusListener(later)
+      ..forward();
+
+    expect(log, ['remover:AnimationStatus.forward']);
+  });
+
+  test('disposing during status notification suppresses later listeners', () {
+    final scheduler = TickerScheduler();
+    final controller = AnimationController(
+      vsync: _TestTickerProvider(scheduler),
+      duration: const Duration(milliseconds: 100),
+    );
+    addTearDown(controller.dispose);
+    final log = <String>[];
+
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          log.add('dispose');
+          controller.dispose();
+        }
+      })
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          log.add('later');
+        }
+      })
+      ..forward();
+
+    scheduler
+      ..handleFrame(Duration.zero)
+      ..handleFrame(const Duration(milliseconds: 100));
+
+    expect(log, ['dispose']);
+  });
+
   test(
     'status listener failure is reported without starving listeners or run',
     () async {

@@ -344,6 +344,9 @@ class AnimationController extends Animation<double> {
     final reportingZone = Zone.current;
     final listeners = List<AnimationStatusListener>.from(_statusListeners);
     for (final listener in listeners) {
+      if (!_statusListeners.contains(listener)) {
+        continue;
+      }
       try {
         listener(newStatus);
       } on Object catch (error, stackTrace) {

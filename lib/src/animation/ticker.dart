@@ -21,6 +21,7 @@ class TickerScheduler {
   final Set<Ticker> _managedTickers = <Ticker>{};
   final Set<Ticker> _activeTickers = <Ticker>{};
   void Function()? _frameCallback;
+  bool _isHandlingFrame = false;
 
   /// Replaces the callback used to request a frame; `null` disables requests.
   void setFrameCallback(void Function()? callback) {
@@ -48,7 +49,9 @@ class TickerScheduler {
 
   void _startTicker(Ticker ticker) {
     _activeTickers.add(ticker);
-    _requestFrame();
+    if (!_isHandlingFrame) {
+      _requestFrame();
+    }
   }
 
   void _stopTicker(Ticker ticker) {
@@ -69,14 +72,19 @@ class TickerScheduler {
       return;
     }
 
-    final reportingZone = Zone.current;
-    final tickers = List<Ticker>.from(_activeTickers);
-    for (final ticker in tickers) {
-      try {
-        ticker._tick(timeStamp);
-      } on Object catch (error, stackTrace) {
-        reportingZone.handleUncaughtError(error, stackTrace);
+    _isHandlingFrame = true;
+    try {
+      final reportingZone = Zone.current;
+      final tickers = List<Ticker>.from(_activeTickers);
+      for (final ticker in tickers) {
+        try {
+          ticker._tick(timeStamp);
+        } on Object catch (error, stackTrace) {
+          reportingZone.handleUncaughtError(error, stackTrace);
+        }
       }
+    } finally {
+      _isHandlingFrame = false;
     }
 
     if (_activeTickers.isNotEmpty) {
