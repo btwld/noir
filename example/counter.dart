@@ -5,19 +5,6 @@ final _surfaceColor = Color.fromHex('#FAFAFA');
 final _materialBlue = Color.fromHex('#1976D2');
 final _bodyTextColor = Color.fromHex('#424242');
 final _mutedTextColor = Color.fromHex('#616161');
-const _digitalGlyphs = <String, List<String>>{
-  '-': ['   ', '▄▄▄', '   '],
-  '0': ['█▀█', '█ █', '█▄█'],
-  '1': [' ▀█', '  █', ' ▄█'],
-  '2': ['▀▀█', '█▀▀', '█▄▄'],
-  '3': ['▀▀█', ' ▀█', '▄▄█'],
-  '4': ['█ █', '▀▀█', '  █'],
-  '5': ['█▀▀', '▀▀█', '▄▄█'],
-  '6': ['█▀▀', '█▀█', '█▄█'],
-  '7': ['▀▀█', '  █', '  █'],
-  '8': ['█▀█', '█▀█', '█▄█'],
-  '9': ['█▀█', '▀▀█', '▄▄█'],
-};
 
 void main() {
   final app = runTuiApp(const CounterApp());
@@ -76,7 +63,8 @@ class _CounterAppState extends State<CounterApp> {
           SizedBox(
             height: 3,
             child: Container(
-              alignment: Alignment.center,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               color: _materialBlue,
               child: const Text(
                 'Noir Counter',
@@ -90,11 +78,21 @@ class _CounterAppState extends State<CounterApp> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'You have pushed the button this many times:',
-                    textAlign: TextAlign.center,
+                    'You have pushed the button',
                     style: TextStyle(color: _bodyTextColor),
                   ),
-                  _CounterDisplay(value: _count),
+                  Text(
+                    'this many times:',
+                    style: TextStyle(color: _bodyTextColor),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    '$_count',
+                    style: TextStyle(
+                      color: _materialBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -120,36 +118,6 @@ class _CounterAppState extends State<CounterApp> {
       ),
     ),
   );
-}
-
-class _CounterDisplay extends StatelessWidget {
-  const _CounterDisplay({required this.value});
-
-  final int value;
-
-  @override
-  Widget build(BuildContext context) {
-    final glyphs = '$value'
-        .split('')
-        .map((character) => _digitalGlyphs[character]!)
-        .toList(growable: false);
-    final rows = List<String>.generate(
-      3,
-      (row) => glyphs.map((glyph) => glyph[row]).join(' '),
-      growable: false,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final row in rows)
-          Text(
-            row,
-            style: TextStyle(color: _materialBlue, fontWeight: FontWeight.bold),
-          ),
-      ],
-    );
-  }
 }
 
 class _IncrementButton extends StatelessWidget {
