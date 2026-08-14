@@ -156,6 +156,12 @@ run ended. After an `await`, `status` is the controller's current state and may
 already describe a replacement run. Register a status listener before
 starting the run when its status transitions matter.
 
+Status listeners run from a stable snapshot. If one throws, Noir reports its
+original error and stack trace to the Zone where that notification began,
+continues to later listeners, and still completes a naturally finished run.
+Ticker callbacks have the same per-frame containment, so one failing ticker
+does not starve siblings or suppress the next requested frame.
+
 Canonical ping-pong loop — listen for ticks to repaint, and flip direction on
 status:
 
@@ -196,5 +202,7 @@ cells, so `.round()` when you feed them into layout.
 Pass data down to descendants without threading it through constructors.
 Subclass noir's `InheritedWidget`, expose a static `of(context)` that calls
 `context.dependOnInheritedWidgetOfExactType<T>()`, and implement
-`updateShouldNotify`. See `example/inherited_example.dart` for a complete,
-runnable pattern using noir's current dependency contract.
+`updateShouldNotify`. See `example/inherited_example.dart`: press `t` to swap
+the inherited ocean/forest palette and visibly rebuild both dependent text and
+surface paint. See `example/framework_primitives.dart` for the complementary
+`ValueNotifier` listener/ownership pattern.

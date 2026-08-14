@@ -22,6 +22,7 @@ dart run example/main.dart
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
+| `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
 | `dart run example/bindings_validation.dart` | Interactive alternate-screen validation of advanced renderer/buffer APIs and ABI-unstable FFI values; requires a terminal at least 120x40. |
 | `dart run example/pulse_animation.dart` | `AnimationController`, ticker scheduling, and frame-driven updates. |
 | `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
@@ -36,7 +37,9 @@ dart run example/main.dart
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
-  The layout examples also accept `q` through their widget-owned quit callback.
+  The layout, Select, ScrollBox, and framework-primitives examples also accept
+  `q` through widget-owned quit callbacks. The inherited example uses `t` to
+  switch palettes.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The
   multiline examples also bind Ctrl+D so submission works in terminals that
   encode Ctrl+Enter as an ordinary Enter.

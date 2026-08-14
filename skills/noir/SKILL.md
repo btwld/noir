@@ -103,7 +103,8 @@ Inside this repo, `example/` has a runnable reference for every major feature
 (`hello.dart`, `counter.dart`, `layout_basics.dart`, `layout_demo.dart`,
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `pulse_animation.dart`, `inherited_example.dart`,
-`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
+`framework_primitives.dart`, `chat_demo.dart`, `widgets_tour.dart`) — read one
+before inventing a pattern.
 
 ## Mental model
 

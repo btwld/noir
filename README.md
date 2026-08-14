@@ -171,11 +171,14 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
 - [Inherited state](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart) — inherited dependencies
-  and rebuild propagation.
+  and visible rebuild propagation when `t` switches palettes.
+- [Framework primitives](https://github.com/leoafarias/noir/blob/main/example/framework_primitives.dart) —
+  notifier ownership, semantic shortcuts/actions, a `GlobalKey`, rich text, and
+  localized pointer input in one focused app.
 - [Focus form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart) — focus management and text input.
 - [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart) — keyboard and mouse option selection.
-- [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped scrolling and
-  scrollbars.
+- [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped keyboard/wheel scrolling
+  and scrollbars.
 - [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing with portable
   Ctrl+D submission.
 - [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set with

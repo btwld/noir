@@ -37,7 +37,7 @@ below are closed.
       parallel after the gate; manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1239 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1248 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Regression checks on the repaired tree confirm both layout examples exit
