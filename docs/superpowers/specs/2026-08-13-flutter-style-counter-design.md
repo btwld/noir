@@ -38,14 +38,15 @@ At the ordinary 64x18 validation size, the composition is:
 |                       this many times:                       |
 |                              0                               |
 |                                                              |
-|  Up/+ increment - Down/- decrement - Ctrl+C exit       /---\ |
-|                                                       |  +  ||
-|                                                        \---/ |
+|  Up/+ add | Down/- subtract | Enter/Space | Ctrl+C   ███████ |
+|                                                      ███+███ |
+|                                                      ███████ |
 +--------------------------------------------------------------+
 ```
 
-The ASCII outline above describes placement, not literal outer borders. The
-rendered app uses these terminal-native equivalents of Material styling:
+The ASCII outline above describes placement, not literal outer borders, and
+the block run represents blue background cells rather than rendered glyphs.
+The rendered app uses these terminal-native equivalents of Material styling:
 
 - Root surface: full-frame warm white (`#FAFAFA`).
 - App bar: one flat Material-like blue (`#1976D2`) surface, three rows high,

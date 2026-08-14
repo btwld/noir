@@ -464,8 +464,8 @@ git commit -m "docs: describe polished counter alignment"
 ### Task 4: Verify behavior and compare the live VS Code rendering
 
 **Files:**
-- Create ignored artifact: `.context/flutter-counter-polished/initial.png`
-- Create ignored artifact: `.context/flutter-counter-polished/incremented.png`
+- Create ignored artifact: `.context/flutter-counter-polished/initial.jpeg`
+- Create ignored artifact: `.context/flutter-counter-polished/incremented.jpeg`
 
 **Interfaces:**
 - Consumes: the final framework, counter, tests, and documentation.
@@ -500,7 +500,7 @@ dart run example/counter.dart
 ```
 
 Capture the initial frame to
-`.context/flutter-counter-polished/initial.png`. Compare it directly with
+`.context/flutter-counter-polished/initial.jpeg`. Compare it directly with
 `.context/flutter-counter/initial.jpeg` and confirm the title moved from the
 top row to the middle app-bar row, the dark rule disappeared, and the action is
 one filled 7x3 surface rather than a framed 5x1 fill.
@@ -509,7 +509,7 @@ one filled 7x3 surface rather than a framed 5x1 fill.
 
 Press Up and verify `0 -> 1`. Click a non-glyph blue cell inside the action and
 verify `1 -> 2` exactly once. Capture the incremented frame to
-`.context/flutter-counter-polished/incremented.png`. Send Ctrl+C and confirm a
+`.context/flutter-counter-polished/incremented.jpeg`. Send Ctrl+C and confirm a
 usable VS Code shell returns without a stack trace.
 
 ---
