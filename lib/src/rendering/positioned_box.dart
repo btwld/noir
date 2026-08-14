@@ -50,8 +50,14 @@ class RenderPositionedBox extends RenderBox with RenderObjectWithSingleChild {
       return;
     }
 
-    // Align expands along bounded axes and shrink-wraps along unbounded axes.
-    child.layout(constraints);
+    // Align fills bounded axes but lets its child choose a natural size within
+    // those bounds, leaving an extent for the requested alignment to position.
+    child.layout(
+      BoxConstraints.loose(
+        maxWidth: constraints.maxWidth,
+        maxHeight: constraints.maxHeight,
+      ),
+    );
     final selfWidth =
         constraints.maxWidth ?? constraints.constrainWidth(child.width);
     final selfHeight =
