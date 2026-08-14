@@ -16,7 +16,7 @@ void main() {
   }
 
   app = runTuiApp(ChatDemoApp(onQuit: quit));
-  app.enableMouse(enableMovement: true);
+  app.enableMouse();
   app.enableKittyKeyboard();
 }
 

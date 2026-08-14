@@ -317,9 +317,16 @@ event.scroll?.direction // MouseScrollDirection: up | down | left | right
 event.scroll?.magnitude // positive int tick count
 ```
 
-Mouse reporting must be turned on once at startup. Click and wheel handling use
-`runTuiApp(app)..enableMouse()`. Pass `enableMovement: true` only when the app
-needs hover, drag, or other pointer-move events.
+Mouse reporting must be turned on once at startup. Retain the lifecycle handle
+and enable basic reporting for click and wheel handling:
+
+```dart
+final tuiApp = runTuiApp(app);
+tuiApp.enableMouse();
+```
+
+Pass `enableMovement: true` only when the app needs hover, drag, or other
+pointer-move events.
 
 ---
 

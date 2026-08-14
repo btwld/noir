@@ -15,6 +15,8 @@ import '../helpers/tui_test_app.dart';
 void main() {
   test('mouse-capable example entrypoints enable mouse reporting once', () {
     for (final path in <String>[
+      'example/chat_demo.dart',
+      'example/focus_form.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
     ]) {

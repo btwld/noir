@@ -3,7 +3,7 @@ import 'package:noir/noir.dart';
 
 void main() {
   final app = runTuiApp(const FocusFormApp());
-  app.enableMouse(enableMovement: true);
+  app.enableMouse();
   app.enableKittyKeyboard();
 }
 

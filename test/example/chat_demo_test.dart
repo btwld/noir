@@ -165,7 +165,8 @@ void main() {
     test('real terminal entrypoint enables interactive input modes', () {
       final source = io.File('example/chat_demo.dart').readAsStringSync();
 
-      expect(source, contains('app.enableMouse(enableMovement: true);'));
+      expect(RegExp(r'app\.enableMouse\(\);').allMatches(source), hasLength(1));
+      expect(source, isNot(contains('enableMouse(enableMovement: true)')));
       expect(source, contains('app.enableKittyKeyboard();'));
     });
   });
