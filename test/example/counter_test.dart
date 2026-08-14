@@ -10,6 +10,20 @@ import '../helpers/tui_test_app.dart';
 final _surface = Color.fromHex('#FAFAFA');
 final _materialBlue = Color.fromHex('#1976D2');
 final _mutedText = Color.fromHex('#616161');
+const _prompt = 'You have pushed the button this many times:';
+const _digitalGlyphs = <String, List<String>>{
+  '-': ['   ', '▄▄▄', '   '],
+  '0': ['█▀█', '█ █', '█▄█'],
+  '1': [' ▀█', '  █', ' ▄█'],
+  '2': ['▀▀█', '█▀▀', '█▄▄'],
+  '3': ['▀▀█', ' ▀█', '▄▄█'],
+  '4': ['█ █', '▀▀█', '  █'],
+  '5': ['█▀▀', '▀▀█', '▄▄█'],
+  '6': ['█▀▀', '█▀█', '█▄█'],
+  '7': ['▀▀█', '  █', '  █'],
+  '8': ['█▀█', '█▀█', '█▄█'],
+  '9': ['█▀█', '▀▀█', '▄▄█'],
+};
 
 void main() {
   test('counter renders the Flutter-style visual hierarchy', () async {
@@ -19,11 +33,10 @@ void main() {
       await _settle(app);
       final frame = app.captureFrame();
       final title = frame.findText('Noir Counter').single;
-      final firstLine = frame.findText('You have pushed the button').single;
-      final secondLine = frame.findText('this many times:').single;
-      final count = frame.findText('0').single;
+      final prompt = frame.findText(_prompt).single;
       final hint = frame.findText('Up/+ add').single;
       final increment = _incrementGlyph(frame);
+      final countTop = _expectCountInFrame(frame, 0);
 
       expect(
         frame,
@@ -32,7 +45,7 @@ void main() {
         ),
       );
 
-      expect(title.x, 2);
+      expect(title.x, (frame.width - 'Noir Counter'.length) ~/ 2);
       expect(title.y, 1);
       expect(frame.getForegroundColor(title.x, title.y), Color.white);
       expect(frame.getBackgroundColor(title.x, title.y), _materialBlue);
@@ -49,17 +62,10 @@ void main() {
       expect(frame.getChar(0, 2), ' ');
       expect(frame.getBackgroundColor(0, 3), _surface);
 
-      expect(
-        firstLine.x,
-        (frame.width - 'You have pushed the button'.length) ~/ 2,
-      );
-      expect(secondLine.x, (frame.width - 'this many times:'.length) ~/ 2);
-      expect(count.x, frame.width ~/ 2);
-      expect(count.y, greaterThan(secondLine.y));
-      expect(frame.getForegroundColor(count.x, count.y), _materialBlue);
-      expect(frame.getCell(count.x, count.y).isBold, isTrue);
+      expect(prompt.x, closeTo((frame.width - _prompt.length) / 2, 1));
+      expect(countTop, prompt.y + 1);
 
-      expect(hint.y, greaterThan(count.y));
+      expect(hint.y, greaterThan(countTop + 2));
       expect(frame.getForegroundColor(hint.x, hint.y), _mutedText);
       final actionLeft = increment.x - 3;
       final actionTop = increment.y - 1;
@@ -167,6 +173,26 @@ void main() {
     },
   );
 
+  test('counter renders negative and multi-digit values truthfully', () async {
+    final app = createTuiTestApp(const CounterApp(), width: 64, height: 18);
+
+    try {
+      await _settle(app);
+
+      app.mockInput.pressArrow(ArrowDirection.down);
+      await _settle(app);
+      _expectCount(app, -1);
+
+      for (var index = 0; index < 11; index++) {
+        app.mockInput.typeText('+');
+      }
+      await _settle(app);
+      _expectCount(app, 10);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('real counter entrypoint enables basic mouse reporting once', () {
     final source = io.File('example/counter.dart').readAsStringSync();
 
@@ -183,9 +209,12 @@ void main() {
       final frame = app.captureFrame();
 
       expect(frame, BufferMatchers.containsText('Noir Counter'));
-      expect(frame, BufferMatchers.containsText('this many times:'));
-      expect(frame.findText('0'), hasLength(1));
-      expect(_incrementGlyph(frame).x, greaterThan(frame.width ~/ 2));
+      expect(frame, BufferMatchers.containsText('You have pushed'));
+      expect(frame, BufferMatchers.containsText('many times:'));
+      final countTop = _expectCountInFrame(frame, 0);
+      final increment = _incrementGlyph(frame);
+      expect(increment.x, greaterThan(frame.width ~/ 2));
+      expect(countTop + 2, lessThan(increment.y - 1));
     } finally {
       app.dispose();
     }
@@ -197,10 +226,67 @@ BufferPosition _incrementGlyph(CapturedBuffer frame) => frame
     .where((position) => position.x > frame.width ~/ 2)
     .reduce((left, right) => left.x > right.x ? left : right);
 
-void _expectCount(TuiTestApp app, int expected) {
-  final frame = app.captureFrame();
-  final position = frame.findText('$expected').single;
-  expect(position.x, closeTo(frame.width / 2, 1));
+void _expectCount(TuiTestApp app, int expected) =>
+    _expectCountInFrame(app.captureFrame(), expected);
+
+int _expectCountInFrame(CapturedBuffer frame, int expected) {
+  final rows = _digitalRows(expected);
+  final matches = <({int left, int top})>[];
+
+  for (
+    var candidate = 0;
+    candidate <= frame.height - rows.length;
+    candidate++
+  ) {
+    for (
+      var candidateLeft = 0;
+      candidateLeft <= frame.width - rows.first.length;
+      candidateLeft++
+    ) {
+      var rowMatches = true;
+      for (var row = 0; row < rows.length && rowMatches; row++) {
+        for (var column = 0; column < rows[row].length; column++) {
+          if (frame.getChar(candidateLeft + column, candidate + row) !=
+              rows[row][column]) {
+            rowMatches = false;
+            break;
+          }
+        }
+      }
+      if (rowMatches) {
+        matches.add((left: candidateLeft, top: candidate));
+      }
+    }
+  }
+
+  expect(
+    matches,
+    hasLength(1),
+    reason: 'missing digital count $expected:\n${frame.toText()}',
+  );
+  final position = matches.single;
+  expect(position.left, closeTo((frame.width - rows.first.length) / 2, 1));
+  for (var row = 0; row < rows.length; row++) {
+    for (var column = 0; column < rows[row].length; column++) {
+      if (rows[row][column] == ' ') continue;
+      final cell = frame.getCell(position.left + column, position.top + row);
+      expect(cell.foreground, _materialBlue);
+      expect(cell.isBold, isTrue);
+    }
+  }
+  return position.top;
+}
+
+List<String> _digitalRows(int value) {
+  final glyphs = '$value'
+      .split('')
+      .map((character) => _digitalGlyphs[character]!)
+      .toList(growable: false);
+  return List<String>.generate(
+    3,
+    (row) => glyphs.map((glyph) => glyph[row]).join(' '),
+    growable: false,
+  );
 }
 
 Future<void> _settle(TuiTestApp app) async {
