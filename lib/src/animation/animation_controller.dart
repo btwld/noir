@@ -325,12 +325,15 @@ class AnimationController extends Animation<double> {
   void _finishAnimation() {
     _ticker.stop();
     final old = _takeCompleter();
-    _setStatus(
-      _isAnimatingForward
-          ? AnimationStatus.completed
-          : AnimationStatus.dismissed,
-    );
-    old?.complete();
+    try {
+      _setStatus(
+        _isAnimatingForward
+            ? AnimationStatus.completed
+            : AnimationStatus.dismissed,
+      );
+    } finally {
+      old?.complete();
+    }
   }
 
   void _setStatus(AnimationStatus newStatus) {
@@ -338,9 +341,17 @@ class AnimationController extends Animation<double> {
       return;
     }
     _status = newStatus;
+    final reportingZone = Zone.current;
     final listeners = List<AnimationStatusListener>.from(_statusListeners);
     for (final listener in listeners) {
-      listener(newStatus);
+      if (!_statusListeners.contains(listener)) {
+        continue;
+      }
+      try {
+        listener(newStatus);
+      } on Object catch (error, stackTrace) {
+        reportingZone.handleUncaughtError(error, stackTrace);
+      }
     }
   }
 

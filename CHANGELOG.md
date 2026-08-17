@@ -1,20 +1,24 @@
 # Changelog
 
-## 1.0.0-alpha.1
+## 0.0.1-alpha.0
 
-- First 1.0 prerelease of Noir's Flutter-like reactive widget framework for
+- First public alpha of Noir's Flutter-like reactive widget framework for
   terminal applications.
 - Declarative stateless and stateful widgets, `setState`, layout, text styling,
   focus, keyboard and mouse input, text editing, scrolling, and animation.
+- `Align` positions naturally sized children within bounded boxes while still
+  filling bounded axes and shrink-wrapping unbounded axes.
 - Hot reload support: `TuiApp.reassemble()` rebuilds every mounted element and
   forces a full layout and paint pass, preserving `State`, focus, scroll, and
   animation state and recreating no terminal or native resource.
 - Opt-in `registerHotReloadExtension(app)` publishes the `ext.noir.reassemble`
   VM service extension so a development driver can rebuild a running app after
   `reloadSources`.
-- The counter example is keyboard-driven with Up/Down and `+`/`-`; an
-  unconsumed Ctrl+C key follows the terminal session's cleanup and interrupt
-  exit path while higher-priority handlers can override it.
+- The Flutter-inspired counter example composes a flat blue app bar, centered
+  body, and solid clickable action button. Up/Down, `+`/`-`,
+  Enter, Space, and left click drive its state; an unconsumed Ctrl+C key follows
+  the terminal session's cleanup and interrupt exit path while higher-priority
+  handlers can override it.
 - Terminal shutdown restores inherited line and echo modes before cancelling
   the stdin subscription, avoiding Dart/macOS `EBADF` errors during Escape or
   other normal disposal paths.

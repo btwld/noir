@@ -29,6 +29,24 @@ void main() {
     );
   });
 
+  test('JIT hook declares manifest and selected binary dependencies', () async {
+    await testCodeBuildHook(
+      linkingEnabled: false,
+      targetOS: OS.macOS,
+      mainMethod: hook.main,
+      check: (input, output) {
+        final arch = Architecture.current == Architecture.arm64
+            ? 'arm64'
+            : 'x64';
+
+        expect(output.dependencies, [
+          input.packageRoot.resolve('native_manifest.json'),
+          input.packageRoot.resolve('native/macos/$arch/libopentui.dylib'),
+        ]);
+      },
+    );
+  });
+
   test('Linux JIT loads the unchanged official library in place', () async {
     await testCodeBuildHook(
       linkingEnabled: false,

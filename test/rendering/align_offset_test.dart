@@ -90,5 +90,37 @@ void main() {
       }
       expect(found, isTrue, reason: 'Should find "Center" text in output');
     });
+
+    test('center positions a natural child within tight bounds', () {
+      final frame = capture.capture(
+        const SizedBox(width: 7, height: 3, child: Align(child: Text('C'))),
+      );
+
+      expect(frame.findText('C').single, const BufferPosition(3, 1));
+    });
+
+    test('centerLeft vertically centers a natural child', () {
+      final frame = capture.capture(
+        const SizedBox(
+          width: 7,
+          height: 3,
+          child: Align(alignment: Alignment.centerLeft, child: Text('L')),
+        ),
+      );
+
+      expect(frame.findText('L').single, const BufferPosition(0, 1));
+    });
+
+    test('bottomRight positions a natural child at both trailing edges', () {
+      final frame = capture.capture(
+        const SizedBox(
+          width: 7,
+          height: 3,
+          child: Align(alignment: Alignment.bottomRight, child: Text('R')),
+        ),
+      );
+
+      expect(frame.findText('R').single, const BufferPosition(6, 2));
+    });
   });
 }

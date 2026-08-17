@@ -59,7 +59,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 2,
+    height: 1,
     alignment: Alignment.centerLeft,
     padding: const EdgeInsets.symmetric(horizontal: 1),
     color: Color.rgb(0.25, 0.35, 0.6),
@@ -94,7 +94,7 @@ class _MainAxisCenterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 6, // account for padding + border + content
+    height: 5, // retain breathing room around the two-row blocks
     padding: const EdgeInsets.all(1),
     decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
     child: Row(
@@ -115,7 +115,7 @@ class _MainAxisSpaceBetweenRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 6, // account for padding + border + content
+    height: 5, // retain breathing room around the two-row blocks
     padding: const EdgeInsets.all(1),
     decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
     child: Row(
@@ -134,7 +134,7 @@ class _FlexRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 7, // account for 3-content + padding + border
+    height: 6, // retain breathing room around the three-row blocks
     padding: const EdgeInsets.all(1),
     decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
     child: Row(

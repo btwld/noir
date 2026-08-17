@@ -26,31 +26,64 @@ void main() {
     }
   });
 
-  test('inherited theme reaches both text and surface paint', () {
-    final app = createTuiTestApp(
-      const inherited.ThemedApp(),
-      width: 64,
-      height: 12,
-    );
-
-    try {
-      final frame = _render(app);
-      expect(frame, BufferMatchers.containsText('Welcome to OpenTUI'));
-      expect(
-        frame,
-        BufferMatchers.containsText('This text uses inherited theme colors'),
+  test(
+    'inherited theme repaints dependents when t changes the theme',
+    () async {
+      final app = createTuiTestApp(
+        const inherited.ThemedApp(),
+        width: 64,
+        height: 12,
       );
 
-      final message = frame.findText('Welcome to OpenTUI').single;
-      expect(frame.getForegroundColor(message.x, message.y), Color.white);
-      expect(
-        frame.getBackgroundColor(message.x, message.y),
-        const Color(0.2, 0.4, 0.8),
-      );
-    } finally {
-      app.dispose();
-    }
-  });
+      try {
+        await _settleAutofocus(app);
+        var frame = _render(app);
+        expect(frame, BufferMatchers.containsText('Theme: ocean'));
+        expect(frame, BufferMatchers.containsText('Welcome to OpenTUI'));
+        final oceanMessage = frame.findText('Welcome to OpenTUI').single;
+        final oceanUpdates = frame.findText('Dependency updates: 1').single;
+        expect(
+          frame.getForegroundColor(oceanMessage.x, oceanMessage.y),
+          Color.white,
+        );
+        expect(
+          frame.getBackgroundColor(oceanMessage.x, oceanMessage.y),
+          const Color(0.2, 0.4, 0.8),
+        );
+        expect(
+          frame.getForegroundColor(oceanUpdates.x, oceanUpdates.y),
+          Color.white,
+        );
+
+        app.mockInput.typeText('t');
+        await Future<void>.delayed(Duration.zero);
+        frame = _render(app);
+
+        expect(frame, BufferMatchers.containsText('Theme: forest'));
+        final forestMessage = frame.findText('Welcome to OpenTUI').single;
+        final forestUpdates = frame.findText('Dependency updates: 2').single;
+        expect(
+          frame.getForegroundColor(forestMessage.x, forestMessage.y),
+          Color.yellow,
+        );
+        expect(
+          frame.getBackgroundColor(forestMessage.x, forestMessage.y),
+          Color.fromHex('#1a8040'),
+          reason: 'rendered cells store normalized colors at 8-bit precision',
+        );
+        expect(
+          frame.getForegroundColor(forestUpdates.x, forestUpdates.y),
+          Color.yellow,
+        );
+        expect(
+          frame.getBackgroundColor(forestUpdates.x, forestUpdates.y),
+          Color.fromHex('#1a8040'),
+        );
+      } finally {
+        app.dispose();
+      }
+    },
+  );
 
   test('layout showcase renders all major regions in one terminal frame', () {
     final app = createTuiTestApp(
@@ -77,4 +110,10 @@ void _noop() {}
 CapturedBuffer _render(TuiTestApp app) {
   app.pumpFrame();
   return app.captureFrame();
+}
+
+Future<void> _settleAutofocus(TuiTestApp app) async {
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
+  app.pumpFrame();
 }

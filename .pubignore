@@ -47,6 +47,7 @@ debug.log
 .gitignore
 
 # Documentation and guides not needed in package
+/docs/
 AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md

@@ -556,12 +556,10 @@ final class _DisplayListEncoder {
   ) => sourceStart < selection.end && sourceEnd > selection.start;
 
   Buffer _targetFor(Buffer buffer, Rect? clip) {
-    if (clip == null) {
-      return buffer;
-    }
-
     final bufferClip = Rect.fromLTWH(0, 0, buffer.width, buffer.height);
-    final effectiveClip = _intersect(bufferClip, clip);
+    final effectiveClip = clip == null
+        ? bufferClip
+        : _intersect(bufferClip, clip);
     return buffer.clipped(
       clipX: effectiveClip.left,
       clipY: effectiveClip.top,

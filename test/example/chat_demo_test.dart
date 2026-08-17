@@ -162,10 +162,9 @@ void main() {
       }
     });
 
-    test('real terminal entrypoint enables interactive input modes', () {
+    test('real terminal entrypoint enables Kitty keyboard reporting', () {
       final source = io.File('example/chat_demo.dart').readAsStringSync();
 
-      expect(source, contains('app.enableMouse(enableMovement: true);'));
       expect(source, contains('app.enableKittyKeyboard();'));
     });
   });

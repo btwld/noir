@@ -17,6 +17,7 @@ void main() {
   }
 
   app = runTuiApp(SelectDemoApp(onQuit: quit));
+  app.enableMouse();
 }
 
 class SelectDemoApp extends StatefulWidget {

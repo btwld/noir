@@ -1,13 +1,12 @@
-# Release TODO — `1.0.0-alpha.1`
+# Release TODO — `0.0.1-alpha.0`
 
-The single record of what remains before Noir is published. Update it only with
-evidence from the exact reviewed tree.
+The single record of Noir's publication and remaining release operations.
+Update it only with evidence from the exact reviewed tree.
 
-Noir is **not** cleared for a tag, GitHub release, pub.dev publication, native
-build, manual workflow dispatch, or public visibility until the open items
-below are closed.
+Noir is **not** cleared for a tag, GitHub release, native build, manual workflow
+dispatch, or public repository visibility until the open item below is closed.
 
-## Open — required before publishing
+## Open — remaining release operations
 
 - [x] **Independent behavior and full-diff review** of the release tree, with
       no unresolved finding.
@@ -18,12 +17,16 @@ below are closed.
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
-- [ ] **Repository visibility, tag, GitHub release, and the first manual
-      pub.dev publication** — each a separate, deliberate decision. The
-      repository is private today.
+- [ ] **Repository visibility, tag, and GitHub release** — each remains a
+      separate, deliberate decision. The repository is private today.
 
 ## Done — recorded against the reviewed tree
 
+- [x] The first manual pub.dev publication is live as `noir 0.0.1-alpha.0`.
+      The public package API reports the exact version and archive SHA-256
+      `0b771ba4f2645f0f2375cfc208252b8195c8f7caf172a7b933ed49aa3a5ae666`.
+      The downloaded public archive contains no internal documentation, tests,
+      skills, workspace state, external source, or `2026`-named paths.
 - [x] Fork identity, fork-only ABI, custom candidate builds, and legacy Go
       parity are absent from the tree.
 - [x] Canonical nonzero `u32` handles, `u16` RGBA storage, `u32` attributes,
@@ -37,13 +40,25 @@ below are closed.
       parallel after the gate; manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1239 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1271 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
-      Regression checks on the repaired tree confirm both layout examples exit
-      immediately through `q`, unconsumed Ctrl+C exits with status 130, and the
-      textarea/widgets-tour counters report and submit Unicode grapheme counts;
-      every path returns to a usable shell without a stack trace.
+      Post-change VS Code checks exercised Select keyboard selection, ScrollBox
+      navigation, the inherited `t` toggle, a sustained pulse run, and
+      framework-primitives Enter/Space activation. The Flutter-style counter's
+      broader live sequence was `0 -> 1 -> 0 -> 1 -> 0 -> 1 -> 2 -> 3` across
+      Up, Down, `+`, `-`, Enter, Space, and a real left click for the final
+      `2 -> 3` transition. Its polish pass compared the original and final VS
+      Code frames, confirming a middle-row title, flat app bar without a bottom
+      rule, and one solid 7x3 action surface. Up advanced `0 -> 1`; a real left
+      click on a non-glyph corner cell advanced `1 -> 2` exactly once. Initial
+      and incremented polished frames were captured, and Ctrl+C restored a
+      usable shell without a stack trace. Parser-backed widget checks separately
+      prove Select click selection, ScrollBox wheel movement, the inherited
+      ocean/white-to-forest/yellow notification, pulse completion/reversal, and
+      the framework-primitives local-pointer path. Direct pointer observation
+      is recorded for the counter only; the Select, ScrollBox, and
+      framework-primitives pointer assertions remain automated.
 - [x] Analysis-gated CI on `main` is green across format/analyze, Ubuntu,
       macOS, and Windows.
 
