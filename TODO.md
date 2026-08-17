@@ -3,9 +3,9 @@
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
-Noir is **not** cleared for pub.dev publication, a tag, GitHub release, native
-build, manual workflow dispatch, or public repository visibility until the
-applicable open items below are closed.
+Noir is **not** cleared for a tag, GitHub release, native build, manual workflow
+dispatch, or public repository visibility until the applicable open items below
+are closed. The pub.dev publication recorded below is complete.
 
 ## Open — remaining release operations
 
@@ -21,7 +21,7 @@ applicable open items below are closed.
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
-- [ ] **Publish the current candidate to pub.dev** as a separate deliberate
+- [x] **Publish the current candidate to pub.dev** as a separate deliberate
       action after the candidate checks above are complete.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
       separate, deliberate decision. The repository is private today.
@@ -32,6 +32,12 @@ applicable open items below are closed.
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled
       library as cache inputs, with a focused regression test.
+- [x] The current manual pub.dev publication is live as `noir 0.0.1-alpha.1`.
+      The public package API reports it as latest with archive SHA-256
+      `71f8c0f029ec11d6e891161f375aa41a9ca86cf325740e249466c817659a2338`.
+      The downloaded archive matches that hash, declares the exact version,
+      contains both hook cache-input declarations, and excludes the release
+      TODO, contributor-agent guidance, and GitHub workflow.
 - [x] The first manual pub.dev publication is live as `noir 0.0.1-alpha.0`.
       The public package API reports the exact version and archive SHA-256
       `0b771ba4f2645f0f2375cfc208252b8195c8f7caf172a7b933ed49aa3a5ae666`.
