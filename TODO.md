@@ -40,7 +40,7 @@ dispatch, or public repository visibility until the open item below is closed.
       parallel after the gate; manual dispatch and rerun remain controlled.
 - [x] Format, strict analysis, architecture, ordinary-suite, asset,
       documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1259 ordinary tests, 0 analyzer issues, 0 publish
+      on the reviewed tree: 1271 ordinary tests, 0 analyzer issues, 0 publish
       warnings, `native_manifest.json` plus six binaries verified.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox

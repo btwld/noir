@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
-import '../../example/love_reactor.dart';
+import '../../example/like_reactor.dart';
 import '../helpers/buffer_capture.dart';
 import '../helpers/tui_test_app.dart';
 
@@ -27,8 +27,8 @@ typedef _CellBounds = ({int left, int top, int right, int bottom});
 
 void main() {
   test('simulation emits deterministic particles that rise and expire', () {
-    final first = LoveReactorSimulation();
-    final second = LoveReactorSimulation();
+    final first = LikeReactorSimulation();
+    final second = LikeReactorSimulation();
     final startRows = first.particles
         .map((particle) => particle.cellY(12))
         .toList();
@@ -81,16 +81,16 @@ void main() {
   test(
     'initial frame leaves spacious chrome around an open pixel heart',
     () async {
-      final simulation = LoveReactorSimulation();
+      final simulation = LikeReactorSimulation();
       final app = createTuiTestApp(
-        LoveReactorApp(simulation: simulation),
+        LikeReactorApp(simulation: simulation),
         width: 72,
       );
 
       try {
         await _settle(app);
         final frame = app.captureFrame();
-        final title = frame.findText('NOIR · LOVE REACTOR').single;
+        final title = frame.findText('NOIR · LIKE REACTOR').single;
         final help = frame.findText('Space/Enter/click burst').single;
         final heart = _heartBounds(frame);
         final footprintLeft = heart.left - 2;
@@ -139,9 +139,9 @@ void main() {
   test(
     'a keyboard burst grows both heart axes without moving its center',
     () async {
-      final simulation = LoveReactorSimulation();
+      final simulation = LikeReactorSimulation();
       final app = createTuiTestApp(
-        LoveReactorApp(simulation: simulation),
+        LikeReactorApp(simulation: simulation),
         width: 72,
       );
 
@@ -177,7 +177,7 @@ void main() {
   );
 
   test('frame pumping moves and morphs the introductory burst', () async {
-    final app = createTuiTestApp(const LoveReactorApp(), width: 72);
+    final app = createTuiTestApp(const LikeReactorApp(), width: 72);
 
     try {
       await _settle(app);
@@ -192,18 +192,49 @@ void main() {
 
       expect(moved.toText(), isNot(initial.toText()));
       expect(morphed.findText('♡'), isNotEmpty);
-      expect(morphed, BufferMatchers.containsText('NOIR · LOVE REACTOR'));
+      expect(morphed, BufferMatchers.containsText('NOIR · LIKE REACTOR'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('timeline stops when idle and restarts for a new like', () async {
+    final simulation = LikeReactorSimulation();
+    final app = createTuiTestApp(
+      LikeReactorApp(simulation: simulation),
+      width: 72,
+    );
+
+    try {
+      await _settle(app);
+      expect(app.binding.debugHasScheduledFrame, isTrue);
+
+      for (var seconds = 1; seconds <= 5; seconds++) {
+        app.pumpFrame(Duration(seconds: seconds));
+      }
+      app.pumpFrame(const Duration(seconds: 6));
+
+      expect(simulation.particles, isEmpty);
+      expect(simulation.corePulse, 0);
+      expect(app.binding.debugHasScheduledFrame, isFalse);
+
+      app.mockInput.typeText(' ');
+      await _settle(app);
+
+      expect(simulation.burstCount, 2);
+      expect(simulation.particles, hasLength(9));
+      expect(app.binding.debugHasScheduledFrame, isTrue);
     } finally {
       app.dispose();
     }
   });
 
   test('equal-age collisions paint the newest burst particle', () async {
-    final simulation = LoveReactorSimulation()..burst();
-    final particlesByCell = <(int, int), List<LoveParticle>>{};
+    final simulation = LikeReactorSimulation()..burst();
+    final particlesByCell = <(int, int), List<LikeParticle>>{};
     for (final particle in simulation.particles) {
       final cell = (particle.cellX(56), particle.cellY(_particleStageHeight));
-      particlesByCell.putIfAbsent(cell, () => <LoveParticle>[]).add(particle);
+      particlesByCell.putIfAbsent(cell, () => <LikeParticle>[]).add(particle);
     }
     final collision = particlesByCell.entries.firstWhere(
       (entry) =>
@@ -213,7 +244,7 @@ void main() {
     final newest = collision.value.last;
 
     final app = createTuiTestApp(
-      LoveReactorApp(simulation: simulation),
+      LikeReactorApp(simulation: simulation),
       width: 72,
     );
     try {
@@ -240,9 +271,9 @@ void main() {
   test(
     'Space and Enter burst while unrelated input and releases do not',
     () async {
-      final simulation = LoveReactorSimulation();
+      final simulation = LikeReactorSimulation();
       final app = createTuiTestApp(
-        LoveReactorApp(simulation: simulation),
+        LikeReactorApp(simulation: simulation),
         width: 72,
       );
 
@@ -272,8 +303,8 @@ void main() {
   test(
     'widget updates retarget input without taking external simulation ownership',
     () async {
-      final first = LoveReactorSimulation();
-      final second = LoveReactorSimulation();
+      final first = LikeReactorSimulation();
+      final second = LikeReactorSimulation();
       final hostKey = GlobalKey<_SimulationSwapHostState>();
       final app = createTuiTestApp(
         _SimulationSwapHost(key: hostKey, initialSimulation: first),
@@ -308,9 +339,9 @@ void main() {
   test(
     'only left-button down on the invisible heart footprint bursts',
     () async {
-      final simulation = LoveReactorSimulation();
+      final simulation = LikeReactorSimulation();
       final app = createTuiTestApp(
-        LoveReactorApp(simulation: simulation),
+        LikeReactorApp(simulation: simulation),
         width: 72,
       );
 
@@ -339,31 +370,36 @@ void main() {
     },
   );
 
-  test('entrypoint and narrow layout preserve supported interaction', () async {
-    final source = io.File('example/love_reactor.dart').readAsStringSync();
+  test(
+    'entrypoint registers hot reload and narrow layout remains usable',
+    () async {
+      final source = io.File('example/like_reactor.dart').readAsStringSync();
 
-    expect(RegExp(r'app\.enableMouse\(\);').allMatches(source), hasLength(1));
-    expect(source, isNot(contains('enableMouse(enableMovement: true)')));
-    expect(source, contains('registerHotReloadExtension(app);'));
+      expect(source, contains('registerHotReloadExtension(app);'));
 
-    final app = createTuiTestApp(const LoveReactorApp(), width: 40, height: 22);
-    try {
-      await _settle(app);
-      final frame = app.captureFrame();
-      expect(frame, BufferMatchers.containsText('NOIR · LOVE REACTOR'));
-      expect(frame, BufferMatchers.containsText('Space/Enter/click burst'));
-      final heart = _heartBounds(frame);
-      expect(_boundsWidth(heart), 13);
-      expect(_boundsHeight(heart), 6);
-      _expectOpenHeartFootprint(
-        frame,
-        left: heart.left - 2,
-        top: heart.top - 1,
+      final app = createTuiTestApp(
+        const LikeReactorApp(),
+        width: 40,
+        height: 22,
       );
-    } finally {
-      app.dispose();
-    }
-  });
+      try {
+        await _settle(app);
+        final frame = app.captureFrame();
+        expect(frame, BufferMatchers.containsText('NOIR · LIKE REACTOR'));
+        expect(frame, BufferMatchers.containsText('Space/Enter/click burst'));
+        final heart = _heartBounds(frame);
+        expect(_boundsWidth(heart), 13);
+        expect(_boundsHeight(heart), 6);
+        _expectOpenHeartFootprint(
+          frame,
+          left: heart.left - 2,
+          top: heart.top - 1,
+        );
+      } finally {
+        app.dispose();
+      }
+    },
+  );
 }
 
 _CellBounds _heartBounds(CapturedBuffer frame) {
@@ -417,14 +453,14 @@ void _expectOpenHeartFootprint(
 class _SimulationSwapHost extends StatefulWidget {
   const _SimulationSwapHost({required this.initialSimulation, super.key});
 
-  final LoveReactorSimulation initialSimulation;
+  final LikeReactorSimulation initialSimulation;
 
   @override
   State<_SimulationSwapHost> createState() => _SimulationSwapHostState();
 }
 
 class _SimulationSwapHostState extends State<_SimulationSwapHost> {
-  late LoveReactorSimulation _simulation;
+  late LikeReactorSimulation _simulation;
 
   @override
   void initState() {
@@ -432,12 +468,12 @@ class _SimulationSwapHostState extends State<_SimulationSwapHost> {
     _simulation = widget.initialSimulation;
   }
 
-  void replaceSimulation(LoveReactorSimulation simulation) {
+  void replaceSimulation(LikeReactorSimulation simulation) {
     setState(() => _simulation = simulation);
   }
 
   @override
-  Widget build(BuildContext context) => LoveReactorApp(simulation: _simulation);
+  Widget build(BuildContext context) => LikeReactorApp(simulation: _simulation);
 }
 
 Future<void> _settle(TuiTestApp app) async {

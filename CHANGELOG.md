@@ -15,7 +15,7 @@
   VM service extension so a development driver can rebuild a running app after
   `reloadSources`.
 - The Flutter-inspired counter example composes a flat blue app bar, centered
-  body, and solid square-style clickable action surface. Up/Down, `+`/`-`,
+  body, and solid clickable action button. Up/Down, `+`/`-`,
   Enter, Space, and left click drive its state; an unconsumed Ctrl+C key follows
   the terminal session's cleanup and interrupt exit path while higher-priority
   handlers can override it.

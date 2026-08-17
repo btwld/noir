@@ -19,11 +19,11 @@ before stable 1.0.
 
 ## Install
 
-Use the explicitly versioned prerelease after it is available on pub.dev:
+Install the explicitly versioned prerelease from pub.dev:
 
     dart pub add noir:^0.0.1-alpha.0
 
-Before publication, clone this repository and use a path dependency:
+When developing against a local checkout, use a path dependency:
 
     dependencies:
       noir:
@@ -179,7 +179,7 @@ class _CounterAppState extends State<CounterApp> {
 
 See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
-for the complete styled version with a solid square-style action surface and
+for the complete styled version with a solid action button and
 hot-reload registration.
 
 ## Application Lifecycle and API Tiers
@@ -222,7 +222,7 @@ backend remain framework-owned; they are not supported package surfaces.
 
 - [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
-  stateful body, and solid square-style action surface controlled by Up/Down,
+  stateful body, and solid action button controlled by Up/Down,
   `+`/`-`, Enter/Space, or click.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
@@ -244,6 +244,8 @@ backend remain framework-owned; they are not supported package surfaces.
   and animation.
 - [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
   ticker-driven updates.
+- [Like Reactor](https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart) — deterministic heart particles,
+  animation-driven morphing, and overlapping keyboard/mouse activation.
 - [Bindings validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart) — interactive
   advanced renderer/buffer and ABI-unstable FFI validation in a terminal at
   least 120×40 cells.

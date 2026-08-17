@@ -17,7 +17,7 @@ void main() {
     for (final path in <String>[
       'example/chat_demo.dart',
       'example/focus_form.dart',
-      'example/love_reactor.dart',
+      'example/like_reactor.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
     ]) {

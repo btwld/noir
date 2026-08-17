@@ -65,18 +65,18 @@ const _launchPatterns = <_LaunchPattern>[
 ];
 
 void main() {
-  final app = runTuiApp(const LoveReactorApp());
+  final app = runTuiApp(const LikeReactorApp());
   app.enableMouse();
   registerHotReloadExtension(app);
 }
 
-/// Deterministic particle state for the Love Reactor example.
-class LoveReactorSimulation {
-  LoveReactorSimulation() {
+/// Deterministic particle state for the Like Reactor example.
+class LikeReactorSimulation {
+  LikeReactorSimulation() {
     _emitBurst(animateCore: false);
   }
 
-  final List<LoveParticle> _particles = <LoveParticle>[];
+  final List<LikeParticle> _particles = <LikeParticle>[];
   int _burstCount = 0;
   double _corePulse = 0;
 
@@ -87,7 +87,9 @@ class LoveReactorSimulation {
   double get corePulse => _corePulse;
 
   /// Read-only view of the live particles, ordered from oldest to newest.
-  List<LoveParticle> get particles => UnmodifiableListView(_particles);
+  List<LikeParticle> get particles => UnmodifiableListView(_particles);
+
+  bool get _needsFrames => _particles.isNotEmpty || _corePulse > 0;
 
   /// Emits one user-triggered burst and activates the heart core.
   void burst() => _emitBurst(animateCore: true);
@@ -122,7 +124,7 @@ class LoveReactorSimulation {
     for (var index = 0; index < _particlesPerBurst; index++) {
       final pattern = _launchPatterns[index];
       _particles.add(
-        LoveParticle._(
+        LikeParticle._(
           launchOffset: pattern.launchOffset,
           lateralVelocity: pattern.lateralVelocity,
           driftAmplitude: pattern.driftAmplitude,
@@ -144,9 +146,9 @@ class LoveReactorSimulation {
   }
 }
 
-/// One deterministic Love Reactor particle.
-class LoveParticle {
-  LoveParticle._({
+/// One deterministic Like Reactor particle.
+class LikeParticle {
+  LikeParticle._({
     required this.launchOffset,
     required this.lateralVelocity,
     required this.driftAmplitude,
@@ -174,7 +176,7 @@ class LoveParticle {
   /// Lifetime of the particle in seconds.
   final double lifetime;
 
-  /// Index into the Love Reactor particle palette.
+  /// Index into the Like Reactor particle palette.
   final int colorIndex;
 
   double _age = 0;
@@ -213,24 +215,24 @@ class LoveParticle {
   }
 }
 
-class LoveReactorApp extends StatefulWidget {
-  const LoveReactorApp({this.simulation, super.key});
+class LikeReactorApp extends StatefulWidget {
+  const LikeReactorApp({this.simulation, super.key});
 
   /// Optional externally owned simulation, useful for observing commands.
-  final LoveReactorSimulation? simulation;
+  final LikeReactorSimulation? simulation;
 
   @override
-  State<LoveReactorApp> createState() => _LoveReactorAppState();
+  State<LikeReactorApp> createState() => _LikeReactorAppState();
 }
 
-class _LoveReactorAppState extends State<LoveReactorApp>
-    with SingleTickerProviderStateMixin<LoveReactorApp> {
-  LoveReactorSimulation? _ownedSimulation;
+class _LikeReactorAppState extends State<LikeReactorApp>
+    with SingleTickerProviderStateMixin<LikeReactorApp> {
+  LikeReactorSimulation? _ownedSimulation;
   late final AnimationController _controller;
   double _previousControllerValue = 0;
 
-  LoveReactorSimulation get _simulation =>
-      widget.simulation ?? (_ownedSimulation ??= LoveReactorSimulation());
+  LikeReactorSimulation get _simulation =>
+      widget.simulation ?? (_ownedSimulation ??= LikeReactorSimulation());
 
   @override
   void initState() {
@@ -238,7 +240,7 @@ class _LoveReactorAppState extends State<LoveReactorApp>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
-      debugLabel: 'Love Reactor timeline',
+      debugLabel: 'Like Reactor timeline',
     );
     _controller.addListener(_onTick);
     _controller.addStatusListener(_onStatusChanged);
@@ -253,19 +255,37 @@ class _LoveReactorAppState extends State<LoveReactorApp>
       return;
     }
     _simulation.advance(elapsedSeconds);
+    if (!_simulation._needsFrames) {
+      _controller.stop();
+    }
     setState(() {});
   }
 
   void _onStatusChanged(AnimationStatus status) {
+    if ((status != AnimationStatus.completed &&
+            status != AnimationStatus.dismissed) ||
+        !_simulation._needsFrames) {
+      return;
+    }
     if (status == AnimationStatus.completed) {
       _controller.reverse();
-    } else if (status == AnimationStatus.dismissed) {
+    } else {
       _controller.forward();
     }
   }
 
   void _burst() {
     setState(_simulation.burst);
+    if (_controller.isAnimating) {
+      return;
+    }
+    _previousControllerValue = _controller.value;
+    if (_controller.status == AnimationStatus.completed ||
+        _controller.status == AnimationStatus.reverse) {
+      _controller.reverse();
+    } else {
+      _controller.forward();
+    }
   }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
@@ -303,7 +323,7 @@ class _LoveReactorAppState extends State<LoveReactorApp>
             child: Align(
               alignment: Alignment.topCenter,
               child: Text(
-                'NOIR · LOVE REACTOR',
+                'NOIR · LIKE REACTOR',
                 style: TextStyle(
                   color: _reactorMuted,
                   fontWeight: FontWeight.bold,
@@ -347,13 +367,13 @@ class _LoveReactorAppState extends State<LoveReactorApp>
 class _ParticleStage extends StatelessWidget {
   const _ParticleStage({required this.particles});
 
-  final List<LoveParticle> particles;
+  final List<LikeParticle> particles;
 
   @override
   Widget build(BuildContext context) {
-    final cells = List<List<LoveParticle?>>.generate(
+    final cells = List<List<LikeParticle?>>.generate(
       _stageHeight,
-      (_) => List<LoveParticle?>.filled(_stageWidth, null),
+      (_) => List<LikeParticle?>.filled(_stageWidth, null),
     );
 
     for (final particle in particles) {
@@ -379,7 +399,7 @@ class _ParticleStage extends StatelessWidget {
 class _ParticleRow extends StatelessWidget {
   const _ParticleRow({required this.cells});
 
-  final List<LoveParticle?> cells;
+  final List<LikeParticle?> cells;
 
   @override
   Widget build(BuildContext context) => Text.rich(
