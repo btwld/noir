@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag to verify and release (for example, v0.0.1-alpha.0)
+        description: Existing version tag to verify and release (for example, v1.2.3)
         required: true
         type: string
 

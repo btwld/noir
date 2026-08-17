@@ -23,6 +23,7 @@ void main() {
     expect(workflow, isNot(contains('tags:')));
     expect(workflow, isNot(contains('branches:')));
     expect(workflow, contains('cancel-in-progress: false'));
+    expect(workflow, contains('for example, v1.2.3'));
     expect(workflow, isNot(contains('pull_request:')));
   });
 

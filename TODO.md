@@ -1,27 +1,43 @@
-# Release TODO — `0.0.1-alpha.0`
+# Release TODO — `0.0.1-alpha.1`
 
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
 Noir is **not** cleared for a tag, GitHub release, native build, manual workflow
-dispatch, or public repository visibility until the open item below is closed.
+dispatch, or public repository visibility until the applicable open items below
+are closed. The pub.dev publication recorded below is complete.
 
 ## Open — remaining release operations
 
-- [x] **Independent behavior and full-diff review** of the release tree, with
-      no unresolved finding.
-- [x] **Recovery bundle and clean-clone verification** recorded: clone the
-      repository fresh, run the verification commands below, and confirm the
-      bundled binaries verify against `native_manifest.json`.
+- [x] **Independent behavior and full-diff review** of the current candidate,
+      with no unresolved finding.
+- [x] **Recovery bundle and clean-clone verification** recorded: the committed
+      candidate and pinned OpenTUI gitlink were restored into a fresh checkout,
+      the verification commands below passed, and all six bundled binaries
+      verified against `native_manifest.json`.
+- [x] **Clean-tree publish dry-run** completed with zero warnings and the
+      intended 15 MB archive contents, both in the workspace and clean clone.
 - [x] **Manual real-terminal check** of hot reload. Ordinary verification is
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
+- [x] **Publish the current candidate to pub.dev** as a separate deliberate
+      action after the candidate checks above are complete.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
       separate, deliberate decision. The repository is private today.
 
-## Done — recorded against the reviewed tree
+## Done — candidate preparation and recorded baseline
 
+- [x] Package metadata, changelog, install guidance, contributor guidance, and
+      release assertions agree on the current candidate version.
+- [x] The build hook declares `native_manifest.json` and the selected bundled
+      library as cache inputs, with a focused regression test.
+- [x] The current manual pub.dev publication is live as `noir 0.0.1-alpha.1`.
+      The public package API reports it as latest with archive SHA-256
+      `71f8c0f029ec11d6e891161f375aa41a9ca86cf325740e249466c817659a2338`.
+      The downloaded archive matches that hash, declares the exact version,
+      contains both hook cache-input declarations, and excludes the release
+      TODO, contributor-agent guidance, and GitHub workflow.
 - [x] The first manual pub.dev publication is live as `noir 0.0.1-alpha.0`.
       The public package API reports the exact version and archive SHA-256
       `0b771ba4f2645f0f2375cfc208252b8195c8f7caf172a7b933ed49aa3a5ae666`.
@@ -38,10 +54,11 @@ dispatch, or public repository visibility until the open item below is closed.
 - [x] Automatic `push`/`pull_request` CI is analysis-gated, bounded,
       least-privilege, and immutable-action pinned. Platform suites run in
       parallel after the gate; manual dispatch and rerun remain controlled.
-- [x] Format, strict analysis, architecture, ordinary-suite, asset,
-      documentation, downstream-consumer, publish-dry-run, and diff checks pass
-      on the reviewed tree: 1271 ordinary tests, 0 analyzer issues, 0 publish
-      warnings, `native_manifest.json` plus six binaries verified.
+- [x] Format, strict analysis, 157 architecture tests, the 1272-test ordinary
+      suite, downstream-consumer checks, native-asset verification, and diff
+      checks pass on the committed candidate and clean clone. Documentation has
+      zero warnings and errors, and both clean-tree publish dry-runs validate
+      the intended 15 MB archive with zero warnings.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and
@@ -94,6 +111,10 @@ authorization.
 
 ## Known limitations carried into the release
 
+- Dart 3.10 supplies native-asset hooks with a macOS deployment target of 12,
+  while the bundled libraries require macOS 13. The normal CLI build has no
+  target-version override, so Noir documents macOS 13 and permits the build;
+  macOS 12 can fail later when loading the native library.
 - The pinned native `bufferDrawText` encoder mishandles a run beginning with a
   source-level zero-width grapheme: observed examples emit UTF-8 continuation
   bytes as cells and advance before following text. Noir retains OpenTUI's
@@ -117,3 +138,12 @@ authorization.
   real `reloadSources` against a spawned headless app and asserts that the
   source swap alone changes no rendered output while the extension call does.
   The driver itself is only exercised by the manual check listed above.
+
+## Non-blocking follow-ups
+
+- Decide the macOS deployment-target policy before beta or stable once Dart
+  offers a supported way to request the package's native deployment floor.
+- Execute downstream smoke tests on the three shipped OS/architecture
+  combinations not exercised by the ordinary host-runner matrix.
+- Add a lower-bound lane that runs analysis and focused hook tests after
+  `dart pub downgrade` when practical.
