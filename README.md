@@ -5,8 +5,8 @@ OpenTUI. It combines declarative widgets, integer-cell layout, stateful
 rebuilds, focus and input routing, animation, and bundled native rendering in
 one package.
 
-`0.0.1-alpha.0` is a prerelease. APIs and platform guarantees may change
-before stable 1.0.
+Noir is currently a prerelease. APIs and platform guarantees may change before
+stable 1.0.
 
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
   and `setState`.
@@ -19,9 +19,9 @@ before stable 1.0.
 
 ## Install
 
-Install the explicitly versioned prerelease from pub.dev:
+Install the latest prerelease from pub.dev:
 
-    dart pub add noir:^0.0.1-alpha.0
+    dart pub add noir
 
 When developing against a local checkout, use a path dependency:
 
@@ -325,6 +325,12 @@ corrupt package.
 
 ## Known Limitations
 
+- Dart 3.10 supplies a macOS deployment target of 12 to native-asset hooks,
+  while the bundled OpenTUI libraries require macOS 13. Because
+  `dart build cli` does not expose a deployment-target override, Noir documents
+  macOS 13 as its minimum and allows the normal build to proceed. On macOS 12,
+  the native loader can therefore report the incompatibility at runtime rather
+  than the hook rejecting the build earlier.
 - High-level layout and painting keep multi-code-point graphemes intact and
   expand intersecting selection ranges to whole grapheme clusters.
   `DirectBufferAccess.getEncodedCellAt()` exposes guarded access to native

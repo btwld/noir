@@ -11,6 +11,10 @@ void main() {
   final inputsGuide = _read('skills/noir/references/inputs-and-focus.md');
   final stateGuide = _read('skills/noir/references/state-and-animation.md');
   final exampleGuide = _read('example/README.md');
+  final pubspec = _read('pubspec.yaml');
+  final packageVersion = _packageVersion(pubspec);
+  final releaseTodo = _read('TODO.md');
+  final contributorGuide = _read('AGENTS.md');
   final appSource = _read('lib/src/app/app.dart');
   final highLevelBarrel = _read('lib/noir.dart');
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
@@ -115,24 +119,32 @@ void main() {
     expect(source, contains("'--format=machine'"));
   });
 
-  test('public changelog has one entry matching the alpha package version', () {
-    final pubspec = _read('pubspec.yaml');
+  test('public changelog leads with the current alpha package version', () {
     final changelog = _read('CHANGELOG.md');
-    final version = RegExp(
-      r'^version:\s*(\S+)\s*$',
-      multiLine: true,
-    ).firstMatch(pubspec)!.group(1)!;
     final changelogVersions = RegExp(
       r'^##\s+([^\s]+)\s*$',
       multiLine: true,
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
-    expect(version, '0.0.1-alpha.0');
-    expect(changelogVersions, <String>['0.0.1-alpha.0']);
+    expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$')));
+    expect(changelogVersions, isNotEmpty);
+    expect(changelogVersions.first, packageVersion);
+    expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
+    expect(changelog, contains('invalidate cached hook output'));
+    expect(changelog, contains('Like Reactor'));
     expect(changelog, contains('First public alpha'));
     expect(changelog, isNot(contains('Initial public release')));
     expect(changelog.toLowerCase(), isNot(contains('muse')));
     expect(changelog.toLowerCase(), isNot(contains('pixel')));
+  });
+
+  test('live release records derive the package version in one place', () {
+    expect(releaseTodo, startsWith('# Release TODO — `$packageVersion`'));
+    expect(
+      contributorGuide,
+      contains('The target is the current core-framework prerelease candidate'),
+    );
+    expect(contributorGuide, isNot(contains(packageVersion)));
   });
 
   test(
@@ -180,13 +192,14 @@ void main() {
     final install = readme.substring(installStart, quickStartIndex);
 
     expect(installStart, greaterThanOrEqualTo(0));
-    expect(install, contains('dart pub add noir:^0.0.1-alpha.0'));
+    expect(install, contains('dart pub add noir'));
+    expect(install, isNot(contains('dart pub add noir:^')));
     expect(install, contains('path: ../noir'));
     expect(
       _normalized(install),
       contains('pin an exact commit or release tag'),
     );
-    expect(readme, contains('`0.0.1-alpha.0` is a prerelease'));
+    expect(readme, contains('Noir is currently a prerelease.'));
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
       hasLength(2),
@@ -252,6 +265,8 @@ void main() {
       'multi-code-point graphemes',
       'selection ranges',
       'native encoded storage',
+      'deployment target of 12',
+      'macos 12',
       'escape a clipped viewport',
       'low-level native operation failures',
       'main-screen row 1/column 1',
@@ -634,6 +649,11 @@ String _normalizeLineEndings(String source) =>
     source.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
 String _read(String path) => File(path).readAsStringSync();
+
+String _packageVersion(String pubspec) => RegExp(
+  r'^version:\s*(\S+)\s*$',
+  multiLine: true,
+).firstMatch(pubspec)!.group(1)!;
 
 List<Map<String, Object?>> _manifestAssets() {
   final manifest =

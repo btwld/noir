@@ -5,6 +5,8 @@ import 'package:test/test.dart';
 import '../helpers/opentui_v051_contract.dart';
 
 void main() {
+  final packageVersion = _packageVersion(_read('pubspec.yaml'));
+
   test('native assets own bundled runtime loading', () {
     expect(File('hook/build.dart').existsSync(), isTrue);
     expect(File('native_manifest.json').existsSync(), isTrue);
@@ -154,7 +156,7 @@ void main() {
         .toSet();
 
     for (final clause in <String>[
-      'dart pub add noir:^0.0.1-alpha.0',
+      'dart pub add noir',
       'package:noir/noir.dart',
       'runTuiApp',
       'ships bundled native libraries',
@@ -167,6 +169,7 @@ void main() {
     ]) {
       expect(readme, contains(clause), reason: clause);
     }
+    expect(readme, isNot(contains(packageVersion)));
     for (final stale in <String>[
       'Phase 8',
       'Phase 9',
@@ -256,6 +259,11 @@ void main() {
 }
 
 String _read(String path) => File(path).readAsStringSync();
+
+String _packageVersion(String pubspec) => RegExp(
+  r'^version:\s*(\S+)\s*$',
+  multiLine: true,
+).firstMatch(pubspec)!.group(1)!;
 
 String _declarationBody(String source, String signature) {
   final signatureStart = source.indexOf(signature);

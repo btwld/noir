@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.1-alpha.1
+
+- The native-asset build hook now declares `native_manifest.json` and the
+  selected bundled library as file-system dependencies. Dart can therefore
+  invalidate cached hook output, repeat SHA-256 verification, and regenerate
+  the derived macOS bundle copy when either input changes.
+- Added focused regression coverage for the hook dependency declarations and
+  documented how to suppress routine build-hook status without skipping native
+  asset verification.
+- Added the Like Reactor example, demonstrating deterministic heart particles,
+  animation-driven morphing, and overlapping keyboard and mouse activation.
+
 ## 0.0.1-alpha.0
 
 - First public alpha of Noir's Flutter-like reactive widget framework for
@@ -15,7 +27,7 @@
   VM service extension so a development driver can rebuild a running app after
   `reloadSources`.
 - The Flutter-inspired counter example composes a flat blue app bar, centered
-  body, and solid clickable action button. Up/Down, `+`/`-`,
+  body, and solid square-style clickable action surface. Up/Down, `+`/`-`,
   Enter, Space, and left click drive its state; an unconsumed Ctrl+C key follows
   the terminal session's cleanup and interrupt exit path while higher-priority
   handlers can override it.
