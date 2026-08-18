@@ -83,18 +83,16 @@ void main() {
         ),
       );
 
-      final lines = captured.toLines();
+      // With the left and right sides off, the pinned `drawBox` emits no
+      // corner glyphs, so the reserved top row is a full run of `─`. Only that
+      // one row is reserved, so the child keeps the full width and every
+      // remaining row including the bottom one.
       expect(
-        lines.first.startsWith('─') || lines.first.startsWith('┌'),
-        isTrue,
-        reason: 'top side must survive, but got:\n${captured.toText()}',
-      );
-      expect(
-        lines.sublist(1),
-        everyElement('XXXXXXXXXXXX'),
+        captured.toLines(),
+        ['────────────', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX'],
         reason:
-            'only the drawn top side is reserved, so the child keeps the '
-            'full width and the bottom row, but got:\n${captured.toText()}',
+            'a top-only border reserves exactly one row, but got:\n'
+            '${captured.toText()}',
       );
     });
   });
