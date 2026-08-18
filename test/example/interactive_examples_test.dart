@@ -56,6 +56,15 @@ void main() {
     }
   });
 
+  test('pub search client is pinned to an immutable Git revision', () {
+    final pubspec = io.File('pubspec.yaml').readAsStringSync();
+    final dependency = RegExp(
+      r'pub_api_client:\s+git:\s+url: [^\n]+\s+ref: ([0-9a-f]{40})',
+    ).firstMatch(pubspec);
+
+    expect(dependency, isNotNull);
+  });
+
   test('layout examples delegate q to their quit owner exactly once', () async {
     final cases = <(String, Widget Function(VoidCallback))>[
       ('layout basics', (onQuit) => LayoutBasics(onQuit: onQuit)),

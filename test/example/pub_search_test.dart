@@ -153,6 +153,51 @@ void main() {
     }
   });
 
+  test('keeps result rows inside the panel at 80x24', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(
+        _page(List.generate(15, (index) => 'package_$index')),
+      );
+    final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
+
+    try {
+      await _settle(app);
+      final frame = app.captureFrame();
+      final bottomBorder = [
+        for (var y = 0; y < frame.height; y++)
+          if (frame.getChar(3, y) == '└') y,
+      ].last;
+      final paintedResults = [
+        for (var index = 0; index < 15; index++)
+          ...frame.findText('package_$index'),
+      ];
+
+      expect(paintedResults, isNotEmpty);
+      expect(
+        paintedResults.every((position) => position.y < bottomBorder),
+        isTrue,
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('keeps search help on one row at 80 columns', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
+
+    try {
+      await _settle(app);
+      final frame = app.captureFrame();
+      final help = frame.findText('Enter search').single;
+      final quit = frame.findText('quit').single;
+
+      expect(quit.y, help.y);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('Escape returns to results before requesting quit', () async {
     var quits = 0;
     final catalog = _FakePubCatalog()

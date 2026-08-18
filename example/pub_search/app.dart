@@ -412,7 +412,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         Expanded(child: _buildResults()),
         const SizedBox(height: 1),
         const Text(
-          'Enter search / inspect   Tab focus   ↑↓ choose   s sort   n/p page   Esc quit',
+          'Enter search/open   Tab focus   ↑↓ choose   s sort   n/p page   Esc quit',
           style: TextStyle(color: pubMuted),
         ),
       ],
@@ -473,27 +473,29 @@ class _PubSearchAppState extends State<PubSearchApp> {
           style: const TextStyle(color: pubMuted),
         ),
         const SizedBox(height: 1),
-        Select<String>(
-          focusNode: _resultsFocus,
-          autofocus: _autofocusResults,
-          selectedIndex: _selectedIndex,
-          height: 13,
-          showScrollIndicator: true,
-          backgroundColor: pubPanel,
-          selectedBackgroundColor: pubSelection,
-          selectedTextColor: pubAccent,
-          options: [
-            for (final package in page.packages)
-              SelectOption(name: package, value: package),
-          ],
-          onChanged: (index, option) {
-            if (_selectedIndex == index) return;
-            setState(() => _selectedIndex = index);
-          },
-          onSelect: (index, option) {
-            final name = option.value;
-            if (name != null) unawaited(_loadPackage(name));
-          },
+        Expanded(
+          child: Select<String>(
+            focusNode: _resultsFocus,
+            autofocus: _autofocusResults,
+            selectedIndex: _selectedIndex,
+            height: 13,
+            showScrollIndicator: true,
+            backgroundColor: pubPanel,
+            selectedBackgroundColor: pubSelection,
+            selectedTextColor: pubAccent,
+            options: [
+              for (final package in page.packages)
+                SelectOption(name: package, value: package),
+            ],
+            onChanged: (index, option) {
+              if (_selectedIndex == index) return;
+              setState(() => _selectedIndex = index);
+            },
+            onSelect: (index, option) {
+              final name = option.value;
+              if (name != null) unawaited(_loadPackage(name));
+            },
+          ),
         ),
       ],
     );

@@ -38,7 +38,7 @@ dev_dependencies:
   pub_api_client:
     git:
       url: https://github.com/leoafarias/pub_api_client.git
-      ref: feat/weekly-version-downloads
+      ref: 4c5f9551e7fec4778dd4384009c60abf4e81afd7
   test: ^1.25.0
   # Drives `reloadSources` + `ext.noir.reassemble` from the hot-reload dev
   # driver and its end-to-end test. Already resolved transitively at 15.2.0.
