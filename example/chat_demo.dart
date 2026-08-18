@@ -215,7 +215,7 @@ class _ChatDemoAppState extends State<ChatDemoApp>
 
   @override
   Widget build(BuildContext context) => Focus(
-    autofocus: widget.autofocusInput,
+    canRequestFocus: false,
     onKeyEvent: _handleRootKey,
     child: Container(
       color: const Color(0.04, 0.05, 0.08),
@@ -283,7 +283,7 @@ class _Header extends StatelessWidget {
     child: Row(
       children: [
         const Text(
-          'OpenTUI Chat',
+          'Noir Chat',
           style: TextStyle(
             color: Color(0.78, 0.90, 1),
             fontWeight: FontWeight.bold,
@@ -317,7 +317,7 @@ class _MessageBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = switch (message.role) {
       ChatRole.user => 'You',
-      ChatRole.assistant => 'OpenTUI',
+      ChatRole.assistant => 'Noir',
     };
     final accent = switch (message.role) {
       ChatRole.user => const Color(0.42, 0.85, 1),
@@ -343,7 +343,7 @@ class _ThinkingBlock extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(top: 1),
     child: Text(
-      'OpenTUI is thinking $frame',
+      'Noir is thinking $frame',
       style: const TextStyle(
         color: Color(1, 0.78, 0.35),
         fontWeight: FontWeight.bold,
@@ -396,7 +396,7 @@ class _PromptBox extends StatelessWidget {
             controller: controller,
             focusNode: focusNode,
             autofocus: autofocus,
-            placeholder: thinking ? 'Waiting for OpenTUI' : 'Message OpenTUI',
+            placeholder: thinking ? 'Waiting for Noir' : 'Message Noir',
             cursorColor: const Color(0.42, 0.85, 1),
             color: const Color(0.94, 0.96, 1),
             onSubmit: onSubmit,

@@ -296,6 +296,35 @@ recreated. Changes the VM cannot swap still need a restart: `main()`,
 `initState` of already-mounted state, signatures held by live stack frames,
 enum-to-class conversions, and the native OpenTUI library.
 
+## See and drive a running app (drive mode)
+
+Setting `NOIR_DRIVE=1` in the environment makes `runTuiApp` mount any app
+headlessly — no TTY, no raw mode, no code change — and publish an
+`ext.noir.driver.*` VM-service surface: capture the rendered frame
+(characters, 24-bit colors, cursor), inspect the widget tree, inject input
+bytes through the production ANSI parser, resize the emulated terminal
+(`NOIR_DRIVE_SIZE=WxH`, default 80×24), and quit.
+
+Inside this repo, the bundled driver CLI launches an app that way and reads
+commands from its own stdin — interactively, or piped for scripted checks:
+
+```sh
+printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
+  dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+```
+
+`capture --ansi` prints the frame in true color ("see the design");
+`--plain`/`--cells` give text or JSON. Other commands: `tree [depth]`,
+`key <name>`, `type <text>`, `click <x> <y>`, `scroll`, `resize <WxH>`,
+`reload` (hot reload + reassemble), `watch on|off`. Viewing an app at several
+sizes this way is how layout problems at small terminals get caught early.
+
+Outside the repo the extension surface still activates, but the CLI and the
+`NoirDriver` client are not part of the published package, and the surface is
+development tooling rather than stable API. Drive mode is for looking at and
+driving a live app; automated assertions belong in ordinary tests
+(`references/testing.md`).
+
 ## Reference index
 
 Load the file that matches your task — each is self-contained:

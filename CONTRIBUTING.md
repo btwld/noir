@@ -63,6 +63,50 @@ For behavior changes:
 3. Run the focused test and related ownership tests.
 4. Run the required checks above before requesting review.
 
+## Driving an app
+
+`NOIR_DRIVE=1` mounts any Noir entry point headlessly, painting into OpenTUI's
+non-terminal testing renderer and publishing `ext.noir.driver.*` over the VM
+service. Nothing in the app changes. `scripts/noir_drive.dart` launches an app
+that way and reads commands from its own stdin, interactively or from a pipe:
+
+    dart run scripts/noir_drive.dart example/counter.dart [--size 100x30] [--json]
+
+    capture [--ansi|--plain|--cells]
+    tree [depth]
+    key <up|down|left|right|enter|tab|esc|backspace|pgup|pgdn|ctrl-<a-z>>
+    type <text...>
+    click <x> <y>
+    scroll <up|down|left|right> <x> <y>
+    resize <WxH>
+    reload
+    watch on|off
+    quit
+
+Rendered frames and tree output go to stdout while status and errors go to
+stderr, so a scripted run captures exactly what the app painted:
+
+    printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
+      dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+
+Pass `--verbosity=error` whenever the frames are piped or redirected. Dart
+writes its build-hook status to stdout, which otherwise lands in front of the
+first captured row.
+
+`scripts/driver/noir_driver.dart` exposes the same surface as a Dart client for
+scripts that assert against captures. Neither is a test harness: they drive a
+live app process instead of mounting widgets, so the four harnesses above
+remain the way to test widget behavior.
+
+Keys and mouse reports are encoded to escape bytes on the client side and
+injected through the production ANSI parser, so a driven interaction takes the
+same path a real terminal would. This needs no TTY and no raw mode.
+
+Known limits: a continuously animating app never reports `stable: true`, and
+capture keeps working anyway; an app whose own quit path calls `exit` ends the
+session; and `reload` inherits the documented `reassemble()` limits, so
+`main()` and `initState` bodies still need a restart.
+
 ## Style and documentation
 
 - Format all Dart with `dart format`.

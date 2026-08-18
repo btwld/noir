@@ -1,9 +1,9 @@
 // ignore_for_file: cascade_invocations
 // Run with: dart run example/widgets_tour.dart
 //
-// Combined tour of Select, ScrollBox, and TextArea — the Ink-equivalent
-// showcase. Press Tab to move focus between widgets. Ctrl+D submits the
-// TextArea. Press q (when no TextArea is focused) or Esc to quit.
+// Combined tour of Select, ScrollBox, and TextArea.
+// Press Tab / Shift+Tab to move focus. Ctrl+D submits the TextArea.
+// Esc always quits. q quits unless the TextArea is focused.
 
 import 'dart:io' as io;
 
@@ -17,6 +17,7 @@ void main() {
   }
 
   app = runTuiApp(WidgetsTourApp(onQuit: quit));
+  app.enableMouse();
 }
 
 class WidgetsTourApp extends StatefulWidget {
@@ -59,16 +60,21 @@ class _TourAppState extends State<WidgetsTourApp> {
     super.initState();
     _ring = [_selectFocus, _scrollFocus, _textFocus];
     for (final n in _ring) {
-      n.addListener(() => setState(() {}));
+      n.addListener(_handleFocusChange);
     }
+  }
+
+  void _handleFocusChange() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _scope.dispose();
     for (final n in _ring) {
+      n.removeListener(_handleFocusChange);
       n.dispose();
     }
+    _scope.dispose();
     super.dispose();
   }
 
@@ -86,12 +92,6 @@ class _TourAppState extends State<WidgetsTourApp> {
     }
     if (event.character == 'q' && !_textFocus.hasFocus) {
       widget.onQuit();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.tab) {
-      final i = _ring.indexWhere((n) => n.hasFocus);
-      final next = _ring[(i + 1) % _ring.length];
-      next.requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -138,11 +138,11 @@ class _TourAppState extends State<WidgetsTourApp> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'OpenTUI-Dart widget tour',
+            'Noir widget tour',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const Text(
-            'Tab switches panel. Ctrl+D submits text. Esc/q quits.',
+            'Tab switches panel. Ctrl+D submits text. Esc quits. q quits unless typing.',
             style: TextStyle(color: Color(0.7, 0.7, 0.7)),
           ),
           const SizedBox(height: 1),

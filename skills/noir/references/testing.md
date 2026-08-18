@@ -62,6 +62,16 @@ Always dispose application handles, focus nodes, editing controllers,
 notifiers, and animation controllers in the same ownership layer that created
 them.
 
+## Drive mode is not a test harness
+
+`NOIR_DRIVE=1` mounts any app headlessly and exposes an `ext.noir.driver.*`
+VM-service surface for capturing frames, inspecting the tree, and injecting
+input — the main skill file's "See and drive a running app" section covers it.
+It exists for *looking at and driving* a live app during development. Keep
+automated assertions in ordinary tests against the state owners and seams
+described above: the same frames are reachable in-process, faster, and without
+a VM-service dependency.
+
 ## Framework contributor tests
 
 The development repository has additional layout, buffer, input-driver,

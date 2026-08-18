@@ -126,6 +126,17 @@ authorization.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
 - Decorated box content can escape a clipped viewport in some overflow cases.
+  Observed via a drive-mode sweep: `example/layout_demo.dart` paints stray
+  border fragments below its footer at 80x24.
+- `RenderDecoratedBox` lays its child out with its own constraints rather than
+  insetting them by the border, so when content fills the box it paints over
+  the border cells. Observed: `example/focus_form.dart` at 24x8 merges the
+  outer bottom border with an inner field's top border on one row. Flutter
+  insets the child by the decoration's border; adopting that changes layout
+  for every bordered container and needs its own reviewed pass.
+- `example/bindings_validation.dart` requires a real terminal stdin lease by
+  design and exits with code 70 under drive mode; it is the one example the
+  drive tool cannot run.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
@@ -133,6 +144,18 @@ authorization.
   never re-runs `main()` or `initState`, so changes to those, to a signature
   held by a frame on the stack, to an enum converted into a class, or to the
   bundled OpenTUI native library still require a full restart.
+- Drive mode (`NOIR_DRIVE=1`) is headless by construction. It exercises the
+  same layout, paint, and ANSI-parser paths the ordinary suite trusts, but it
+  never proves real terminal escape rendering or raw-mode input. A continuously
+  animating app never reports `stable: true`, an app whose own quit path calls
+  `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
+  limits recorded below.
+- `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
+  drives is proven by `test/app/driver_test.dart` and
+  `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
+  `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
+  capture parsing are proven by `test/driver_client_test.dart`. The CLI command
+  grammar itself is only exercised by running it.
 - `scripts/hot_reload_driver.dart` has no automated coverage. The reassemble
   seam it drives is proven by `test/hot_reload_e2e_test.dart`, which performs a
   real `reloadSources` against a spawned headless app and asserts that the

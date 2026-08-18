@@ -2,6 +2,7 @@ import '../render/geometry.dart';
 import '../widgets/flexible.dart';
 import '../widgets/row_column.dart';
 import 'box.dart';
+import 'object.dart';
 
 /// Data for each child in a flex layout.
 class FlexChildData {
@@ -49,6 +50,7 @@ class RenderFlex extends RenderBox {
   MainAxisSize _mainAxisSize;
   CrossAxisAlignment _crossAxisAlignment;
   int _spacing;
+  bool _hasOverflow = false;
 
   /// The direction to use as the main axis.
   Axis get direction => _direction;
@@ -296,6 +298,43 @@ class RenderFlex extends RenderBox {
       } else {
         positionChild(boxes[index], position.cross, position.main);
       }
+    }
+
+    // Children keep their natural size when the box is too small (Flutter's
+    // flex behavior), so a child can end past this box's own edge. Record
+    // that here; [paint] clips exactly when it happened, keeping the common
+    // fits-fine path free of clip bookkeeping.
+    var hasOverflow = false;
+    for (final child in boxes) {
+      if (child.x + child.size.width > size.width ||
+          child.y + child.size.height > size.height) {
+        hasOverflow = true;
+        break;
+      }
+    }
+    _hasOverflow = hasOverflow;
+  }
+
+  /// Paints children, clipped to this box's bounds when layout overflowed.
+  ///
+  /// Without the clip an overflowing child paints into whatever region the
+  /// parent assigned to a following sibling — rows interleave and content
+  /// escapes its box. Clipping only on recorded overflow mirrors Flutter's
+  /// `RenderFlex` and leaves the ordinary fitting layout untouched.
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (!_hasOverflow) {
+      super.paint(context, offset);
+      return;
+    }
+    context.canvas.save();
+    try {
+      context.canvas.clipRect(
+        Rect.fromLTWH(offset.dx + x, offset.dy + y, size.width, size.height),
+      );
+      super.paint(context, offset);
+    } finally {
+      context.canvas.restore();
     }
   }
 

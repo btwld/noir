@@ -37,16 +37,16 @@ void main() {
           expect(prompts, ['hello OpenTUI']);
           expect(text, contains('You'));
           expect(text, contains('hello OpenTUI'));
-          expect(text, contains('OpenTUI is thinking'));
+          expect(text, contains('Noir is thinking'));
 
           reply.complete('Echo: hello OpenTUI');
           await Future<void>.delayed(Duration.zero);
           app.pumpFrame(const Duration(milliseconds: 40));
 
           text = app.captureFrame().toText();
-          expect(text, contains('OpenTUI'));
+          expect(text, contains('Noir'));
           expect(text, contains('Echo: hello OpenTUI'));
-          expect(text, isNot(contains('OpenTUI is thinking')));
+          expect(text, isNot(contains('Noir is thinking')));
         } finally {
           app.dispose();
         }
@@ -73,8 +73,8 @@ void main() {
         app.pumpFrame(const Duration(milliseconds: 280));
         final second = app.captureFrame().toText();
 
-        expect(first, contains('OpenTUI is thinking'));
-        expect(second, contains('OpenTUI is thinking'));
+        expect(first, contains('Noir is thinking'));
+        expect(second, contains('Noir is thinking'));
         expect(first, isNot(second));
       } finally {
         app.dispose();
@@ -157,6 +157,29 @@ void main() {
         app.mockInput.pressEscape();
 
         expect(quits, 1);
+      } finally {
+        app.dispose();
+      }
+    });
+
+    test('Tab twice returns typing to the prompt', () async {
+      final app = createTuiTestApp(
+        const ChatDemoApp(enableAnimation: false),
+        width: 64,
+        height: 16,
+      );
+
+      try {
+        await _settleAutofocus(app);
+        app.mockInput
+          ..typeText('ab')
+          ..pressTab()
+          ..pressTab()
+          ..typeText('cd');
+        await Future<void>.delayed(Duration.zero);
+        app.pumpFrame();
+
+        expect(app.captureFrame().toText(), contains('abcd'));
       } finally {
         app.dispose();
       }
