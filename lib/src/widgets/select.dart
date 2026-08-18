@@ -18,6 +18,7 @@ import 'focus_node_owner_mixin.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
+import 'theme.dart';
 import 'viewport.dart';
 
 /// A single option in a [Select] list.
@@ -59,11 +60,11 @@ class Select<T> extends StatefulWidget {
     this.selectedIndex = 0,
     this.height = 8,
     this.showScrollIndicator = false,
-    this.color = Color.white,
+    this.color,
     this.backgroundColor,
-    this.selectedBackgroundColor = const Color(0.2, 0.4, 0.8),
-    this.selectedTextColor = Color.white,
-    this.descriptionColor = const Color(0.6, 0.6, 0.6),
+    this.selectedBackgroundColor,
+    this.selectedTextColor,
+    this.descriptionColor,
     this.focusNode,
     this.autofocus = false,
     this.onChanged,
@@ -82,20 +83,27 @@ class Select<T> extends StatefulWidget {
   /// Whether to render scroll-direction arrows in the last column when the list overflows.
   final bool showScrollIndicator;
 
-  /// Foreground color of unselected option text.
-  final Color color;
+  /// Foreground color of unselected option text. Falls back to
+  /// [ThemeData.text], then to [Color.white].
+  final Color? color;
 
-  /// Fill color behind the entire list. No fill when null.
+  /// Fill color behind the entire list. Falls back to [ThemeData.surface]
+  /// under a [Theme]; with neither, the list paints no fill. Pass
+  /// [Color.transparent] for an explicitly unfilled list inside a themed
+  /// subtree.
   final Color? backgroundColor;
 
-  /// Fill color behind the highlighted row.
-  final Color selectedBackgroundColor;
+  /// Fill color behind the highlighted row. Falls back to
+  /// [ThemeData.selectedBackground].
+  final Color? selectedBackgroundColor;
 
-  /// Foreground color of text on the highlighted row.
-  final Color selectedTextColor;
+  /// Foreground color of text on the highlighted row. Falls back to
+  /// [ThemeData.selectedForeground].
+  final Color? selectedTextColor;
 
-  /// Color of the secondary description text on unhighlighted rows.
-  final Color descriptionColor;
+  /// Color of the secondary description text on unhighlighted rows. Falls
+  /// back to [ThemeData.textMuted].
+  final Color? descriptionColor;
 
   /// Focus node controlling this widget's focus. One is created if null.
   final FocusNode? focusNode;
@@ -288,32 +296,46 @@ class _SelectState<T> extends State<Select<T>>
   }
 
   @override
-  Widget build(BuildContext context) => Shortcuts(
-    shortcuts: _shortcuts,
-    child: Actions(
-      actions: _actions,
-      child: Focus(
-        focusNode: focusNode,
-        autofocus: widget.autofocus,
-        child: PointerListener(
-          onPointerDown: _handlePointerDown,
-          child: _SelectLeaf<T>(
-            options: widget.options,
-            highlighted: _highlighted,
-            scrollOffset: _viewport.scrollOffset,
-            height: widget.height,
-            showScrollIndicator: widget.showScrollIndicator,
-            color: widget.color,
-            backgroundColor: widget.backgroundColor,
-            selectedBackgroundColor: widget.selectedBackgroundColor,
-            selectedTextColor: widget.selectedTextColor,
-            descriptionColor: widget.descriptionColor,
-            layoutMetrics: _layoutMetrics,
+  Widget build(BuildContext context) {
+    final theme = Theme.maybeOf(context);
+    return Shortcuts(
+      shortcuts: _shortcuts,
+      child: Actions(
+        actions: _actions,
+        child: Focus(
+          focusNode: focusNode,
+          autofocus: widget.autofocus,
+          child: PointerListener(
+            onPointerDown: _handlePointerDown,
+            child: _SelectLeaf<T>(
+              options: widget.options,
+              highlighted: _highlighted,
+              scrollOffset: _viewport.scrollOffset,
+              height: widget.height,
+              showScrollIndicator: widget.showScrollIndicator,
+              color: widget.color ?? theme?.text ?? Color.white,
+              // `maybeOf`, not `of`: an unthemed list keeps its original
+              // no-fill rendering rather than gaining a surface.
+              backgroundColor: widget.backgroundColor ?? theme?.surface,
+              selectedBackgroundColor:
+                  widget.selectedBackgroundColor ??
+                  theme?.selectedBackground ??
+                  const Color(0.2, 0.4, 0.8),
+              selectedTextColor:
+                  widget.selectedTextColor ??
+                  theme?.selectedForeground ??
+                  Color.white,
+              descriptionColor:
+                  widget.descriptionColor ??
+                  theme?.textMuted ??
+                  const Color(0.6, 0.6, 0.6),
+              layoutMetrics: _layoutMetrics,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _SelectLeaf<T> extends RenderObjectWidget {

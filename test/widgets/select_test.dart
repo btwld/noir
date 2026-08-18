@@ -174,4 +174,88 @@ void main() {
       }
     });
   });
+
+  group('Select theming', () {
+    test('an unthemed list keeps its original literal colors', () {
+      final capture = BufferCapture(width: 6, height: 2);
+      try {
+        final frame = capture.capture(
+          const Select<String>(height: 2, options: _abcOptions),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.white));
+        expect(
+          frame,
+          BufferMatchers.hasBackgroundAt(0, 0, const Color(0.2, 0.4, 0.8)),
+        );
+        expect(
+          frame,
+          BufferMatchers.hasBackgroundAt(0, 1, Color.black),
+          reason: 'no ancestor Theme still means no list fill',
+        );
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('an ancestor Theme supplies every unset color', () {
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(
+              text: Color.yellow,
+              surface: Color.blue,
+              selectedBackground: Color.magenta,
+              selectedForeground: Color.cyan,
+            ),
+            child: const Select<String>(height: 2, options: _abcOptions),
+          ),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 0, Color.cyan));
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 0, Color.magenta));
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.yellow));
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 1, Color.blue));
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('an explicit color wins over the theme', () {
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(text: Color.yellow),
+            child: const Select<String>(
+              height: 2,
+              color: Color.red,
+              options: _abcOptions,
+            ),
+          ),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.red));
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('Color.transparent opts a themed list back out of a fill', () {
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(surface: Color.blue),
+            child: const Select<String>(
+              height: 2,
+              backgroundColor: Color.transparent,
+              options: _abcOptions,
+            ),
+          ),
+        );
+        expect(frame, isNot(BufferMatchers.hasBackgroundAt(0, 1, Color.blue)));
+      } finally {
+        capture.dispose();
+      }
+    });
+  });
 }

@@ -26,6 +26,11 @@
   presentational click-to-sort headers. The header and every body row are
   built from the same ordered column list, which is what keeps their cell
   boundaries identical.
+- `Select`'s color parameters are now nullable and resolve through the
+  nearest `Theme`. An unthemed `Select` is byte-identical to before;
+  `backgroundColor: null` now means "the theme's surface, else no fill", so
+  pass `Color.transparent` for an explicitly unfilled list inside a themed
+  subtree.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate
