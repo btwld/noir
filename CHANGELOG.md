@@ -21,6 +21,11 @@
 - The development driver (`scripts/noir_drive.dart`) accepts `key space`.
   `type` cannot send a lone space because the CLI trims each command line, so
   Space was previously unreachable from a script.
+- Added `DataTable` and `DataColumn`: an aligned header over a windowed body,
+  with fixed or proportional columns, keyboard and mouse row selection, and
+  presentational click-to-sort headers. The header and every body row are
+  built from the same ordered column list, which is what keeps their cell
+  boundaries identical.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

@@ -1,0 +1,11 @@
+0,0:#ffffffff|#000000ff|1 * 4
+4,0:#ffffffff|#000000ff|0 * 14
+18,0:#ffffffff|#000000ff|1 * 11
+29,0:#ffffffff|#000000ff|0 * 3
+0,1:#ffffffff|#4d4d4dff|0 * 32
+0,2:#ffffffff|#000000ff|0 * 32
+0,3:#ffffffff|#000000ff|0 * 32
+0,4:#ffffffff|#3366ccff|0 * 32
+0,5:#ffffffff|#000000ff|0 * 32
+0,6:#ffffffff|#000000ff|0 * 32
+0,7:#ffffffff|#000000ff|0 * 32

@@ -1,0 +1,155 @@
+// Run with: dart run example/data_table_demo.dart
+//
+// Use ↑/↓ (or j/k), PageUp/PageDown, Home/End to move the highlight and Enter
+// to open a row. Click a `file` or `state` header to sort by it; clicking the
+// same header again reverses the direction. Press q to quit.
+//
+// Sorting is presentational in DataTable: the table reports the request and
+// this demo reorders its own list, which is the only place row order lives.
+
+import 'dart:io' as io;
+
+import 'package:noir/noir.dart';
+
+typedef _Package = ({String name, int size, String state});
+
+const _packages = <_Package>[
+  (name: 'noir', size: 412, state: 'ready'),
+  (name: 'characters', size: 38, state: 'ready'),
+  (name: 'meta', size: 9, state: 'ready'),
+  (name: 'ffi', size: 121, state: 'stale'),
+  (name: 'path', size: 44, state: 'ready'),
+  (name: 'collection', size: 96, state: 'ready'),
+  (name: 'async', size: 77, state: 'stale'),
+  (name: 'test', size: 1840, state: 'failed'),
+  (name: 'analyzer', size: 5120, state: 'ready'),
+  (name: 'source_gen', size: 260, state: 'stale'),
+  (name: 'build', size: 310, state: 'ready'),
+  (name: 'yaml', size: 52, state: 'ready'),
+];
+
+void main() {
+  late final TuiApp app;
+  void quit() {
+    app.dispose();
+    io.exit(0);
+  }
+
+  app = runTuiApp(DataTableDemoApp(onQuit: quit));
+  app.enableMouse();
+}
+
+class DataTableDemoApp extends StatefulWidget {
+  const DataTableDemoApp({required this.onQuit, super.key});
+
+  /// Invoked when the user presses `q`.
+  final void Function() onQuit;
+
+  @override
+  State<DataTableDemoApp> createState() => _DataTableDemoAppState();
+}
+
+class _DataTableDemoAppState extends State<DataTableDemoApp> {
+  late List<_Package> _rows = List.of(_packages);
+  int _selected = 0;
+  int? _sortColumn;
+  bool _ascending = true;
+  String? _opened;
+
+  static const _columns = [
+    DataColumn(label: 'package', flex: 2, sortable: true),
+    DataColumn(label: 'KiB', width: 7, alignment: Alignment.centerRight),
+    DataColumn(label: 'state', sortable: true),
+  ];
+
+  KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
+    if (event.isPress && event.character == 'q') {
+      widget.onQuit();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _sort(int column, bool ascending) {
+    setState(() {
+      _sortColumn = column;
+      _ascending = ascending;
+      final sorted = List.of(_rows)
+        ..sort((left, right) {
+          final order = column == 0
+              ? left.name.compareTo(right.name)
+              : left.state.compareTo(right.state);
+          return ascending ? order : -order;
+        });
+      _rows = sorted;
+      _selected = 0;
+    });
+  }
+
+  Widget _cell(BuildContext context, int row, int column) {
+    final package = _rows[row];
+    final text = switch (column) {
+      0 => package.name,
+      1 => '${package.size}',
+      _ => package.state,
+    };
+    return Text(
+      text,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(color: _stateColor(package.state, column)),
+    );
+  }
+
+  Color _stateColor(String state, int column) {
+    if (column != 2) return Color.white;
+    return switch (state) {
+      'ready' => Color.success,
+      'stale' => Color.warning,
+      _ => Color.error,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    canRequestFocus: false,
+    onKeyEvent: _onAppKey,
+    child: Container(
+      padding: const EdgeInsets.all(1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'DataTable demo',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const Text(
+            '↑/↓ to move · Enter to open · click a header to sort · q quits',
+            style: TextStyle(color: Color(0.6, 0.6, 0.6)),
+          ),
+          const SizedBox(height: 1),
+          DataTable(
+            autofocus: true,
+            columns: _columns,
+            rowCount: _rows.length,
+            height: 9,
+            selectedIndex: _selected,
+            sortColumnIndex: _sortColumn,
+            sortAscending: _ascending,
+            showScrollIndicator: true,
+            cellBuilder: _cell,
+            onSort: _sort,
+            onChanged: (index) => setState(() => _selected = index),
+            onSelect: (index) => setState(() => _opened = _rows[index].name),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            _opened == null ? 'No row opened yet.' : 'Opened $_opened.',
+            style: const TextStyle(color: Color(0.4, 1, 0.4)),
+          ),
+        ],
+      ),
+    ),
+  );
+}

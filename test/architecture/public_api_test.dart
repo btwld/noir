@@ -123,6 +123,12 @@ void main() {
       'src/widgets/checkbox.dart': {'Checkbox'},
       'src/widgets/constrained_box.dart': {'ConstrainedBox'},
       'src/widgets/container.dart': {'Container'},
+      'src/widgets/data_table.dart': {
+        'DataColumn',
+        'DataTable',
+        'DataTableCellBuilder',
+        'DataTableSort',
+      },
       'src/widgets/decorated_box.dart': {'DecoratedBox', 'DecorationPosition'},
       'src/widgets/divider.dart': {'Divider'},
       'src/widgets/flexible.dart': {'Expanded', 'FlexFit', 'Flexible'},
@@ -303,8 +309,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(182),
-      reason: 'The high-level surface is locked at exactly 182 symbols.',
+      hasLength(186),
+      reason: 'The high-level surface is locked at exactly 186 symbols.',
     );
   });
 

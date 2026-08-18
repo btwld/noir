@@ -120,6 +120,8 @@ export 'src/widgets/button.dart' show Button;
 export 'src/widgets/checkbox.dart' show Checkbox;
 export 'src/widgets/constrained_box.dart' show ConstrainedBox;
 export 'src/widgets/container.dart' show Container;
+export 'src/widgets/data_table.dart'
+    show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
 export 'src/widgets/decorated_box.dart' show DecoratedBox, DecorationPosition;
 export 'src/widgets/divider.dart' show Divider;
 export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
