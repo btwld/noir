@@ -138,6 +138,17 @@ authorization.
   re-open the tight-box collapse that `Container`'s documented
   `max(padding, border)` rule (`lib/src/widgets/container.dart`) avoids.
   `Container` owns the layout side; `DecoratedBox` only guarantees the clip.
+- The pinned native opacity stack does not fade ordinary text. `bufferDrawText`
+  takes an ASCII fast path whenever the foreground and background are both
+  fully opaque, writing cells directly and skipping the opacity funnel, so any
+  value in `(0.0, 1.0)` paints identically to `1.0`; only `0.0` reads as
+  transparent, through a separate early-out. Blending is observable through
+  `bufferSetCellWithAlphaBlending` and `bufferFillRect`. `bufferPushOpacity` is
+  bound on `noir_ffi` for availability, but an `Opacity` widget cannot be built
+  on it alone. Both stacks also compose rather than replace — a nested scissor
+  intersects, a nested opacity multiplies — and `drawFrameBuffer` reads the
+  destination's stacks while ignoring the source's, so pushing opacity onto an
+  offscreen layer has no effect.
 - `example/bindings_validation.dart` requires a real terminal stdin lease by
   design and exits with code 70 under drive mode; it is the one example the
   drive tool cannot run.

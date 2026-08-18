@@ -33,4 +33,10 @@ const selectedOpenTuiV051Symbols = <String>[
   'addToHitGrid',
   'checkHit',
   'processCapabilityResponse',
+  'bufferPushScissorRect',
+  'bufferPopScissorRect',
+  'bufferClearScissorRects',
+  'bufferPushOpacity',
+  'bufferPopOpacity',
+  'bufferClearOpacity',
 ];

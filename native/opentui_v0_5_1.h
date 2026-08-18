@@ -61,6 +61,17 @@ void drawFrameBuffer(OpenTuiHandle target, int32_t destX, int32_t destY,
                      uint32_t sourceHeight);
 void bufferResize(OpenTuiHandle buffer, uint32_t width, uint32_t height);
 
+// Native clip and opacity stacks. Every native write funnel honours both
+// (buffer.zig validateAndIndex -> isPointInScissor, and getCurrentOpacity).
+// Exposed on the raw binding surface; Noir's own clip seam stays in Dart.
+void bufferPushScissorRect(OpenTuiHandle buffer, int32_t x, int32_t y,
+                           uint32_t width, uint32_t height);
+void bufferPopScissorRect(OpenTuiHandle buffer);
+void bufferClearScissorRects(OpenTuiHandle buffer);
+void bufferPushOpacity(OpenTuiHandle buffer, float opacity);
+void bufferPopOpacity(OpenTuiHandle buffer);
+void bufferClearOpacity(OpenTuiHandle buffer);
+
 void setCursorPosition(OpenTuiHandle renderer, int32_t x, int32_t y,
                        bool visible);
 void setCursorStyleOptions(OpenTuiHandle renderer,
