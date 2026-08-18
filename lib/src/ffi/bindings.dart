@@ -453,6 +453,72 @@ class OpenTuiBindings {
     });
   }
 
+  /// Pushes a clip rectangle onto [buffer]'s native scissor stack.
+  ///
+  /// Every native write funnel tests the scissor before writing, so the push
+  /// affects all subsequent draws until the matching
+  /// [bufferPopScissorRect]. The stack is buffer-global state, not a view:
+  /// callers own the pairing.
+  ///
+  /// `drawBox` with a transparent background is the documented exception —
+  /// it writes through an unchecked index upstream and escapes the scissor.
+  void bufferPushScissorRect(
+    OptimizedBufferHandle buffer,
+    int x,
+    int y,
+    int width,
+    int height,
+  ) {
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
+    _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    _guard('Failed to push scissor rect', () {
+      _native.bufferPushScissorRect(buffer.value, x, y, width, height);
+    });
+  }
+
+  /// Pops the innermost clip rectangle from [buffer]'s scissor stack.
+  void bufferPopScissorRect(OptimizedBufferHandle buffer) {
+    _guard('Failed to pop scissor rect', () {
+      _native.bufferPopScissorRect(buffer.value);
+    });
+  }
+
+  /// Clears every clip rectangle from [buffer]'s scissor stack.
+  void bufferClearScissorRects(OptimizedBufferHandle buffer) {
+    _guard('Failed to clear scissor rects', () {
+      _native.bufferClearScissorRects(buffer.value);
+    });
+  }
+
+  /// Pushes [opacity] onto [buffer]'s native opacity stack.
+  ///
+  /// Native clamps the effective value; Noir rejects a non-finite [opacity]
+  /// outside `0.0..1.0` at the boundary so the ABI domain stays explicit.
+  void bufferPushOpacity(OptimizedBufferHandle buffer, double opacity) {
+    if (opacity.isNaN || opacity < 0.0 || opacity > 1.0) {
+      throw RangeError.range(opacity, 0, 1, 'opacity');
+    }
+    _guard('Failed to push opacity', () {
+      _native.bufferPushOpacity(buffer.value, opacity);
+    });
+  }
+
+  /// Pops the innermost value from [buffer]'s opacity stack.
+  void bufferPopOpacity(OptimizedBufferHandle buffer) {
+    _guard('Failed to pop opacity', () {
+      _native.bufferPopOpacity(buffer.value);
+    });
+  }
+
+  /// Clears every value from [buffer]'s opacity stack.
+  void bufferClearOpacity(OptimizedBufferHandle buffer) {
+    _guard('Failed to clear opacity', () {
+      _native.bufferClearOpacity(buffer.value);
+    });
+  }
+
   /// Sets cursor position and visibility.
   void setCursorPosition(RendererHandle renderer, int x, int y, bool visible) {
     _checkSigned32Abi(x, 'x');

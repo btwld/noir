@@ -87,6 +87,13 @@ abstract interface class OpenTuiNativeSymbols {
   );
   void bufferResize(int buffer, int width, int height);
 
+  void bufferPushScissorRect(int buffer, int x, int y, int width, int height);
+  void bufferPopScissorRect(int buffer);
+  void bufferClearScissorRects(int buffer);
+  void bufferPushOpacity(int buffer, double opacity);
+  void bufferPopOpacity(int buffer);
+  void bufferClearOpacity(int buffer);
+
   void setCursorPosition(int renderer, int x, int y, bool visible);
   void setCursorStyleOptions(
     int renderer,
@@ -264,6 +271,22 @@ final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   @override
   void bufferResize(int buffer, int width, int height) =>
       _bindings.bufferResize(buffer, width, height);
+  @override
+  void bufferPushScissorRect(int buffer, int x, int y, int width, int height) =>
+      _bindings.bufferPushScissorRect(buffer, x, y, width, height);
+  @override
+  void bufferPopScissorRect(int buffer) =>
+      _bindings.bufferPopScissorRect(buffer);
+  @override
+  void bufferClearScissorRects(int buffer) =>
+      _bindings.bufferClearScissorRects(buffer);
+  @override
+  void bufferPushOpacity(int buffer, double opacity) =>
+      _bindings.bufferPushOpacity(buffer, opacity);
+  @override
+  void bufferPopOpacity(int buffer) => _bindings.bufferPopOpacity(buffer);
+  @override
+  void bufferClearOpacity(int buffer) => _bindings.bufferClearOpacity(buffer);
   @override
   void setCursorPosition(int renderer, int x, int y, bool visible) =>
       _bindings.setCursorPosition(renderer, x, y, visible);
@@ -462,6 +485,21 @@ final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   @override
   void bufferResize(int buffer, int width, int height) =>
       bundled.bufferResize(buffer, width, height);
+  @override
+  void bufferPushScissorRect(int buffer, int x, int y, int width, int height) =>
+      bundled.bufferPushScissorRect(buffer, x, y, width, height);
+  @override
+  void bufferPopScissorRect(int buffer) => bundled.bufferPopScissorRect(buffer);
+  @override
+  void bufferClearScissorRects(int buffer) =>
+      bundled.bufferClearScissorRects(buffer);
+  @override
+  void bufferPushOpacity(int buffer, double opacity) =>
+      bundled.bufferPushOpacity(buffer, opacity);
+  @override
+  void bufferPopOpacity(int buffer) => bundled.bufferPopOpacity(buffer);
+  @override
+  void bufferClearOpacity(int buffer) => bundled.bufferClearOpacity(buffer);
   @override
   void setCursorPosition(int renderer, int x, int y, bool visible) =>
       bundled.setCursorPosition(renderer, x, y, visible);
