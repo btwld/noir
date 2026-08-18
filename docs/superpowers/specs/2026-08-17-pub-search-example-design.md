@@ -189,6 +189,11 @@ otherwise remains authoritative and requires no compatibility workaround.
 
 - `pubspec.yaml` and `pubspec.lock`
 - `example/pub_search.dart`
+- `example/pub_search/models.dart`
+- `example/pub_search/catalog.dart`
+- `example/pub_search/app.dart`
+- `example/pub_search/package_detail.dart`
+- `test/example/pub_search_catalog_test.dart`
 - `test/example/pub_search_test.dart`
 - `test/golden/pub_search_golden_test.dart`
 - `test/goldens/pub_search_detail.buffer.txt`
@@ -205,7 +210,7 @@ Exact paths follow the upstream repository's conventions, and include:
 
 - `lib/src/models/package_score_card.dart`
 - the corresponding generated `dart_mappable` mapper
-- focused model/API tests and fixtures
+- a focused model test and live metrics integration assertion
 - changelog or public documentation when required by upstream policy
 
 ## Verification
