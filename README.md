@@ -242,6 +242,9 @@ backend remain framework-owned; they are not supported package surfaces.
   selection, scrolling, and text submission.
 - [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
   and animation.
+- [Pub search](https://github.com/leoafarias/noir/blob/main/example/pub_search.dart) — a live pub.dev package browser with
+  deterministic fake-backed tests, paging and sort controls, and spacious
+  Overview, Versions, Dependencies, and Health tabs.
 - [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
   ticker-driven updates.
 - [Like Reactor](https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart) — deterministic heart particles,

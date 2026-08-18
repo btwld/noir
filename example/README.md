@@ -21,6 +21,7 @@ dart run example/main.dart
 | `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
+| `dart run example/pub_search.dart` | Live pub.dev search with a fake-backed catalog seam, paging and sort controls, and a spacious four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
 | `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
 | `dart run example/bindings_validation.dart` | Interactive alternate-screen validation of advanced renderer/buffer APIs and ABI-unstable FFI values; requires a terminal at least 120x40. |
@@ -30,6 +31,20 @@ dart run example/main.dart
 | `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
 | `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Combined Select, ScrollBox, and TextArea tour with Ctrl+D submission. |
+
+### Pub search controls
+
+The pub search example starts with a live search for `noir`. Press Enter to
+search or inspect the highlighted package, Tab to move between the query and
+results, and Up/Down to choose a result. With results focused, `s` cycles the
+sort and `n`/`p` move between pages. In package detail, Left/Right or `1`–`4`
+switch between Overview, Versions, Dependencies, and Health. Up/Down,
+PageUp/PageDown, Home/End, and the mouse wheel scroll the active section. `/`
+returns to the query; Escape returns to results and then exits.
+
+The live adapter is isolated behind `PubCatalog`. Tests inject a fake catalog,
+so async, empty, error, retry, paging, and stale-response behavior remain
+deterministic without network access.
 
 ## Tips
 

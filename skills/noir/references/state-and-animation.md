@@ -11,6 +11,7 @@ described below rather than Flutter's cancellation-aware `TickerFuture`.
 
 - [StatefulWidget lifecycle](#statefulwidget-lifecycle)
 - [setState and the `mounted` guard](#setstate-and-the-mounted-guard)
+- [Async data sources](#async-data-sources)
 - [ChangeNotifier / ValueNotifier](#changenotifier--valuenotifier)
 - [TextEditingController](#texteditingcontroller)
 - [AnimationController + tickers](#animationcontroller--tickers)
@@ -70,6 +71,31 @@ Future.delayed(const Duration(milliseconds: 50), () {
   setState(() => _count++);
 });
 ```
+
+## Async data sources
+
+Inject the application-owned data source, close it in the same state that owns
+it, and represent loading, empty, error, and ready states explicitly. A request
+generation prevents an older completion from replacing newer state:
+
+```dart
+final request = ++_generation;
+try {
+  final value = await widget.catalog.load();
+  if (!mounted || request != _generation) return;
+  setState(() => _value = value);
+} on Exception catch (error) {
+  if (!mounted || request != _generation) return;
+  setState(() => _error = '$error');
+}
+```
+
+Increment the generation again when navigation or disposal invalidates an
+active request. Keep editable text in `TextEditingController`, and do not put
+app-priority bare-letter handlers in front of a focused editor. Scope those
+commands to a non-editing `FocusNode` instead. The complete pattern, including
+fake-backed parser tests and catalog disposal, is in
+`example/pub_search.dart`.
 
 ## ChangeNotifier / ValueNotifier
 

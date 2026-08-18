@@ -1,0 +1,32 @@
+                                                                                                    
+   PUB / PACKAGE                                                                                    
+   noir  0.0.1-alpha.1                                                                              
+   A Flutter-like reactive terminal UI framework for Dart.                                          
+   dart pub add noir                                                                                
+                                                                                                    
+   160/160                 56                      12                     2                         
+   POINTS                  DOWNLOADS / 30D         LIKES                  VERSIONS                  
+                                                                                                    
+                                                                                                    
+          1 OVERVIEW              2 VERSIONS           3 DEPENDENCIES            4 HEALTH           
+                                                                                                    
+                                                                                                    
+   ┌────────────────────────────────────────────────────────────────────────────────────────────┐   
+   │ PACKAGE PROFILE                                                                            │   
+   │                                                                                            │   
+   │ PUBLISHER           leoafarias.com                                                         │   
+   │ PUBLISHED           2026-08-16                                                             │   
+   │ LATEST              0.0.1-alpha.1                                                          │   
+   │ STATUS              active                                                                 │   
+   │ REPLACED BY         Not provided                                                           │   
+   │                                                                                            │   
+   │ RUNS ON                                                                                    │   
+   │                                                                                            │   
+   │ PLATFORMS           linux, macos, windows                                                  │   
+   │ RUNTIMES            native-aot                                                             │   
+   │ SDK                 >=3.10.0 <4.0.0                                                        │   
+   │                                                                                            │   
+   └────────────────────────────────────────────────────────────────────────────────────────────┘   
+                                                                                                    
+   ←→ / 1–4 section   ↑↓ / PgUp/PgDn scroll   / search   Esc results                                
+                                                                                                    

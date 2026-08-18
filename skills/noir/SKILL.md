@@ -103,8 +103,15 @@ Inside this repo, `example/` has a runnable reference for every major feature
 (`hello.dart`, `counter.dart`, `layout_basics.dart`, `layout_demo.dart`,
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `pulse_animation.dart`, `inherited_example.dart`,
-`framework_primitives.dart`, `chat_demo.dart`, `widgets_tour.dart`) — read one
+`framework_primitives.dart`, `chat_demo.dart`, `pub_search.dart`,
+`widgets_tour.dart`) — read one
 before inventing a pattern.
+
+For a complete injected async data-source example, see
+`example/pub_search.dart` and its application-owned `PubCatalog`: it models
+loading/empty/error states, suppresses stale responses, closes the client with
+the owning state, and keeps bare-letter result shortcuts away from its focused
+query editor.
 
 ## Mental model
 

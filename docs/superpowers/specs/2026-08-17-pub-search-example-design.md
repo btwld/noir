@@ -38,8 +38,9 @@ JSON or the full Pana report.
 Add `pub_api_client` as a root **git dev dependency** pointing at the upstream
 pull-request branch that exposes the missing metrics fields. It is required
 only to run and test the source example; Noir's supported runtime dependency
-surface must not acquire an HTTP or pub.dev client dependency. The lockfile
-records the exact validated commit even though the pubspec names the branch.
+surface must not acquire an HTTP or pub.dev client dependency. This library
+intentionally ignores `pubspec.lock`; the local resolver lock records the exact
+validated commit even though the tracked pubspec names the branch.
 
 The live adapter owns one `PubClient` and closes it deterministically when the
 app is disposed. Tests inject a fake implementation and make no network calls.
@@ -52,6 +53,12 @@ needed by this example, starting with `scorecard.weeklyVersionDownloads` and
 its total, major-range, minor-range, patch-range, version-range, and newest-date
 values. Fields absent from older or third-party pub servers remain nullable or
 default empty so the addition is backwards compatible.
+
+Because package-info models already expose `pubspec_parse` dependency objects
+in their public signatures, the upstream library also re-exports the relevant
+hosted, Git, path, and SDK dependency variants. The example can therefore keep
+constraints and source-specific metadata without a second direct dependency or
+lossy `toString()` parsing.
 
 The upstream work includes focused failing decode tests, regenerated
 `dart_mappable` output, formatting, analysis, and the repository's ordinary
@@ -81,6 +88,8 @@ Application-owned models describe:
   SDK constraint, links, topics, platforms, runtimes, and licenses;
 - pub points, likes, and 30-day download count;
 - direct and development dependencies;
+- structured hosted constraints/aliases, Git URL/ref/subpath, local paths, and
+  SDK names/constraints for direct, development, and override dependencies;
 - versions, retraction state, documentation status, and archive URL/hash;
 - discontinued, replacement, and unlisted state;
 - advisories and summarized analysis, dartdoc, URL, license, and download
@@ -93,6 +102,12 @@ scroll controllers. It disposes every owned object. A monotonically increasing
 request generation prevents a stale search or package response from replacing
 newer user intent. Every async completion checks both `mounted` and generation
 before calling `setState`.
+
+If a rebuilt `PubSearchApp` receives a different catalog identity, it closes
+the old owned catalog, invalidates its in-flight responses, resets view state,
+and optionally searches the replacement. Collection-bearing application models
+defensively copy inputs so custom/fake catalogs cannot mutate rendered state
+without a new response.
 
 The application has explicit idle, loading, results, detail, and error states.
 Search text and the last successful results survive a recoverable error.
@@ -110,18 +125,22 @@ The search view contains:
 - a one-line keyboard help footer.
 
 Confirming a package opens its detail view. The detail header shows package
-name, latest version, description, install command, and three headline metrics.
-Below it, four tabs divide the remaining data:
+name, latest version, description, install command, and four headline metrics:
+points, 30-day downloads, likes, and published version count. Below it, four
+tabs divide the remaining data:
 
-1. **Overview** — publisher, SDK, topics, platforms, runtimes, license, links,
-   and publication date.
+1. **Overview** — publisher, SDK, topics, platforms, runtimes, license
+   identifiers, links, package config, and publication date.
 2. **Versions** — all returned releases with published, retracted, and
-   documentation status.
-3. **Dependencies** — direct and development dependency constraints, followed
-   by the transitive dependency closure when available.
+   documentation status, each release's archive URL and hash, and the
+   scorecard's analyzed version and timestamp. Archive metadata stays with the
+   release it describes rather than with the health summary.
+3. **Dependencies** — direct, development, and override dependency
+   constraints with their source metadata, followed by the transitive
+   dependency closure when available.
 4. **Health** — points, analysis/dartdoc state, visibility/discontinuation,
-   advisories, URL/license findings, archive metadata, the available 30-day
-   download count, metrics timestamp, and compact weekly download history.
+   advisories, URL findings, the available 30-day download count, metrics
+   timestamp, and compact weekly download history.
 
 Only the active tab's content is mounted in a vertical `ScrollBox`, preserving
 whitespace and avoiding a wall of metadata. Missing fields render as concise
@@ -135,6 +154,9 @@ without changing the overall frame.
 - Typing in the search field and pressing Enter starts a fresh search.
 - Tab moves between the search field and results; Select's built-in arrows,
   paging keys, Enter, and click behavior remain authoritative.
+- The query and result panels paint a focus-colored border, so the state
+  listens to both focus nodes. A focus move alone does not rebuild an ancestor,
+  and the highlight must not wait for an unrelated rebuild to catch up.
 - Confirming a result loads and opens package detail.
 - Left/Right or number keys 1–4 switch detail tabs.
 - Up/Down, PageUp/PageDown, Home/End, and the mouse wheel scroll active detail
@@ -154,6 +176,11 @@ an operation label. The UI never prints credentials, response bodies, or stack
 traces. It offers a retry for the current search or selected package and keeps
 the previous usable state visible where possible.
 
+Dynamic analyzer diagnostics are reduced through field-specific allowlists:
+URL findings accept only URL/problem/message values, while screenshot findings
+accept only description/path/URL values. Unknown or nested server fields are
+not rendered.
+
 An empty trimmed query is rejected locally. An empty result set gets a dedicated
 message and leaves the search field focused. A missing optional metrics response
 does not fail package detail; unavailable sections render their absent state.
@@ -162,8 +189,10 @@ does not fail package detail; unavailable sections render their absent state.
 
 Implementation follows red-green-refactor.
 
-- Plain model and fake-catalog tests cover mapping, missing optional fields,
-  stale-request suppression, paging, and errors.
+- Plain model and fake-catalog tests cover mapping, defensive collection
+  snapshots, structured dependency variants, allowlisted diagnostics, missing
+  optional fields, stale-request suppression, catalog replacement, paging,
+  empty-result focus recovery, and errors.
 - Upstream `pub_api_client` tests prove the live metrics shape decodes weekly
   totals and version-range series while older payloads remain compatible.
 - `createTuiTestApp` tests cover the parser-backed flow from initial search to
@@ -187,7 +216,7 @@ otherwise remains authoritative and requires no compatibility workaround.
 
 ## Expected Noir files
 
-- `pubspec.yaml` and `pubspec.lock`
+- `pubspec.yaml` (with the ignored local resolver lock used for validation)
 - `example/pub_search.dart`
 - `example/pub_search/models.dart`
 - `example/pub_search/catalog.dart`
@@ -195,6 +224,7 @@ otherwise remains authoritative and requires no compatibility workaround.
 - `example/pub_search/package_detail.dart`
 - `test/example/pub_search_catalog_test.dart`
 - `test/example/pub_search_test.dart`
+- `test/example/pub_search_test_data.dart`
 - `test/golden/pub_search_golden_test.dart`
 - `test/goldens/pub_search_detail.buffer.txt`
 - `test/goldens/pub_search_detail.styles.txt`
@@ -203,6 +233,7 @@ otherwise remains authoritative and requires no compatibility workaround.
 - `README.md`
 - `skills/noir/SKILL.md`
 - `skills/noir/references/state-and-animation.md`
+- `test/example/interactive_examples_test.dart`
 
 ## Expected upstream files
 

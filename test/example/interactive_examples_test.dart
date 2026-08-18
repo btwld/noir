@@ -18,6 +18,7 @@ void main() {
       'example/chat_demo.dart',
       'example/focus_form.dart',
       'example/like_reactor.dart',
+      'example/pub_search.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
     ]) {
@@ -31,6 +32,24 @@ void main() {
         source,
         isNot(contains('enableMouse(enableMovement: true)')),
         reason: '$path does not need movement reports',
+      );
+    }
+  });
+
+  test('pub search entrypoint and controls are discoverable', () {
+    final source = io.File('example/pub_search.dart').readAsStringSync();
+    expect(source, contains('app.enableMouse();'));
+    expect(source, contains('PubSearchApp(catalog: PubApiCatalog()'));
+
+    for (final path in [
+      'README.md',
+      'example/README.md',
+      'skills/noir/SKILL.md',
+    ]) {
+      expect(
+        io.File(path).readAsStringSync(),
+        contains('example/pub_search.dart'),
+        reason: path,
       );
     }
   });

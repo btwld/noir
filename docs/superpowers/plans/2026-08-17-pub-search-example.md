@@ -12,7 +12,7 @@
 
 - Work on the upstream clone at `.context/pub_api_client`; its default branch is `main` and the feature branch is `feat/weekly-version-downloads`.
 - Open a pull request against `leoafarias/pub_api_client:main`; do not publish or version-bump either package.
-- Noir depends on the upstream feature branch as a root git **dev dependency**; Noir's runtime dependencies remain unchanged and `pubspec.lock` pins the resolved commit.
+- Noir depends on the upstream feature branch as a root git **dev dependency**; Noir's runtime dependencies remain unchanged. This library ignores `pubspec.lock`, so the local resolver lock proves the exact resolved commit without becoming a tracked artifact.
 - Search and detail reads are public and side-effect-free. Do not add authentication, like/unlike calls, or another raw HTTP client.
 - Noir widgets do not call FFI. All app-created catalogs, controllers, focus nodes, and scroll controllers are disposed deterministically.
 - Async UI completions check `mounted` and a request generation before `setState`.
@@ -35,7 +35,7 @@
 - Consumes: raw `scorecard.weeklyVersionDownloads` with `totalWeeklyDownloads`, `majorRangeWeeklyDownloads`, `minorRangeWeeklyDownloads`, `patchRangeWeeklyDownloads`, and `newestDate`.
 - Produces: `PackageScoreCard.weeklyVersionDownloads`, `WeeklyVersionDownloads`, and `VersionRangeWeeklyDownloads` from `package:pub_api_client/pub_api_client.dart`.
 
-- [ ] **Step 1: Create the upstream feature branch**
+- [x] **Step 1: Create the upstream feature branch**
 
 Run from `.context/pub_api_client`:
 
@@ -54,7 +54,7 @@ curl -sS --fail https://pub.dev/api/packages/pub_api_client/metrics |
 
 Expected: every `scorecard` and `panaReport` key already has a typed model except `weeklyVersionDownloads`; its nested keys are exactly the five consumed by this task. If the live shape has changed, extend the deterministic payload and models for every additional confirmed field before proceeding.
 
-- [ ] **Step 2: Write the focused failing decode test**
+- [x] **Step 2: Write the focused failing decode test**
 
 Create `test/package_score_card_test.dart` with a real mapper round-trip. The first assertion uses the existing public `toMap()` surface, so RED is an assertion failure rather than an undefined-symbol compile error:
 
@@ -140,7 +140,7 @@ Map<String, dynamic> _metricsPayload() => {
 };
 ```
 
-- [ ] **Step 3: Run the test and verify RED**
+- [x] **Step 3: Run the test and verify RED**
 
 Run:
 
@@ -150,7 +150,7 @@ dart test test/package_score_card_test.dart
 
 Expected: FAIL because `PackageScoreCard.toMap()` drops `weeklyVersionDownloads`.
 
-- [ ] **Step 4: Add the backwards-compatible typed models**
+- [x] **Step 4: Add the backwards-compatible typed models**
 
 Add this field to `PackageScoreCard`; keep it optional because older and third-party pub servers may omit it:
 
@@ -196,7 +196,7 @@ class VersionRangeWeeklyDownloads with VersionRangeWeeklyDownloadsMappable {
 }
 ```
 
-- [ ] **Step 5: Regenerate mappers**
+- [x] **Step 5: Regenerate mappers**
 
 Run:
 
@@ -207,7 +207,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 Expected: `package_score_card.mapper.dart` contains mappers and copy-with types for both new classes and maps the optional scorecard field.
 
-- [ ] **Step 6: Strengthen the now-green test around the typed API and compatibility**
+- [x] **Step 6: Strengthen the now-green test around the typed API and compatibility**
 
 Replace the generic `mapped` assertion setup with typed assertions while retaining the round-trip assertion, and add the absent-field case:
 
@@ -243,7 +243,7 @@ expect(weekly.newestDate, isNotNull);
 
 Apply the same assertions to `metrics2` when it is non-null. This validates the model against current pub.dev while the new focused test remains the deterministic regression guard.
 
-- [ ] **Step 7: Run focused tests and verify GREEN**
+- [x] **Step 7: Run focused tests and verify GREEN**
 
 Run:
 
@@ -253,7 +253,7 @@ dart test test/package_score_card_test.dart
 
 Expected: PASS with both typed decode and compatibility coverage.
 
-- [ ] **Step 8: Document the public metric**
+- [x] **Step 8: Document the public metric**
 
 Expand README's “Get Package Metrics” example with:
 
@@ -267,7 +267,7 @@ if (weekly != null && weekly.totalWeeklyDownloads.isNotEmpty) {
 
 State that totals and major/minor/patch version-range histories are present when supplied by the server.
 
-- [ ] **Step 9: Verify the complete upstream change**
+- [x] **Step 9: Verify the complete upstream change**
 
 Run:
 
@@ -280,7 +280,7 @@ git diff --check
 
 Expected: formatting and analysis succeed; the focused unit test and existing upstream suite pass; the diff contains only the model, generated mapper, focused/integration tests, and README.
 
-- [ ] **Step 10: Commit the upstream slice**
+- [x] **Step 10: Commit the upstream slice**
 
 ```bash
 git add lib/src/models/package_score_card.dart lib/src/models/package_score_card.mapper.dart test/package_score_card_test.dart test/pubdev_api_test.dart README.md
@@ -300,7 +300,7 @@ Expected: one coherent commit on `feat/weekly-version-downloads`.
 - Consumes: committed branch `feat/weekly-version-downloads`.
 - Produces: a GitHub PR URL and a remote branch that Noir can name in `pubspec.yaml`.
 
-- [ ] **Step 1: Recheck the exact outgoing diff**
+- [x] **Step 1: Recheck the exact outgoing diff**
 
 Run from `.context/pub_api_client`:
 
@@ -312,7 +312,7 @@ git log --oneline origin/main..HEAD
 
 Expected: clean status, no whitespace errors, exactly one feature commit.
 
-- [ ] **Step 2: Push the feature branch**
+- [x] **Step 2: Push the feature branch**
 
 ```bash
 git push -u origin feat/weekly-version-downloads
@@ -320,7 +320,7 @@ git push -u origin feat/weekly-version-downloads
 
 Expected: GitHub creates or updates `leoafarias/pub_api_client:feat/weekly-version-downloads`.
 
-- [ ] **Step 3: Open the pull request**
+- [x] **Step 3: Open the pull request**
 
 Create the PR against `main` with title `feat: expose weekly version download metrics`. The body must contain:
 
@@ -339,7 +339,7 @@ Create the PR against `main` with title `feat: expose weekly version download me
 
 Run `gh pr create --base main --head feat/weekly-version-downloads` with that title/body, then record the returned URL.
 
-- [ ] **Step 4: Confirm remote PR state**
+- [x] **Step 4: Confirm remote PR state**
 
 ```bash
 gh pr view --json number,url,state,headRefName,baseRefName,statusCheckRollup
@@ -353,7 +353,6 @@ Expected: OPEN PR, head `feat/weekly-version-downloads`, base `main`; do not rer
 
 **Files:**
 - Modify: `pubspec.yaml`
-- Modify: `pubspec.lock`
 - Create: `example/pub_search/models.dart`
 - Create: `example/pub_search/catalog.dart`
 - Create: `test/example/pub_search_catalog_test.dart`
@@ -362,7 +361,7 @@ Expected: OPEN PR, head `feat/weekly-version-downloads`, base `main`; do not rer
 - Consumes: `PackageMetrics.scorecard.weeklyVersionDownloads` from Task 1.
 - Produces: `PackageSort`, `PackageSearchPage`, `PackageRelease`, `PackageAdvisorySummary`, `PackageHealthSection`, `PubPackageSnapshot`, `PubCatalog`, and `PubApiCatalog`.
 
-- [ ] **Step 1: Add the upstream branch as a dev dependency**
+- [x] **Step 1: Add the upstream branch as a dev dependency**
 
 Add under `dev_dependencies` in `pubspec.yaml`:
 
@@ -379,9 +378,9 @@ Run:
 dart pub get
 ```
 
-Expected: `pubspec.lock` records source `git`, the GitHub URL, branch ref, and the exact upstream commit SHA; existing runtime dependencies are unchanged.
+Expected: the ignored local `pubspec.lock` records source `git`, the GitHub URL, branch ref, and the exact upstream commit SHA; existing runtime dependencies are unchanged.
 
-- [ ] **Step 2: Write the failing catalog mapping tests**
+- [x] **Step 2: Write the failing catalog mapping tests**
 
 Create `test/example/pub_search_catalog_test.dart`. Build public upstream response objects with `PubPackage.fromMap`, `PackageMetrics.fromMap`, `PackagePublisher.fromMap`, `PackageOptions.fromMap`, `PackageDocumentation.fromMap`, and `PackageAdvisories.fromMap`, then call the wished-for mapper:
 
@@ -421,7 +420,7 @@ expect(downloadSparkline([0, 10, 20]), '▁▅█');
 expect(downloadSparkline(const []), 'Not available');
 ```
 
-- [ ] **Step 3: Run the focused test and establish RED**
+- [x] **Step 3: Run the focused test and establish RED**
 
 Run:
 
@@ -431,9 +430,13 @@ dart test test/example/pub_search_catalog_test.dart --concurrency=1
 
 Expected first: compile failure because the example model/catalog files do not exist. Add only the declared class/function signatures with `UnimplementedError`, rerun, and establish the intended assertion failure from the unimplemented mapping.
 
-- [ ] **Step 4: Implement immutable application models**
+- [x] **Step 4: Implement immutable application models**
 
-Create `example/pub_search/models.dart` with these stable signatures:
+The following block records the initial TDD signature sketch, not the final
+reviewed API. Independent review required canonical constructors to copy every
+collection, dependency maps to use `PackageDependencySummary`, diagnostics to
+use explicit field allowlists, and release summaries to retain per-version
+archive metadata. See `example/pub_search/models.dart` for the canonical API.
 
 ```dart
 enum PackageSort { top, text, created, updated, popularity, downloads, likes, points }
@@ -614,7 +617,7 @@ final class PubPackageSnapshot {
         ),
       ),
       urlProblems: List.unmodifiable(
-        (pana?.urlProblems ?? const <Object>[]).map((problem) => '$problem'),
+        (pana?.urlProblems ?? const <Object>[]).map(_describeValue),
       ),
       archiveUrl: package.latest.archiveUrl,
       archiveSha256: package.latest.archiveSha256,
@@ -683,9 +686,9 @@ String _dependencyValue(Object dependency) {
 }
 ```
 
-Import `package:pub_api_client/pub_api_client.dart` only in this data layer. Derive platform/runtime/license values from score tags, map direct/dev dependency values without importing `package:pubspec_parse` directly, and copy every mutable API list/map before exposing it.
+Import `package:pub_api_client/pub_api_client.dart` only in this data layer. Derive platform/runtime/license values from score tags, use the dependency variants re-exported by `pub_api_client` to preserve source metadata without importing `package:pubspec_parse` directly, summarize dynamic diagnostics through field-specific allowlists, and copy every mutable API list/map before exposing it.
 
-- [ ] **Step 5: Implement the catalog interface and live adapter**
+- [x] **Step 5: Implement the catalog interface and live adapter**
 
 Create `example/pub_search/catalog.dart`:
 
@@ -781,7 +784,7 @@ final class PubApiCatalog implements PubCatalog {
 
 Keep `packageInfo` outside `_optional` so a missing selected package remains a visible detail-load error. Optional endpoint failures render their honest absent states without discarding the mandatory package record.
 
-- [ ] **Step 6: Run catalog tests and refactor GREEN**
+- [x] **Step 6: Run catalog tests and refactor GREEN**
 
 Run:
 
@@ -805,7 +808,7 @@ Expected: mapping, optional-field, branch-model, and sparkline tests pass; stric
 - Consumes: `PubCatalog`, `PackageSearchPage`, and `PubPackageSnapshot` from Task 3.
 - Produces: `PubSearchApp`, the runnable entrypoint, search/result navigation, stale-response suppression, retry, paging, and deterministic catalog ownership.
 
-- [ ] **Step 1: Write fake-backed failing interaction tests**
+- [x] **Step 1: Write fake-backed failing interaction tests**
 
 Create a `FakePubCatalog` in `test/example/pub_search_test.dart` that records search/detail calls, exposes queued `Completer` results, and records `close()`. Write parser-backed tests using `createTuiTestApp` for:
 
@@ -814,7 +817,7 @@ test('runs the initial noir search and opens the confirmed result', () async {
   final catalog = FakePubCatalog()
     ..searchResults.add(
       Future.value(
-        const PackageSearchPage(
+        PackageSearchPage(
           query: 'noir',
           page: 1,
           sort: PackageSort.top,
@@ -855,7 +858,7 @@ Add tests that:
 - press Escape in detail to return to results, then Escape to call `onQuit`;
 - dispose the app and assert `FakePubCatalog.closed`.
 
-- [ ] **Step 2: Run the interaction test and establish RED**
+- [x] **Step 2: Run the interaction test and establish RED**
 
 Run:
 
@@ -865,7 +868,7 @@ dart test test/example/pub_search_test.dart --concurrency=1
 
 Expected first: compile failure for missing `PubSearchApp`; add only its constructor/state signatures, rerun, then observe behavioral failures for absent search, focus, and rendering behavior.
 
-- [ ] **Step 3: Implement the stateful shell**
+- [x] **Step 3: Implement the stateful shell**
 
 Create `PubSearchApp` with this ownership/API contract:
 
@@ -893,6 +896,8 @@ class PubSearchApp extends StatefulWidget {
 
 The state creates and disposes one `TextEditingController`, search/result/detail `FocusNode`s, and a detail `ScrollController`. It takes ownership of `widget.catalog` and closes it in `dispose`. Track `_generation`; increment it for every search/detail request and ignore completions unless `mounted && generation == _generation`.
 
+Independent review additionally required the state to listen to the query and result `FocusNode`s, as `example/focus_form.dart` already does. Their borders are painted from this state's `build`, and a focus move alone does not mark an ancestor element dirty, so without listeners the highlight lagged until an unrelated rebuild.
+
 Represent view state explicitly:
 
 ```dart
@@ -902,7 +907,7 @@ enum PubLoadState { idle, loading, ready, empty, error }
 
 Build the search view with `Column`, a prominent `TextInput`, an `Expanded` result area containing `Select<String>`, and a one-row footer. Keep the result list visually sparse by rendering only package names and using blank-row spacing around the bordered results region. Root key handling must ignore printable keys while the search field has focus; while results have focus, `s` cycles sort, `n` advances only when available, `p` moves to a prior page, and `/` refocuses the query.
 
-- [ ] **Step 4: Add the real entrypoint**
+- [x] **Step 4: Add the real entrypoint**
 
 Create `example/pub_search.dart` as the runnable/exporting facade:
 
@@ -934,7 +939,7 @@ void main() {
 
 Do not register an app-priority bare-letter shortcut. The app state closes the catalog when `app.dispose()` unmounts it, including normal Ctrl+C fallback cleanup.
 
-- [ ] **Step 5: Run focused interaction tests and verify GREEN**
+- [x] **Step 5: Run focused interaction tests and verify GREEN**
 
 Run:
 
@@ -962,7 +967,7 @@ Expected: async, focus, retry, paging, stale-response, quit, and ownership tests
 - Consumes: `PubPackageSnapshot` and `downloadSparkline` from Task 3.
 - Produces: `PackageDetailTab`, `PubPackageDetail`, left/right and 1–4 tab navigation, scrollable tab content, and the approved 100×32 visual state.
 
-- [ ] **Step 1: Extend interaction tests with failing tab assertions**
+- [x] **Step 1: Extend interaction tests with failing tab assertions**
 
 After opening detail, drive the parser with arrows and number characters:
 
@@ -986,7 +991,7 @@ expect(render(app), contains('▁'));
 
 Also assert PageDown changes the captured detail frame and Escape restores the same search result list.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -996,7 +1001,7 @@ dart test test/example/pub_search_test.dart --concurrency=1
 
 Expected: FAIL because detail tabs and section content do not exist.
 
-- [ ] **Step 3: Implement the focused detail component**
+- [x] **Step 3: Implement the focused detail component**
 
 Create:
 
@@ -1078,7 +1083,7 @@ Define `_buildPackageHeader`, `_buildHeadlineMetrics`, `_buildOverview`, `_build
 
 Render every field from the design contract. Use `Not provided` for absent values, `No advisories reported` for an empty advisory list, and never print raw JSON. Health includes the last up-to-26 weekly totals and their sparkline, analysis/dartdoc status, options, advisory summaries, URL problems, archive metadata, metrics timestamp, and score sections.
 
-- [ ] **Step 4: Wire tab navigation in the app shell**
+- [x] **Step 4: Wire tab navigation in the app shell**
 
 In detail view only, handle:
 
@@ -1099,7 +1104,7 @@ if (event.character case final value? when '1234'.contains(value)) {
 
 Reset the detail scroll controller to zero on every tab change and request the detail scroll focus after a package loads.
 
-- [ ] **Step 5: Run interaction tests and verify GREEN**
+- [x] **Step 5: Run interaction tests and verify GREEN**
 
 Run:
 
@@ -1109,7 +1114,7 @@ dart test test/example/pub_search_test.dart --concurrency=1
 
 Expected: all search and detail interactions pass.
 
-- [ ] **Step 6: Write and generate the visual golden**
+- [x] **Step 6: Write and generate the visual golden**
 
 Create `test/golden/pub_search_golden_test.dart` with `GoldenTester(width: 100, height: 32)` and a populated, deterministic snapshot matching the live Noir package shape. Capture `PubPackageDetail` on `PackageDetailTab.overview`, using caller-owned focus/scroll controllers disposed in `tearDown`.
 
@@ -1121,7 +1126,7 @@ UPDATE_GOLDENS=1 dart test test/golden/pub_search_golden_test.dart --concurrency
 
 Expected: creates `pub_search_detail.buffer.txt`, `.styles.txt`, and `.cursor.txt`.
 
-- [ ] **Step 7: Inspect and lock the golden**
+- [x] **Step 7: Inspect and lock the golden**
 
 Read all three sidecars. Confirm the package heading, install command, metrics, active Overview tab, labels, whitespace, and footer are visible at 100×32 and that the cursor state is intentional. Then rerun without the update flag:
 
@@ -1146,7 +1151,7 @@ Expected: PASS against the checked-in buffer/style/cursor artifacts.
 - Consumes: final run command, controls, ownership, and async behavior from Tasks 3–5.
 - Produces: discoverable example catalogs, source guard for mouse enablement, and reusable skill guidance that compiles conceptually against the current API.
 
-- [ ] **Step 1: Write the failing catalog/source test**
+- [x] **Step 1: Write the failing catalog/source test**
 
 Extend `interactive_examples_test.dart` so the mouse-capable entrypoint list includes `example/pub_search.dart`, and add source expectations:
 
@@ -1158,11 +1163,11 @@ expect(source, contains("PubSearchApp(catalog: PubApiCatalog()"));
 
 Run the focused test and expect failure until documentation/source catalogs are updated where asserted.
 
-- [ ] **Step 2: Update both example catalogs**
+- [x] **Step 2: Update both example catalogs**
 
 Add `dart run example/pub_search.dart` to `example/README.md` with a description covering live search, fake-backed testing, quiet tabs, paging/sort, and package metadata. Add the matching linked entry to README's Example Apps list. Document controls: Enter search/inspect, Tab focus, arrows navigate, `s` sort, `n`/`p` page, Left/Right or 1–4 switch detail tabs, `/` search, Escape back/quit, wheel/PageUp/PageDown scroll.
 
-- [ ] **Step 3: Update the Noir skill review findings**
+- [x] **Step 3: Update the Noir skill review findings**
 
 Add `pub_search.dart` to the skill's reference-example list. In `references/state-and-animation.md`, add a compact “Async data sources” section containing this verified pattern:
 
@@ -1180,7 +1185,7 @@ try {
 
 State that the owner injects and closes the catalog/client, explicit loading/empty/error states belong in application state, and app-priority bare-letter handlers must not intercept editable text.
 
-- [ ] **Step 4: Run focused docs/example checks**
+- [x] **Step 4: Run focused docs/example checks**
 
 Run:
 
@@ -1204,7 +1209,7 @@ Expected: all new behavior, source guard, and visual coverage pass; documentatio
 - Consumes: completed upstream PR and Noir implementation.
 - Produces: requirement-by-requirement evidence and a reviewable local Noir diff.
 
-- [ ] **Step 1: Verify upstream PR and branch consumption**
+- [x] **Step 1: Verify upstream PR and branch consumption**
 
 Run:
 
@@ -1215,7 +1220,7 @@ dart pub deps | rg 'pub_api_client|pubspec_parse'
 
 Expected: PR is OPEN; `headRefOid` matches Noir's locked git commit; the dependency graph resolves the git client branch.
 
-- [ ] **Step 2: Run Noir's authorized gates**
+- [x] **Step 2: Run Noir's authorized gates**
 
 Run in order:
 
@@ -1231,7 +1236,7 @@ git diff --check
 
 Expected: every command passes; publish dry-run has no unintended runtime dependency or archive warning; native hashes remain unchanged.
 
-- [ ] **Step 3: Audit the final Noir diff against the spec**
+- [x] **Step 3: Audit the final Noir diff against the spec**
 
 Use `git diff origin/main...` and explicitly verify:
 
@@ -1245,16 +1250,29 @@ Use `git diff origin/main...` and explicitly verify:
 - docs and skill name the exact run command and controls;
 - no framework internals, FFI calls, native files, or release metadata changed.
 
-- [ ] **Step 4: Obtain the required independent Noir behavior/diff review**
+- [x] **Step 4: Obtain the required independent Noir behavior/diff review**
 
 Present the verified local diff for an independent reviewer. Resolve any finding with a new failing regression test followed by the smallest fix and rerun the affected gates. Do not commit the Noir implementation before this repository-mandated review is complete.
 
-- [ ] **Step 5: Commit the reviewed Noir slice**
+Outcome: two independent reviews ran, one on behavior and one on the diff and
+spec. Ownership boundaries, dev-only dependency resolution, async generation
+guards, disposal, input precedence, and error sanitization were confirmed
+against framework source. Two findings were resolved:
+
+1. The query/result focus highlight did not follow a bare Tab or click, because
+   the state read `FocusNode.hasFocus` during `build` without listening to
+   those nodes. Fixed after a failing regression test that asserts the two
+   panel border colors swap across a focus move.
+2. The design document assigned archive metadata and license identifiers to the
+   Health tab and described three headline metrics. The shipped placement is
+   the intended one, so the document was corrected to match it.
+
+- [x] **Step 5: Commit the reviewed Noir slice**
 
 After independent approval only:
 
 ```bash
-git add pubspec.yaml pubspec.lock example/pub_search.dart example/pub_search/ test/example/pub_search_catalog_test.dart test/example/pub_search_test.dart test/example/interactive_examples_test.dart test/golden/pub_search_golden_test.dart test/goldens/pub_search_detail.buffer.txt test/goldens/pub_search_detail.styles.txt test/goldens/pub_search_detail.cursor.txt example/README.md README.md skills/noir/SKILL.md skills/noir/references/state-and-animation.md docs/superpowers/
+git add pubspec.yaml example/pub_search.dart example/pub_search/ test/example/pub_search_catalog_test.dart test/example/pub_search_test.dart test/example/pub_search_test_data.dart test/example/interactive_examples_test.dart test/golden/pub_search_golden_test.dart test/goldens/pub_search_detail.buffer.txt test/goldens/pub_search_detail.styles.txt test/goldens/pub_search_detail.cursor.txt example/README.md README.md skills/noir/SKILL.md skills/noir/references/state-and-animation.md docs/superpowers/
 git commit -m "feat: add pub package search example"
 ```
 
