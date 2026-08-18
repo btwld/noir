@@ -408,104 +408,87 @@ final class PubPackageSnapshot {
       changelogUrl: package.changelogUrl,
       retracted: package.latest.retracted,
       publisher: publisher?.publisherId,
-      environment: Map.unmodifiable(
-        pubspec.environment.map(
-          (name, constraint) => MapEntry(name, '$constraint'),
-        ),
+      environment: pubspec.environment.map(
+        (name, constraint) => MapEntry(name, '$constraint'),
       ),
       homepage: pubspec.homepage ?? result?.homepageUrl,
       repository: pubspec.repository?.toString() ?? result?.repositoryUrl,
       issueTracker: pubspec.issueTracker?.toString() ?? result?.issueTrackerUrl,
       documentationUrl: pubspec.documentation ?? result?.documentationUrl,
       contributingUrl: result?.contributingUrl,
-      fundingUrls: List.unmodifiable(
-        pubspec.funding?.map((uri) => '$uri') ??
-            result?.fundingUrls ??
-            const <String>[],
-      ),
-      topics: List.unmodifiable(pubspec.topics ?? const <String>[]),
-      platforms: List.unmodifiable(_tagValues(tags, 'platform:')),
-      runtimes: List.unmodifiable(_tagValues(tags, 'runtime:')),
-      licenses: List.unmodifiable(
-        metricLicenses.isNotEmpty
-            ? metricLicenses
-            : _tagValues(tags, 'license:'),
-      ),
-      tags: List.unmodifiable(tags),
-      derivedTags: List.unmodifiable(pana?.derivedTags ?? const <String>[]),
+      fundingUrls:
+          pubspec.funding?.map((uri) => '$uri').toList(growable: false) ??
+          result?.fundingUrls ??
+          const <String>[],
+      topics: pubspec.topics ?? const <String>[],
+      platforms: _tagValues(tags, 'platform:'),
+      runtimes: _tagValues(tags, 'runtime:'),
+      licenses: metricLicenses.isNotEmpty
+          ? metricLicenses
+          : _tagValues(tags, 'license:'),
+      tags: tags,
+      derivedTags: pana?.derivedTags ?? const <String>[],
       publishTo: pubspec.publishTo,
-      ignoredAdvisories: List.unmodifiable(
-        pubspec.ignoredAdvisories ?? const <String>[],
+      ignoredAdvisories: pubspec.ignoredAdvisories ?? const <String>[],
+      screenshots: (pubspec.screenshots ?? const [])
+          .map(
+            (screenshot) => PackageScreenshotSummary(
+              description: screenshot.description,
+              path: screenshot.path,
+            ),
+          )
+          .toList(growable: false),
+      directDependencies: pubspec.dependencies.map(
+        (name, dependency) =>
+            MapEntry(name, _dependencySummary(name, dependency)),
       ),
-      screenshots: List.unmodifiable(
-        (pubspec.screenshots ?? const [])
-            .map(
-              (screenshot) => PackageScreenshotSummary(
-                description: screenshot.description,
-                path: screenshot.path,
-              ),
-            )
-            .toList(growable: false),
+      devDependencies: pubspec.devDependencies.map(
+        (name, dependency) =>
+            MapEntry(name, _dependencySummary(name, dependency)),
       ),
-      directDependencies: Map.unmodifiable(
-        pubspec.dependencies.map(
-          (name, dependency) =>
-              MapEntry(name, _dependencySummary(name, dependency)),
-        ),
+      dependencyOverrides: pubspec.dependencyOverrides.map(
+        (name, dependency) =>
+            MapEntry(name, _dependencySummary(name, dependency)),
       ),
-      devDependencies: Map.unmodifiable(
-        pubspec.devDependencies.map(
-          (name, dependency) =>
-              MapEntry(name, _dependencySummary(name, dependency)),
-        ),
-      ),
-      dependencyOverrides: Map.unmodifiable(
-        pubspec.dependencyOverrides.map(
-          (name, dependency) =>
-              MapEntry(name, _dependencySummary(name, dependency)),
-        ),
-      ),
-      transitiveDependencies: List.unmodifiable(
-        pana?.allDependencies ?? const <String>[],
-      ),
-      executables: Map.unmodifiable(pubspec.executables),
-      workspace: List.unmodifiable(pubspec.workspace ?? const <String>[]),
+      transitiveDependencies: pana?.allDependencies ?? const <String>[],
+      executables: pubspec.executables,
+      workspace: pubspec.workspace ?? const <String>[],
       resolution: pubspec.resolution,
-      flutterKeys: List.unmodifiable(
-        pubspec.flutter?.keys.cast<String>() ?? const <String>[],
-      ),
+      flutterKeys:
+          pubspec.flutter?.keys.cast<String>().toList(growable: false) ??
+          const <String>[],
       grantedPoints: effectiveScore?.grantedPoints,
       maxPoints: effectiveScore?.maxPoints,
       likeCount: effectiveScore?.likeCount,
       popularityScore: effectiveScore?.popularityScore,
       downloadCount30Days: effectiveScore?.downloadCount30Days,
-      releases: List.unmodifiable(
-        package.versions.map((release) {
-          final doc = docsByVersion[release.version];
-          return PackageRelease(
-            version: release.version,
-            published: release.published,
-            retracted: release.retracted,
-            archiveUrl: release.archiveUrl,
-            archiveSha256: release.archiveSha256,
-            hasDocumentation: doc?.hasDocumentation,
-            documentationStatus: doc?.status,
-          );
-        }),
-      ),
+      releases: package.versions
+          .map<PackageRelease>((release) {
+            final doc = docsByVersion[release.version];
+            return PackageRelease(
+              version: release.version,
+              published: release.published,
+              retracted: release.retracted,
+              archiveUrl: release.archiveUrl,
+              archiveSha256: release.archiveSha256,
+              hasDocumentation: doc?.hasDocumentation,
+              documentationStatus: doc?.status,
+            );
+          })
+          .toList(growable: false),
       isDiscontinued:
           options?.isDiscontinued ?? package.isDiscontinued ?? false,
       replacedBy: options?.replacedBy ?? package.replacedBy,
       isUnlisted: options?.isUnlisted ?? false,
-      advisories: List.unmodifiable(
-        (advisories?.advisories ?? const <SecurityAdvisory>[]).map(
-          (advisory) => PackageAdvisorySummary(
-            id: advisory.id,
-            summary: advisory.summary,
-            details: advisory.details,
-            url: advisory.pubDisplayUrl,
-            affectedVersions: List.unmodifiable(
-              advisory.affected
+      advisories: (advisories?.advisories ?? const <SecurityAdvisory>[])
+          .map(
+            (advisory) => PackageAdvisorySummary(
+              id: advisory.id,
+              summary: advisory.summary,
+              details: advisory.details,
+              url: advisory.pubDisplayUrl,
+              affectedVersions:
+                  advisory.affected
                       ?.expand(
                         (affected) => affected.versions ?? const <String>[],
                       )
@@ -513,25 +496,24 @@ final class PubPackageSnapshot {
                       .toList(growable: false) ??
                   const <String>[],
             ),
-          ),
-        ),
-      ),
+          )
+          .toList(growable: false),
       advisoriesUpdated:
           advisories?.advisoriesUpdated ?? package.advisoriesUpdated,
       analysisStatus: pana?.reportStatus,
       dartdocStatus: scorecard?.dartdocReport?.reportStatus,
       taskStatus: scorecard?.taskStatus,
-      healthSections: List.unmodifiable(
-        (pana?.report?.sections ?? const <Section>[]).map(
-          (section) => PackageHealthSection(
-            title: section.title ?? section.id ?? 'Check',
-            status: section.status ?? 'unknown',
-            summary: section.summary ?? '',
-            grantedPoints: section.grantedPoints,
-            maxPoints: section.maxPoints,
-          ),
-        ),
-      ),
+      healthSections: (pana?.report?.sections ?? const <Section>[])
+          .map(
+            (section) => PackageHealthSection(
+              title: section.title ?? section.id ?? 'Check',
+              status: section.status ?? 'unknown',
+              summary: section.summary ?? '',
+              grantedPoints: section.grantedPoints,
+              maxPoints: section.maxPoints,
+            ),
+          )
+          .toList(growable: false),
       urlProblems: _diagnosticSummaries(pana?.urlProblems, const [
         'url',
         'problem',
@@ -562,9 +544,7 @@ final class PubPackageSnapshot {
             ),
       analysisGrantedPoints: result?.grantedPoints,
       analysisMaxPoints: result?.maxPoints,
-      weeklyDownloads: List.unmodifiable(
-        weekly?.totalWeeklyDownloads ?? const <int>[],
-      ),
+      weeklyDownloads: weekly?.totalWeeklyDownloads ?? const <int>[],
       majorVersionDownloads: _versionDownloads(
         weekly?.majorRangeWeeklyDownloads,
       ),
@@ -803,14 +783,14 @@ List<int> recentDownloadCounts(List<int> values, {int limit = 26}) {
 
 List<PackageVersionDownloads> _versionDownloads(
   List<VersionRangeWeeklyDownloads>? values,
-) => List.unmodifiable(
-  (values ?? const <VersionRangeWeeklyDownloads>[]).map(
-    (value) => PackageVersionDownloads(
-      versionRange: value.versionRange,
-      counts: List.unmodifiable(value.counts),
-    ),
-  ),
-);
+) => (values ?? const <VersionRangeWeeklyDownloads>[])
+    .map(
+      (value) => PackageVersionDownloads(
+        versionRange: value.versionRange,
+        counts: value.counts,
+      ),
+    )
+    .toList(growable: false);
 
 List<String> _tagValues(List<String> tags, String prefix) => tags
     .where((tag) => tag.startsWith(prefix))
@@ -853,19 +833,20 @@ PackageDependencySummary _dependencySummary(
 List<String> _diagnosticSummaries(
   List<dynamic>? values,
   List<String> allowedKeys,
-) => List.unmodifiable(
-  (values ?? const <dynamic>[]).map((value) {
-    if (value is String && value.isNotEmpty) return value;
-    if (value is! Map<Object?, Object?>) return null;
-    final parts = <String>[];
-    for (final key in allowedKeys) {
-      final field = value[key];
-      if (field is String && field.isNotEmpty ||
-          field is num ||
-          field is bool) {
-        parts.add('$key: $field');
+) => (values ?? const <dynamic>[])
+    .map((value) {
+      if (value is String && value.isNotEmpty) return value;
+      if (value is! Map<Object?, Object?>) return null;
+      final parts = <String>[];
+      for (final key in allowedKeys) {
+        final field = value[key];
+        if (field is String && field.isNotEmpty ||
+            field is num ||
+            field is bool) {
+          parts.add('$key: $field');
+        }
       }
-    }
-    return parts.isEmpty ? null : parts.join('; ');
-  }).whereType<String>(),
-);
+      return parts.isEmpty ? null : parts.join('; ');
+    })
+    .whereType<String>()
+    .toList(growable: false);

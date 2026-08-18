@@ -12,15 +12,7 @@ import 'pub_search_test_data.dart';
 void main() {
   test('runs the initial search and opens the confirmed package', () async {
     final catalog = _FakePubCatalog()
-      ..searchResults.add(
-        Future.value(
-          PackageSearchPage(
-            page: 1,
-            packages: ['noir', 'noir_router'],
-            hasNextPage: false,
-          ),
-        ),
-      )
+      ..searchResults.add(_page(['noir', 'noir_router']))
       ..detailResults['noir'] = Future.value(examplePubPackage);
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -97,16 +89,8 @@ void main() {
   test('keeps letters editable and scopes result shortcuts', () async {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
-        Future.value(
-          PackageSearchPage(
-            page: 1,
-            packages: ['searchable'],
-            hasNextPage: false,
-          ),
-        ),
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['sorted'], hasNextPage: false),
-        ),
+        _page(['searchable']),
+        _page(['sorted']),
       ]);
     final app = createTuiTestApp(
       PubSearchApp(
@@ -144,12 +128,7 @@ void main() {
   });
 
   test('moves the panel focus highlight when Tab changes focus', () async {
-    final catalog = _FakePubCatalog()
-      ..searchResults.add(
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
-        ),
-      );
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
       width: 100,
@@ -177,11 +156,7 @@ void main() {
   test('Escape returns to results before requesting quit', () async {
     var quits = 0;
     final catalog = _FakePubCatalog()
-      ..searchResults.add(
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
-        ),
-      )
+      ..searchResults.add(_page(['noir']))
       ..detailResults['noir'] = Future.value(examplePubPackage);
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () => quits++),
@@ -211,11 +186,7 @@ void main() {
     'switches the four quiet detail tabs and scrolls their content',
     () async {
       final catalog = _FakePubCatalog()
-        ..searchResults.add(
-          Future.value(
-            PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
-          ),
-        )
+        ..searchResults.add(_page(['noir']))
         ..detailResults['noir'] = Future.value(examplePubPackage);
       final app = createTuiTestApp(
         PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -269,12 +240,7 @@ void main() {
     () async {
       final failedSearch = Completer<PackageSearchPage>();
       final catalog = _FakePubCatalog()
-        ..searchResults.addAll([
-          failedSearch.future,
-          Future.value(
-            PackageSearchPage(page: 1, packages: [], hasNextPage: false),
-          ),
-        ]);
+        ..searchResults.addAll([failedSearch.future, _page([])]);
       final app = createTuiTestApp(
         PubSearchApp(catalog: catalog, onQuit: () {}),
         width: 100,
@@ -305,13 +271,7 @@ void main() {
       final failedRefresh = Completer<PackageSearchPage>();
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
-          Future.value(
-            PackageSearchPage(
-              page: 1,
-              packages: ['last_good_package'],
-              hasNextPage: false,
-            ),
-          ),
+          _page(['last_good_package']),
           failedRefresh.future,
         ]);
       final app = createTuiTestApp(
@@ -343,23 +303,9 @@ void main() {
       var quits = 0;
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
-          Future.value(
-            PackageSearchPage(
-              page: 1,
-              packages: const ['noir'],
-              hasNextPage: false,
-            ),
-          ),
-          Future.value(
-            PackageSearchPage(page: 1, packages: const [], hasNextPage: false),
-          ),
-          Future.value(
-            PackageSearchPage(
-              page: 1,
-              packages: const ['recovered'],
-              hasNextPage: false,
-            ),
-          ),
+          _page(['noir']),
+          _page([]),
+          _page(['recovered']),
         ]);
       final app = createTuiTestApp(
         PubSearchApp(catalog: catalog, onQuit: () => quits++),
@@ -395,15 +341,7 @@ void main() {
     final oldSearch = Completer<PackageSearchPage>();
     final oldCatalog = _FakePubCatalog()..searchResults.add(oldSearch.future);
     final newCatalog = _FakePubCatalog()
-      ..searchResults.add(
-        Future.value(
-          PackageSearchPage(
-            page: 1,
-            packages: const ['new_catalog_package'],
-            hasNextPage: false,
-          ),
-        ),
-      );
+      ..searchResults.add(_page(['new_catalog_package']));
     late _CatalogHostState host;
     final app = createTuiTestApp(
       _CatalogHost(
@@ -443,23 +381,9 @@ void main() {
   test('pages forward and backward only from result focus', () async {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['page_one'], hasNextPage: true),
-        ),
-        Future.value(
-          PackageSearchPage(
-            page: 2,
-            packages: ['page_two'],
-            hasNextPage: false,
-          ),
-        ),
-        Future.value(
-          PackageSearchPage(
-            page: 1,
-            packages: ['page_one_again'],
-            hasNextPage: true,
-          ),
-        ),
+        _page(['page_one'], hasNextPage: true),
+        _page(['page_two'], page: 2),
+        _page(['page_one_again'], hasNextPage: true),
       ]);
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -488,20 +412,8 @@ void main() {
   test('starts the next page at its first result', () async {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
-        Future.value(
-          PackageSearchPage(
-            page: 1,
-            packages: ['page1_a', 'page1_b', 'page1_c'],
-            hasNextPage: true,
-          ),
-        ),
-        Future.value(
-          PackageSearchPage(
-            page: 2,
-            packages: ['page2_a', 'page2_b', 'page2_c'],
-            hasNextPage: false,
-          ),
-        ),
+        _page(['page1_a', 'page1_b', 'page1_c'], hasNextPage: true),
+        _page(['page2_a', 'page2_b', 'page2_c'], page: 2),
       ])
       ..detailResults['page2_a'] = Future.value(examplePubPackage);
     final app = createTuiTestApp(
@@ -536,9 +448,7 @@ void main() {
     final secondPage = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['page_one'], hasNextPage: true),
-        ),
+        _page(['page_one'], hasNextPage: true),
         secondPage.future,
       ]);
     final app = createTuiTestApp(
@@ -574,11 +484,7 @@ void main() {
   test('retries a failed package detail request', () async {
     final failedDetail = Completer<PubPackageSnapshot>();
     final catalog = _FakePubCatalog()
-      ..searchResults.add(
-        Future.value(
-          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
-        ),
-      )
+      ..searchResults.add(_page(['noir']))
       ..detailResults['noir'] = failedDetail.future;
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -663,6 +569,14 @@ final class _CatalogHostState extends State<_CatalogHost> {
   @override
   Widget build(BuildContext context) => PubSearchApp(catalog: _catalog);
 }
+
+Future<PackageSearchPage> _page(
+  List<String> packages, {
+  int page = 1,
+  bool hasNextPage = false,
+}) => Future.value(
+  PackageSearchPage(page: page, packages: packages, hasNextPage: hasNextPage),
+);
 
 String _render(TuiTestApp app) {
   app.pumpFrame();

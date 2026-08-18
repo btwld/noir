@@ -61,9 +61,9 @@ final class PubApiCatalog implements PubCatalog {
     }
     return PackageSearchPage(
       page: page,
-      packages: List.unmodifiable(
-        result.packages.map((package) => package.package),
-      ),
+      packages: result.packages
+          .map((package) => package.package)
+          .toList(growable: false),
       hasNextPage: result.next != null,
     );
   }

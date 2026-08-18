@@ -15,6 +15,9 @@ const pubPanel = Color(0.04, 0.075, 0.085);
 /// Panel behind the active detail tab.
 const pubActivePanel = Color(0.075, 0.17, 0.17);
 
+/// Row background behind the highlighted search result.
+const pubSelection = Color(0.08, 0.23, 0.22);
+
 /// Primary accent used for focus, selection, and headings.
 const pubAccent = Color(0.39, 0.85, 0.78);
 

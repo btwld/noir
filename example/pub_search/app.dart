@@ -193,7 +193,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
           _autofocusSearch = true;
           _autofocusResults = false;
         }
-        if (_selectedIndex >= result.packages.length) _selectedIndex = 0;
       });
       if (isEmpty) _searchFocus.requestFocus();
     } on Exception catch (error) {
@@ -481,7 +480,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
           height: 13,
           showScrollIndicator: true,
           backgroundColor: pubPanel,
-          selectedBackgroundColor: const Color(0.08, 0.23, 0.22),
+          selectedBackgroundColor: pubSelection,
           selectedTextColor: pubAccent,
           options: [
             for (final package in page.packages)
@@ -513,40 +512,36 @@ class _PubSearchAppState extends State<PubSearchApp> {
       color: pubBackground,
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
       child: switch (_detailState) {
-        PubLoadState.loading => Focus(
-          focusNode: _detailStatusFocus,
-          autofocus: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('PUB / PACKAGE', style: TextStyle(color: pubAccent)),
-              const SizedBox(height: 1),
-              Text('Loading ${_selectedPackage ?? 'package'}…'),
-            ],
+        PubLoadState.loading => _buildDetailStatus([
+          const Text('PUB / PACKAGE', style: TextStyle(color: pubAccent)),
+          const SizedBox(height: 1),
+          Text('Loading ${_selectedPackage ?? 'package'}…'),
+        ]),
+        PubLoadState.error => _buildDetailStatus([
+          const Text('Package unavailable', style: TextStyle(color: Color.red)),
+          const SizedBox(height: 1),
+          Text(_error ?? 'Unknown error'),
+          const SizedBox(height: 1),
+          const Text(
+            'r retry   Esc results',
+            style: TextStyle(color: pubMuted),
           ),
-        ),
-        PubLoadState.error => Focus(
-          focusNode: _detailStatusFocus,
-          autofocus: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Package unavailable',
-                style: TextStyle(color: Color.red),
-              ),
-              const SizedBox(height: 1),
-              Text(_error ?? 'Unknown error'),
-              const SizedBox(height: 1),
-              const Text(
-                'r retry   Esc results',
-                style: TextStyle(color: pubMuted),
-              ),
-            ],
-          ),
-        ),
+        ]),
+        // Unreachable: detail view is only entered through _loadPackage, which
+        // sets loading, ready, or error. Dart still requires exhaustiveness.
         _ => const SizedBox.shrink(),
       },
     );
   }
+
+  /// Detail surface shown before [PubPackageDetail] mounts its own scroll
+  /// focus, so Escape and retry always have a focused node to route through.
+  Widget _buildDetailStatus(List<Widget> children) => Focus(
+    focusNode: _detailStatusFocus,
+    autofocus: true,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
 }

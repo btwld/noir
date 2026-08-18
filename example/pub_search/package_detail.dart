@@ -397,14 +397,15 @@ List<Widget> _dependencyFacts(Map<String, PackageDependencySummary> values) =>
       ];
 
 List<Widget> _rangeFacts(String label, List<PackageVersionDownloads> values) =>
-    [
-      for (final value in values)
-        _fact(
-          '$label ${value.versionRange}',
-          '${downloadSparkline(recentDownloadCounts(value.counts))}  '
-              '${_joinedInts(recentDownloadCounts(value.counts))}',
-        ),
-    ];
+    values
+        .map((value) {
+          final counts = recentDownloadCounts(value.counts);
+          return _fact(
+            '$label ${value.versionRange}',
+            '${downloadSparkline(counts)}  ${_joinedInts(counts)}',
+          );
+        })
+        .toList(growable: false);
 
 String _packageStatus(PubPackageSnapshot package) {
   if (package.isDiscontinued) return 'discontinued';
