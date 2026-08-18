@@ -72,7 +72,10 @@ class NoirDriver {
         target.path,
         ...arguments,
       ],
-      environment: _driveEnvironment(width: width, height: height),
+      environment: <String, String>{
+        'NOIR_DRIVE': '1',
+        'NOIR_DRIVE_SIZE': '${width}x$height',
+      },
     );
 
     var exited = false;
@@ -238,11 +241,15 @@ class NoirDriver {
   }
 
   /// Asks the app to shut down, then returns its exit code.
+  ///
+  /// A request that fails means the app cannot acknowledge, so it is killed
+  /// instead. Drive mode holds the isolate open with a keep-alive timer, so
+  /// waiting on an app that will never quit itself would hang the driver.
   Future<int> quit() async {
     try {
       await _call('quit');
-    } on RPCError {
-      // The app may already be gone. Its exit code below is the real answer.
+    } on Object {
+      _process.kill(ProcessSignal.sigkill);
     }
     return _finish();
   }
@@ -480,14 +487,6 @@ class DriverColor {
 }
 
 const int _methodNotFound = -32601;
-
-Map<String, String> _driveEnvironment({
-  required int width,
-  required int height,
-}) => <String, String>{
-  'NOIR_DRIVE': '1',
-  'NOIR_DRIVE_SIZE': '${width}x$height',
-};
 
 void _reportAppOutput(String line) {
   stderr.writeln('[app] $line');

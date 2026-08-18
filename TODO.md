@@ -139,11 +139,12 @@ authorization.
   animating app never reports `stable: true`, an app whose own quit path calls
   `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
   limits recorded below.
-- `scripts/noir_drive.dart` and `scripts/driver/` have no automated coverage.
-  The drive-mode seam they drive is proven by `test/app/driver_test.dart` and
+- `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
+  drives is proven by `test/app/driver_test.dart` and
   `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
-  `NOIR_DRIVE=1` and drives it over the VM service. The CLI itself is only
-  exercised by running it.
+  `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
+  capture parsing are proven by `test/driver_client_test.dart`. The CLI command
+  grammar itself is only exercised by running it.
 - `scripts/hot_reload_driver.dart` has no automated coverage. The reassemble
   seam it drives is proven by `test/hot_reload_e2e_test.dart`, which performs a
   real `reloadSources` against a spawned headless app and asserts that the

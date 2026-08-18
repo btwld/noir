@@ -142,9 +142,6 @@ final class DriverHost {
   /// The binding this host drives.
   TuiBinding get binding => _binding;
 
-  /// Whether this host has released its binding and renderer.
-  bool get isDisposed => _disposed;
-
   /// Publishes the driver surface and holds the isolate's event loop open.
   ///
   /// A headless session owns no stdin and no signal handler, so without the
@@ -198,30 +195,28 @@ final class DriverHost {
     final rows = <Map<String, Object?>>[];
 
     for (var y = 0; y < buffer.height; y++) {
-      final line = StringBuffer();
-      final chars = <String>[];
-      final foregrounds = <String>[];
-      final backgrounds = <String>[];
-      final attributes = <int>[];
-      for (var x = 0; x < buffer.width; x++) {
-        final char = debugResolveBufferCell(buffer, y * buffer.width + x);
-        line.write(char);
-        if (withCells) {
-          chars.add(char);
-          foregrounds.add(direct.getForeground(x, y).toHex());
-          backgrounds.add(direct.getBackground(x, y).toHex());
-          attributes.add(direct.getAttributes(x, y));
-        }
+      final chars = <String>[
+        for (var x = 0; x < buffer.width; x++)
+          debugResolveBufferCell(buffer, y * buffer.width + x),
+      ];
+      lines.add(chars.join().trimRight());
+      if (!withCells) {
+        continue;
       }
-      lines.add(line.toString().trimRight());
-      if (withCells) {
-        rows.add(<String, Object?>{
-          'chars': chars,
-          'fg': foregrounds,
-          'bg': backgrounds,
-          'attrs': attributes,
-        });
-      }
+      rows.add(<String, Object?>{
+        'chars': chars,
+        'fg': <String>[
+          for (var x = 0; x < buffer.width; x++)
+            direct.getForeground(x, y).toHex(),
+        ],
+        'bg': <String>[
+          for (var x = 0; x < buffer.width; x++)
+            direct.getBackground(x, y).toHex(),
+        ],
+        'attrs': <int>[
+          for (var x = 0; x < buffer.width; x++) direct.getAttributes(x, y),
+        ],
+      });
     }
 
     return <String, Object?>{
@@ -401,7 +396,7 @@ Future<developer.ServiceExtensionResponse> _handleCapture(
   Map<String, String> parameters,
 ) async {
   final requested = parameters['format'] ?? DriverCaptureFormat.text.name;
-  final format = _parseCaptureFormat(requested);
+  final format = DriverCaptureFormat.values.asNameMap()[requested];
   if (format == null) {
     return _invalidParams('Unknown capture format "$requested".');
   }
@@ -472,15 +467,6 @@ Future<developer.ServiceExtensionResponse> _run(
   } on Object catch (error) {
     return _extensionError('$error');
   }
-}
-
-DriverCaptureFormat? _parseCaptureFormat(String name) {
-  for (final format in DriverCaptureFormat.values) {
-    if (format.name == name) {
-      return format;
-    }
-  }
-  return null;
 }
 
 int? _parseCount(String? raw, int fallback) {

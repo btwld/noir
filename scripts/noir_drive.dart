@@ -21,6 +21,9 @@
 //     watch on|off                       # re-print the frame after each command
 //     quit
 //
+// `--json` makes `capture` and `tree` print one JSON object per command
+// instead of formatted text; `capture --cells` is already JSON either way.
+//
 // Frames and tree output go to stdout; status and errors go to stderr, so a
 // piped run captures exactly the app's rendered output:
 //
@@ -186,7 +189,7 @@ class _Session {
   }
 
   Future<void> _click(String arguments) async {
-    final point = _parsePoint(arguments, 'click <x> <y>');
+    final point = _parsePoint(_split(arguments), 'click <x> <y>');
     if (point == null) {
       return;
     }
@@ -201,11 +204,11 @@ class _Session {
       return;
     }
     final direction = _parseScrollDirection(parts.first);
-    final point = _parsePoint('${parts[1]} ${parts[2]}', 'scroll ... <x> <y>');
     if (direction == null) {
       _fail('unknown scroll direction "${parts.first}".');
       return;
     }
+    final point = _parsePoint(parts.sublist(1), 'scroll <direction> <x> <y>');
     if (point == null) {
       return;
     }
@@ -301,8 +304,7 @@ class _Session {
     }
   }
 
-  ({int x, int y})? _parsePoint(String arguments, String grammar) {
-    final parts = _split(arguments);
+  ({int x, int y})? _parsePoint(List<String> parts, String grammar) {
     if (parts.length != 2) {
       _fail('$grammar takes two integers.');
       return null;
