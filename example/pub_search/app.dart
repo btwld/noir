@@ -97,8 +97,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
   // Page currently requested, which leads _searchPage while a request is in
   // flight so the header never advertises a page the user is not waiting for.
   var _page = 1;
-  var _autofocusSearch = true;
+  // One bit: the query editor and the result list are the only two
+  // autofocus targets, and exactly one of them claims a fresh mount.
   var _autofocusResults = false;
+  bool get _autofocusSearch => !_autofocusResults;
 
   @override
   void initState() {
@@ -131,7 +133,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _selectedIndex = 0;
     _page = 1;
     _error = null;
-    _autofocusSearch = true;
     _autofocusResults = false;
     _detailScroll.jumpTo(0);
 
@@ -164,6 +165,12 @@ class _PubSearchAppState extends State<PubSearchApp> {
     if (mounted) setState(() {});
   }
 
+  /// Whether [request] has been superseded, or this state is gone.
+  ///
+  /// Every awaited catalog call rechecks this before touching state, so a
+  /// slower earlier response cannot overwrite a newer one.
+  bool _isStale(int request) => !mounted || request != _generation;
+
   Future<void> _runSearch({int page = 1}) async {
     final request = ++_generation;
     final keepResultsFocus = _resultsFocus.hasFocus;
@@ -172,7 +179,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
       _searchState = PubLoadState.loading;
       _error = null;
       _autofocusResults = keepResultsFocus;
-      _autofocusSearch = !keepResultsFocus;
       _page = page;
       // Every search replaces the whole list, so a carried-over highlight would
       // point at an unrelated package on the incoming page.
@@ -184,19 +190,18 @@ class _PubSearchAppState extends State<PubSearchApp> {
         page: page,
         sort: _sort,
       );
-      if (!mounted || request != _generation) return;
+      if (_isStale(request)) return;
       final isEmpty = result.packages.isEmpty;
       setState(() {
         _searchPage = result;
         _searchState = isEmpty ? PubLoadState.empty : PubLoadState.ready;
         if (isEmpty) {
-          _autofocusSearch = true;
           _autofocusResults = false;
         }
       });
       if (isEmpty) _searchFocus.requestFocus();
     } on Exception catch (error) {
-      if (!mounted || request != _generation) return;
+      if (_isStale(request)) return;
       setState(() {
         _searchState = PubLoadState.error;
         _error = '$error';
@@ -220,13 +225,13 @@ class _PubSearchAppState extends State<PubSearchApp> {
     });
     try {
       final package = await widget.catalog.loadPackage(name);
-      if (!mounted || request != _generation) return;
+      if (_isStale(request)) return;
       setState(() {
         _package = package;
         _detailState = PubLoadState.ready;
       });
     } on Exception catch (error) {
-      if (!mounted || request != _generation) return;
+      if (_isStale(request)) return;
       setState(() {
         _detailState = PubLoadState.error;
         _error = '$error';
@@ -259,7 +264,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
       _detailState = PubLoadState.idle;
       _package = null;
       _error = null;
-      _autofocusSearch = focusSearch;
       _autofocusResults = !focusSearch;
     });
   }

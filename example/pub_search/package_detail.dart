@@ -261,11 +261,8 @@ Widget _buildDependencies(PubPackageSnapshot package) => Column(
     ..._section('ALL ANALYZED DEPENDENCIES', [
       Text(_joined(package.transitiveDependencies) ?? 'Not provided'),
     ]),
-    ..._section('EXECUTABLES & WORKSPACE', [
-      _fact('EXECUTABLES', _mapValue(package.executables)),
-      _fact('MEMBERS', _joined(package.workspace)),
-      _fact('RESOLUTION', package.resolution),
-    ]),
+    // Executables, workspace members, and resolution are pubspec configuration
+    // rather than dependencies; Overview's PACKAGE CONFIG is their one home.
   ],
 );
 
