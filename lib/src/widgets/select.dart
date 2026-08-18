@@ -545,7 +545,12 @@ class RenderSelect<T> extends RenderBox {
     }
 
     final usableWidth = _showScrollIndicator ? width - 1 : width;
-    for (var row = 0; row < height && row < _visibleRows; row++) {
+    // Rows layout actually granted, which is what `_SelectState` scrolls
+    // against: the height hint is an upper bound, and a tight parent can hand
+    // back fewer rows. Painting and the arrows must describe the same window,
+    // otherwise a constrained list scrolls with no indication that it did.
+    final paintedRows = math.min(height, _visibleRows);
+    for (var row = 0; row < paintedRows; row++) {
       final index = _scrollOffset + row;
       if (index >= _options.length) break;
       final opt = _options[index];
@@ -597,8 +602,12 @@ class RenderSelect<T> extends RenderBox {
       }
     }
 
-    // Scroll indicator (always last column when enabled and overflow)
-    if (_showScrollIndicator && _options.length > _visibleRows) {
+    // Scroll indicator (always last column when enabled and overflow). A box
+    // taller than a zero-row hint paints no options at all, so there is no
+    // window for an arrow to describe and no row of ours to put one on.
+    if (_showScrollIndicator &&
+        paintedRows > 0 &&
+        _options.length > paintedRows) {
       final indCol = originX + width - 1;
       // Up arrow at top if scrollable up
       canvas.setCell(
@@ -608,10 +617,10 @@ class RenderSelect<T> extends RenderBox {
         rowBg,
         0,
       );
-      // Down arrow at bottom if scrollable down
-      final lastVisible = _scrollOffset + _visibleRows;
+      // Down arrow on the last painted row if scrollable down
+      final lastVisible = _scrollOffset + paintedRows;
       canvas.setCell(
-        Offset(indCol, originY + height - 1),
+        Offset(indCol, originY + paintedRows - 1),
         lastVisible < _options.length ? '▼' : ' ',
         _color,
         rowBg,
