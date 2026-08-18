@@ -125,9 +125,12 @@ authorization.
   duplicate native ownership with an ANSI workaround.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
-- Decorated box content can escape a clipped viewport in some overflow cases.
-  Observed via a drive-mode sweep: `example/layout_demo.dart` paints stray
-  border fragments below its footer at 80x24.
+- A decorated box that straddles a clipped viewport edge paints its full
+  border. `Buffer.clipped` drops boxes that miss the clip entirely, but the
+  pinned `drawBox` writes transparent-background borders via an unchecked
+  index (`canUseTransparentBorderFastPath`), so a straddling box escapes even
+  OpenTUI's native scissor rect. Noir does not re-rasterize the box in Dart:
+  that would duplicate native glyph, corner, and title placement rules.
 - `RenderDecoratedBox` lays its child out with its own constraints rather than
   insetting them by the border, so when content fills the box it paints over
   the border cells. Observed: `example/focus_form.dart` at 24x8 merges the
