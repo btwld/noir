@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_positional_boolean_parameters
 import 'package:noir/noir.dart';
+import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
@@ -159,6 +160,47 @@ void main() {
       await driver.sendLogicalKey(LogicalKeyboardKey.home);
       expect(changes, [9, 0]);
       driver.dispose();
+    });
+
+    test('swapping the controller keeps the highlight on screen', () {
+      final recorder = _Recorder();
+      final first = ViewportController();
+      final second = ViewportController();
+      final owner = BuildOwner();
+      final element = ListView(
+        itemCount: 100,
+        height: 4,
+        selectedIndex: 50,
+        controller: first,
+        itemBuilder: recorder.build,
+      ).createElement();
+
+      element.mount(null, owner);
+      owner.buildScope();
+      expect(recorder.built, [47, 48, 49, 50]);
+
+      recorder.reset();
+      element.update(
+        ListView(
+          itemCount: 100,
+          height: 4,
+          selectedIndex: 50,
+          controller: second,
+          itemBuilder: recorder.build,
+        ),
+      );
+      owner.buildScope();
+      expect(
+        recorder.built,
+        [47, 48, 49, 50],
+        reason:
+            'a fresh controller must be scrolled back to the highlight, '
+            'and adopting it must not schedule a redundant rebuild',
+      );
+
+      element.unmount();
+      first.dispose();
+      second.dispose();
     });
 
     test('the builder is told which row is selected', () {

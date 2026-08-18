@@ -68,19 +68,28 @@ class Spinner extends StatefulWidget {
 
 class _SpinnerState extends State<Spinner>
     with SingleTickerProviderStateMixin<Spinner> {
-  late AnimationController _controller;
+  // One controller for this state's whole life. It runs over a fixed 0..1
+  // range and the frame index is derived from it, so neither a new `interval`
+  // nor a different frame count can ever require a second controller — and
+  // therefore a second ticker, which `SingleTickerProviderStateMixin` forbids.
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = _createController();
+    _requireFrames();
+    _controller = AnimationController(vsync: this, duration: _runDuration)
+      ..addListener(_handleTick)
+      ..addStatusListener(_handleStatus);
+    _controller.forward(from: 0);
   }
 
-  AnimationController _createController() {
-    // Checked here rather than in a constructor assert: `List.isEmpty` is not
-    // const-evaluable, and `const Spinner()` has to stay legal. Every path
-    // that (re)builds the controller runs it, so an empty list supplied by a
-    // later rebuild fails the same way as one supplied at mount.
+  /// One full pass through every frame.
+  Duration get _runDuration => widget.interval * widget.frames.length;
+
+  /// Checked here rather than in a constructor assert: `List.isEmpty` is not
+  /// const-evaluable, and `const Spinner()` has to stay legal.
+  void _requireFrames() {
     if (widget.frames.isEmpty) {
       throw ArgumentError.value(
         widget.frames,
@@ -88,14 +97,6 @@ class _SpinnerState extends State<Spinner>
         'must contain at least one glyph',
       );
     }
-    final controller = AnimationController(
-      vsync: this,
-      duration: widget.interval * widget.frames.length,
-      upperBound: widget.frames.length.toDouble(),
-    )..addListener(_handleTick);
-    controller.addStatusListener(_handleStatus);
-    controller.forward(from: 0);
-    return controller;
   }
 
   void _handleTick() {
@@ -111,29 +112,25 @@ class _SpinnerState extends State<Spinner>
   @override
   void didUpdateWidget(Spinner oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.interval != widget.interval ||
-        oldWidget.frames.length != widget.frames.length) {
-      _disposeController();
-      _controller = _createController();
-    }
-  }
-
-  void _disposeController() {
-    _controller
-      ..removeListener(_handleTick)
-      ..removeStatusListener(_handleStatus)
-      ..dispose();
+    _requireFrames();
+    _controller.duration = _runDuration;
   }
 
   @override
   void dispose() {
-    _disposeController();
+    _controller
+      ..removeListener(_handleTick)
+      ..removeStatusListener(_handleStatus)
+      ..dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final index = _controller.value.floor().clamp(0, widget.frames.length - 1);
+    final index = (_controller.value * widget.frames.length).floor().clamp(
+      0,
+      widget.frames.length - 1,
+    );
     return Text(
       widget.frames[index],
       style: TextStyle(color: widget.color ?? Theme.of(context).accent),

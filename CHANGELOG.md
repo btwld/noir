@@ -34,6 +34,10 @@
 - `TextInput`, `TextArea`, and `ScrollBox` resolve their colors through the
   nearest `Theme` on the same terms as `Select`: nullable parameters, previous
   literals as the unthemed fallback, and an explicit argument always winning.
+- `Spinner` retunes its one `AnimationController` instead of replacing it. It
+  previously built a second controller when `interval` or the frame count
+  changed, which asked `SingleTickerProviderStateMixin` for a second ticker
+  and asserted.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

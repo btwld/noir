@@ -152,10 +152,17 @@ class _ListViewState extends State<ListView>
     _highlighted = (widget.selectedIndex ?? 0).clamp(0, _maxIndex);
     _viewport = widget.controller ?? ViewportController();
     _ownsViewport = widget.controller == null;
+    _adoptViewport();
+  }
+
+  /// Brings a just-installed controller in line with this list, then starts
+  /// listening. Positioning first matters: the notification would arrive
+  /// before the list has ever built and only schedule a redundant rebuild.
+  void _adoptViewport() {
     _syncViewportExtents();
     _viewport
-      ..addListener(_handleViewportChanged)
-      ..ensureVisible(_highlighted, _highlighted + 1);
+      ..ensureVisible(_highlighted, _highlighted + 1)
+      ..addListener(_handleViewportChanged);
   }
 
   @override
@@ -165,9 +172,11 @@ class _ListViewState extends State<ListView>
     if (!identical(oldWidget.controller, widget.controller)) {
       _viewport.removeListener(_handleViewportChanged);
       if (_ownsViewport) _viewport.dispose();
+      // A fresh controller starts at offset zero and knows nothing about the
+      // highlight, so adopt it exactly as initState would.
       _viewport = widget.controller ?? ViewportController();
       _ownsViewport = widget.controller == null;
-      _viewport.addListener(_handleViewportChanged);
+      _adoptViewport();
     }
     _syncViewportExtents();
     if (widget.selectedIndex != oldWidget.selectedIndex) {

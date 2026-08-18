@@ -86,7 +86,10 @@ class TextArea extends StatefulWidget {
   /// Foreground color of the text. Falls back to [ThemeData.text].
   final Color? color;
 
-  /// Fill color painted behind the field. No fill when null.
+  /// Fill color painted behind the field. Falls back to [ThemeData.surface]
+  /// under a [Theme]; with neither, the field paints no fill. Pass
+  /// [Color.transparent] for an explicitly unfilled field inside a themed
+  /// subtree.
   final Color? backgroundColor;
 
   /// Color of the cursor. Falls back to [ThemeData.cursor].

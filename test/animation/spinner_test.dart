@@ -56,6 +56,34 @@ void main() {
       );
     });
 
+    test('a changed interval or frame count reuses the one ticker', () {
+      // SingleTickerProviderStateMixin allows exactly one ticker per state, so
+      // rebuilding with new timing must retune the controller rather than
+      // replace it.
+      final owner = BuildOwner();
+      owner.setFrameCallback(() {});
+      final element = const Spinner(
+        interval: Duration(milliseconds: 100),
+      ).createElement();
+      element.mount(null, owner);
+
+      expect(
+        () => element.update(const Spinner(interval: Duration(seconds: 1))),
+        returnsNormally,
+      );
+      expect(
+        () => element.update(const Spinner(frames: SpinnerFrames.line)),
+        returnsNormally,
+      );
+
+      owner.handleBeginFrame(Duration.zero);
+      owner.handleBeginFrame(const Duration(milliseconds: 400));
+      owner.buildScope();
+      expect((element.children.single.widget as Text).data, isNotEmpty);
+
+      element.unmount();
+    });
+
     test('an empty frame list is rejected on mount and on update', () {
       final owner = BuildOwner();
       owner.setFrameCallback(() {});
