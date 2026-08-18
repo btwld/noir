@@ -195,28 +195,21 @@ void main() {
       );
     }
 
-    final normalizedZig = _normalizeWhitespace(zig);
-    for (final signature in <String>[
-      _joined(<String>[
-        'export fn createRenderer( width: u32, height: u32, ',
-        'bufferedDestinationKind: u8, remoteModeValue: u8, ',
-        'feedPtr: ?*native_span_feed.Stream, ) NativeHandle',
-      ]),
-      'export fn render(renderer_handle: NativeHandle, force: bool) u8',
-      'export fn bufferGetFgPtr(buffer_handle: NativeHandle) ?[*]RGBA',
-      'export fn bufferGetBgPtr(buffer_handle: NativeHandle) ?[*]RGBA',
-      'export fn bufferGetAttributesPtr(buffer_handle: NativeHandle) ?[*]u32',
-      _joined(<String>[
-        'pub const CursorStyleOptions = extern struct { style: u8, ',
-        'blinking: u8, color: ?[*]const u16, cursor: u8, };',
-      ]),
-      _joined(<String>[
-        'export fn setCursorStyleOptions(renderer_handle: NativeHandle, ',
-        'options: *const CursorStyleOptions) void',
-      ]),
-    ]) {
-      expect(normalizedZig, contains(signature), reason: signature);
-    }
+    // Function signatures are verified mechanically for all 33 selected
+    // symbols by `opentui_abi_signature_test.dart`, which derives each
+    // expected prototype from this same pinned source. Only the struct
+    // layout is pinned here: that test compares call signatures, not the
+    // field order an `extern struct` passes by pointer.
+    expect(
+      _normalizeWhitespace(zig),
+      contains(
+        _joined(<String>[
+          'pub const CursorStyleOptions = extern struct { style: u8, ',
+          'blinking: u8, color: ?[*]const u16, cursor: u8, };',
+        ]),
+      ),
+      reason: 'CursorStyleOptions field order is part of the pinned ABI',
+    );
   });
 
   test('fork-only build and Go parity systems are absent', () {
