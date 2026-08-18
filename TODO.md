@@ -132,11 +132,12 @@ authorization.
   OpenTUI's native scissor rect. Noir does not re-rasterize the box in Dart:
   that would duplicate native glyph, corner, and title placement rules.
 - `RenderDecoratedBox` lays its child out with its own constraints rather than
-  insetting them by the border, so when content fills the box it paints over
-  the border cells. Observed: `example/focus_form.dart` at 24x8 merges the
-  outer bottom border with an inner field's top border on one row. Flutter
-  insets the child by the decoration's border; adopting that changes layout
-  for every bordered container and needs its own reviewed pass.
+  insetting them by the border, and paint-clips the child to the decoration's
+  inner rect so a filling child cannot erase the border. Flutter's layout
+  inset is deliberately not adopted: it would resize every bordered child and
+  re-open the tight-box collapse that `Container`'s documented
+  `max(padding, border)` rule (`lib/src/widgets/container.dart`) avoids.
+  `Container` owns the layout side; `DecoratedBox` only guarantees the clip.
 - `example/bindings_validation.dart` requires a real terminal stdin lease by
   design and exits with code 70 under drive mode; it is the one example the
   drive tool cannot run.
