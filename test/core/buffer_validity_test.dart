@@ -517,6 +517,14 @@ final class _FailingRenderNativeSymbols implements OpenTuiNativeSymbols {
   @override
   void destroyRenderer(int renderer) {}
 
+  // `Renderer.nextBuffer` clears the native draw stacks on the buffer it lends
+  // out, so a fake backend has to model both calls.
+  @override
+  void bufferClearScissorRects(int buffer) {}
+
+  @override
+  void bufferClearOpacity(int buffer) {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnsupportedError(invocation.memberName.toString());

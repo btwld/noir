@@ -494,6 +494,83 @@ class OpenTuiBindings {
   late final _bufferResize = _bufferResizePtr
       .asFunction<void Function(int, int, int)>();
 
+  /// Native clip and opacity stacks. Every native write funnel honours both
+  /// (buffer.zig validateAndIndex -> isPointInScissor, and getCurrentOpacity).
+  /// Exposed on the raw binding surface; Noir's own clip seam stays in Dart.
+  void bufferPushScissorRect(int buffer, int x, int y, int width, int height) {
+    return _bufferPushScissorRect(buffer, x, y, width, height);
+  }
+
+  late final _bufferPushScissorRectPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(
+            OpenTuiHandle,
+            ffi.Int32,
+            ffi.Int32,
+            ffi.Uint32,
+            ffi.Uint32,
+          )
+        >
+      >('bufferPushScissorRect');
+  late final _bufferPushScissorRect = _bufferPushScissorRectPtr
+      .asFunction<void Function(int, int, int, int, int)>();
+
+  void bufferPopScissorRect(int buffer) {
+    return _bufferPopScissorRect(buffer);
+  }
+
+  late final _bufferPopScissorRectPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'bufferPopScissorRect',
+      );
+  late final _bufferPopScissorRect = _bufferPopScissorRectPtr
+      .asFunction<void Function(int)>();
+
+  void bufferClearScissorRects(int buffer) {
+    return _bufferClearScissorRects(buffer);
+  }
+
+  late final _bufferClearScissorRectsPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'bufferClearScissorRects',
+      );
+  late final _bufferClearScissorRects = _bufferClearScissorRectsPtr
+      .asFunction<void Function(int)>();
+
+  void bufferPushOpacity(int buffer, double opacity) {
+    return _bufferPushOpacity(buffer, opacity);
+  }
+
+  late final _bufferPushOpacityPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle, ffi.Float)>>(
+        'bufferPushOpacity',
+      );
+  late final _bufferPushOpacity = _bufferPushOpacityPtr
+      .asFunction<void Function(int, double)>();
+
+  void bufferPopOpacity(int buffer) {
+    return _bufferPopOpacity(buffer);
+  }
+
+  late final _bufferPopOpacityPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'bufferPopOpacity',
+      );
+  late final _bufferPopOpacity = _bufferPopOpacityPtr
+      .asFunction<void Function(int)>();
+
+  void bufferClearOpacity(int buffer) {
+    return _bufferClearOpacity(buffer);
+  }
+
+  late final _bufferClearOpacityPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'bufferClearOpacity',
+      );
+  late final _bufferClearOpacity = _bufferClearOpacityPtr
+      .asFunction<void Function(int)>();
+
   void setCursorPosition(int renderer, int x, int y, bool visible) {
     return _setCursorPosition(renderer, x, y, visible);
   }

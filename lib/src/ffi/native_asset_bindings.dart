@@ -213,6 +213,35 @@ external void drawFrameBuffer(
 @ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Uint32, ffi.Uint32)>()
 external void bufferResize(int buffer, int width, int height);
 
+/// Native clip and opacity stacks. Every native write funnel honours both
+/// (buffer.zig validateAndIndex -> isPointInScissor, and getCurrentOpacity).
+/// Exposed on the raw binding surface; Noir's own clip seam stays in Dart.
+@ffi.Native<
+  ffi.Void Function(OpenTuiHandle, ffi.Int32, ffi.Int32, ffi.Uint32, ffi.Uint32)
+>()
+external void bufferPushScissorRect(
+  int buffer,
+  int x,
+  int y,
+  int width,
+  int height,
+);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void bufferPopScissorRect(int buffer);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void bufferClearScissorRects(int buffer);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Float)>()
+external void bufferPushOpacity(int buffer, double opacity);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void bufferPopOpacity(int buffer);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void bufferClearOpacity(int buffer);
+
 @ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Int32, ffi.Int32, ffi.Bool)>()
 external void setCursorPosition(int renderer, int x, int y, bool visible);
 

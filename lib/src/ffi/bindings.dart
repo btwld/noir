@@ -453,6 +453,96 @@ class OpenTuiBindings {
     });
   }
 
+  /// Pushes a clip rectangle onto [buffer]'s native scissor stack.
+  ///
+  /// Every native write funnel tests the scissor before writing, so the push
+  /// affects all subsequent draws until the matching [bufferPopScissorRect].
+  ///
+  /// Four properties surprise callers, all of them upstream behaviour:
+  ///
+  /// * The push **intersects** with the current rectangle rather than
+  ///   replacing it, so nesting narrows and never widens.
+  /// * The stack is state on the native buffer, not on a view. It outlives
+  ///   `render()` and `resize()`, because OpenTUI allocates its buffers once
+  ///   per renderer and never swaps them. Noir clears both stacks as each
+  ///   frame borrows its buffer, so an unpopped push corrupts only the frame
+  ///   that leaked it — but within a frame the pairing is the caller's.
+  /// * It also clips writes made through [Buffer.clipped], whose Dart-side
+  ///   rectangle is then no longer the only thing deciding what lands.
+  /// * `drawBox` with a transparent background escapes it entirely: upstream
+  ///   writes those borders through an unchecked index.
+  void bufferPushScissorRect(
+    OptimizedBufferHandle buffer,
+    int x,
+    int y,
+    int width,
+    int height,
+  ) {
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
+    _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    _guard('Failed to push scissor rect', () {
+      _native.bufferPushScissorRect(buffer.value, x, y, width, height);
+    });
+  }
+
+  /// Pops the innermost clip rectangle from [buffer]'s scissor stack.
+  void bufferPopScissorRect(OptimizedBufferHandle buffer) {
+    _guard('Failed to pop scissor rect', () {
+      _native.bufferPopScissorRect(buffer.value);
+    });
+  }
+
+  /// Clears every clip rectangle from [buffer]'s scissor stack.
+  void bufferClearScissorRects(OptimizedBufferHandle buffer) {
+    _guard('Failed to clear scissor rects', () {
+      _native.bufferClearScissorRects(buffer.value);
+    });
+  }
+
+  /// Pushes [opacity] onto [buffer]'s native opacity stack.
+  ///
+  /// Noir rejects an [opacity] outside `0.0..1.0` so the domain stays
+  /// explicit, and clears the stack as each frame borrows its buffer for the
+  /// same reason as [bufferPushScissorRect].
+  ///
+  /// This primitive is far narrower than its name suggests, all upstream:
+  ///
+  /// * **It does not fade ordinary text.** `bufferDrawText` takes an ASCII
+  ///   fast path whenever the foreground and background are both fully
+  ///   opaque, writing cells directly and skipping the opacity funnel, so any
+  ///   value in `(0.0, 1.0)` paints identically to `1.0`. Only `0.0` reads as
+  ///   transparent, and it does so through a separate early-out. Blending is
+  ///   observable through [bufferSetCellWithAlphaBlending] and
+  ///   [bufferFillRect]. An `Opacity` widget cannot be built on this alone.
+  /// * The push **multiplies** with the current value rather than replacing
+  ///   it, so `0.5` inside `0.5` yields `0.25`.
+  /// * [drawFrameBuffer] reads the destination's stack and ignores the
+  ///   source's, so pushing opacity onto an offscreen layer does nothing.
+  void bufferPushOpacity(OptimizedBufferHandle buffer, double opacity) {
+    if (opacity.isNaN || opacity < 0.0 || opacity > 1.0) {
+      throw RangeError.range(opacity, 0, 1, 'opacity');
+    }
+    _guard('Failed to push opacity', () {
+      _native.bufferPushOpacity(buffer.value, opacity);
+    });
+  }
+
+  /// Pops the innermost value from [buffer]'s opacity stack.
+  void bufferPopOpacity(OptimizedBufferHandle buffer) {
+    _guard('Failed to pop opacity', () {
+      _native.bufferPopOpacity(buffer.value);
+    });
+  }
+
+  /// Clears every value from [buffer]'s opacity stack.
+  void bufferClearOpacity(OptimizedBufferHandle buffer) {
+    _guard('Failed to clear opacity', () {
+      _native.bufferClearOpacity(buffer.value);
+    });
+  }
+
   /// Sets cursor position and visibility.
   void setCursorPosition(RendererHandle renderer, int x, int y, bool visible) {
     _checkSigned32Abi(x, 'x');
