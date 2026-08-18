@@ -39,8 +39,8 @@ void main() {
         await _settleAutofocus(app);
         var frame = _render(app);
         expect(frame, BufferMatchers.containsText('Theme: ocean'));
-        expect(frame, BufferMatchers.containsText('Welcome to OpenTUI'));
-        final oceanMessage = frame.findText('Welcome to OpenTUI').single;
+        expect(frame, BufferMatchers.containsText('Welcome to Noir'));
+        final oceanMessage = frame.findText('Welcome to Noir').single;
         final oceanUpdates = frame.findText('Dependency updates: 1').single;
         expect(
           frame.getForegroundColor(oceanMessage.x, oceanMessage.y),
@@ -60,7 +60,7 @@ void main() {
         frame = _render(app);
 
         expect(frame, BufferMatchers.containsText('Theme: forest'));
-        final forestMessage = frame.findText('Welcome to OpenTUI').single;
+        final forestMessage = frame.findText('Welcome to Noir').single;
         final forestUpdates = frame.findText('Dependency updates: 2').single;
         expect(
           frame.getForegroundColor(forestMessage.x, forestMessage.y),
@@ -98,7 +98,10 @@ void main() {
       expect(frame, BufferMatchers.containsText('Sections'));
       expect(frame, BufferMatchers.containsText('MainAxisAlignment Examples'));
       expect(frame, BufferMatchers.containsText('Flex Layout Demo'));
-      expect(frame, BufferMatchers.containsText('Press Ctrl+C to exit'));
+      expect(
+        frame,
+        BufferMatchers.containsText('↑/↓ to scroll · q or Ctrl+C to exit'),
+      );
     } finally {
       app.dispose();
     }

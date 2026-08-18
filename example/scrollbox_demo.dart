@@ -47,7 +47,7 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
 
   @override
   Widget build(BuildContext context) => Focus(
-    autofocus: true,
+    canRequestFocus: false,
     onKeyEvent: _quitOnQ,
     child: Container(
       padding: const EdgeInsets.all(1),
@@ -59,7 +59,7 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const Text(
-            'Click into the box, then ↑/↓ PgUp/PgDn Home/End. q to quit.',
+            '↑/↓ PgUp/PgDn Home/End to scroll. q to quit.',
             style: TextStyle(color: Color(0.7, 0.7, 0.7)),
           ),
           const SizedBox(height: 1),

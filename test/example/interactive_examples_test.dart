@@ -18,8 +18,10 @@ void main() {
       'example/chat_demo.dart',
       'example/focus_form.dart',
       'example/like_reactor.dart',
+      'example/layout_demo.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
+      'example/widgets_tour.dart',
     ]) {
       final source = io.File(path).readAsStringSync();
       expect(
@@ -81,19 +83,39 @@ void main() {
     }
   });
 
+  test('focus form placeholders are hints, not submitted values', () async {
+    final app = createTuiTestApp(const FocusFormApp());
+
+    try {
+      await _settleAutofocus(app);
+      expect(_render(app), contains('Enter name'));
+      expect(_render(app), contains('Enter email'));
+      expect(_render(app), isNot(contains('Jane Doe')));
+
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settleInput();
+
+      expect(_render(app), contains('Saved:  - '));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('focus form fields can be selected and submitted by mouse', () async {
     final app = createTuiTestApp(const FocusFormApp());
     try {
       await _settleAutofocus(app);
       var frame = app.captureFrame();
-      final name = frame.findText('Jane Doe').single;
+      final name = frame.findText('Enter name').single;
       app.mockMouse.click(name.x, name.y);
       app.mockInput.typeText('Ada');
       await _settleInput();
       app.pumpFrame();
 
       frame = app.captureFrame();
-      final email = frame.findText('jane@example.com').single;
+      final email = frame.findText('Enter email').single;
       app.mockMouse.click(email.x, email.y);
       app.mockInput
         ..typeText('ada@example.com')
@@ -304,6 +326,101 @@ void main() {
       }
     },
   );
+
+  test('textarea keeps typing after Tab leaves the quit wrapper', () async {
+    final app = createTuiTestApp(
+      TextAreaDemoApp(onQuit: () {}),
+      width: 64,
+      height: 22,
+    );
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput
+        ..typeText('before')
+        ..pressTab()
+        ..typeText('after');
+      await _settleInput();
+
+      expect(_render(app), contains('after'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('select keeps highlight movement after Tab', () async {
+    final app = createTuiTestApp(
+      SelectDemoApp(onQuit: () {}),
+      width: 56,
+      height: 20,
+    );
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput
+        ..pressTab()
+        ..pressArrow(ArrowDirection.down)
+        ..pressArrow(ArrowDirection.down);
+      await _settleInput();
+
+      expect(_render(app), contains('Highlight: Cherry'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('scroll demo keeps paging after Tab', () async {
+    final app = createTuiTestApp(
+      ScrollDemoApp(onQuit: () {}),
+      width: 56,
+      height: 18,
+    );
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput
+        ..pressTab()
+        ..pressPageDown();
+      await _settleInput();
+
+      expect(_render(app), isNot(contains('offset: 0 /')));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('layout showcase pages with keyboard at 80x24', () async {
+    final app = createTuiTestApp(FlexLayoutShowcase(onQuit: () {}));
+
+    try {
+      await _settleAutofocus(app);
+      expect(_render(app), contains('Start'));
+      expect(_render(app), isNot(contains('End')));
+
+      app.mockInput.pressPageDown();
+      await _settleInput();
+
+      expect(_render(app), contains('End'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('widget tour Shift+Tab wraps to the TextArea', () async {
+    final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));
+
+    try {
+      await _settleAutofocus(app);
+      app.mockInput
+        ..pressShiftTab()
+        ..typeText('x');
+      await _settleInput();
+
+      expect(_render(app), contains('Typed: 1 chars'));
+    } finally {
+      app.dispose();
+    }
+  });
 
   test('widget tour reports and submits grapheme-cluster counts', () async {
     final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));

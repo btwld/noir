@@ -121,7 +121,7 @@ class _ThemedAppState extends State<ThemedApp> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ThemedText('Theme: ${theme.name} (press t to toggle)'),
-              const ThemedText('Welcome to OpenTUI'),
+              const ThemedText('Welcome to Noir'),
               const ThemedText('This text uses inherited theme colors'),
               const _ThemeDependencyStatus(),
             ],

@@ -15,6 +15,7 @@ void main() {
   }
 
   app = runTuiApp(FlexLayoutShowcase(onQuit: quit));
+  app.enableMouse();
 }
 
 class FlexLayoutShowcase extends StatelessWidget {
@@ -32,7 +33,7 @@ class FlexLayoutShowcase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Focus(
-    autofocus: true,
+    canRequestFocus: false,
     onKeyEvent: _handleKey,
     child: Container(
       color: Color.rgb(0.05, 0.05, 0.12),
@@ -84,7 +85,7 @@ class FlexLayoutShowcase extends StatelessWidget {
           child: Text('Sections', style: TextStyle(color: Color.white)),
         ),
         const SizedBox(height: 1),
-        _buildNavItem('Main Axis Alignments', isActive: true),
+        _buildNavItem('Main Axis Alignments'),
         _buildNavItem('Cross Axis Alignments'),
         _buildNavItem('Flex Factors'),
         _buildNavItem('Nested Layouts'),
@@ -92,10 +93,7 @@ class FlexLayoutShowcase extends StatelessWidget {
         Container(
           height: 2,
           alignment: Alignment.center,
-          child: Text(
-            'OpenTUI v0.1',
-            style: TextStyle(color: Color(0.7, 0.7, 0.7)),
-          ),
+          child: Text('Noir', style: TextStyle(color: Color(0.7, 0.7, 0.7))),
         ),
       ],
     ),
@@ -107,6 +105,7 @@ class FlexLayoutShowcase extends StatelessWidget {
       border: Border.all(color: Color(1, 1, 1, 0.3)),
     ),
     child: ScrollBox(
+      autofocus: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -134,23 +133,19 @@ class FlexLayoutShowcase extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: const [
         Text('Flex Layout Demo', style: TextStyle(color: Color.lightGray)),
-        Text('Press Ctrl+C to exit', style: TextStyle(color: Color.lightGray)),
+        Text(
+          '↑/↓ to scroll · q or Ctrl+C to exit',
+          style: TextStyle(color: Color.lightGray),
+        ),
       ],
     ),
   );
 
-  Widget _buildNavItem(String label, {bool isActive = false}) => Container(
+  Widget _buildNavItem(String label) => Container(
     height: 2,
     alignment: Alignment.centerLeft,
     padding: EdgeInsets.symmetric(horizontal: 2),
-    color: isActive ? Color.rgb(0.35, 0.45, 0.75) : null,
-    child: Text(
-      label,
-      style: TextStyle(
-        color: isActive ? Color.white : Color.lightGray,
-        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-      ),
-    ),
+    child: Text(label, style: TextStyle(color: Color.lightGray)),
   );
 
   Widget _buildSectionHeader(String title) => Container(

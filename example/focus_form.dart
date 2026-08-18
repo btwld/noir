@@ -51,14 +51,6 @@ class _FocusFormAppState extends State<FocusFormApp> {
       return KeyEventResult.ignored;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.tab) {
-      if (_emailFocus.hasFocus) {
-        _nameFocus.requestFocus();
-      } else {
-        _emailFocus.requestFocus();
-      }
-      return KeyEventResult.handled;
-    }
     if (event.logicalKey == LogicalKeyboardKey.enter && _emailFocus.hasFocus) {
       _submit();
       return KeyEventResult.handled;
@@ -98,14 +90,14 @@ class _FocusFormAppState extends State<FocusFormApp> {
             focusNode: _nameFocus,
             value: _name,
             autofocus: true,
-            placeholder: 'Jane Doe',
+            placeholder: 'Enter name',
             onChanged: (value) => setState(() => _name = value),
           ),
           _buildField(
             label: 'Email',
             focusNode: _emailFocus,
             value: _email,
-            placeholder: 'jane@example.com',
+            placeholder: 'Enter email',
             onChanged: (value) => setState(() => _email = value),
             onSubmit: _submit,
           ),
