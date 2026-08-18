@@ -133,6 +133,17 @@ authorization.
   never re-runs `main()` or `initState`, so changes to those, to a signature
   held by a frame on the stack, to an enum converted into a class, or to the
   bundled OpenTUI native library still require a full restart.
+- Drive mode (`NOIR_DRIVE=1`) is headless by construction. It exercises the
+  same layout, paint, and ANSI-parser paths the ordinary suite trusts, but it
+  never proves real terminal escape rendering or raw-mode input. A continuously
+  animating app never reports `stable: true`, an app whose own quit path calls
+  `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
+  limits recorded below.
+- `scripts/noir_drive.dart` and `scripts/driver/` have no automated coverage.
+  The drive-mode seam they drive is proven by `test/app/driver_test.dart` and
+  `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
+  `NOIR_DRIVE=1` and drives it over the VM service. The CLI itself is only
+  exercised by running it.
 - `scripts/hot_reload_driver.dart` has no automated coverage. The reassemble
   seam it drives is proven by `test/hot_reload_e2e_test.dart`, which performs a
   real `reloadSources` against a spawned headless app and asserts that the
