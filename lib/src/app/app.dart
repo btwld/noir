@@ -1,3 +1,5 @@
+import 'dart:io' as io;
+
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
@@ -5,15 +7,30 @@ import '../foundation/disposable.dart';
 import '../foundation/first_error.dart';
 import '../foundation/listenable.dart';
 import '../framework/widget.dart';
+import 'driver.dart';
 import 'tui_binding.dart';
 
 /// Mounts [app] and returns its owning application lifecycle facade.
+///
+/// With `NOIR_DRIVE=1` in the environment the app mounts in drive mode
+/// instead: a headless binding painting into a non-terminal renderer, with the
+/// `ext.noir.driver.*` service extensions published for an external driver.
+/// Drive mode replaces the terminal session, so [width], [height], and
+/// [headless] do not apply to it; see `createDriveModeHost`. Without that
+/// variable the branch is inert and this is the ordinary terminal path.
 TuiApp runTuiApp(
   Widget app, {
   int width = 80,
   int height = 24,
   bool headless = false,
 }) {
+  final host = createDriveModeHost(io.Platform.environment);
+  if (host != null) {
+    host.binding.runApp(app);
+    final driven = TuiApp._(host.binding);
+    host.start(driven);
+    return driven;
+  }
   final binding = TuiBinding(width: width, height: height, headless: headless)
     ..runApp(app);
   return TuiApp._(binding);

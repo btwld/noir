@@ -151,6 +151,7 @@ final class TuiBinding {
   late final InputDispatcher _inputDispatcher;
   late final RenderView _renderView;
   Element? _root;
+  int _frameCount = 0;
   bool _disposing = false;
   bool _disposed = false;
 
@@ -246,6 +247,7 @@ final class TuiBinding {
 
     if (painted) {
       renderer.render(force: true);
+      _frameCount++;
 
       if (io.Platform.environment['TERMINAL_TUI_DEBUG_LOG'] == '1') {
         io.stderr.writeln('tuibinding: frame rendered');
@@ -262,6 +264,14 @@ final class TuiBinding {
   /// Whether the scheduler has a pending frame in integration tests.
   @visibleForTesting
   bool get debugHasScheduledFrame => _scheduler.hasScheduledFrame;
+
+  /// Frames this binding has painted and rendered since construction.
+  ///
+  /// Deliberate: a headless renderer paints without any observable side
+  /// effect, so drive mode and integration tests need a repaint signal that
+  /// does not depend on diffing two captured frames.
+  @visibleForTesting
+  int get debugFrameCount => _frameCount;
 
   /// Dispose this binding and every owned lifecycle object.
   void dispose() {
