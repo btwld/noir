@@ -19,6 +19,7 @@ import 'pointer_listener.dart';
 import 'shortcuts.dart';
 import 'text_editing_owner_mixin.dart';
 import 'text_input_connection.dart';
+import 'theme.dart';
 import 'viewport.dart';
 
 /// Multi-line text input, parity with OpenTUI-React `<textarea>`.
@@ -45,9 +46,9 @@ class TextArea extends StatefulWidget {
     this.width,
     this.readOnly = false,
     this.tabSize = 2,
-    this.color = Color.white,
+    this.color,
     this.backgroundColor,
-    this.cursorColor = Color.white,
+    this.cursorColor,
     this.cursorStyle = CursorStyle.block,
     this.maxLength,
     this.onChanged,
@@ -82,14 +83,16 @@ class TextArea extends StatefulWidget {
   /// Number of spaces inserted for a tab. Defaults to 2.
   final int tabSize;
 
-  /// Foreground color of the text. Defaults to [Color.white].
-  final Color color;
+  /// Foreground color of the text. Falls back to [ThemeData.text], then to
+  /// [Color.white].
+  final Color? color;
 
   /// Fill color painted behind the field. No fill when null.
   final Color? backgroundColor;
 
-  /// Color of the cursor. Defaults to [Color.white].
-  final Color cursorColor;
+  /// Color of the cursor. Falls back to [ThemeData.cursor], then to
+  /// [Color.white].
+  final Color? cursorColor;
 
   /// Shape drawn for the cursor. Defaults to [CursorStyle.block].
   final CursorStyle cursorStyle;
@@ -215,6 +218,7 @@ class _TextAreaState extends State<TextArea>
   Widget build(BuildContext context) {
     requireUsableSelectionForBuild();
     final conn = connection;
+    final theme = Theme.maybeOf(context);
     return Shortcuts(
       shortcuts: conn.shortcuts,
       child: Actions(
@@ -233,9 +237,11 @@ class _TextAreaState extends State<TextArea>
               placeholder: widget.placeholder,
               height: widget.height,
               width: widget.width,
-              color: widget.color,
-              backgroundColor: widget.backgroundColor,
-              cursorColor: widget.cursorColor,
+              color: widget.color ?? theme?.text ?? Color.white,
+              // `maybeOf`, not `of`: an unthemed field keeps its original
+              // no-fill rendering rather than gaining a surface.
+              backgroundColor: widget.backgroundColor ?? theme?.surface,
+              cursorColor: widget.cursorColor ?? theme?.cursor ?? Color.white,
               cursorStyle: widget.cursorStyle,
               focused: focusNode.hasFocus,
               scrollLine: _vViewport.scrollOffset,

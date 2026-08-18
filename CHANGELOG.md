@@ -31,6 +31,9 @@
   `backgroundColor: null` now means "the theme's surface, else no fill", so
   pass `Color.transparent` for an explicitly unfilled list inside a themed
   subtree.
+- `TextInput`, `TextArea`, and `ScrollBox` resolve their colors through the
+  nearest `Theme` on the same terms as `Select`: nullable parameters, previous
+  literals as the unthemed fallback, and an explicit argument always winning.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate
