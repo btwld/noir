@@ -556,6 +556,40 @@ void main() {
       app.dispose();
     }
   });
+
+  test('keeps last results when the refresh fails before a frame', () async {
+    // A rejection that resolves in a microtask never paints the intervening
+    // loading frame, so the result list is rebuilt straight from ready into
+    // the error layout's LAST RESULTS branch.
+    // `ignore()` only suppresses the unhandled-error report for a future that
+    // is already failed when the app awaits it; the await still throws.
+    final refreshFailure = Future<PackageSearchPage>.error(
+      Exception('refresh unavailable'),
+    )..ignore();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['last_good_package']),
+        refreshFailure,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      expect(_render(app), contains('last_good_package'));
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+
+      expect(_render(app), contains('Search unavailable'));
+      expect(_render(app), contains('last_good_package'));
+    } finally {
+      app.dispose();
+    }
+  });
 }
 
 typedef _SearchCall = ({String query, int page, PackageSort sort});

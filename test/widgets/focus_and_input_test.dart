@@ -32,6 +32,29 @@ void main() {
     expect(node.isAttached, isFalse);
   });
 
+  test('a supplied FocusNode survives relocation within one build', () {
+    // Reconciliation deactivates the outgoing Focus but does not unmount it
+    // until the build pass finalizes, so the node has to come free at
+    // deactivation for the incoming Focus to take it in the same pass.
+    final node = FocusNode(debugLabel: 'relocated');
+    final owner = BuildOwner();
+    addTearDown(node.dispose);
+    addTearDown(owner.dispose);
+
+    late _RelocateState state;
+    final element = _Relocate(
+      node: node,
+      onReady: (value) => state = value,
+    ).createElement();
+    addTearDown(element.unmount);
+    element.mount(null, owner);
+
+    state.relocate();
+    owner.buildScope();
+
+    expect(node.isAttached, isTrue);
+  });
+
   test('one FocusNode cannot migrate between live focus managers', () {
     final node = FocusNode();
     final firstOwner = BuildOwner();
@@ -262,4 +285,44 @@ void main() {
     expect(changes, equals(['h', 'hi', 'h']));
     app.dispose();
   });
+}
+
+/// Moves one supplied-node [Focus] to a different position, under a different
+/// parent, in a single rebuild.
+final class _Relocate extends StatefulWidget {
+  const _Relocate({required this.node, required this.onReady});
+
+  final FocusNode node;
+  final void Function(_RelocateState state) onReady;
+
+  @override
+  State<_Relocate> createState() => _RelocateState();
+}
+
+final class _RelocateState extends State<_Relocate> {
+  var _relocated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onReady(this);
+  }
+
+  void relocate() => setState(() => _relocated = true);
+
+  @override
+  Widget build(BuildContext context) {
+    final focus = Focus(
+      focusNode: widget.node,
+      child: const SizedBox(width: 1, height: 1),
+    );
+    return Column(
+      children: _relocated
+          ? [
+              const SizedBox(width: 1, height: 1),
+              Column(children: [focus]),
+            ]
+          : [focus],
+    );
+  }
 }
