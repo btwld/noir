@@ -25,10 +25,12 @@
 // instead of formatted text; `capture --cells` is already JSON either way.
 //
 // Frames and tree output go to stdout; status and errors go to stderr, so a
-// piped run captures exactly the app's rendered output:
+// piped run captures exactly the app's rendered output. Pass
+// `--verbosity=error` when redirecting: Dart writes its build-hook status to
+// stdout, which otherwise lands in front of the first captured row.
 //
 //     printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
-//       dart run scripts/noir_drive.dart example/counter.dart
+//       dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
 //
 // The exit code is the driven app's own, or 65 when a command failed.
 

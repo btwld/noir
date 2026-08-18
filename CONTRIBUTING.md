@@ -87,7 +87,11 @@ Rendered frames and tree output go to stdout while status and errors go to
 stderr, so a scripted run captures exactly what the app painted:
 
     printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
-      dart run scripts/noir_drive.dart example/counter.dart
+      dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+
+Pass `--verbosity=error` whenever the frames are piped or redirected. Dart
+writes its build-hook status to stdout, which otherwise lands in front of the
+first captured row.
 
 `scripts/driver/noir_driver.dart` exposes the same surface as a Dart client for
 scripts that assert against captures. Neither is a test harness: they drive a
