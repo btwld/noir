@@ -180,4 +180,5 @@ export 'src/widgets/text_style.dart'
         TextEffect,
         TextStyle,
         TextStyles;
+export 'src/widgets/theme.dart' show Theme, ThemeData;
 export 'src/widgets/viewport.dart' show ViewportController;

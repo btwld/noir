@@ -1,8 +1,8 @@
 // ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 
-class ThemeData extends InheritedWidget {
-  const ThemeData({
+class DemoThemeData extends InheritedWidget {
+  const DemoThemeData({
     required this.primaryColor,
     required this.textColor,
     required super.child,
@@ -12,14 +12,14 @@ class ThemeData extends InheritedWidget {
   final Color primaryColor;
   final Color textColor;
 
-  static ThemeData of(BuildContext context) {
-    final result = context.dependOnInheritedWidgetOfExactType<ThemeData>();
-    assert(result != null, 'No ThemeData found in context');
+  static DemoThemeData of(BuildContext context) {
+    final result = context.dependOnInheritedWidgetOfExactType<DemoThemeData>();
+    assert(result != null, 'No DemoThemeData found in context');
     return result!;
   }
 
   @override
-  bool updateShouldNotify(ThemeData oldWidget) =>
+  bool updateShouldNotify(DemoThemeData oldWidget) =>
       oldWidget.primaryColor != primaryColor ||
       oldWidget.textColor != textColor;
 }
@@ -31,7 +31,7 @@ class ThemedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData.of(context);
+    final theme = DemoThemeData.of(context);
     return Text(text, style: TextStyle(color: theme.textColor));
   }
 }
@@ -50,7 +50,7 @@ class _ThemeDependencyStatusState extends State<_ThemeDependencyStatus> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _derivedTextColor = ThemeData.of(context).textColor;
+    _derivedTextColor = DemoThemeData.of(context).textColor;
     _dependencyUpdates++;
   }
 
@@ -58,7 +58,7 @@ class _ThemeDependencyStatusState extends State<_ThemeDependencyStatus> {
   Widget build(BuildContext context) {
     // Noir snapshots dependencies per build, so reassert the registration
     // without deriving presentation state during ordinary reconciliation.
-    ThemeData.of(context);
+    DemoThemeData.of(context);
     return Text(
       'Dependency updates: $_dependencyUpdates',
       style: TextStyle(color: _derivedTextColor),
@@ -110,7 +110,7 @@ class _ThemedAppState extends State<ThemedApp> {
   @override
   Widget build(BuildContext context) {
     final theme = _isForest ? _forest : _ocean;
-    return ThemeData(
+    return DemoThemeData(
       primaryColor: theme.primaryColor,
       textColor: theme.textColor,
       child: Focus(
@@ -139,7 +139,7 @@ class _ThemeSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData.of(context);
+    final theme = DemoThemeData.of(context);
     return Container(color: theme.primaryColor, child: child);
   }
 }

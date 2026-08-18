@@ -2,6 +2,13 @@
 
 ## 0.0.1-alpha.1
 
+- Added `Theme` and `ThemeData`: a flat, inherited color-token palette that
+  built-in widgets resolve against as
+  `explicitParameter ?? Theme.maybeOf(context)?.token ?? widgetDefault`.
+  `ThemeData.dark` reproduces the literals the built-in widgets already used,
+  so an app with no `Theme` ancestor renders unchanged. The renamed
+  `DemoThemeData` in `example/inherited_example.dart` no longer shadows the
+  real API.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

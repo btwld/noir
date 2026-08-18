@@ -201,6 +201,7 @@ void main() {
         'TextStyle',
         'TextStyles',
       },
+      'src/widgets/theme.dart': {'Theme', 'ThemeData'},
       'src/widgets/viewport.dart': {'ViewportController'},
     };
 
@@ -294,8 +295,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(169),
-      reason: 'The high-level surface is locked at exactly 169 symbols.',
+      hasLength(171),
+      reason: 'The high-level surface is locked at exactly 171 symbols.',
     );
   });
 
