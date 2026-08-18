@@ -62,21 +62,15 @@ Always dispose application handles, focus nodes, editing controllers,
 notifiers, and animation controllers in the same ownership layer that created
 them.
 
-## Driving a live app during development
+## Drive mode is not a test harness
 
-Setting `NOIR_DRIVE=1` in the environment makes `runTuiApp` mount any
-application headlessly and publish an `ext.noir.driver.*` VM-service surface:
-capture the rendered frame (characters, 24-bit colors, cursor), inspect the
-widget tree, inject input bytes through the production ANSI parser, resize the
-emulated terminal, and quit — with no real terminal and no change to the app.
-`NOIR_DRIVE_SIZE=WxH` sets the emulated size (default 80×24).
-
-The development repository ships a `noir_drive` CLI and a `NoirDriver` Dart
-client over that surface for interactive inspection and scripted checks, such
-as viewing an app's design at several terminal sizes. The extension surface is
-development tooling, not stable package API. Use it to look at and drive a
-running app; keep automated assertions in ordinary tests against the state
-owners and seams described above.
+`NOIR_DRIVE=1` mounts any app headlessly and exposes an `ext.noir.driver.*`
+VM-service surface for capturing frames, inspecting the tree, and injecting
+input — the main skill file's "See and drive a running app" section covers it.
+It exists for *looking at and driving* a live app during development. Keep
+automated assertions in ordinary tests against the state owners and seams
+described above: the same frames are reachable in-process, faster, and without
+a VM-service dependency.
 
 ## Framework contributor tests
 
