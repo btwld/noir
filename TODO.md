@@ -126,6 +126,17 @@ authorization.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
 - Decorated box content can escape a clipped viewport in some overflow cases.
+  Observed via a drive-mode sweep: `example/layout_demo.dart` paints stray
+  border fragments below its footer at 80x24.
+- `RenderDecoratedBox` lays its child out with its own constraints rather than
+  insetting them by the border, so when content fills the box it paints over
+  the border cells. Observed: `example/focus_form.dart` at 24x8 merges the
+  outer bottom border with an inner field's top border on one row. Flutter
+  insets the child by the decoration's border; adopting that changes layout
+  for every bordered container and needs its own reviewed pass.
+- `example/bindings_validation.dart` requires a real terminal stdin lease by
+  design and exits with code 70 under drive mode; it is the one example the
+  drive tool cannot run.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
