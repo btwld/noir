@@ -155,6 +155,7 @@ export 'src/widgets/intents.dart'
         ScrollToStartIntent,
         ScrollUpIntent,
         SubmitTextIntent;
+export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
 export 'src/widgets/padding.dart' show Padding;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/rich_text.dart' show RichText;

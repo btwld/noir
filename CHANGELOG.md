@@ -9,6 +9,11 @@
   so an app with no `Theme` ancestor renders unchanged. The renamed
   `DemoThemeData` in `example/inherited_example.dart` no longer shadows the
   real API.
+- Added `ListView`, a windowed list that calls its row builder only for the
+  rows currently on screen, so list cost tracks the viewport rather than the
+  item count. One widget covers both a selectable list (arrows, `j`/`k`,
+  paging, Home/End, Enter, click) and a plain scrolling one; the mouse wheel
+  scrolls either.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

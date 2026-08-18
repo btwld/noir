@@ -158,6 +158,7 @@ void main() {
         'ScrollUpIntent',
         'SubmitTextIntent',
       },
+      'src/widgets/list_view.dart': {'ListView', 'ListViewItemBuilder'},
       'src/widgets/padding.dart': {'Padding'},
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/rich_text.dart': {'RichText'},
@@ -295,8 +296,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(171),
-      reason: 'The high-level surface is locked at exactly 171 symbols.',
+      hasLength(173),
+      reason: 'The high-level surface is locked at exactly 173 symbols.',
     );
   });
 

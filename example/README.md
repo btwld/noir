@@ -29,6 +29,7 @@ dart run example/main.dart
 | `dart run example/like_reactor.dart` | Interactive `AnimationController` particle reactor with overlapping keyboard and mouse-triggered heart bursts. |
 | `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
 | `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
+| `dart run example/listview_demo.dart` | Windowed `ListView` in both modes — selectable and plain scroll — over 500 rows, with live builder-call counters. |
 | `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Combined Select, ScrollBox, and TextArea tour with Ctrl+D submission. |
 
