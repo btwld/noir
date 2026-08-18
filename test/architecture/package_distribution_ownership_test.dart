@@ -267,7 +267,7 @@ void main() {
       'native encoded storage',
       'deployment target of 12',
       'macos 12',
-      'escape a clipped viewport',
+      'straddles a clipped viewport edge',
       'low-level native operation failures',
       'main-screen row 1/column 1',
       'absolute build/debug paths',

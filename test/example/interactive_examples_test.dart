@@ -406,6 +406,52 @@ void main() {
     }
   });
 
+  test(
+    'layout showcase PageDown does not leak box drawing onto the footer',
+    () async {
+      final app = createTuiTestApp(FlexLayoutShowcase(onQuit: () {}));
+
+      try {
+        await _settleAutofocus(app);
+        app.mockInput.pressPageDown();
+        await _settleInput();
+
+        final frame = _render(app);
+        expect(frame, contains('End'));
+        final lines = frame.split('\n');
+        final footer = lines.indexWhere(
+          (line) => line.contains('Flex Layout Demo'),
+        );
+        expect(footer, greaterThanOrEqualTo(0), reason: frame);
+        final rows = <int>[footer, if (footer + 1 < lines.length) footer + 1];
+        const boxDrawing = <String>[
+          '│',
+          '─',
+          '┌',
+          '┐',
+          '└',
+          '┘',
+          '┬',
+          '┴',
+          '├',
+          '┤',
+          '┼',
+        ];
+        for (final row in rows) {
+          for (final glyph in boxDrawing) {
+            expect(
+              lines[row],
+              isNot(contains(glyph)),
+              reason: 'row $row leaked $glyph: ${lines[row]}',
+            );
+          }
+        }
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
   test('widget tour Shift+Tab wraps to the TextArea', () async {
     final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));
 

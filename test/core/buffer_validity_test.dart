@@ -282,6 +282,17 @@ void main() {
       expect(buffer.getDirectAccess().getAttributes(2, 1), 0xFF);
     });
 
+    test('clipped drawBox drops a box that misses the clip entirely', () {
+      clip(0, 0, 20, 2).drawBox(1, 3, 8, 2, _box, _fg, _bg);
+      final access = buffer.getDirectAccess();
+      for (var y = 0; y < 5; y++) {
+        expect(access.getChar(1, y), ' ', reason: 'row $y');
+      }
+      // A box overlapping the clip still reaches native drawBox.
+      clip(0, 0, 20, 2).drawBox(1, 0, 8, 2, _box, _fg, _bg);
+      expect(buffer.getDirectAccess().getChar(1, 0), isNot(' '));
+    });
+
     test('invalidated clipped views fail closed even outside the clip', () {
       final view = clip(0, 0, 2, 2);
       renderer.render(force: true);
@@ -290,6 +301,7 @@ void main() {
         () => view.setCellWithAlphaBlending(50, 50, 'A', _fg, _bg, 0),
         () => view.drawText('x', 50, 50, _fg),
         () => view.fillRect(50, 50, 1, 1, _bg),
+        () => view.drawBox(50, 50, 2, 2, _box, _fg, _bg),
       ]) {
         expect(call, throwsA(_invalidatedState));
       }
