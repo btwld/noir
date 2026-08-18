@@ -1,5 +1,7 @@
 import 'package:noir/noir.dart';
-import 'package:noir/noir_low_level.dart' show Axis, RenderBox, RenderFlex;
+import 'package:noir/noir_low_level.dart'
+    show Axis, PaintingContext, RenderBox, RenderFlex;
+import 'package:noir/src/painting/tui_canvas.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
@@ -21,6 +23,24 @@ void main() {
       expect(flex.childrenBoxes.single, same(liveChild));
       flex.layout(const BoxConstraints.tight(width: 6, height: 1));
       expect(liveChild.width, 6);
+    });
+
+    test('overflow clip restores the canvas when a child paint throws', () {
+      final flex = RenderFlex(direction: Axis.vertical)
+        ..add(_ThrowingPaintBox())
+        ..add(_ThrowingPaintBox())
+        ..layout(const BoxConstraints.tight(width: 1, height: 1));
+
+      final canvas = createTuiCanvas();
+      expect(
+        () => flex.paint(PaintingContext(canvas), Offset.zero),
+        throwsStateError,
+      );
+      expect(
+        canvas.restore,
+        throwsStateError,
+        reason: 'a leftover save would let restore succeed',
+      );
     });
 
     group('min constraint handling', () {
@@ -330,6 +350,18 @@ void main() {
       });
     });
   });
+}
+
+class _ThrowingPaintBox extends RenderBox {
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    size = Size(constraints.constrainWidth(1), constraints.constrainHeight(1));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    throw StateError('child paint failed');
+  }
 }
 
 class _FlexRemovalProbeBox extends RenderBox {

@@ -328,11 +328,14 @@ class RenderFlex extends RenderBox {
       return;
     }
     context.canvas.save();
-    context.canvas.clipRect(
-      Rect.fromLTWH(offset.dx + x, offset.dy + y, size.width, size.height),
-    );
-    super.paint(context, offset);
-    context.canvas.restore();
+    try {
+      context.canvas.clipRect(
+        Rect.fromLTWH(offset.dx + x, offset.dy + y, size.width, size.height),
+      );
+      super.paint(context, offset);
+    } finally {
+      context.canvas.restore();
+    }
   }
 
   List<_ChildPosition> _computePositions({

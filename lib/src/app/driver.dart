@@ -255,6 +255,13 @@ final class DriverHost {
   /// Resizes the emulated terminal and reports the applied dimensions.
   Map<String, Object?> resize(int width, int height) {
     _checkNotDisposed();
+    if (width <= 0 || height <= 0) {
+      throw ArgumentError.value(
+        '${width}x$height',
+        'size',
+        'width and height must be positive',
+      );
+    }
     _binding.handleResize(width, height);
     final buffer = _renderer.debugCurrentBuffer;
     return <String, Object?>{
@@ -433,6 +440,9 @@ Future<developer.ServiceExtensionResponse> _handleResize(
   final height = int.tryParse(parameters['height'] ?? '');
   if (width == null || height == null) {
     return _invalidParams('width and height must be integers.');
+  }
+  if (width <= 0 || height <= 0) {
+    return _invalidParams('width and height must be positive.');
   }
   return _run((host) => host.resize(width, height));
 }

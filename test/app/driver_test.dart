@@ -144,6 +144,20 @@ void main() {
       expect(lines.first, contains('_Counter'));
     });
 
+    test('resize rejects non-positive dimensions', () {
+      final host = DriverHost.create(width: 12, height: 2);
+      addTearDown(host.dispose);
+      host.binding
+        ..runApp(const _Counter())
+        ..debugFlushFrame();
+
+      expect(() => host.resize(0, 10), throwsArgumentError);
+      expect(() => host.resize(10, 0), throwsArgumentError);
+      expect(() => host.resize(-1, 4), throwsArgumentError);
+      expect(host.info()['width'], 12);
+      expect(host.info()['height'], 2);
+    });
+
     test('resize republishes the painted dimensions', () {
       final host = DriverHost.create(width: 12, height: 2);
       addTearDown(host.dispose);

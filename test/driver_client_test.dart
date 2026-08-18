@@ -61,6 +61,27 @@ void main() {
     });
   });
 
+  test('pollFrameAdvance returns as soon as frames increase', () async {
+    var frames = 0;
+    final advanced = await pollFrameAdvance(
+      frames: () async => ++frames,
+      before: 0,
+    );
+
+    expect(advanced, isTrue);
+    expect(frames, 1);
+  });
+
+  test('pollFrameAdvance returns false when frames never increase', () async {
+    final advanced = await pollFrameAdvance(
+      frames: () async => 0,
+      before: 0,
+      cap: Duration.zero,
+    );
+
+    expect(advanced, isFalse);
+  });
+
   test('encodeText parses back as one key event per character', () {
     final events = parseAnsiInput(encodeText('hi ✓')).events;
 

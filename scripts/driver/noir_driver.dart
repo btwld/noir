@@ -28,6 +28,30 @@ import 'package:vm_service/vm_service_io.dart';
 
 import 'ansi_keys.dart';
 
+/// Polls [frames] until it is greater than [before], or [cap] expires.
+///
+/// Used after injected input so a continuously animating app does not pay
+/// the full `waitStable` timeout. Returns whether a later frame arrived.
+Future<bool> pollFrameAdvance({
+  required Future<int> Function() frames,
+  required int before,
+  Duration cap = const Duration(milliseconds: 100),
+  Future<void> Function(Duration duration) delay = _pollDelay,
+}) async {
+  final deadline = DateTime.now().add(cap);
+  while (true) {
+    if (await frames() > before) {
+      return true;
+    }
+    if (!DateTime.now().isBefore(deadline)) {
+      return false;
+    }
+    await delay(const Duration(milliseconds: 10));
+  }
+}
+
+Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
+
 /// Drives one Noir app process over its `ext.noir.driver.*` surface.
 class NoirDriver {
   NoirDriver._({
@@ -146,8 +170,9 @@ class NoirDriver {
 
   /// Waits for the app to stop scheduling frames.
   ///
-  /// Returns false when [timeout] expires first, which is the normal answer
-  /// for a continuously animating app; capture keeps working either way.
+  /// This is an explicit idle query. Input and resize settle on a later
+  /// frame count instead, because a continuously animating app never goes
+  /// quiet. Returns false when [timeout] expires first; capture still works.
   Future<bool> waitStable({
     Duration timeout = const Duration(seconds: 2),
   }) async {
@@ -201,11 +226,12 @@ class NoirDriver {
 
   /// Resizes the emulated terminal and reports the applied dimensions.
   Future<({int width, int height})> resize(int width, int height) async {
+    final before = (await info()).frames;
     final json = await _call(
       'resize',
       args: <String, Object?>{'width': '$width', 'height': '$height'},
     );
-    await waitStable();
+    await pollFrameAdvance(frames: _frames, before: before);
     return (width: json['width']! as int, height: json['height']! as int);
   }
 
@@ -261,14 +287,18 @@ class NoirDriver {
   }
 
   Future<void> _sendBytes(List<int> bytes) async {
+    final before = (await info()).frames;
     await _call(
       'sendBytes',
       args: <String, Object?>{'bytes': base64Encode(bytes)},
     );
-    // Settle here rather than in `capture`: input is what makes a frame, and
-    // a caller that captures twice in a row should pay for one wait, not two.
-    await waitStable();
+    // Wait for a paint, not for the scheduler to go idle. A pulsing app
+    // never reports stable, and the frame from this input is already in
+    // `info().frames`.
+    await pollFrameAdvance(frames: _frames, before: before);
   }
+
+  Future<int> _frames() async => (await info()).frames;
 
   Future<Map<String, dynamic>> _call(
     String method, {
