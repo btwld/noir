@@ -60,9 +60,7 @@ final class PubApiCatalog implements PubCatalog {
       throw const PubCatalogException('Search pub.dev');
     }
     return PackageSearchPage(
-      query: normalized,
       page: page,
-      sort: sort,
       packages: List.unmodifiable(
         result.packages.map((package) => package.package),
       ),
@@ -72,6 +70,9 @@ final class PubApiCatalog implements PubCatalog {
 
   @override
   Future<PubPackageSnapshot> loadPackage(String name) async {
+    // Only the package record is required. Every other endpoint is optional,
+    // so a failing score, publisher, or advisory lookup renders its absent
+    // state instead of losing the package the user actually asked for.
     final packageFuture = _client.packageInfo(name);
     final metricsFuture = _optional(_client.packageMetrics(name));
     final publisherFuture = _optional(_client.packagePublisher(name));

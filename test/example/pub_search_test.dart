@@ -15,9 +15,7 @@ void main() {
       ..searchResults.add(
         Future.value(
           PackageSearchPage(
-            query: 'noir',
             page: 1,
-            sort: PackageSort.top,
             packages: ['noir', 'noir_router'],
             hasNextPage: false,
           ),
@@ -74,9 +72,7 @@ void main() {
 
       newSearch.complete(
         PackageSearchPage(
-          query: 'terminal',
           page: 1,
-          sort: PackageSort.top,
           packages: ['new_result'],
           hasNextPage: false,
         ),
@@ -84,9 +80,7 @@ void main() {
       await _settle(app);
       oldSearch.complete(
         PackageSearchPage(
-          query: 'noir',
           page: 1,
-          sort: PackageSort.top,
           packages: ['stale_result'],
           hasNextPage: false,
         ),
@@ -105,21 +99,13 @@ void main() {
       ..searchResults.addAll([
         Future.value(
           PackageSearchPage(
-            query: 's',
             page: 1,
-            sort: PackageSort.top,
             packages: ['searchable'],
             hasNextPage: false,
           ),
         ),
         Future.value(
-          PackageSearchPage(
-            query: 's',
-            page: 1,
-            sort: PackageSort.text,
-            packages: ['sorted'],
-            hasNextPage: false,
-          ),
+          PackageSearchPage(page: 1, packages: ['sorted'], hasNextPage: false),
         ),
       ]);
     final app = createTuiTestApp(
@@ -128,6 +114,7 @@ void main() {
         onQuit: () {},
         initialQuery: '',
         autoSearch: false,
+        connection: PubSearchConnection.offline,
       ),
       width: 100,
       height: 32,
@@ -135,6 +122,9 @@ void main() {
 
     try {
       await _settle(app);
+      // A caller-supplied catalog is not pub.dev, and the header says so.
+      expect(_render(app), contains('OFFLINE DATA'));
+
       app.mockInput
         ..typeText('s')
         ..pressEnter();
@@ -157,13 +147,7 @@ void main() {
     final catalog = _FakePubCatalog()
       ..searchResults.add(
         Future.value(
-          PackageSearchPage(
-            query: 'noir',
-            page: 1,
-            sort: PackageSort.top,
-            packages: ['noir'],
-            hasNextPage: false,
-          ),
+          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
         ),
       );
     final app = createTuiTestApp(
@@ -195,13 +179,7 @@ void main() {
     final catalog = _FakePubCatalog()
       ..searchResults.add(
         Future.value(
-          PackageSearchPage(
-            query: 'noir',
-            page: 1,
-            sort: PackageSort.top,
-            packages: ['noir'],
-            hasNextPage: false,
-          ),
+          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
         ),
       )
       ..detailResults['noir'] = Future.value(examplePubPackage);
@@ -235,13 +213,7 @@ void main() {
       final catalog = _FakePubCatalog()
         ..searchResults.add(
           Future.value(
-            PackageSearchPage(
-              query: 'noir',
-              page: 1,
-              sort: PackageSort.top,
-              packages: ['noir'],
-              hasNextPage: false,
-            ),
+            PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
           ),
         )
         ..detailResults['noir'] = Future.value(examplePubPackage);
@@ -300,13 +272,7 @@ void main() {
         ..searchResults.addAll([
           failedSearch.future,
           Future.value(
-            PackageSearchPage(
-              query: 'noir',
-              page: 1,
-              sort: PackageSort.top,
-              packages: [],
-              hasNextPage: false,
-            ),
+            PackageSearchPage(page: 1, packages: [], hasNextPage: false),
           ),
         ]);
       final app = createTuiTestApp(
@@ -341,9 +307,7 @@ void main() {
         ..searchResults.addAll([
           Future.value(
             PackageSearchPage(
-              query: 'noir',
               page: 1,
-              sort: PackageSort.top,
               packages: ['last_good_package'],
               hasNextPage: false,
             ),
@@ -381,27 +345,17 @@ void main() {
         ..searchResults.addAll([
           Future.value(
             PackageSearchPage(
-              query: 'noir',
               page: 1,
-              sort: PackageSort.top,
               packages: const ['noir'],
               hasNextPage: false,
             ),
           ),
           Future.value(
-            PackageSearchPage(
-              query: 'noir',
-              page: 1,
-              sort: PackageSort.text,
-              packages: const [],
-              hasNextPage: false,
-            ),
+            PackageSearchPage(page: 1, packages: const [], hasNextPage: false),
           ),
           Future.value(
             PackageSearchPage(
-              query: 'noirx',
               page: 1,
-              sort: PackageSort.text,
               packages: const ['recovered'],
               hasNextPage: false,
             ),
@@ -444,9 +398,7 @@ void main() {
       ..searchResults.add(
         Future.value(
           PackageSearchPage(
-            query: 'noir',
             page: 1,
-            sort: PackageSort.top,
             packages: const ['new_catalog_package'],
             hasNextPage: false,
           ),
@@ -473,9 +425,7 @@ void main() {
 
       oldSearch.complete(
         PackageSearchPage(
-          query: 'noir',
           page: 1,
-          sort: PackageSort.top,
           packages: const ['stale_old_package'],
           hasNextPage: false,
         ),
@@ -494,28 +444,18 @@ void main() {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
         Future.value(
-          PackageSearchPage(
-            query: 'noir',
-            page: 1,
-            sort: PackageSort.top,
-            packages: ['page_one'],
-            hasNextPage: true,
-          ),
+          PackageSearchPage(page: 1, packages: ['page_one'], hasNextPage: true),
         ),
         Future.value(
           PackageSearchPage(
-            query: 'noir',
             page: 2,
-            sort: PackageSort.top,
             packages: ['page_two'],
             hasNextPage: false,
           ),
         ),
         Future.value(
           PackageSearchPage(
-            query: 'noir',
             page: 1,
-            sort: PackageSort.top,
             packages: ['page_one_again'],
             hasNextPage: true,
           ),
@@ -545,18 +485,98 @@ void main() {
     }
   });
 
+  test('starts the next page at its first result', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        Future.value(
+          PackageSearchPage(
+            page: 1,
+            packages: ['page1_a', 'page1_b', 'page1_c'],
+            hasNextPage: true,
+          ),
+        ),
+        Future.value(
+          PackageSearchPage(
+            page: 2,
+            packages: ['page2_a', 'page2_b', 'page2_c'],
+            hasNextPage: false,
+          ),
+        ),
+      ])
+      ..detailResults['page2_a'] = Future.value(examplePubPackage);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressArrow(ArrowDirection.down)
+        ..pressArrow(ArrowDirection.down);
+      await _settle(app);
+
+      // Paging replaces the list, so the third-row highlight must not carry
+      // over onto an unrelated package.
+      app.mockInput.typeText('n');
+      await _settle(app);
+      expect(_render(app), contains('page2_a'));
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      expect(catalog.detailCalls, ['page2_a']);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('names the requested page while that page is loading', () async {
+    final secondPage = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        Future.value(
+          PackageSearchPage(page: 1, packages: ['page_one'], hasNextPage: true),
+        ),
+        secondPage.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      expect(_render(app), contains('PAGE  1'));
+
+      app.mockInput
+        ..pressTab()
+        ..typeText('n');
+      await _settle(app);
+      // The page 2 request is still in flight; the header must not keep
+      // advertising the page the user already left.
+      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_render(app), contains('PAGE  2'));
+
+      secondPage.completeError(Exception('page unavailable'));
+      await _settle(app);
+      // The last good page 1 results stay on screen, so the header follows.
+      expect(_render(app), contains('Search unavailable'));
+      expect(_render(app), contains('page_one'));
+      expect(_render(app), contains('PAGE  1'));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('retries a failed package detail request', () async {
     final failedDetail = Completer<PubPackageSnapshot>();
     final catalog = _FakePubCatalog()
       ..searchResults.add(
         Future.value(
-          PackageSearchPage(
-            query: 'noir',
-            page: 1,
-            sort: PackageSort.top,
-            packages: ['noir'],
-            hasNextPage: false,
-          ),
+          PackageSearchPage(page: 1, packages: ['noir'], hasNextPage: false),
         ),
       )
       ..detailResults['noir'] = failedDetail.future;

@@ -5,6 +5,7 @@ import 'package:noir/noir.dart';
 import 'catalog.dart';
 import 'models.dart';
 import 'package_detail.dart';
+import 'theme.dart';
 
 /// Which full-screen surface is currently visible.
 enum PubSearchView {
@@ -50,7 +51,6 @@ class PubSearchApp extends StatefulWidget {
     this.onQuit,
     this.initialQuery = 'noir',
     this.autoSearch = true,
-    this.autofocusSearch = true,
     this.connection = PubSearchConnection.live,
     super.key,
   });
@@ -67,9 +67,6 @@ class PubSearchApp extends StatefulWidget {
   /// Whether to search [initialQuery] after mounting.
   final bool autoSearch;
 
-  /// Whether the query receives initial focus.
-  final bool autofocusSearch;
-
   /// Status shown beside the search title.
   final PubSearchConnection connection;
 
@@ -78,13 +75,6 @@ class PubSearchApp extends StatefulWidget {
 }
 
 class _PubSearchAppState extends State<PubSearchApp> {
-  static const _background = Color(0.025, 0.045, 0.055);
-  static const _panel = Color(0.04, 0.075, 0.085);
-  static const _teal = Color(0.39, 0.85, 0.78);
-  static const _gold = Color(0.95, 0.72, 0.32);
-  static const _muted = Color(0.42, 0.51, 0.56);
-  static const _border = Color(0.16, 0.28, 0.30);
-
   final _scopeNode = FocusScopeNode(debugLabel: 'pub search');
   final _searchFocus = FocusNode(debugLabel: 'pub query');
   final _resultsFocus = FocusNode(debugLabel: 'pub results');
@@ -104,14 +94,16 @@ class _PubSearchAppState extends State<PubSearchApp> {
   String? _error;
   var _selectedIndex = 0;
   var _generation = 0;
-  late bool _autofocusSearch;
+  // Page currently requested, which leads _searchPage while a request is in
+  // flight so the header never advertises a page the user is not waiting for.
+  var _page = 1;
+  var _autofocusSearch = true;
   var _autofocusResults = false;
 
   @override
   void initState() {
     super.initState();
     _queryController = TextEditingController(text: widget.initialQuery);
-    _autofocusSearch = widget.autofocusSearch;
     // Both panels paint a focus-colored border from this state's build, and a
     // plain focus move never marks this element dirty on its own.
     _searchFocus.addListener(_handleFocusChanged);
@@ -137,8 +129,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _activeTab = PackageDetailTab.overview;
     _selectedPackage = null;
     _selectedIndex = 0;
+    _page = 1;
     _error = null;
-    _autofocusSearch = widget.autofocusSearch;
+    _autofocusSearch = true;
     _autofocusResults = false;
     _detailScroll.jumpTo(0);
 
@@ -180,7 +173,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
       _error = null;
       _autofocusResults = keepResultsFocus;
       _autofocusSearch = !keepResultsFocus;
-      if (page == 1) _selectedIndex = 0;
+      _page = page;
+      // Every search replaces the whole list, so a carried-over highlight would
+      // point at an unrelated package on the incoming page.
+      _selectedIndex = 0;
     });
     try {
       final result = await widget.catalog.search(
@@ -205,6 +201,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
       setState(() {
         _searchState = PubLoadState.error;
         _error = '$error';
+        // The last good results stay on screen, so the header follows them
+        // back rather than naming the page that just failed.
+        _page = _searchPage?.page ?? 1;
       });
     }
   }
@@ -343,7 +342,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   );
 
   Widget _buildSearchView() => Container(
-    color: _background,
+    color: pubBackground,
     padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -352,7 +351,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
           children: [
             const Text(
               'PUB / FIND',
-              style: TextStyle(color: _teal, fontWeight: FontWeight.bold),
+              style: TextStyle(color: pubAccent, fontWeight: FontWeight.bold),
             ),
             const Expanded(child: SizedBox()),
             Text(
@@ -361,37 +360,39 @@ class _PubSearchAppState extends State<PubSearchApp> {
                   : '○ OFFLINE DATA',
               style: TextStyle(
                 color: widget.connection == PubSearchConnection.live
-                    ? _teal
-                    : _muted,
+                    ? pubAccent
+                    : pubMuted,
               ),
             ),
           ],
         ),
         const Text(
           'Search the Dart package ecosystem without leaving the terminal.',
-          style: TextStyle(color: _muted),
+          style: TextStyle(color: pubMuted),
         ),
         const Text(
           'Examples  riverpod   sdk:flutter   topic:terminal',
-          style: TextStyle(color: _muted),
+          style: TextStyle(color: pubMuted),
         ),
         const SizedBox(height: 1),
         Container(
           decoration: BoxDecoration(
-            color: _panel,
-            border: Border.all(color: _searchFocus.hasFocus ? _teal : _border),
+            color: pubPanel,
+            border: Border.all(
+              color: _searchFocus.hasFocus ? pubAccent : pubBorder,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('QUERY', style: TextStyle(color: _muted)),
+              const Text('QUERY', style: TextStyle(color: pubMuted)),
               TextInput(
                 controller: _queryController,
                 focusNode: _searchFocus,
                 autofocus: _autofocusSearch,
                 placeholder: 'package name or pub.dev search expression',
-                cursorColor: _gold,
+                cursorColor: pubHighlight,
                 onSubmit: () => unawaited(_runSearch()),
               ),
             ],
@@ -402,13 +403,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
           children: [
             Text(
               'SORT  ${_sort.name.toUpperCase()}',
-              style: const TextStyle(color: _gold),
+              style: const TextStyle(color: pubHighlight),
             ),
             const Expanded(child: SizedBox()),
-            Text(
-              'PAGE  ${_searchPage?.page ?? 1}',
-              style: const TextStyle(color: _muted),
-            ),
+            Text('PAGE  $_page', style: const TextStyle(color: pubMuted)),
           ],
         ),
         const SizedBox(height: 1),
@@ -416,7 +414,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         const SizedBox(height: 1),
         const Text(
           'Enter search / inspect   Tab focus   ↑↓ choose   s sort   n/p page   Esc quit',
-          style: TextStyle(color: _muted),
+          style: TextStyle(color: pubMuted),
         ),
       ],
     ),
@@ -424,22 +422,22 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Widget _buildResults() => Container(
     decoration: BoxDecoration(
-      color: _panel,
-      border: Border.all(color: _resultsFocus.hasFocus ? _teal : _border),
+      color: pubPanel,
+      border: Border.all(color: _resultsFocus.hasFocus ? pubAccent : pubBorder),
     ),
     padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
     child: switch (_searchState) {
       PubLoadState.idle => const Text(
         'Type a query and press Enter.',
-        style: TextStyle(color: _muted),
+        style: TextStyle(color: pubMuted),
       ),
       PubLoadState.loading => const Text(
         'Searching pub.dev…',
-        style: TextStyle(color: _gold),
+        style: TextStyle(color: pubHighlight),
       ),
       PubLoadState.empty => const Text(
         'No packages found. Try a broader expression.',
-        style: TextStyle(color: _muted),
+        style: TextStyle(color: pubMuted),
       ),
       PubLoadState.error => _buildSearchError(),
       PubLoadState.ready => _buildResultList(),
@@ -455,11 +453,11 @@ class _PubSearchAppState extends State<PubSearchApp> {
         Text(_error ?? 'Unknown error'),
         const Text(
           'Edit the query or press Enter to retry.',
-          style: TextStyle(color: _muted),
+          style: TextStyle(color: pubMuted),
         ),
         if (previous != null && previous.packages.isNotEmpty) ...[
           const SizedBox(height: 1),
-          const Text('LAST RESULTS', style: TextStyle(color: _muted)),
+          const Text('LAST RESULTS', style: TextStyle(color: pubMuted)),
           Expanded(child: _buildResultList()),
         ],
       ],
@@ -473,7 +471,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       children: [
         Text(
           '${page.packages.length} PACKAGES',
-          style: const TextStyle(color: _muted),
+          style: const TextStyle(color: pubMuted),
         ),
         const SizedBox(height: 1),
         Select<String>(
@@ -482,9 +480,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
           selectedIndex: _selectedIndex,
           height: 13,
           showScrollIndicator: true,
-          backgroundColor: _panel,
+          backgroundColor: pubPanel,
           selectedBackgroundColor: const Color(0.08, 0.23, 0.22),
-          selectedTextColor: _teal,
+          selectedTextColor: pubAccent,
           options: [
             for (final package in page.packages)
               SelectOption(name: package, value: package),
@@ -512,7 +510,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       );
     }
     return Container(
-      color: _background,
+      color: pubBackground,
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
       child: switch (_detailState) {
         PubLoadState.loading => Focus(
@@ -521,7 +519,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('PUB / PACKAGE', style: TextStyle(color: _teal)),
+              const Text('PUB / PACKAGE', style: TextStyle(color: pubAccent)),
               const SizedBox(height: 1),
               Text('Loading ${_selectedPackage ?? 'package'}…'),
             ],
@@ -542,7 +540,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
               const SizedBox(height: 1),
               const Text(
                 'r retry   Esc results',
-                style: TextStyle(color: _muted),
+                style: TextStyle(color: pubMuted),
               ),
             ],
           ),

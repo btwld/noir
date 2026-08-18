@@ -183,9 +183,7 @@ void main() {
       ),
     ];
     final page = PackageSearchPage(
-      query: 'noir',
       page: 1,
-      sort: PackageSort.top,
       packages: packages,
       hasNextPage: false,
     );

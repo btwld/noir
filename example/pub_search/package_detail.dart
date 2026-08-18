@@ -1,6 +1,7 @@
 import 'package:noir/noir.dart';
 
 import 'models.dart';
+import 'theme.dart';
 
 /// The four calm, full-width package detail sections.
 enum PackageDetailTab {
@@ -40,14 +41,6 @@ class PubPackageDetail extends StatelessWidget {
   /// Keyboard focus for scrolling.
   final FocusNode scrollFocusNode;
 
-  static const _background = Color(0.025, 0.045, 0.055);
-  static const _panel = Color(0.04, 0.075, 0.085);
-  static const _activePanel = Color(0.075, 0.17, 0.17);
-  static const _teal = Color(0.39, 0.85, 0.78);
-  static const _gold = Color(0.95, 0.72, 0.32);
-  static const _muted = Color(0.42, 0.51, 0.56);
-  static const _border = Color(0.16, 0.28, 0.30);
-
   @override
   Widget build(BuildContext context) {
     final content = switch (activeTab) {
@@ -57,25 +50,25 @@ class PubPackageDetail extends StatelessWidget {
       PackageDetailTab.health => _buildHealth(package),
     };
     return Container(
-      color: _background,
+      color: pubBackground,
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('PUB / PACKAGE', style: TextStyle(color: _muted)),
+          const Text('PUB / PACKAGE', style: TextStyle(color: pubMuted)),
           RichText(
             text: TextSpan(
               children: [
                 TextSpan(
                   text: package.name,
                   style: const TextStyle(
-                    color: _teal,
+                    color: pubAccent,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextSpan(
                   text: '  ${package.version}',
-                  style: const TextStyle(color: _gold),
+                  style: const TextStyle(color: pubHighlight),
                 ),
               ],
             ),
@@ -83,7 +76,10 @@ class PubPackageDetail extends StatelessWidget {
           Text(package.description, maxLines: 2),
           Text(
             'dart pub add ${package.name}',
-            style: const TextStyle(color: _gold, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: pubHighlight,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 1),
           _headlineMetrics(package),
@@ -98,16 +94,16 @@ class PubPackageDetail extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: _panel,
-                border: Border.all(color: _border),
+                color: pubPanel,
+                border: Border.all(color: pubBorder),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               child: ScrollBox(
                 controller: scrollController,
                 focusNode: scrollFocusNode,
                 autofocus: true,
-                scrollbarColor: _teal,
-                trackColor: _border,
+                scrollbarColor: pubAccent,
+                trackColor: pubBorder,
                 child: content,
               ),
             ),
@@ -115,7 +111,7 @@ class PubPackageDetail extends StatelessWidget {
           const SizedBox(height: 1),
           const Text(
             '←→ / 1–4 section   ↑↓ / PgUp/PgDn scroll   / search   Esc results',
-            style: TextStyle(color: _muted),
+            style: TextStyle(color: pubMuted),
           ),
         ],
       ),
@@ -125,13 +121,13 @@ class PubPackageDetail extends StatelessWidget {
   Widget _tabLabel(PackageDetailTab tab) {
     final active = tab == activeTab;
     return Container(
-      color: active ? _activePanel : _background,
+      color: active ? pubActivePanel : pubBackground,
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Text(
         '${tab.index + 1} ${tab.name.toUpperCase()}',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: active ? _teal : _muted,
+          color: active ? pubAccent : pubMuted,
           fontWeight: active ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -160,12 +156,9 @@ Widget _metric(String value, String label) => Column(
   children: [
     Text(
       value,
-      style: const TextStyle(
-        color: PubPackageDetail._gold,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(color: pubHighlight, fontWeight: FontWeight.bold),
     ),
-    Text(label, style: const TextStyle(color: PubPackageDetail._muted)),
+    Text(label, style: const TextStyle(color: pubMuted)),
   ],
 );
 
@@ -284,10 +277,7 @@ Widget _buildHealth(PubPackageSnapshot package) {
       ..._section('WEEKLY DOWNLOADS', [
         Text(
           downloadSparkline(recentWeekly),
-          style: const TextStyle(
-            color: PubPackageDetail._teal,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: pubAccent, fontWeight: FontWeight.bold),
         ),
         _fact(
           'HISTORY',
@@ -346,7 +336,7 @@ Widget _buildHealth(PubPackageSnapshot package) {
         for (final advisory in package.advisories) ...[
           Text(
             '${advisory.id} — ${advisory.summary ?? 'No summary'}',
-            style: const TextStyle(color: PubPackageDetail._gold),
+            style: const TextStyle(color: pubHighlight),
           ),
           _fact('DETAILS', advisory.details),
           _fact('AFFECTED', _joined(advisory.affectedVersions)),
@@ -372,10 +362,7 @@ Widget _buildHealth(PubPackageSnapshot package) {
 List<Widget> _section(String title, List<Widget> children) => [
   Text(
     title,
-    style: const TextStyle(
-      color: PubPackageDetail._muted,
-      fontWeight: FontWeight.bold,
-    ),
+    style: const TextStyle(color: pubMuted, fontWeight: FontWeight.bold),
   ),
   const SizedBox(height: 1),
   ...children,
@@ -387,7 +374,7 @@ Widget _fact(String label, String? value) => RichText(
     children: [
       TextSpan(
         text: '${label.padRight(19)} ',
-        style: const TextStyle(color: PubPackageDetail._muted),
+        style: const TextStyle(color: pubMuted),
       ),
       TextSpan(text: _available(value)),
     ],

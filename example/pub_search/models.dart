@@ -28,24 +28,20 @@ enum PackageSort {
 }
 
 /// One immutable page of package-name search results.
+///
+/// The page deliberately does not echo the query or sort order back. The
+/// application already owns both, so repeating them here would create a second
+/// source of truth that could disagree with the controls on screen.
 final class PackageSearchPage {
   /// Creates a result page.
   PackageSearchPage({
-    required this.query,
     required this.page,
-    required this.sort,
     required List<String> packages,
     required this.hasNextPage,
   }) : packages = List.unmodifiable(packages);
 
-  /// Normalized query used for the request.
-  final String query;
-
   /// One-based result page.
   final int page;
-
-  /// Active sort order.
-  final PackageSort sort;
 
   /// Package names returned by pub.dev.
   final List<String> packages;
@@ -849,6 +845,11 @@ PackageDependencySummary _dependencySummary(
   ),
 };
 
+/// Renders analyzer diagnostics through an explicit field allowlist.
+///
+/// These entries are untyped server data whose shape can change without
+/// notice. Only the named keys are read, so a new or nested field can never
+/// leak raw JSON into the terminal.
 List<String> _diagnosticSummaries(
   List<dynamic>? values,
   List<String> allowedKeys,
