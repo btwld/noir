@@ -96,4 +96,43 @@ void main() {
       );
     });
   });
+
+  // A box smaller than its own border leaves an empty inner rect. With no
+  // enclosing clip the rect is negative rather than zero-size, so pin that it
+  // still drops all child paint instead of throwing or leaking cells.
+  group('RenderDecoratedBox degenerate sizes', () {
+    for (final entry in const {
+      1: ['└'],
+      2: ['┌┐', '└┘'],
+      3: ['┌─┐', '│X│', '└─┘'],
+    }.entries) {
+      final size = entry.key;
+      test('a ${size}x$size bordered box drops the overflowing child', () {
+        final capture = BufferCapture(
+          width: size,
+          height: size,
+          layoutConstraints: BoxConstraints.tight(width: size, height: size),
+        );
+        addTearDown(capture.dispose);
+
+        final captured = capture.capture(
+          DecoratedBox(
+            decoration: BoxDecoration(border: Border.all(color: Color.white)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List<Widget>.generate(size, (_) => Text('X' * size)),
+            ),
+          ),
+        );
+
+        expect(
+          captured.toLines(),
+          entry.value,
+          reason:
+              'no child cell may survive outside the inner rect, but got:\n'
+              '${captured.toText()}',
+        );
+      });
+    }
+  });
 }

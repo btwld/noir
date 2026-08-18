@@ -115,8 +115,9 @@ class RenderDecoratedBox extends RenderBox with RenderObjectWithSingleChild {
       return;
     }
 
-    // A degenerate inner rect needs no special case: the canvas clip
-    // intersection yields a zero-size rect and every child cell drops.
+    // A box too small to hold its own border needs no special case: the inner
+    // rect goes empty (and, with no enclosing clip, negative), and every child
+    // cell drops. Verified down to 1x1; see the degenerate-size test.
     context.canvas
       ..save()
       ..clipRect(
@@ -127,7 +128,10 @@ class RenderDecoratedBox extends RenderBox with RenderObjectWithSingleChild {
           rect.bottom - inner.bottom,
         ),
       );
-    context.paintChild(child, origin);
-    context.canvas.restore();
+    try {
+      context.paintChild(child, origin);
+    } finally {
+      context.canvas.restore();
+    }
   }
 }
