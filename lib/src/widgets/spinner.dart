@@ -53,8 +53,7 @@ class Spinner extends StatefulWidget {
     this.interval = const Duration(milliseconds: 80),
   });
 
-  /// Color of the glyph. Falls back to [ThemeData.accent], then to
-  /// [Color.white].
+  /// Color of the glyph. Falls back to [ThemeData.accent].
   final Color? color;
 
   /// Glyphs cycled in order, each rendered for [interval].
@@ -74,8 +73,14 @@ class _SpinnerState extends State<Spinner>
   @override
   void initState() {
     super.initState();
+    _controller = _createController();
+  }
+
+  AnimationController _createController() {
     // Checked here rather than in a constructor assert: `List.isEmpty` is not
-    // const-evaluable, and `const Spinner()` has to stay legal.
+    // const-evaluable, and `const Spinner()` has to stay legal. Every path
+    // that (re)builds the controller runs it, so an empty list supplied by a
+    // later rebuild fails the same way as one supplied at mount.
     if (widget.frames.isEmpty) {
       throw ArgumentError.value(
         widget.frames,
@@ -83,10 +88,6 @@ class _SpinnerState extends State<Spinner>
         'must contain at least one glyph',
       );
     }
-    _controller = _createController();
-  }
-
-  AnimationController _createController() {
     final controller = AnimationController(
       vsync: this,
       duration: widget.interval * widget.frames.length,
@@ -135,9 +136,7 @@ class _SpinnerState extends State<Spinner>
     final index = _controller.value.floor().clamp(0, widget.frames.length - 1);
     return Text(
       widget.frames[index],
-      style: TextStyle(
-        color: widget.color ?? Theme.maybeOf(context)?.accent ?? Color.white,
-      ),
+      style: TextStyle(color: widget.color ?? Theme.of(context).accent),
     );
   }
 }

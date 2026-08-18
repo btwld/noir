@@ -297,6 +297,33 @@ void main() {
       },
     );
 
+    test('the whole header column is clickable, not just its label', () async {
+      final requests = <int>[];
+      final driver = KeyDriver(
+        DataTable(
+          columns: _columns,
+          rowCount: 3,
+          height: 5,
+          cellBuilder: _cell,
+          onSort: (column, ascending) => requests.add(column),
+        ),
+        paintFrames: true,
+      );
+      await driver.ready();
+
+      // Past the end of the 'name' glyphs but still inside its flex column.
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          button: MouseButton.left,
+          x: 12,
+          y: 0,
+        ),
+      );
+      expect(requests, [0]);
+      driver.dispose();
+    });
+
     test('clicking a header that is not sortable reports nothing', () async {
       final requests = <String>[];
       final driver = KeyDriver(

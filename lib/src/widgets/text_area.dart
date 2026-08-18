@@ -83,15 +83,13 @@ class TextArea extends StatefulWidget {
   /// Number of spaces inserted for a tab. Defaults to 2.
   final int tabSize;
 
-  /// Foreground color of the text. Falls back to [ThemeData.text], then to
-  /// [Color.white].
+  /// Foreground color of the text. Falls back to [ThemeData.text].
   final Color? color;
 
   /// Fill color painted behind the field. No fill when null.
   final Color? backgroundColor;
 
-  /// Color of the cursor. Falls back to [ThemeData.cursor], then to
-  /// [Color.white].
+  /// Color of the cursor. Falls back to [ThemeData.cursor].
   final Color? cursorColor;
 
   /// Shape drawn for the cursor. Defaults to [CursorStyle.block].
@@ -219,6 +217,7 @@ class _TextAreaState extends State<TextArea>
     requireUsableSelectionForBuild();
     final conn = connection;
     final theme = Theme.maybeOf(context);
+    final palette = theme ?? ThemeData.dark;
     return Shortcuts(
       shortcuts: conn.shortcuts,
       child: Actions(
@@ -237,11 +236,12 @@ class _TextAreaState extends State<TextArea>
               placeholder: widget.placeholder,
               height: widget.height,
               width: widget.width,
-              color: widget.color ?? theme?.text ?? Color.white,
-              // `maybeOf`, not `of`: an unthemed field keeps its original
-              // no-fill rendering rather than gaining a surface.
+              color: widget.color ?? palette.text,
+              // `theme?.surface`, not `palette.surface`: with no ancestor
+              // Theme the field must keep painting no fill at all, which no
+              // color can express.
               backgroundColor: widget.backgroundColor ?? theme?.surface,
-              cursorColor: widget.cursorColor ?? theme?.cursor ?? Color.white,
+              cursorColor: widget.cursorColor ?? palette.cursor,
               cursorStyle: widget.cursorStyle,
               focused: focusNode.hasFocus,
               scrollLine: _vViewport.scrollOffset,

@@ -46,7 +46,7 @@ class Divider extends StatelessWidget {
   /// Cells of extent the rule occupies along its short side.
   final int thickness;
 
-  /// Fill of the rule. Falls back to [ThemeData.border], then to a mid gray.
+  /// Fill of the rule. Falls back to [ThemeData.border].
   final Color? color;
 
   /// Direction the rule runs. A horizontal rule separates stacked rows; a
@@ -55,7 +55,7 @@ class Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill = color ?? Theme.maybeOf(context)?.border ?? Color.darkGray;
+    final fill = color ?? Theme.of(context).border;
     // `alignment` makes Container wrap the (empty) child in an Align, and Align
     // fills every bounded axis. Without it the fill would collapse to the
     // minimum extent whenever the parent's constraints are loose.

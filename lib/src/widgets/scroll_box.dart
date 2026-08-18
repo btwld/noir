@@ -308,7 +308,7 @@ class _ScrollBoxState extends State<ScrollBox>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
+    final theme = Theme.of(context);
     return Shortcuts(
       shortcuts: _shortcuts,
       child: Actions(
@@ -322,14 +322,8 @@ class _ScrollBoxState extends State<ScrollBox>
               controller: _controller,
               scrollDirection: widget.scrollDirection,
               showScrollbar: widget.showScrollbar,
-              scrollbarColor:
-                  widget.scrollbarColor ??
-                  theme?.scrollbarThumb ??
-                  const Color(0.7, 0.7, 0.7),
-              trackColor:
-                  widget.trackColor ??
-                  theme?.scrollbarTrack ??
-                  const Color(0.2, 0.2, 0.2),
+              scrollbarColor: widget.scrollbarColor ?? theme.scrollbarThumb,
+              trackColor: widget.trackColor ?? theme.scrollbarTrack,
               child: widget.child,
             ),
           ),

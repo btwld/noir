@@ -43,12 +43,12 @@ class Button extends StatefulWidget {
   /// Called once per activation. A null callback disables the button.
   final VoidCallback? onPressed;
 
-  /// Fill painted behind the label. Falls back to [ThemeData.accent], then to
-  /// the same blue the framework uses for a selected row.
+  /// Fill painted behind the label. Falls back to [ThemeData.accent]. A
+  /// disabled button ignores this and uses [ThemeData.surfaceVariant].
   final Color? color;
 
-  /// Color of the label. Falls back to [ThemeData.accentForeground], then to
-  /// [Color.white].
+  /// Color of the label. Falls back to [ThemeData.accentForeground]. A
+  /// disabled button ignores this and uses [ThemeData.textMuted].
   final Color? textColor;
 
   /// Empty space between the fill's edge and the label.
@@ -84,13 +84,13 @@ class _ButtonState extends State<Button>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
+    final theme = Theme.of(context);
     final fill = isEnabled
-        ? widget.color ?? theme?.accent ?? const Color(0.2, 0.4, 0.8)
-        : theme?.surfaceVariant ?? const Color(0.25, 0.25, 0.25);
+        ? widget.color ?? theme.accent
+        : theme.surfaceVariant;
     final label = isEnabled
-        ? widget.textColor ?? theme?.accentForeground ?? Color.white
-        : theme?.textMuted ?? Color.gray;
+        ? widget.textColor ?? theme.accentForeground
+        : theme.textMuted;
 
     return buildActivatable(
       autofocus: widget.autofocus,

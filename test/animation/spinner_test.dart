@@ -56,6 +56,23 @@ void main() {
       );
     });
 
+    test('an empty frame list is rejected on mount and on update', () {
+      final owner = BuildOwner();
+      owner.setFrameCallback(() {});
+
+      expect(
+        () => const Spinner(frames: []).createElement().mount(null, owner),
+        throwsArgumentError,
+      );
+
+      final element = const Spinner().createElement();
+      element.mount(null, owner);
+      expect(
+        () => element.update(const Spinner(frames: [])),
+        throwsArgumentError,
+      );
+    });
+
     test('the glyph takes its color from the theme accent', () {
       final capture = BufferCapture(width: 4, height: 1);
       try {

@@ -2,7 +2,7 @@
 4,0:#ffffffff|#000000ff|0 * 14
 18,0:#ffffffff|#000000ff|1 * 10
 28,0:#ffffffff|#000000ff|0 * 4
-0,1:#ffffffff|#4d4d4dff|0 * 32
+0,1:#ffffffff|#2e3847ff|0 * 32
 0,2:#ffffffff|#000000ff|0 * 32
 0,3:#ffffffff|#000000ff|0 * 32
 0,4:#ffffffff|#000000ff|0 * 32

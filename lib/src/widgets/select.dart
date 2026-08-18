@@ -84,7 +84,7 @@ class Select<T> extends StatefulWidget {
   final bool showScrollIndicator;
 
   /// Foreground color of unselected option text. Falls back to
-  /// [ThemeData.text], then to [Color.white].
+  /// [ThemeData.text].
   final Color? color;
 
   /// Fill color behind the entire list. Falls back to [ThemeData.surface]
@@ -298,6 +298,7 @@ class _SelectState<T> extends State<Select<T>>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.maybeOf(context);
+    final palette = theme ?? ThemeData.dark;
     return Shortcuts(
       shortcuts: _shortcuts,
       child: Actions(
@@ -313,22 +314,16 @@ class _SelectState<T> extends State<Select<T>>
               scrollOffset: _viewport.scrollOffset,
               height: widget.height,
               showScrollIndicator: widget.showScrollIndicator,
-              color: widget.color ?? theme?.text ?? Color.white,
-              // `maybeOf`, not `of`: an unthemed list keeps its original
-              // no-fill rendering rather than gaining a surface.
+              color: widget.color ?? palette.text,
+              // `theme?.surface`, not `palette.surface`: with no ancestor
+              // Theme the list must keep painting no fill at all, which no
+              // color can express.
               backgroundColor: widget.backgroundColor ?? theme?.surface,
               selectedBackgroundColor:
-                  widget.selectedBackgroundColor ??
-                  theme?.selectedBackground ??
-                  const Color(0.2, 0.4, 0.8),
+                  widget.selectedBackgroundColor ?? palette.selectedBackground,
               selectedTextColor:
-                  widget.selectedTextColor ??
-                  theme?.selectedForeground ??
-                  Color.white,
-              descriptionColor:
-                  widget.descriptionColor ??
-                  theme?.textMuted ??
-                  const Color(0.6, 0.6, 0.6),
+                  widget.selectedTextColor ?? palette.selectedForeground,
+              descriptionColor: widget.descriptionColor ?? palette.textMuted,
               layoutMetrics: _layoutMetrics,
             ),
           ),

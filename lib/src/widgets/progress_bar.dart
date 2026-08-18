@@ -39,20 +39,17 @@ class ProgressBar extends StatelessWidget {
   /// Cells occupied by the whole bar, filled and unfilled together.
   final int width;
 
-  /// Color of the filled part. Falls back to [ThemeData.accent], then to
-  /// [Color.success].
+  /// Color of the filled part. Falls back to [ThemeData.accent].
   final Color? color;
 
-  /// Color of the unfilled track. Falls back to [ThemeData.scrollbarTrack],
-  /// then to a dark gray.
+  /// Color of the unfilled track. Falls back to [ThemeData.scrollbarTrack].
   final Color? trackColor;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
-    final fillColor = color ?? theme?.accent ?? Color.success;
-    final trackFill =
-        trackColor ?? theme?.scrollbarTrack ?? const Color(0.2, 0.2, 0.2);
+    final theme = Theme.of(context);
+    final fillColor = color ?? theme.accent;
+    final trackFill = trackColor ?? theme.scrollbarTrack;
 
     final clamped = value.isNaN ? 0.0 : value.clamp(0.0, 1.0);
     final eighths = (clamped * width * 8).round();

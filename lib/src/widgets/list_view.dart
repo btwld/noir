@@ -104,11 +104,13 @@ class ListView extends StatefulWidget {
   final bool showScrollIndicator;
 
   /// Fill painted behind the whole list. Falls back to [ThemeData.surface]
-  /// under a [Theme], and to no fill at all when both are absent.
+  /// under a [Theme]; with neither, the list paints no fill. Pass
+  /// [Color.transparent] for an explicitly unfilled list inside a themed
+  /// subtree.
   final Color? backgroundColor;
 
   /// Fill painted behind the highlighted row. Falls back to
-  /// [ThemeData.selectedBackground] under a [Theme].
+  /// [ThemeData.selectedBackground].
   final Color? selectedBackgroundColor;
 
   /// Focus node controlling this list's keyboard input. One is created if null.
@@ -205,30 +207,31 @@ class _ListViewState extends State<ListView>
     widget.onChanged?.call(_highlighted);
   }
 
-  void _confirm() {
-    if (widget.itemCount == 0) return;
+  /// Reports the highlighted row. A plain-scroll list has no highlight, so
+  /// there is nothing to confirm and Enter is left for an ancestor to handle.
+  KeyEventResult _confirm() {
+    if (!_selectable) return KeyEventResult.ignored;
+    if (widget.itemCount == 0) return KeyEventResult.ignored;
     widget.onSelect?.call(_highlighted);
+    return KeyEventResult.handled;
   }
 
-  /// Moves the highlight in a selectable list, or the window in a plain one,
-  /// by [rows] items.
-  KeyEventResult _moveBy(int rows) {
+  /// Applies [target] to whichever position this list owns: the highlight in a
+  /// selectable list, the window offset in a plain one. Both clamp internally,
+  /// so callers never have to know which mode they are in.
+  KeyEventResult _jumpTo(int target) {
     if (_selectable) {
-      _setHighlighted(_highlighted + rows);
+      _setHighlighted(target);
     } else {
-      _viewport.jumpTo(_viewport.scrollOffset + rows);
+      _viewport.jumpTo(target);
     }
     return KeyEventResult.handled;
   }
 
-  KeyEventResult _jumpTo(int index) {
-    if (_selectable) {
-      _setHighlighted(index);
-    } else {
-      _viewport.jumpTo(index);
-    }
-    return KeyEventResult.handled;
-  }
+  /// Moves by [rows] from whichever position this list owns.
+  KeyEventResult _moveBy(int rows) => _jumpTo(
+    _selectable ? _highlighted + rows : _viewport.scrollOffset + rows,
+  );
 
   int get _pageRows => _visibleRows > 0 ? _visibleRows : 1;
 
@@ -249,12 +252,11 @@ class _ListViewState extends State<ListView>
       (intent, context) => _jumpTo(0),
     ),
     MoveSelectionLastIntent: CallbackAction<MoveSelectionLastIntent>(
-      (intent, context) => _jumpTo(_selectable ? _maxIndex : widget.itemCount),
+      (intent, context) => _jumpTo(_maxIndex),
     ),
-    ActivateIntent: CallbackAction<ActivateIntent>((intent, context) {
-      _confirm();
-      return KeyEventResult.handled;
-    }),
+    ActivateIntent: CallbackAction<ActivateIntent>(
+      (intent, context) => _confirm(),
+    ),
   };
 
   // Deliberately the same activator set as Select, so a list and a selector
@@ -300,11 +302,12 @@ class _ListViewState extends State<ListView>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.maybeOf(context);
+    final palette = theme ?? ThemeData.dark;
+    // `theme?.surface`, not `palette.surface`: no ancestor Theme has to keep
+    // meaning "no fill", which no color can express.
     final background = widget.backgroundColor ?? theme?.surface;
     final selectedBackground =
-        widget.selectedBackgroundColor ??
-        theme?.selectedBackground ??
-        const Color(0.2, 0.4, 0.8);
+        widget.selectedBackgroundColor ?? palette.selectedBackground;
 
     final start = _viewport.scrollOffset;
     final end = math.min(widget.itemCount, start + _visibleRows);
@@ -336,7 +339,7 @@ class _ListViewState extends State<ListView>
                 for (var row = 0; row < _visibleRows; row++)
                   Text(
                     _indicatorGlyph(row),
-                    style: TextStyle(color: theme?.text ?? Color.white),
+                    style: TextStyle(color: palette.text),
                   ),
               ],
             ),

@@ -186,23 +186,17 @@ class _DataTableState extends State<DataTable> {
     children: [
       for (var i = 0; i < widget.columns.length; i++)
         if (widget.columns[i].width case final int fixed)
-          SizedBox(
-            width: fixed,
-            child: Align(
-              alignment: widget.columns[i].alignment,
-              child: cells[i],
-            ),
-          )
+          SizedBox(width: fixed, child: cells[i])
         else
-          Expanded(
-            flex: widget.columns[i].flex,
-            child: Align(
-              alignment: widget.columns[i].alignment,
-              child: cells[i],
-            ),
-          ),
+          Expanded(flex: widget.columns[i].flex, child: cells[i]),
     ],
   );
+
+  /// Positions one cell inside its column box. `Align` fills the bounded
+  /// column, so anything wrapped *around* this — the header's pointer
+  /// listener — covers the whole column rather than just the glyphs.
+  Widget _aligned(int index, Widget cell) =>
+      Align(alignment: widget.columns[index].alignment, child: cell);
 
   void _handleHeaderClick(int columnIndex) {
     final onSort = widget.onSort;
@@ -214,7 +208,7 @@ class _DataTableState extends State<DataTable> {
     onSort(columnIndex, ascending);
   }
 
-  Widget _headerCell(int index, ThemeData? theme) {
+  Widget _headerCell(int index, ThemeData theme) {
     final column = widget.columns[index];
     final sorted = widget.sortColumnIndex == index;
     final arrow = sorted
@@ -224,14 +218,14 @@ class _DataTableState extends State<DataTable> {
       onPointerDown: (event) {
         if (event.button == MouseButton.left) _handleHeaderClick(index);
       },
-      child: Text(
-        '${column.label}$arrow',
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: theme?.text ?? Color.white,
-          fontWeight: FontWeight.bold,
+      child: _aligned(
+        index,
+        Text(
+          '${column.label}$arrow',
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -240,11 +234,12 @@ class _DataTableState extends State<DataTable> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.maybeOf(context);
+    final palette = theme ?? ThemeData.dark;
     // The header and its separator each cost a row; the rest is body.
     final bodyHeight = math.max(0, widget.height - 2);
 
     Widget headerRow = _columnedRow([
-      for (var i = 0; i < widget.columns.length; i++) _headerCell(i, theme),
+      for (var i = 0; i < widget.columns.length; i++) _headerCell(i, palette),
     ]);
     if (widget.showScrollIndicator) {
       // The body gives its trailing column to the indicator gutter. The header
@@ -278,7 +273,7 @@ class _DataTableState extends State<DataTable> {
           onSelect: widget.onSelect,
           itemBuilder: (context, row, selected) => _columnedRow([
             for (var i = 0; i < widget.columns.length; i++)
-              widget.cellBuilder(context, row, i),
+              _aligned(i, widget.cellBuilder(context, row, i)),
           ]),
         ),
       ],

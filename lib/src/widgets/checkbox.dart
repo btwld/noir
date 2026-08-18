@@ -56,11 +56,10 @@ class Checkbox extends StatefulWidget {
   final String? label;
 
   /// Color of the unchecked box and the label. Falls back to
-  /// [ThemeData.text], then to [Color.white].
+  /// [ThemeData.text].
   final Color? color;
 
-  /// Color of the checked box. Falls back to [ThemeData.accent], then to
-  /// [color].
+  /// Color of the checked box. Falls back to [ThemeData.accent].
   final Color? checkedColor;
 
   /// Focus node controlling this checkbox. One is created if null.
@@ -93,12 +92,12 @@ class _CheckboxState extends State<Checkbox>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
-    final base = widget.color ?? theme?.text ?? Color.white;
+    final theme = Theme.of(context);
+    final base = widget.color ?? theme.text;
     final boxColor = isEnabled
-        ? (widget.value ? widget.checkedColor ?? theme?.accent ?? base : base)
-        : theme?.textMuted ?? Color.gray;
-    final labelColor = isEnabled ? base : theme?.textMuted ?? Color.gray;
+        ? (widget.value ? widget.checkedColor ?? theme.accent : base)
+        : theme.textMuted;
+    final labelColor = isEnabled ? base : theme.textMuted;
     final weight = isFocused ? FontWeight.bold : FontWeight.normal;
 
     return buildActivatable(

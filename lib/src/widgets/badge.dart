@@ -53,21 +53,21 @@ class Badge extends StatelessWidget {
   /// Fill painted behind the label, overriding the [variant] color.
   final Color? color;
 
-  /// Color of the label. Falls back to [ThemeData.accentForeground], then to
-  /// [Color.black], which stays legible on every variant fill.
+  /// Color of the label. Falls back to [ThemeData.accentForeground], which
+  /// stays legible on every variant fill.
   final Color? textColor;
 
-  Color _variantColor(ThemeData? theme) => switch (variant) {
-    BadgeVariant.neutral => theme?.textMuted ?? Color.gray,
-    BadgeVariant.success => theme?.success ?? Color.success,
-    BadgeVariant.warning => theme?.warning ?? Color.warning,
-    BadgeVariant.danger => theme?.danger ?? Color.error,
-    BadgeVariant.info => theme?.info ?? Color.info,
+  Color _variantColor(ThemeData theme) => switch (variant) {
+    BadgeVariant.neutral => theme.textMuted,
+    BadgeVariant.success => theme.success,
+    BadgeVariant.warning => theme.warning,
+    BadgeVariant.danger => theme.danger,
+    BadgeVariant.info => theme.info,
   };
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
+    final theme = Theme.of(context);
     return Container(
       color: color ?? _variantColor(theme),
       padding: const EdgeInsets.symmetric(horizontal: 1),
@@ -76,7 +76,7 @@ class Badge extends StatelessWidget {
         maxLines: 1,
         softWrap: false,
         style: TextStyle(
-          color: textColor ?? theme?.accentForeground ?? Color.black,
+          color: textColor ?? theme.accentForeground,
           fontWeight: FontWeight.bold,
         ),
       ),

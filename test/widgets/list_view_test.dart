@@ -257,6 +257,67 @@ void main() {
       }
     });
 
+    test('Enter reports nothing and stays available to an ancestor', () async {
+      final selects = <int>[];
+      var ancestorSawEnter = false;
+      final recorder = _Recorder();
+      final driver = KeyDriver(
+        Focus(
+          canRequestFocus: false,
+          onKeyEvent: (node, event) {
+            if (event.isPress && event.logicalKey == LogicalKeyboardKey.enter) {
+              ancestorSawEnter = true;
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: ListView(
+            autofocus: true,
+            itemCount: 10,
+            height: 3,
+            itemBuilder: recorder.build,
+            onSelect: selects.add,
+          ),
+        ),
+      );
+      await driver.ready();
+
+      await driver.sendLogicalKey(LogicalKeyboardKey.enter, code: 13);
+      expect(selects, isEmpty, reason: 'a plain list has no row to confirm');
+      expect(ancestorSawEnter, isTrue);
+      driver.dispose();
+    });
+
+    test('a click reports nothing but still takes focus', () async {
+      final selects = <int>[];
+      final focusNode = FocusNode();
+      final recorder = _Recorder();
+      final driver = KeyDriver(
+        ListView(
+          focusNode: focusNode,
+          itemCount: 10,
+          height: 3,
+          itemBuilder: recorder.build,
+          onSelect: selects.add,
+        ),
+        paintFrames: true,
+      );
+      await driver.ready();
+
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          button: MouseButton.left,
+          x: 0,
+          y: 1,
+        ),
+      );
+      expect(selects, isEmpty);
+      expect(focusNode.hasFocus, isTrue);
+      driver.dispose();
+      focusNode.dispose();
+    });
+
     test('the mouse wheel scrolls the window', () async {
       final recorder = _Recorder();
       final app = createTuiTestApp(

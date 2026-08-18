@@ -50,12 +50,10 @@ class Switch extends StatefulWidget {
   /// Optional text rendered one cell after the switch.
   final String? label;
 
-  /// Color of the off circle and the label. Falls back to [ThemeData.text],
-  /// then to [Color.white].
+  /// Color of the off circle and the label. Falls back to [ThemeData.text].
   final Color? color;
 
-  /// Color of the on circle. Falls back to [ThemeData.success], then to
-  /// [Color.success].
+  /// Color of the on circle. Falls back to [ThemeData.success].
   final Color? activeColor;
 
   /// Focus node controlling this switch. One is created if null.
@@ -88,15 +86,12 @@ class _SwitchState extends State<Switch>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.maybeOf(context);
-    final base = widget.color ?? theme?.text ?? Color.white;
-    final muted = theme?.textMuted ?? Color.gray;
+    final theme = Theme.of(context);
+    final base = widget.color ?? theme.text;
     final knobColor = isEnabled
-        ? (widget.value
-              ? widget.activeColor ?? theme?.success ?? Color.success
-              : base)
-        : muted;
-    final labelColor = isEnabled ? base : muted;
+        ? (widget.value ? widget.activeColor ?? theme.success : base)
+        : theme.textMuted;
+    final labelColor = isEnabled ? base : theme.textMuted;
     final weight = isFocused ? FontWeight.bold : FontWeight.normal;
 
     return buildActivatable(

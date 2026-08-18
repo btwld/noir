@@ -8,12 +8,20 @@ import '../framework/widget.dart';
 ///
 /// The token set is deliberately flat: one class of named colors, no
 /// per-component sub-themes. Every built-in widget resolves a color as
-/// `explicitParameter ?? Theme.maybeOf(context)?.token ?? widgetDefault`, so an
-/// explicit constructor argument always wins and an app with no [Theme]
-/// ancestor renders exactly as it did before theming existed.
+/// `explicitParameter ?? Theme.of(context).token`, and [Theme.of] falls back
+/// to [dark] when no [Theme] encloses the context. So [dark] is not merely a
+/// suggested palette — it *is* the unthemed appearance of every built-in
+/// widget, and wrapping a tree in `Theme(data: ThemeData.dark)` changes
+/// nothing. Keeping one copy of those colors is what stops a widget's
+/// hard-coded default from drifting away from the token it stands for.
 ///
-/// [dark] reproduces the color literals the built-in widgets hard-coded before
-/// they were themed, so adopting it changes only the tokens an app overrides.
+/// The one deliberate exception is a nullable `backgroundColor`: no color can
+/// express "paint no fill at all", so those parameters resolve through
+/// [Theme.maybeOf] and stay unfilled when there is no ancestor [Theme]. Pass
+/// [Color.transparent] to opt out of a fill inside a themed subtree.
+///
+/// [dark]'s values reproduce the literals the built-in widgets hard-coded
+/// before they were themed, so the retrofit changed no pixels.
 @immutable
 class ThemeData {
   /// Stores one color per token, defaulting to the [dark] palette values.
