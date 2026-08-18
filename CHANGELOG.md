@@ -14,6 +14,13 @@
   item count. One widget covers both a selectable list (arrows, `j`/`k`,
   paging, Home/End, Enter, click) and a plain scrolling one; the mouse wheel
   scrolls either.
+- Added `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
+  and `Badge`. The three interactive controls share one activation contract —
+  Space, Enter, or a left click — and are disabled by leaving their callback
+  null, which also drops them out of Tab traversal.
+- The development driver (`scripts/noir_drive.dart`) accepts `key space`.
+  `type` cannot send a lone space because the CLI trims each command line, so
+  Space was previously unreachable from a script.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

@@ -21,6 +21,7 @@ void main() {
       'right': LogicalKeyboardKey.arrowRight,
       'enter': LogicalKeyboardKey.enter,
       'tab': LogicalKeyboardKey.tab,
+      'space': LogicalKeyboardKey.space,
       'esc': LogicalKeyboardKey.escape,
       'backspace': LogicalKeyboardKey.backspace,
       'pgup': LogicalKeyboardKey.pageUp,

@@ -1,0 +1,12 @@
+□ unchecked                       
+■ checked                         
+■ disabled                        
+○ off                             
+● on                              
+○ disabled                        
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  

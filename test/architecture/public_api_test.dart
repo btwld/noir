@@ -118,9 +118,13 @@ void main() {
         'CallbackAction',
       },
       'src/widgets/align.dart': {'Align'},
+      'src/widgets/badge.dart': {'Badge', 'BadgeVariant'},
+      'src/widgets/button.dart': {'Button'},
+      'src/widgets/checkbox.dart': {'Checkbox'},
       'src/widgets/constrained_box.dart': {'ConstrainedBox'},
       'src/widgets/container.dart': {'Container'},
       'src/widgets/decorated_box.dart': {'DecoratedBox', 'DecorationPosition'},
+      'src/widgets/divider.dart': {'Divider'},
       'src/widgets/flexible.dart': {'Expanded', 'FlexFit', 'Flexible'},
       'src/widgets/focus.dart': {'Focus', 'FocusScope'},
       'src/widgets/input.dart': {'TextInput', 'ValueChanged'},
@@ -161,6 +165,7 @@ void main() {
       'src/widgets/list_view.dart': {'ListView', 'ListViewItemBuilder'},
       'src/widgets/padding.dart': {'Padding'},
       'src/widgets/pointer_listener.dart': {'PointerListener'},
+      'src/widgets/progress_bar.dart': {'ProgressBar'},
       'src/widgets/rich_text.dart': {'RichText'},
       'src/widgets/row_column.dart': {
         'Column',
@@ -184,6 +189,8 @@ void main() {
         'SingleActivator',
       },
       'src/widgets/sized_box.dart': {'SizedBox'},
+      'src/widgets/spinner.dart': {'Spinner', 'SpinnerFrames'},
+      'src/widgets/switch.dart': {'Switch'},
       'src/widgets/text.dart': {'Text'},
       'src/widgets/text_area.dart': {'TextArea'},
       'src/widgets/text_layout.dart': {
@@ -296,8 +303,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(173),
-      reason: 'The high-level surface is locked at exactly 173 symbols.',
+      hasLength(182),
+      reason: 'The high-level surface is locked at exactly 182 symbols.',
     );
   });
 
