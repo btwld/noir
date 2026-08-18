@@ -80,12 +80,33 @@ class Renderer {
   /// The buffer for the next frame, created lazily and invalidated after each [render] call.
   Buffer get nextBuffer {
     _checkNotDisposed();
-    _nextBuffer ??= createBufferFromNative(
-      _bindings.getNextBuffer(_handle),
-      _bindings,
-      () => _disposed,
-    );
+    if (_nextBuffer == null) {
+      final native = _bindings.getNextBuffer(_handle);
+      _clearNativeDrawStacks(native);
+      _nextBuffer = createBufferFromNative(native, _bindings, () => _disposed);
+    }
     return _nextBuffer!;
+  }
+
+  /// Drops any clip or opacity state left on [buffer] by an earlier frame.
+  ///
+  /// Both stacks live on the native buffer object, and OpenTUI allocates that
+  /// once per renderer and never swaps it: `getNextBuffer` returns the same
+  /// pointer for the renderer's whole lifetime, and neither `render()` nor
+  /// `resize()` touches either stack. Invalidating the Dart wrapper each frame
+  /// therefore only *looks* like handing out a fresh buffer. A raw `noir_ffi`
+  /// caller that pushes without popping would otherwise clip or fade every
+  /// later frame permanently, surviving even a terminal resize.
+  ///
+  /// Clearing the buffer as it is lent out bounds such a leak to the frame
+  /// that caused it, by construction rather than by caller discipline. Only
+  /// the lent buffer is cleared: Noir paints through [nextBuffer], so that is
+  /// the one a caller can reach to corrupt. Noir's own painting never pushes
+  /// either stack, so this is purely defensive.
+  void _clearNativeDrawStacks(OptimizedBufferHandle buffer) {
+    _bindings
+      ..bufferClearScissorRects(buffer)
+      ..bufferClearOpacity(buffer);
   }
 
   /// Current rendered buffer, exposed for integration tests.

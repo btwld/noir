@@ -90,10 +90,82 @@ void main() {
         reason: 'width is u32 in the pinned ABI',
       );
       expect(
+        () => raw.bufferPushScissorRect(handle, 0, 0, 4, -1),
+        throwsA(isA<RangeError>()),
+        reason: 'height is u32 in the pinned ABI',
+      );
+      expect(
         () => raw.bufferPushScissorRect(handle, 0x80000000, 0, 4, 4),
         throwsA(isA<RangeError>()),
         reason: 'x is i32 in the pinned ABI',
       );
+      expect(
+        () => raw.bufferPushScissorRect(handle, 0, 0x80000000, 4, 4),
+        throwsA(isA<RangeError>()),
+        reason: 'y is i32 in the pinned ABI',
+      );
+    });
+
+    test('a nested push intersects rather than replaces', () {
+      raw
+        ..bufferPushScissorRect(handle, 0, 0, 8, 3)
+        ..bufferPushScissorRect(handle, 0, 0, 8, 1);
+      addTearDown(() => raw.bufferClearScissorRects(handle));
+
+      // A wider inner push must not re-open row 1: the stack intersects.
+      raw
+        ..bufferPushScissorRect(handle, 0, 0, 8, 3)
+        ..bufferDrawText(handle, 'ROW1', 0, 1, _fg, null, 0);
+
+      expect(
+        rowText(1).trim(),
+        isEmpty,
+        reason: 'the 1-row rectangle still bounds every nested push',
+      );
+    });
+  });
+
+  // OpenTUI allocates its buffers once per renderer and never swaps them, and
+  // neither render() nor resize() touches either stack. Without Noir clearing
+  // them per frame, one unpopped push would clip or fade every later frame for
+  // the renderer's whole lifetime — and resize() fires on every SIGWINCH.
+  group('leaked stack state cannot outlive its frame', () {
+    test('an unpopped scissor does not clip the next frame', () {
+      raw.bufferPushScissorRect(handle, 0, 0, 8, 1);
+      renderer.render(force: true);
+
+      final next = renderer.nextBuffer..clear(_bg);
+      raw.bufferDrawText(next.handle, 'ROW3', 0, 3, _fg, null, 0);
+
+      final row = StringBuffer();
+      for (var x = 0; x < 8; x++) {
+        row.write(debugResolveBufferCell(next, 3 * 8 + x));
+      }
+      expect(row.toString(), 'ROW3    ');
+    });
+
+    test('an unpopped scissor does not survive a resize', () {
+      raw.bufferPushScissorRect(handle, 0, 0, 8, 1);
+      renderer.resize(8, 4);
+
+      final next = renderer.nextBuffer..clear(_bg);
+      raw.bufferDrawText(next.handle, 'ROW3', 0, 3, _fg, null, 0);
+
+      final row = StringBuffer();
+      for (var x = 0; x < 8; x++) {
+        row.write(debugResolveBufferCell(next, 3 * 8 + x));
+      }
+      expect(row.toString(), 'ROW3    ');
+    });
+
+    test('an unpopped opacity does not fade the next frame', () {
+      raw.bufferPushOpacity(handle, 0);
+      renderer.render(force: true);
+
+      final next = renderer.nextBuffer..clear(_bg);
+      raw.bufferFillRect(next.handle, 0, 0, 8, 1, Color.white);
+
+      expect(next.getDirectAccess().getBackground(0, 0).r, closeTo(1, 0.01));
     });
   });
 
@@ -123,6 +195,42 @@ void main() {
           reason: '$invalid is outside 0.0..1.0',
         );
       }
+    });
+
+    // Testing only 0.0 and 1.0 would pass even if the `float` parameter were
+    // marshalled as a `double`, because both survive the width mismatch. A
+    // fractional value is the only assertion that discriminates.
+    test('a fractional opacity blends through the cell funnel', () {
+      raw.bufferPushOpacity(handle, 0.5);
+      addTearDown(() => raw.bufferClearOpacity(handle));
+
+      raw.bufferFillRect(handle, 0, 0, 8, 1, Color.white);
+
+      final blended = buffer.getDirectAccess().getBackground(0, 0);
+      expect(
+        blended.r,
+        closeTo(0.5, 0.01),
+        reason: 'white over black at half opacity is mid-grey',
+      );
+    });
+
+    // Pins the upstream limitation documented on `bufferPushOpacity`, so that
+    // a future OpenTUI bump which fixes it fails here and prompts the doc and
+    // release-notes entries to be revisited rather than silently going stale.
+    test('a fractional opacity does not fade fully opaque text', () {
+      raw.bufferPushOpacity(handle, 0.5);
+      addTearDown(() => raw.bufferClearOpacity(handle));
+
+      raw.bufferDrawText(handle, 'TEXT', 0, 0, _fg, _red, 0);
+
+      final unfaded = buffer.getDirectAccess().getBackground(0, 0);
+      expect(
+        unfaded.r,
+        closeTo(1, 0.01),
+        reason:
+            'drawText takes an opaque fast path that skips the opacity '
+            'funnel; if this now blends, upstream changed',
+      );
     });
   });
 }
