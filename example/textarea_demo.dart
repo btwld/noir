@@ -52,7 +52,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
 
   @override
   Widget build(BuildContext context) => Focus(
-    autofocus: true,
+    canRequestFocus: false,
     onKeyEvent: _handleAppKey,
     child: Container(
       padding: const EdgeInsets.all(1),

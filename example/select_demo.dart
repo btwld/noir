@@ -59,7 +59,7 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
 
   @override
   Widget build(BuildContext context) => Focus(
-    autofocus: true,
+    canRequestFocus: false,
     onKeyEvent: _onAppKey,
     child: Container(
       padding: const EdgeInsets.all(1),

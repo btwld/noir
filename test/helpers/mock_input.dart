@@ -26,6 +26,10 @@ class MockInput {
     _feedString('\t');
   }
 
+  void pressShiftTab() {
+    _feedString('\x1b[Z');
+  }
+
   void pressBackspace() {
     _feedString('\b');
   }

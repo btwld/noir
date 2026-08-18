@@ -344,7 +344,10 @@ corrupt package.
   cells and advance before the following text. Noir keeps the pinned source's
   correct zero-width layout semantics; leading zero-width graphemes, including
   ones isolated by a style boundary, can therefore diverge from native paint.
-- Decorated box content can escape a clipped viewport in some overflow cases.
+- A decorated box that straddles a clipped viewport edge paints its full
+  border. Native `bufferDrawBox` writes transparent-background borders through
+  an unchecked index, so it escapes even OpenTUI's own scissor rect. Boxes that
+  miss the viewport entirely are dropped.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - On the observed macOS/iTerm path, the pinned alternate-screen lifecycle can

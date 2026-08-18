@@ -125,7 +125,22 @@ authorization.
   duplicate native ownership with an ANSI workaround.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
-- Decorated box content can escape a clipped viewport in some overflow cases.
+- A decorated box that straddles a clipped viewport edge paints its full
+  border. `Buffer.clipped` drops boxes that miss the clip entirely, but the
+  pinned `drawBox` writes transparent-background borders via an unchecked
+  index (`canUseTransparentBorderFastPath`), so a straddling box escapes even
+  OpenTUI's native scissor rect. Noir does not re-rasterize the box in Dart:
+  that would duplicate native glyph, corner, and title placement rules.
+- `RenderDecoratedBox` lays its child out with its own constraints rather than
+  insetting them by the border, and paint-clips the child to the decoration's
+  inner rect so a filling child cannot erase the border. Flutter's layout
+  inset is deliberately not adopted: it would resize every bordered child and
+  re-open the tight-box collapse that `Container`'s documented
+  `max(padding, border)` rule (`lib/src/widgets/container.dart`) avoids.
+  `Container` owns the layout side; `DecoratedBox` only guarantees the clip.
+- `example/bindings_validation.dart` requires a real terminal stdin lease by
+  design and exits with code 70 under drive mode; it is the one example the
+  drive tool cannot run.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
@@ -133,6 +148,18 @@ authorization.
   never re-runs `main()` or `initState`, so changes to those, to a signature
   held by a frame on the stack, to an enum converted into a class, or to the
   bundled OpenTUI native library still require a full restart.
+- Drive mode (`NOIR_DRIVE=1`) is headless by construction. It exercises the
+  same layout, paint, and ANSI-parser paths the ordinary suite trusts, but it
+  never proves real terminal escape rendering or raw-mode input. A continuously
+  animating app never reports `stable: true`, an app whose own quit path calls
+  `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
+  limits recorded below.
+- `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
+  drives is proven by `test/app/driver_test.dart` and
+  `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
+  `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
+  capture parsing are proven by `test/driver_client_test.dart`. The CLI command
+  grammar itself is only exercised by running it.
 - `scripts/hot_reload_driver.dart` has no automated coverage. The reassemble
   seam it drives is proven by `test/hot_reload_e2e_test.dart`, which performs a
   real `reloadSources` against a spawned headless app and asserts that the

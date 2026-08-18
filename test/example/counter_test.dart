@@ -190,6 +190,45 @@ void main() {
       app.dispose();
     }
   });
+
+  test(
+    'counter never bleeds overflowing content across rows at 24x8',
+    () async {
+      // At this size the Expanded body has fewer rows than its centered Column
+      // needs. The overflow must be clipped: previously the body's rows
+      // interleaved with the hint row ('Up/+iadda|yDt') and the count escaped
+      // below the bottom bar.
+      final app = createTuiTestApp(const CounterApp(), width: 24, height: 8);
+
+      try {
+        await _settle(app);
+        final frame = app.captureFrame();
+        final lines = frame.toLines();
+
+        expect(frame, BufferMatchers.containsText('Noir Counter'));
+        final hintRow = lines.indexWhere((line) => line.contains('Up/'));
+        expect(hintRow, greaterThan(0), reason: frame.toText());
+        expect(
+          lines[hintRow],
+          matches(RegExp(r'Up/\+ add')),
+          reason:
+              'the hint row must not interleave with clipped body content: '
+              '${frame.toText()}',
+        );
+        for (var y = hintRow; y < lines.length; y++) {
+          expect(
+            lines[y].contains('0'),
+            isFalse,
+            reason:
+                'the count must never escape below the hint bar (row $y): '
+                '${frame.toText()}',
+          );
+        }
+      } finally {
+        app.dispose();
+      }
+    },
+  );
 }
 
 BufferPosition _incrementGlyph(CapturedBuffer frame) => frame

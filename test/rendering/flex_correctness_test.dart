@@ -1,5 +1,7 @@
 import 'package:noir/noir.dart';
-import 'package:noir/noir_low_level.dart' show Axis, RenderBox, RenderFlex;
+import 'package:noir/noir_low_level.dart'
+    show Axis, PaintingContext, RenderBox, RenderFlex;
+import 'package:noir/src/painting/tui_canvas.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
@@ -21,6 +23,24 @@ void main() {
       expect(flex.childrenBoxes.single, same(liveChild));
       flex.layout(const BoxConstraints.tight(width: 6, height: 1));
       expect(liveChild.width, 6);
+    });
+
+    test('overflow clip restores the canvas when a child paint throws', () {
+      final flex = RenderFlex(direction: Axis.vertical)
+        ..add(_ThrowingPaintBox())
+        ..add(_ThrowingPaintBox())
+        ..layout(const BoxConstraints.tight(width: 1, height: 1));
+
+      final canvas = createTuiCanvas();
+      expect(
+        () => flex.paint(PaintingContext(canvas), Offset.zero),
+        throwsStateError,
+      );
+      expect(
+        canvas.restore,
+        throwsStateError,
+        reason: 'a leftover save would let restore succeed',
+      );
     });
 
     group('min constraint handling', () {
@@ -224,6 +244,84 @@ void main() {
         },
       );
 
+      test('overflowing Column clips its children to its own bounds', () {
+        // The inner Column has room for two rows but three rows of content.
+        // Without a clip its third row would paint into the sibling's row and
+        // interleave with the later-painted 'ZZZ' ('ZZZCC'), which is the
+        // small-terminal corruption observed in example/counter.dart at 24x8.
+        final result = capture.capture(
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: 10,
+                  maxWidth: 10,
+                  minHeight: 2,
+                  maxHeight: 2,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [Text('AAAAA'), Text('BBBBB'), Text('CCCCC')],
+                ),
+              ),
+              Text('ZZZ'),
+            ],
+          ),
+        );
+
+        final lines = result.toLines();
+        expect(lines[0], 'AAAAA');
+        expect(lines[1], 'BBBBB');
+        expect(
+          lines[2],
+          'ZZZ',
+          reason:
+              'the clipped third row must not interleave with the sibling: '
+              '${result.toText()}',
+        );
+        expect(result.findText('CCCCC'), isEmpty);
+      });
+
+      test('overflowing Row clips its children to its own bounds', () {
+        final result = capture.capture(
+          const Row(
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: 4,
+                  maxWidth: 4,
+                  minHeight: 1,
+                  maxHeight: 1,
+                ),
+                child: Row(children: [Text('ABCDEFG')]),
+              ),
+              Text('XY'),
+            ],
+          ),
+        );
+
+        expect(
+          result.toLines().first,
+          'ABCDXY',
+          reason:
+              'the overflowing text must stop at its Row, not resume past '
+              'the sibling: ${result.toText()}',
+        );
+      });
+
+      test('a Column that fits paints without any clip taking effect', () {
+        final result = capture.capture(
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [Text('one'), Text('two')],
+          ),
+        );
+
+        expect(result.toLines()[0], 'one');
+        expect(result.toLines()[1], 'two');
+      });
+
       test('Align shrink-wraps unbounded Column height to avoid overlap', () {
         final result = capture.capture(
           const Column(
@@ -252,6 +350,18 @@ void main() {
       });
     });
   });
+}
+
+class _ThrowingPaintBox extends RenderBox {
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    size = Size(constraints.constrainWidth(1), constraints.constrainHeight(1));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    throw StateError('child paint failed');
+  }
 }
 
 class _FlexRemovalProbeBox extends RenderBox {

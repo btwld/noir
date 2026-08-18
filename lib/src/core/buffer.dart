@@ -748,4 +748,40 @@ class _ClippedBufferView extends Buffer {
     if (visible.isEmpty) return;
     super.drawText(visible, drawX, y, fg, bg: bg, attributes: attributes);
   }
+
+  /// Native `bufferDrawBox` ignores this view's clip rectangle, so a box that
+  /// falls entirely outside the clip would still paint. Reject those here;
+  /// everything else is handed to OpenTUI unchanged.
+  ///
+  /// A box that *straddles* a clip edge is still drawn unclipped. Deliberate:
+  /// OpenTUI's own scissor stack does not fix it either, because
+  /// `canUseTransparentBorderFastPath` writes border cells through an
+  /// unchecked index whenever the box background is transparent — which is
+  /// exactly the default `Border` case. Re-rasterizing the box in Dart would
+  /// duplicate native glyph, corner, and title placement rules, so the
+  /// straddling case stays a recorded limitation until the clip seam moves
+  /// onto the native scissor.
+  @override
+  void drawBox(
+    int x,
+    int y,
+    int width,
+    int height,
+    BoxOptions options,
+    Color borderColor,
+    Color backgroundColor,
+  ) {
+    _checkValid();
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    _checkUnsignedAbi(width, 0xFFFFFFFF, 'width');
+    _checkUnsignedAbi(height, 0xFFFFFFFF, 'height');
+    if (x + width <= clipX ||
+        y + height <= clipY ||
+        x >= clipX + clipWidth ||
+        y >= clipY + clipHeight) {
+      return;
+    }
+    super.drawBox(x, y, width, height, options, borderColor, backgroundColor);
+  }
 }

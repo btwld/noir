@@ -48,7 +48,9 @@ deterministic without network access.
 
 ## Tips
 
-- Use a wide terminal for the layout demos to reduce clipping.
+- Use a wide terminal for the layout demos to reduce clipping. Chat, the
+  focus form, Like Reactor, and the widget tour also need more than a
+  40×12 pane to show every region.
 - Dart checks Noir's native-asset build hook before a run and may print
   `Running build hooks...`. To hide routine compiler/hook status while keeping
   errors visible, run `dart run --verbosity=error example/counter.dart`; this
@@ -59,8 +61,11 @@ deterministic without network access.
   Kitty keyboard mode controls are unavailable in that mode.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
   The layout, Select, ScrollBox, and framework-primitives examples also accept
-  `q` through widget-owned quit callbacks. The inherited example uses `t` to
-  switch palettes.
+  `q`. Chat, TextArea, and the widget tour accept `Esc`. The inherited example
+  uses `t` to switch palettes. In the tour, `q` quits only while the TextArea
+  is not focused.
+- Quit wrappers around a real control use `Focus(canRequestFocus: false)` so
+  Tab stays on the field, list, or viewport.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The
   multiline examples also bind Ctrl+D so submission works in terminals that
   encode Ctrl+Enter as an ordinary Enter.

@@ -18,7 +18,9 @@ enum DecorationPosition {
 /// A widget that paints a [Decoration] either before or after its child paints.
 ///
 /// [Container] insets its child by the widths of the borders; this widget does
-/// not.
+/// not. The child is laid out against the full box and then paint-clipped to
+/// the decoration's inner rect, so a child that fills the box is cropped rather
+/// than allowed to erase the border.
 ///
 /// Commonly used with [BoxDecoration].
 class DecoratedBox extends SingleChildRenderObjectWidget {
