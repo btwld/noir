@@ -342,7 +342,16 @@ void main() {
       final client = _FakePubClient();
       final catalog = PubApiCatalog(client: client);
 
-      await expectLater(catalog.search('   '), throwsA(isA<FormatException>()));
+      await expectLater(
+        catalog.search('   '),
+        throwsA(
+          isA<PubQueryException>().having(
+            (error) => '$error',
+            'rendered message',
+            'Enter a package name or search expression.',
+          ),
+        ),
+      );
       expect(client.searchQuery, isNull);
       catalog.close();
     });

@@ -14,6 +14,23 @@ final class PubCatalogException implements Exception {
   String toString() => '$operation failed. Please try again.';
 }
 
+/// Input the catalog refuses before it contacts pub.dev.
+///
+/// Distinct from [PubCatalogException] because it names what the person should
+/// do next rather than an operation that failed. Both types are rendered
+/// verbatim in the example's error panel, so neither may expose a Dart type
+/// name the way a bare `FormatException` would.
+final class PubQueryException implements Exception {
+  /// Creates a rejection presenting [message] verbatim.
+  const PubQueryException(this.message);
+
+  /// Instruction shown to the user.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Data source used by the pub search example.
 abstract interface class PubCatalog {
   /// Searches package names.
@@ -47,7 +64,9 @@ final class PubApiCatalog implements PubCatalog {
   }) async {
     final normalized = query.trim();
     if (normalized.isEmpty) {
-      throw const FormatException('Enter a package name or search expression.');
+      throw const PubQueryException(
+        'Enter a package name or search expression.',
+      );
     }
     late final SearchResults result;
     try {
