@@ -110,6 +110,77 @@ void main() {
       parent.unmount();
       owner.dispose();
     });
+
+    test('invokes retained State callbacks parents-first, before any '
+        'rebuild', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final element = _StatefulNode(
+        'root',
+        log,
+        child: _StatefulNode('child', log, child: _Leaf('leaf', log)),
+      ).createElement()..mount(null, owner);
+      log.clear();
+
+      owner.reassemble();
+      expect(log, <String>['reassemble:root', 'reassemble:child']);
+
+      owner.buildScope();
+      expect(log, <String>[
+        'reassemble:root',
+        'reassemble:child',
+        'build:root',
+        'build:child',
+        'leaf',
+      ]);
+
+      element.unmount();
+      owner.dispose();
+    });
+
+    test('attempts every callback, marks the tree, and rethrows the first '
+        'failure', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final element = _StatefulNode(
+        'root',
+        log,
+        failReassemble: true,
+        child: _StatefulNode('child', log, child: _Leaf('leaf', log)),
+      ).createElement()..mount(null, owner);
+      log.clear();
+
+      expect(owner.reassemble, throwsStateError);
+      expect(log, <String>[
+        'reassemble:root',
+        'reassemble:child',
+      ], reason: 'a failing callback does not skip its siblings');
+
+      owner.buildScope();
+      expect(log.sublist(2), <String>['build:root', 'build:child', 'leaf']);
+
+      element.unmount();
+      owner.dispose();
+    });
+
+    test('skips a deactivated state that has not been finalized yet', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final root = _Swap(
+        _StatefulNode('child', log, child: _Leaf('leaf', log)),
+      ).createElement()..mount(null, owner);
+
+      root.update(_Swap(_Leaf('replacement', <String>[])));
+      log.clear();
+
+      owner.reassemble();
+
+      expect(log, isEmpty, reason: 'an inactive subtree is not reassembled');
+
+      owner.buildScope();
+      root.unmount();
+      owner.dispose();
+    });
   });
 }
 
@@ -169,6 +240,51 @@ class _Node extends StatelessWidget {
     log.add(label);
     return child;
   }
+}
+
+/// Stateful link whose retained [State] records the reassemble callback.
+class _StatefulNode extends StatefulWidget {
+  const _StatefulNode(
+    this.label,
+    this.log, {
+    required this.child,
+    this.failReassemble = false,
+  });
+
+  final String label;
+  final List<String> log;
+  final Widget child;
+  final bool failReassemble;
+
+  @override
+  State<_StatefulNode> createState() => _StatefulNodeState();
+}
+
+class _StatefulNodeState extends State<_StatefulNode> {
+  @override
+  void reassemble() {
+    super.reassemble();
+    widget.log.add('reassemble:${widget.label}');
+    if (widget.failReassemble) {
+      throw StateError('reassemble failed for ${widget.label}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    widget.log.add('build:${widget.label}');
+    return widget.child;
+  }
+}
+
+/// Stateless link used to swap a child out for an incompatible one.
+class _Swap extends StatelessWidget {
+  const _Swap(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
 }
 
 /// Childless tail of the cascade: no render object is needed to observe it.

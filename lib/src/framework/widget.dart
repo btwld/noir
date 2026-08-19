@@ -99,6 +99,19 @@ abstract class State<T extends StatefulWidget> {
   @mustCallSuper
   void deactivate() {}
 
+  /// Called when a hot reload has swapped this app's code.
+  ///
+  /// Hot reload replaces method bodies in the live isolate and then re-runs
+  /// `build()`; it never recreates a [State] or re-runs [initState]. Override
+  /// this to re-derive whatever [initState] computed from code that may have
+  /// just changed — a parsed table, a precomputed layout, a cached format —
+  /// so a reloaded body is not left reading values the old body produced.
+  ///
+  /// Never called in a release build. The tree is rebuilt whether or not this
+  /// throws, so a failure here degrades the reload rather than aborting it.
+  @mustCallSuper
+  void reassemble() {}
+
   /// Called when this object is removed from the tree permanently.
   ///
   /// Override this to clean up any resources held by this object (cancel
