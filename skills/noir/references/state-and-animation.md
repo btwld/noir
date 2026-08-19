@@ -57,6 +57,11 @@ class _MyWidgetState extends State<MyWidget> {
 The element holding this `State` persists across rebuilds — that's why state
 survives. The `widget` getter always points at the current configuration.
 
+Hot reload does not re-run `initState`. Override `reassemble` (call `super`
+first) to re-derive whatever `initState` computed from code the reload may
+have just changed — a parsed table, a cached format. `TuiApp.reassemble()`
+invokes that hook on every retained state before it rebuilds.
+
 ## setState and the `mounted` guard
 
 `setState(fn)` mutates state and schedules a rebuild + repaint. Two rules:

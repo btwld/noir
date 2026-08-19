@@ -155,16 +155,20 @@ authorization.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
-  `TuiApp.reassemble()` re-runs `build()`, layout, and paint bodies only; it
-  never re-runs `main()` or `initState`, so changes to those, to a signature
-  held by a frame on the stack, to an enum converted into a class, or to the
-  bundled OpenTUI native library still require a full restart.
+  `TuiApp.reassemble()` invokes `State.reassemble()` on every retained state
+  and re-runs `build()`, layout, and paint bodies; it never re-runs `main()` or
+  `initState`, so changes to those, to a signature held by a frame on the
+  stack, to an enum converted into a class, or to the bundled OpenTUI native
+  library still require a full restart. Overriding `State.reassemble()` is the
+  supported way to re-derive what an `initState` body computed. A failing
+  override is reported to the surrounding zone and does not cost the reload its
+  rebuild or repaint.
 - Drive mode (`NOIR_DRIVE=1`) is headless by construction. It exercises the
   same layout, paint, and ANSI-parser paths the ordinary suite trusts, but it
   never proves real terminal escape rendering or raw-mode input. A continuously
-  animating app never reports `stable: true`, an app whose own quit path calls
-  `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
-  limits recorded below.
+  animating app never reports `stable: true`, an in-app `TuiApp.exit` ends the
+  driven session (the host follows the binding down), and `reload` inherits
+  the `reassemble()` limits recorded below.
 - `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
   drives is proven by `test/app/driver_test.dart` and
   `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under

@@ -115,9 +115,15 @@ export 'src/rendering/text_highlight.dart' show TextHighlight;
 export 'src/widgets/actions.dart'
     show Action, ActionCallback, Actions, CallbackAction;
 export 'src/widgets/align.dart' show Align;
+export 'src/widgets/badge.dart' show Badge, BadgeVariant;
+export 'src/widgets/button.dart' show Button;
+export 'src/widgets/checkbox.dart' show Checkbox;
 export 'src/widgets/constrained_box.dart' show ConstrainedBox;
 export 'src/widgets/container.dart' show Container;
+export 'src/widgets/data_table.dart'
+    show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
 export 'src/widgets/decorated_box.dart' show DecoratedBox, DecorationPosition;
+export 'src/widgets/divider.dart' show Divider;
 export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
 export 'src/widgets/focus.dart' show Focus, FocusScope;
 export 'src/widgets/input.dart' show TextInput, ValueChanged;
@@ -155,8 +161,10 @@ export 'src/widgets/intents.dart'
         ScrollToStartIntent,
         ScrollUpIntent,
         SubmitTextIntent;
+export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
 export 'src/widgets/padding.dart' show Padding;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
+export 'src/widgets/progress_bar.dart' show ProgressBar;
 export 'src/widgets/rich_text.dart' show RichText;
 export 'src/widgets/row_column.dart'
     show Column, CrossAxisAlignment, Flex, MainAxisAlignment, MainAxisSize, Row;
@@ -166,6 +174,8 @@ export 'src/widgets/select.dart'
 export 'src/widgets/shortcuts.dart'
     show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
 export 'src/widgets/sized_box.dart' show SizedBox;
+export 'src/widgets/spinner.dart' show Spinner, SpinnerFrames;
+export 'src/widgets/switch.dart' show Switch;
 export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
@@ -180,4 +190,5 @@ export 'src/widgets/text_style.dart'
         TextEffect,
         TextStyle,
         TextStyles;
+export 'src/widgets/theme.dart' show Theme, ThemeData;
 export 'src/widgets/viewport.dart' show ViewportController;

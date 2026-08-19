@@ -21,12 +21,10 @@ void main() {
 
     test('layout_basics buffer', () async {
       await tester.expectGolden(
-        const LayoutBasics(onQuit: _noop),
+        const LayoutBasics(),
         'layout_basics',
         updateGoldens: _updateGoldens,
       );
     });
   });
 }
-
-void _noop() {}

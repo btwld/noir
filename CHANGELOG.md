@@ -2,6 +2,30 @@
 
 ## 0.0.1-alpha.1
 
+- Added `Theme` / `ThemeData` and a first component tier: `ListView`,
+  `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
+  `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as
+  `explicit ?? Theme.of(context).token`. `ThemeData.dark` is the unthemed
+  look. Nullable `backgroundColor` still uses `Theme.maybeOf` so "no fill"
+  stays expressible.
+- `Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
+  click. A null callback disables them. `ListView` is windowed; omit
+  `selectedIndex` for plain scroll. `DataTable` shares one column list
+  between header and body, with `columnSpacing` (default 1).
+- A focused `ListView`, `Select`, or `DataTable` paints
+  `selectedBackground`; unfocused, the highlight mutes to `surfaceVariant`.
+- `Select`, `TextInput`, `TextArea`, and `ScrollBox` take nullable colors
+  and resolve them through `Theme` the same way.
+- `runTuiApp` is one line: `runTuiApp(const MyApp(), enableMouse: true)`.
+  It registers hot reload itself and no longer takes `width`/`height`.
+  `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
+  the loop). A mid-build exit throws. Drive mode follows an in-app exit.
+  Examples and the patch manager quit through the tree.
+- Examples share `example/src/demo_scaffold.dart` for chrome. Panel titles
+  sit on `Border.title`. `DataTable` no longer inserts a `Divider` under
+  the header. The authoring skill catalogs the new widgets and how to
+  compose them.
+- `scripts/noir_drive.dart` accepts `key space`.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

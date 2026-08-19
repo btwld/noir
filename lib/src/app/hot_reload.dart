@@ -18,17 +18,15 @@ bool _extensionRegistered = false;
 
 /// Lets a hot-reload driver rebuild [app] over the VM service.
 ///
-/// Call this once from `main()` with the handle [runTuiApp] returned. After a
-/// driver's `reloadSources` request succeeds, invoking the `ext.noir.reassemble`
+/// [runTuiApp] registers this automatically. Custom hosts that mount a
+/// [TuiApp] themselves can call it with that handle. After a driver's
+/// `reloadSources` request succeeds, invoking the `ext.noir.reassemble`
 /// service extension calls [TuiApp.reassemble], so edited `build()`,
 /// `performLayout`, and `paint` bodies show up on the next frame without
 /// restarting the process or recreating any native resource.
 ///
 /// ```dart
-/// void main() {
-///   final app = runTuiApp(const CounterApp());
-///   registerHotReloadExtension(app);
-/// }
+/// void main() => runTuiApp(const CounterApp());
 /// ```
 ///
 /// Calling this again replaces the target app; the underlying registration
@@ -39,7 +37,9 @@ bool _extensionRegistered = false;
 /// Source changes the Dart VM cannot swap into a live isolate still need a
 /// restart: `main()` bodies, `initState` bodies for already-mounted state,
 /// signatures referenced by frames on the stack, enum-to-class conversions,
-/// and any change to the bundled OpenTUI native library.
+/// and any change to the bundled OpenTUI native library. Override
+/// `State.reassemble()` to re-derive whatever an `initState` body computed
+/// from code the reload may have just changed.
 void registerHotReloadExtension(TuiApp app) {
   _hotReloadApp = app;
   if (_extensionRegistered) {

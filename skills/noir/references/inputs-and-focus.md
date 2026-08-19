@@ -1,6 +1,6 @@
 # Noir reference: interactive widgets, focus & input
 
-Everything that responds to the keyboard or mouse: the four interactive widgets,
+Everything that responds to the keyboard or mouse: the interactive widgets,
 the focus system they plug into, raw key/mouse events, and the
 `Shortcuts`/`Actions`/`Intent` layer for declarative keybindings.
 
@@ -8,7 +8,7 @@ the focus system they plug into, raw key/mouse events, and the
 
 - [How a key reaches your code](#how-a-key-reaches-your-code)
 - [The value-vs-controller rule](#the-value-vs-controller-rule)
-- [TextInput](#textinput) · [TextArea](#textarea) · [Select](#select) · [ScrollBox](#scrollbox)
+- [TextInput](#textinput) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
 - [Focus: Focus / FocusScope / FocusNode](#focus)
 - [Raw input: KeyEvent / MouseEvent](#raw-input)
 - [PointerListener](#pointerlistener)
@@ -85,9 +85,9 @@ const TextInput({
   TextEditingController? controller,    // XOR value
   String? value,
   String? placeholder,                  // dimmed hint when empty
-  Color color = Color.white,
-  Color? backgroundColor,
-  Color cursorColor = Color.white,
+  Color? color,                         // ThemeData.text
+  Color? backgroundColor,               // ThemeData.surface when a Theme is present; else no fill
+  Color? cursorColor,                   // ThemeData.cursor
   CursorStyle cursorStyle = CursorStyle.block,   // block | underline | bar
   bool obscureText = false,             // mask as obscuringCharacter; callbacks still get raw text
   String obscuringCharacter = '*',
@@ -129,9 +129,9 @@ const TextArea({
   int? width,                           // null = expand to available
   bool readOnly = false,
   int tabSize = 2,
-  Color color = Color.white,
-  Color? backgroundColor,
-  Color cursorColor = Color.white,
+  Color? color,                         // ThemeData.text
+  Color? backgroundColor,               // ThemeData.surface when a Theme is present; else no fill
+  Color? cursorColor,                   // ThemeData.cursor
   CursorStyle cursorStyle = CursorStyle.block,
   int? maxLength,                       // null = unlimited
   void Function(String)? onChanged,
@@ -161,11 +161,11 @@ const Select<T>({
   int selectedIndex = 0,
   int height = 8,                       // max visible rows
   bool showScrollIndicator = false,
-  Color color = Color.white,
-  Color? backgroundColor,
-  Color selectedBackgroundColor = const Color(0.2, 0.4, 0.8),
-  Color selectedTextColor = Color.white,
-  Color descriptionColor = const Color(0.6, 0.6, 0.6),
+  Color? color,                         // ThemeData.text
+  Color? backgroundColor,               // ThemeData.surface when a Theme is present; else no fill
+  Color? selectedBackgroundColor,       // ThemeData.selectedBackground while focused
+  Color? selectedTextColor,             // ThemeData.selectedForeground
+  Color? descriptionColor,              // ThemeData.textMuted
   FocusNode? focusNode,
   bool autofocus = false,
   SelectChanged<T>? onChanged,          // void Function(int index, SelectOption<T> option)
@@ -189,7 +189,149 @@ Select<String>(
 ```
 
 Keys: ↑/↓ (or `k`/`j`) move; PageUp/Down by a viewport; Home/End to bounds;
-Enter / left-click confirms.
+Enter / left-click confirms. The highlight uses `selectedBackground` only
+while focused and mutes to `ThemeData.surfaceVariant` otherwise.
+
+## ListView
+
+A windowed builder over `itemCount` rows. Only visible rows are built.
+Pass `selectedIndex` (and typically `onChanged` / `onSelect`) for a
+highlight; omit `selectedIndex` for plain scroll — Enter is then left
+unhandled so an ancestor can act on it. The builder always takes three
+arguments; `selected` is true only for the highlighted row.
+
+```dart
+typedef ListViewItemBuilder =
+    Widget Function(BuildContext context, int index, bool selected);
+
+const ListView({
+  required this.itemCount,
+  required this.itemBuilder,
+  Key? key,
+  this.itemExtent = 1,
+  this.height = 8,
+  this.controller,                      // ViewportController; created internally if null
+  this.selectedIndex,                   // null = plain scroll
+  this.showScrollIndicator = false,
+  this.backgroundColor,                 // ThemeData.surface when a Theme is present; else no fill
+  this.selectedBackgroundColor,         // ThemeData.selectedBackground while focused
+  this.focusNode,
+  this.autofocus = false,
+  this.onChanged,                       // ValueChanged<int>; never in plain-scroll mode
+  this.onSelect,                        // ValueChanged<int>; never in plain-scroll mode
+})
+```
+
+```dart
+ListView(
+  itemCount: items.length,
+  height: 12,
+  selectedIndex: _index,
+  itemBuilder: (context, index, selected) => Text(items[index]),
+  onChanged: (i) => setState(() => _index = i),
+  onSelect: (i) => _open(items[i]),
+)
+```
+
+Give a stateful row `key: ValueKey(id)` so its `State` survives scrolling.
+The mouse wheel scrolls the window in both modes without moving the
+highlight.
+
+## DataTable
+
+Aligned header plus a `ListView` body. The same `columns` list sizes the
+header and every body row — that is the alignment mechanism. Sorting is
+presentational: `onSort` fires and an arrow is painted; reordering data is
+the caller's job. Header activation is mouse-only.
+
+```dart
+const DataColumn({
+  required this.label,
+  this.flex = 1,
+  this.width,                           // exact cells; wins over flex
+  this.alignment = Alignment.centerLeft,
+  this.sortable = false,
+})
+
+const DataTable({
+  required this.columns,
+  required this.rowCount,
+  required this.cellBuilder,            // (context, row, column)
+  Key? key,
+  this.height = 10,                     // including the header; must be >= 2
+  this.columnSpacing = 1,
+  this.controller,
+  this.selectedIndex,
+  this.sortColumnIndex,
+  this.sortAscending = true,
+  this.onSort,                          // void Function(int columnIndex, bool ascending)
+  this.headerColor,
+  this.selectedBackgroundColor,
+  this.showScrollIndicator = false,
+  this.focusNode,
+  this.autofocus = false,
+  this.onChanged,
+  this.onSelect,
+})
+```
+
+Clamp cell overflow (`Text(maxLines: 1, softWrap: false, overflow:
+TextOverflow.ellipsis)`). A right-aligned numeric column needs
+`columnSpacing` (default 1) so its header does not abut the next label.
+
+## Checkbox
+
+Two-state box (`□`/`■`, not ballot-box glyphs — those are double-width).
+Caller-owned value. Null `onChanged` disables it.
+
+```dart
+const Checkbox({
+  required this.value,
+  Key? key,
+  this.onChanged,
+  this.label,
+  this.color,                           // ThemeData.text
+  this.checkedColor,                    // ThemeData.accent
+  this.focusNode,
+  this.autofocus = false,
+})
+```
+
+## Switch
+
+Same contract as `Checkbox`; pick by meaning (on/off vs marked item).
+Glyphs are `○`/`●`.
+
+```dart
+const Switch({
+  required this.value,
+  Key? key,
+  this.onChanged,
+  this.label,
+  this.color,                           // ThemeData.text
+  this.activeColor,                     // ThemeData.success
+  this.focusNode,
+  this.autofocus = false,
+})
+```
+
+## Button
+
+Solid fill, one row tall. Null `onPressed` disables it. Focused label is
+bold. Space, Enter, or a left click activate.
+
+```dart
+const Button({
+  required this.label,
+  Key? key,
+  this.onPressed,
+  this.color,                           // ThemeData.accent
+  this.textColor,                       // ThemeData.accentForeground
+  this.padding = const EdgeInsets.symmetric(horizontal: 1),
+  this.focusNode,
+  this.autofocus = false,
+})
+```
 
 ## ScrollBox
 
@@ -202,8 +344,8 @@ const ScrollBox({
   ScrollController? controller,         // created internally if null
   Axis scrollDirection = Axis.vertical, // or Axis.horizontal
   bool showScrollbar = true,
-  Color scrollbarColor = const Color(0.7, 0.7, 0.7),
-  Color trackColor = const Color(0.2, 0.2, 0.2),
+  Color? scrollbarColor,                // ThemeData.scrollbarThumb
+  Color? trackColor,                    // ThemeData.scrollbarTrack
   FocusNode? focusNode,
   bool autofocus = false,
   void Function(double offset)? onScroll,
@@ -317,16 +459,14 @@ event.scroll?.direction // MouseScrollDirection: up | down | left | right
 event.scroll?.magnitude // positive int tick count
 ```
 
-Mouse reporting must be turned on once at startup. Retain the lifecycle handle
-and enable basic reporting for click and wheel handling:
+Mouse reporting must be turned on once at startup:
 
 ```dart
-final tuiApp = runTuiApp(app);
-tuiApp.enableMouse();
+void main() => runTuiApp(app, enableMouse: true);
 ```
 
-Pass `enableMovement: true` only when the app needs hover, drag, or other
-pointer-move events.
+Use the handle's `enableMouse(enableMovement: true)` only when the app needs
+hover, drag, or other pointer-move events.
 
 ---
 

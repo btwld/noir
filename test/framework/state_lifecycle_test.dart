@@ -135,6 +135,25 @@ void main() {
         expect(invoked, isFalse);
       },
     );
+
+    test('throws StateError while dispose() is still running', () {
+      final owner = BuildOwner();
+      final key = GlobalKey<_DisposeSetStateProbeState>();
+      final element = _DisposeSetStateProbeWidget(key: key).createElement();
+
+      element.mount(null, owner);
+      final state = key.currentState!;
+
+      element.unmount();
+
+      expect(
+        state.mountedDuringDispose,
+        isTrue,
+        reason: 'the guard covers the window where mounted is still true',
+      );
+      expect(state.setStateError, isA<StateError>());
+      expect(state.callbackInvoked, isFalse);
+    });
   });
 
   group('Key implementations', () {
@@ -313,6 +332,36 @@ class _SetStateGuardState extends State<_SetStateGuardWidget> {
   Widget build(BuildContext context) {
     widget.log.add('build');
     return Container();
+  }
+}
+
+class _DisposeSetStateProbeWidget extends StatefulWidget {
+  const _DisposeSetStateProbeWidget({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _DisposeSetStateProbeState();
+}
+
+class _DisposeSetStateProbeState extends State<_DisposeSetStateProbeWidget> {
+  bool? mountedDuringDispose;
+  bool callbackInvoked = false;
+  Object? setStateError;
+
+  @override
+  Widget build(BuildContext context) => Container();
+
+  @override
+  void dispose() {
+    mountedDuringDispose = mounted;
+    try {
+      setState(() {
+        callbackInvoked = true;
+      });
+      // ignore: avoid_catching_errors
+    } on StateError catch (error) {
+      setStateError = error;
+    }
+    super.dispose();
   }
 }
 

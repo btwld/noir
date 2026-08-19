@@ -6,17 +6,13 @@ final _materialBlue = Color.fromHex('#1976D2');
 final _bodyTextColor = Color.fromHex('#424242');
 final _mutedTextColor = Color.fromHex('#616161');
 
-void main() {
-  final app = runTuiApp(const CounterApp());
-  app.enableMouse();
-  // Lets a hot-reload driver rebuild this app after it swaps sources:
-  //
-  //     dart run scripts/hot_reload_driver.dart example/counter.dart
-  //
-  // Edit any `build()` below and save to see it repaint. Registering costs
-  // nothing when no driver is attached.
-  registerHotReloadExtension(app);
-}
+// `runTuiApp` registers the hot-reload extension itself, so a driver can
+// rebuild this app after it swaps sources:
+//
+//     dart run scripts/hot_reload_driver.dart example/counter.dart
+//
+// Edit any `build()` below and save to see it repaint.
+void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});

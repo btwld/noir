@@ -834,6 +834,7 @@ class _ThrowingDeactivateState extends State<_ThrowingDeactivate> {
 
   @override
   void deactivate() {
+    super.deactivate();
     deactivateCount++;
     wasActiveAndMounted = context.element.active && mounted;
     Error.throwWithStackTrace(widget.failure, widget.stackTrace);

@@ -18,4 +18,12 @@ void main() {
       expect(stdout, contains('untracked files'));
     },
   );
+
+  test('entrypoint quits through the tree', () {
+    final source = File('bin/patch_manager.dart').readAsStringSync();
+    expect(source, isNot(contains('onQuit')));
+    expect(source, isNot(contains('io.exit(')));
+    expect(source, contains('runTuiApp('));
+    expect(source, contains('enableMouse(enableMovement: true)'));
+  });
 }

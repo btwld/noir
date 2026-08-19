@@ -12,7 +12,7 @@
 //
 //     capture [--ansi|--plain|--cells]   # --ansi paints the frame in color
 //     tree [depth]
-//     key <up|down|left|right|enter|tab|esc|backspace|pgup|pgdn|ctrl-<a-z>>
+//     key <up|down|left|right|enter|tab|space|esc|backspace|pgup|pgdn|ctrl-<a-z>>
 //     type <text...>
 //     click <x> <y>
 //     scroll <up|down|left|right> <x> <y>
@@ -152,6 +152,12 @@ class _Session {
           _fail('unknown command "$command". Try: $_commands');
       }
     } on Object catch (error) {
+      if (isDrivenServiceGone(error)) {
+        // The app exited; report its process code, not a command failure.
+        _exitCode = await _driver.waitForExit();
+        _quit = true;
+        return;
+      }
       _fail('$command failed: $error');
     }
   }

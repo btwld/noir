@@ -16,7 +16,28 @@ abstract class BuildContext {
   @internal
   BuildOwner get owner => element.owner;
 
-  /// Register a dependency on the nearest [InheritedWidget] of type [T].
+  /// Whether this context's element is still in the tree.
+  ///
+  /// Check this after any `await` before using the context again: the widget
+  /// may have been removed while the future was in flight, and every lookup
+  /// on this class then reads a torn-down element.
+  ///
+  /// This mirrors the framework's `mounted`, not its `active`: an element
+  /// removed by reconciliation stays mounted — and reports `true` here —
+  /// until the build pass finalizes and permanently unmounts it. That window
+  /// is exactly where a retained-`State` reinsertion would be observed, so
+  /// mounted is the liveness question a caller across an async gap is asking.
+  ///
+  /// It is also not `State.mounted`. The element leaves the tree before
+  /// `State.dispose()` runs, so this reads `false` for the whole of that call
+  /// while `State.mounted` deliberately stays `true`.
+  bool get mounted => element.mounted;
+
+  /// Register a dependency on the nearest [InheritedWidget] whose runtime type
+  /// is exactly [T].
+  ///
+  /// A subclass of [T] does not answer the lookup; the search continues past
+  /// it. Use [findAncestorStateOfType] when subtype matching is what is wanted.
   T? dependOnInheritedWidgetOfExactType<T extends InheritedWidget>({
     Object? aspect,
   }) {
@@ -26,18 +47,21 @@ abstract class BuildContext {
     return inherited?.widget as T?;
   }
 
-  /// Look up the nearest [InheritedElement] of type [T] without establishing a
-  /// dependency.
+  /// Look up the nearest [InheritedElement] whose widget's runtime type is
+  /// exactly [T], without establishing a dependency.
   @internal
   InheritedElement?
   getElementForInheritedWidgetOfExactType<T extends InheritedWidget>() =>
       element.getElementForInheritedWidgetOfExactType<T>();
 
-  /// Find the nearest ancestor widget of type [T].
+  /// Find the nearest ancestor widget whose runtime type is exactly [T].
+  ///
+  /// A subclass of [T] does not answer the lookup; the search continues past
+  /// it. Use [findAncestorStateOfType] when subtype matching is what is wanted.
   T? findAncestorWidgetOfExactType<T extends Widget>() =>
       element.findAncestorWidgetOfExactType<T>();
 
-  /// Find the nearest ancestor [State] of type [T].
+  /// Find the nearest ancestor [State] that is a [T], including subtypes.
   T? findAncestorStateOfType<T extends State<StatefulWidget>>() =>
       element.findAncestorStateOfType<T>();
 

@@ -147,16 +147,14 @@ void main() {
     });
 
     test('Escape invokes the documented quit callback', () async {
-      var quits = 0;
-      final app = createTuiTestApp(
-        ChatDemoApp(onQuit: () => quits++, enableAnimation: false),
-      );
+      // Escape ends the app through the tree; the harness records it.
+      final app = createTuiTestApp(const ChatDemoApp(enableAnimation: false));
 
       try {
         await _settleAutofocus(app);
         app.mockInput.pressEscape();
 
-        expect(quits, 1);
+        expect(app.exitRequests, [0]);
       } finally {
         app.dispose();
       }
@@ -188,7 +186,7 @@ void main() {
     test('real terminal entrypoint enables Kitty keyboard reporting', () {
       final source = io.File('example/chat_demo.dart').readAsStringSync();
 
-      expect(source, contains('app.enableKittyKeyboard();'));
+      expect(source, contains('.enableKittyKeyboard();'));
     });
   });
 }

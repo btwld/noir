@@ -64,11 +64,7 @@ const _launchPatterns = <_LaunchPattern>[
   _LaunchPattern(8, 1.1, 1.4, 2.4, 5, 2.2, 2),
 ];
 
-void main() {
-  final app = runTuiApp(const LikeReactorApp());
-  app.enableMouse();
-  registerHotReloadExtension(app);
-}
+void main() => runTuiApp(const LikeReactorApp(), enableMouse: true);
 
 /// Deterministic particle state for the Like Reactor example.
 class LikeReactorSimulation {

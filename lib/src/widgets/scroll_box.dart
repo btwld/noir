@@ -18,6 +18,7 @@ import 'focus_node_owner_mixin.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
+import 'theme.dart';
 
 /// Observable scroll state shared between [ScrollBox] and its consumers.
 ///
@@ -129,8 +130,8 @@ class ScrollBox extends StatefulWidget {
     this.controller,
     this.scrollDirection = Axis.vertical,
     this.showScrollbar = true,
-    this.scrollbarColor = const Color(0.7, 0.7, 0.7),
-    this.trackColor = const Color(0.2, 0.2, 0.2),
+    this.scrollbarColor,
+    this.trackColor,
     this.focusNode,
     this.autofocus = false,
     this.onScroll,
@@ -145,11 +146,12 @@ class ScrollBox extends StatefulWidget {
   /// Whether to paint the 1-cell-wide scrollbar gutter on the trailing edge.
   final bool showScrollbar;
 
-  /// Color of the scrollbar thumb.
-  final Color scrollbarColor;
+  /// Color of the scrollbar thumb. Falls back to [ThemeData.scrollbarThumb].
+  final Color? scrollbarColor;
 
-  /// Color of the scrollbar track (gutter background).
-  final Color trackColor;
+  /// Color of the scrollbar track (gutter background). Falls back to
+  /// [ThemeData.scrollbarTrack].
+  final Color? trackColor;
 
   /// Focus node controlling keyboard scroll. One is created if null.
   final FocusNode? focusNode;
@@ -305,27 +307,30 @@ class _ScrollBoxState extends State<ScrollBox>
   };
 
   @override
-  Widget build(BuildContext context) => Shortcuts(
-    shortcuts: _shortcuts,
-    child: Actions(
-      actions: _actions,
-      child: Focus(
-        focusNode: focusNode,
-        autofocus: widget.autofocus,
-        child: PointerListener(
-          onPointerScroll: _handlePointerScroll,
-          child: _ScrollBoxRenderObjectWidget(
-            controller: _controller,
-            scrollDirection: widget.scrollDirection,
-            showScrollbar: widget.showScrollbar,
-            scrollbarColor: widget.scrollbarColor,
-            trackColor: widget.trackColor,
-            child: widget.child,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Shortcuts(
+      shortcuts: _shortcuts,
+      child: Actions(
+        actions: _actions,
+        child: Focus(
+          focusNode: focusNode,
+          autofocus: widget.autofocus,
+          child: PointerListener(
+            onPointerScroll: _handlePointerScroll,
+            child: _ScrollBoxRenderObjectWidget(
+              controller: _controller,
+              scrollDirection: widget.scrollDirection,
+              showScrollbar: widget.showScrollbar,
+              scrollbarColor: widget.scrollbarColor ?? theme.scrollbarThumb,
+              trackColor: widget.trackColor ?? theme.scrollbarTrack,
+              child: widget.child,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ScrollBoxRenderObjectWidget extends SingleChildRenderObjectWidget {

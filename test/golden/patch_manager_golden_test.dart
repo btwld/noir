@@ -84,7 +84,6 @@ PatchManagerView _workspace({required int layoutWidth}) {
     controller: controller,
     autofocus: false,
     layoutWidthOverride: layoutWidth,
-    onQuit: () {},
   );
 }
 

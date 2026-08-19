@@ -46,6 +46,95 @@ an explicit workload budget.
   without promises the implementation does not keep.
 - No stale branch, commit, pull-request, tag, package-publication, or phase
   history is presented as current repository state.
+- Shipped widgets and example chrome obey the terminal component language
+  below. A screen that looks like a GUI card forced onto a grid is wrong
+  even if the tests pass.
+
+## Terminal component language
+
+The terminal is a cell grid. A box-drawing glyph occupies one full cell and
+sits in the visual center of that cell, so every rule already shows about
+half a cell of air on each side. That air is optical. It is not missing
+padding, and it is not a vertical-alignment bug.
+
+### Cell rules
+
+1. The unit is one cell. Sizes, gaps, and insets are integers.
+2. The border cell is the inset. Content starts on the first inner row and
+   column. `Container` maxes explicit padding with border thickness.
+3. A region's name lives on the top edge (`Border.title`). An inner title
+   `Text` is a second header.
+4. Content is top-start. Unused rows mean the box is too tall, not that
+   the stack should be centered.
+5. Height is chrome plus content, or a viewport. Leftover empty rows
+   inside a fixed card are a composition error.
+6. One surface per region. Do not wrap a self-painting widget in a second
+   filled bordered box.
+7. Chrome uses theme tokens. Content color stays a literal only when
+   color is the subject.
+8. 80x24 is the floor. Extra cells stay empty at the trailing edge.
+
+### Reference card
+
+Hello is the reference. Title on the border, body on the next row,
+shrink-wrapped:
+
+```
++-- Layout --------------------------+ +-- State ---------------------------+
+|Row, Column, Container, Expanded    | |StatelessWidget and StatefulWidget  |
++------------------------------------+ +------------------------------------+
+```
+
+### Component bar
+
+| Widget | Terminal expectation |
+|---|---|
+| `Container` / `DecoratedBox` / `Padding` | Integer insets. Border + padding max, they do not stack. |
+| `Row` / `Column` | `spacing` is whole cells between children only. Start on the main axis. |
+| `Expanded` / `Flexible` / `SizedBox` / `Align` / `ConstrainedBox` | Cell extents. Do not vertically center card copy. |
+| `Text` / `RichText` | Grapheme- and cell-aware. Clamp overflow in tables and one-line fields. |
+| `Theme` / `ThemeData` | Flat tokens. `dark` is the unthemed look. |
+| `Divider` | One-cell band of `ThemeData.border`. Specimen, not a page rule. |
+| `Badge` | One row. Horizontal pad 1. |
+| `ProgressBar` | One row. Eighth-cell steps. |
+| `Spinner` | One cell. Unmount to stop. |
+| `Button` | One row, fill not border. Horizontal pad 1. |
+| `Checkbox` / `Switch` | One row. Narrow ASCII glyphs. |
+| `TextInput` | One row. No chrome pad. |
+| `TextArea` | `height` is visible rows. |
+| `Select` | `height` is visible options. Highlight mutes when unfocused. |
+| `ListView` | Same highlight rules. `selectedIndex == null` is plain scroll. |
+| `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |
+| `ScrollBox` | One overflowing child. Scrollbar in the last column. |
+| `Focus` / `FocusScope` | Focused lists use `selectedBackground`. Accent border marks keyboard ownership. |
+| `PointerListener` | `MouseEvent.localPosition` only. |
+| Example `DemoScaffold` | Surface fills the terminal. Title inset 2, 1. Not a public `Scaffold`. |
+| Example `DemoPanel` | Title on `Border.title`. Shrink-wrap unless the child is a viewport. Not a public `Panel`. |
+
+Exempt: `counter`, `like_reactor`, `inherited_example`, `bindings_validation`.
+`layout_*` and `chat_demo` keep their own frames.
+
+### Catalog pass
+
+Apply the bar to every cataloged example. Framework widgets that already
+match stay. Example chrome stays example-local.
+
+| Piece | Action |
+|---|---|
+| `DemoScaffold` / `DemoPanel` | Title on `Border.title`. Shrink-wrap unless viewport. |
+| `hello` | Reference two-up. |
+| `Button` / `Badge` / `Checkbox` / `Switch` / `ProgressBar` / `Spinner` | Present in `components_demo` inside titled panels. |
+| `Divider` | One specimen rule inside the controls panel. |
+| `TextInput` | `focus_form` fields are titled panels of height 3. |
+| `Select` | `select_demo` and `widgets_tour`: titled panel. |
+| `ListView` | `listview_demo`: one titled panel per list. |
+| `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
+| `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
+| `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
+| `Theme` | `theme_demo` specimens in a `DemoPanel`. |
+| `Focus` / `PointerListener` | `focus_form`. |
+| `framework_primitives` | Scaffold only. |
+| Exempt | listed above. |
 
 ## Dependency boundary
 

@@ -1,4 +1,4 @@
-0,0:#ffffffff|#3366ccff|0 * 11
+0,0:#ffffffff|#0f1013ff|0 * 11
 11,0:#ffffffff|#000000ff|0 * 19
 0,1:#ffffffff|#000000ff|0 * 4
 4,1:#999999ff|#000000ff|0 * 6

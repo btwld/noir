@@ -56,6 +56,23 @@ void main() {
   _expect<ArgumentError>('border-border-chars', () {
     Border.all(borderChars: const <int>[0x2500]);
   });
+  _expect<StateError>('ticker-single-cardinality', () {
+    final key = GlobalKey<_SingleTickerProbeState>();
+    final host = TestElementHost()..mount(_SingleTickerProbe(key: key));
+    try {
+      final state = key.currentState!;
+      state.createTicker((_) {});
+      state.createTicker((_) {});
+    } finally {
+      host.dispose();
+    }
+  });
+  _expect<StateError>('ticker-active-at-dispose', () {
+    final key = GlobalKey<_MultiTickerProbeState>();
+    final host = TestElementHost()..mount(_MultiTickerProbe(key: key));
+    key.currentState!.createTicker((_) {}).start();
+    host.dispose();
+  });
   _expect<ArgumentError>('container-color-decoration', () {
     final host = TestElementHost();
     final color = Color.red;
@@ -70,6 +87,32 @@ void main() {
       }
     }
   });
+}
+
+class _SingleTickerProbe extends StatefulWidget {
+  const _SingleTickerProbe({super.key});
+
+  @override
+  State<_SingleTickerProbe> createState() => _SingleTickerProbeState();
+}
+
+class _SingleTickerProbeState extends State<_SingleTickerProbe>
+    with SingleTickerProviderStateMixin<_SingleTickerProbe> {
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 1, height: 1);
+}
+
+class _MultiTickerProbe extends StatefulWidget {
+  const _MultiTickerProbe({super.key});
+
+  @override
+  State<_MultiTickerProbe> createState() => _MultiTickerProbeState();
+}
+
+class _MultiTickerProbeState extends State<_MultiTickerProbe>
+    with TickerProviderStateMixin<_MultiTickerProbe> {
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 1, height: 1);
 }
 
 final class _TickerProvider implements TickerProvider {

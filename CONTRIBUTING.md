@@ -74,7 +74,7 @@ that way and reads commands from its own stdin, interactively or from a pipe:
 
     capture [--ansi|--plain|--cells]
     tree [depth]
-    key <up|down|left|right|enter|tab|esc|backspace|pgup|pgdn|ctrl-<a-z>>
+    key <up|down|left|right|enter|tab|space|esc|backspace|pgup|pgdn|ctrl-<a-z>>
     type <text...>
     click <x> <y>
     scroll <up|down|left|right> <x> <y>

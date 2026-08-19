@@ -10,7 +10,7 @@ import '../helpers/tui_test_app.dart';
 void main() {
   test('renders notifier state with a styled child span', () async {
     final app = createTuiTestApp(
-      FrameworkPrimitivesApp(onQuit: () {}),
+      const FrameworkPrimitivesApp(),
       width: 64,
       height: 14,
     );
@@ -31,9 +31,9 @@ void main() {
   });
 
   test('Enter, Space, pointer, and q share observable app state', () async {
-    var quits = 0;
+    // q ends the app through the tree; the harness records it.
     final app = createTuiTestApp(
-      FrameworkPrimitivesApp(onQuit: () => quits++),
+      const FrameworkPrimitivesApp(),
       width: 64,
       height: 14,
     );
@@ -64,7 +64,7 @@ void main() {
 
       app.mockInput.typeText('q');
       await Future<void>.delayed(Duration.zero);
-      expect(quits, 1);
+      expect(app.exitRequests, [0]);
     } finally {
       app.dispose();
     }
@@ -74,7 +74,7 @@ void main() {
     final source = io.File(
       'example/framework_primitives.dart',
     ).readAsStringSync();
-    expect(RegExp(r'app\.enableMouse\(\);').allMatches(source), hasLength(1));
+    expect(RegExp('enableMouse: true').allMatches(source), hasLength(1));
     expect(source, isNot(contains('enableMouse(enableMovement: true)')));
   });
 }

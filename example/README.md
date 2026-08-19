@@ -23,12 +23,16 @@ dart run example/main.dart
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
 | `dart run example/pub_search.dart` | Live pub.dev search with a fake-backed catalog seam, paging and sort controls, and a spacious four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
+| `dart run example/theme_demo.dart` | `Theme`/`ThemeData` token palette with `t` to swap presets across the whole subtree. |
 | `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
 | `dart run example/bindings_validation.dart` | Interactive alternate-screen validation of advanced renderer/buffer APIs and ABI-unstable FFI values; requires a terminal at least 120x40. |
 | `dart run example/pulse_animation.dart` | `AnimationController`, ticker scheduling, and frame-driven updates. |
 | `dart run example/like_reactor.dart` | Interactive `AnimationController` particle reactor with overlapping keyboard and mouse-triggered heart bursts. |
 | `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
 | `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
+| `dart run example/components_demo.dart` | `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`, and `Badge` on one screen, with Tab traversal and `s` to stop the spinner. |
+| `dart run example/data_table_demo.dart` | `DataTable` with fixed and flex columns, a windowed body, keyboard selection, and click-to-sort headers. |
+| `dart run example/listview_demo.dart` | Windowed `ListView` in both modes — selectable and plain scroll — over 500 rows, with live builder-call counters. |
 | `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Combined Select, ScrollBox, and TextArea tour with Ctrl+D submission. |
 
@@ -59,11 +63,16 @@ deterministic without network access.
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.
+- Every example is a one-line entry point — `void main() => runTuiApp(const
+  MyApp());` — and quits by calling `TuiApp.exit(context)` from its key
+  handler, so no example threads an `onQuit` callback or calls `dart:io`'s
+  `exit`. Mouse reporting is requested with `runTuiApp(..., enableMouse:
+  true)`.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
-  The layout, Select, ScrollBox, and framework-primitives examples also accept
-  `q`. Chat, TextArea, and the widget tour accept `Esc`. The inherited example
-  uses `t` to switch palettes. In the tour, `q` quits only while the TextArea
-  is not focused.
+  The layout, Select, ScrollBox, ListView, DataTable, components, theme, and
+  framework-primitives examples also accept `q`. Chat and TextArea accept
+  `Esc`. The widget tour accepts both: `Esc` always, and `q` only while the
+  TextArea is not focused. The inherited example uses `t` to switch palettes.
 - Quit wrappers around a real control use `Focus(canRequestFocus: false)` so
   Tab stays on the field, list, or viewport.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The

@@ -1,4 +1,5 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
+import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:meta/meta.dart';
@@ -18,6 +19,34 @@ import '../rendering/render_view.dart';
 import '../scheduler/scheduler_binding.dart';
 import 'terminal_session.dart';
 
+/// Builds a [TuiBinding] with injectable terminal seams, without mounting.
+///
+/// Separate from [runTuiAppForTesting] because a harness that wraps the root
+/// widget — the app-scope wrapper `runTuiApp` installs, for instance — needs
+/// the binding before it can build the widget it mounts.
+@visibleForTesting
+TuiBinding createTuiBindingForTesting({
+  int width = 80,
+  int height = 24,
+  bool headless = false,
+  InputManager? inputManager,
+  Renderer? renderer,
+  TerminalPlatform? terminalPlatform,
+  RendererFactory? rendererFactory,
+  TerminalInputDriverFactory? inputDriverFactory,
+  void Function(int exitCode)? exitProcess,
+}) => TuiBinding._(
+  width: width,
+  height: height,
+  headless: headless,
+  inputManager: inputManager,
+  renderer: renderer,
+  terminalPlatform: terminalPlatform,
+  rendererFactory: rendererFactory,
+  inputDriverFactory: inputDriverFactory,
+  exitProcess: exitProcess,
+);
+
 /// Runs [app] through a [TuiBinding] with injectable terminal seams for tests.
 @visibleForTesting
 TuiBinding runTuiAppForTesting(
@@ -31,20 +60,17 @@ TuiBinding runTuiAppForTesting(
   RendererFactory? rendererFactory,
   TerminalInputDriverFactory? inputDriverFactory,
   void Function(int exitCode)? exitProcess,
-}) {
-  final binding = TuiBinding._(
-    width: width,
-    height: height,
-    headless: headless,
-    inputManager: inputManager,
-    renderer: renderer,
-    terminalPlatform: terminalPlatform,
-    rendererFactory: rendererFactory,
-    inputDriverFactory: inputDriverFactory,
-    exitProcess: exitProcess,
-  )..runApp(app);
-  return binding;
-}
+}) => createTuiBindingForTesting(
+  width: width,
+  height: height,
+  headless: headless,
+  inputManager: inputManager,
+  renderer: renderer,
+  terminalPlatform: terminalPlatform,
+  rendererFactory: rendererFactory,
+  inputDriverFactory: inputDriverFactory,
+  exitProcess: exitProcess,
+)..runApp(app);
 
 /// Owns the app lifecycle graph for an OpenTUI widget tree.
 final class TuiBinding {
@@ -315,11 +341,22 @@ final class TuiBinding {
   /// Call this once a hot-reload `reloadSources` request has succeeded. Only
   /// the existing element and render graphs are re-run: the renderer, terminal
   /// session, input drivers, and every native handle stay exactly as they are.
+  ///
+  /// A failing `State.reassemble()` never costs the reload its rebuild or its
+  /// repaint: it is reported to the zone this call began in, the same way a
+  /// failing ticker tick or change-notifier listener is. Rethrowing here would
+  /// abort the repaint and would be indistinguishable, at the hot-reload
+  /// service extension, from the disposal race that reports "not reassembled".
   void reassemble() {
     if (_disposed || _disposing) {
       return;
     }
-    _owner.reassemble();
+    final reportingZone = Zone.current;
+    try {
+      _owner.reassemble();
+    } on Object catch (error, stackTrace) {
+      reportingZone.handleUncaughtError(error, stackTrace);
+    }
     // Not redundant with the rebuild above. A reloaded `performLayout` or
     // `paint` body changes no widget configuration, so every value-equality
     // render setter declines to mark anything dirty and the frame would paint
