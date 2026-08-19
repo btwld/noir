@@ -19,7 +19,8 @@ void main() {
       expect(frame, BufferMatchers.containsText('Press Ctrl+C to exit.'));
 
       final title = frame.findText('Noir').single;
-      expect(frame.getForegroundColor(title.x, title.y), Color.yellow);
+      // The shared demo scaffold renders titles in ThemeData.dark.text.
+      expect(frame.getForegroundColor(title.x, title.y), Color.white);
       expect(frame.getCell(title.x, title.y).isBold, isTrue);
     } finally {
       app.dispose();

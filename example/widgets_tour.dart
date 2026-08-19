@@ -9,6 +9,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -97,130 +99,97 @@ class _TourAppState extends State<WidgetsTourApp> {
     return KeyEventResult.ignored;
   }
 
-  Widget _box({
-    required String title,
-    required bool focused,
-    required Widget child,
-    int? width,
-    int? height,
-  }) {
-    final border = focused
-        ? const Color(0.3, 0.8, 1)
-        : const Color(0.3, 0.3, 0.4);
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(border: Border.all(color: border)),
-      padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: focused ? const Color(0.3, 0.8, 1) : border,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-
   @override
-  Widget build(BuildContext context) => FocusScope(
-    node: _scope,
-    onKeyEvent: _scopeKeys,
-    child: Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Noir widget tour',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text(
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FocusScope(
+      node: _scope,
+      onKeyEvent: _scopeKeys,
+      child: DemoScaffold(
+        title: 'Noir widget tour',
+        hint:
             'Tab switches panel. Ctrl+D submits text. Esc quits. q quits unless typing.',
-            style: TextStyle(color: Color(0.7, 0.7, 0.7)),
-          ),
-          const SizedBox(height: 1),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _box(
-                title: 'Select',
-                focused: _selectFocus.hasFocus,
-                width: 22,
-                height: 8,
-                child: SizedBox(
-                  width: 18,
-                  child: Select<String>(
-                    focusNode: _selectFocus,
-                    autofocus: true,
-                    height: 5,
-                    options: _options,
-                    showScrollIndicator: true,
-                    onSelect: (i, opt) => setState(() => _selected = opt.name),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                DemoPanel(
+                  title: 'Select',
+                  focused: _selectFocus.hasFocus,
+                  width: 22,
+                  height: 8,
+                  child: SizedBox(
+                    width: 18,
+                    child: Select<String>(
+                      focusNode: _selectFocus,
+                      autofocus: true,
+                      height: 5,
+                      options: _options,
+                      showScrollIndicator: true,
+                      onSelect: (i, opt) =>
+                          setState(() => _selected = opt.name),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 2),
-              _box(
-                title: 'ScrollBox',
-                focused: _scrollFocus.hasFocus,
-                width: 28,
-                height: 9,
-                child: SizedBox(
-                  width: 24,
-                  height: 6,
-                  child: ScrollBox(
-                    focusNode: _scrollFocus,
-                    onScroll: (o) => setState(() => _scrollOffset = o.round()),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: List<Widget>.generate(
-                        25,
-                        (i) => Text('item ${i + 1}'),
+                DemoPanel(
+                  title: 'ScrollBox',
+                  focused: _scrollFocus.hasFocus,
+                  width: 28,
+                  height: 9,
+                  child: SizedBox(
+                    width: 24,
+                    height: 6,
+                    child: ScrollBox(
+                      focusNode: _scrollFocus,
+                      onScroll: (o) =>
+                          setState(() => _scrollOffset = o.round()),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List<Widget>.generate(
+                          25,
+                          (i) => Text('item ${i + 1}'),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 1),
-          _box(
-            title: 'TextArea',
-            focused: _textFocus.hasFocus,
-            width: 48,
-            height: 6,
-            child: SizedBox(
-              width: 44,
-              child: TextArea(
-                focusNode: _textFocus,
-                height: 3,
+              ],
+            ),
+            const SizedBox(height: 1),
+            DemoPanel(
+              title: 'TextArea',
+              focused: _textFocus.hasFocus,
+              width: 48,
+              height: 6,
+              child: SizedBox(
                 width: 44,
-                placeholder: 'Type… Ctrl+D to submit',
-                onChanged: (v) => setState(() => _typed = v),
-                onSubmit: _submitText,
+                child: TextArea(
+                  focusNode: _textFocus,
+                  height: 3,
+                  width: 44,
+                  placeholder: 'Type… Ctrl+D to submit',
+                  onChanged: (v) => setState(() => _typed = v),
+                  onSubmit: _submitText,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 1),
-          Text(
-            'Selected: $_selected   ScrollY: $_scrollOffset   '
-            'Typed: $_typedGraphemeCount chars',
-            style: const TextStyle(color: Color(0.7, 0.9, 1)),
-          ),
-          if (_submittedLength case final length?)
+            const SizedBox(height: 1),
             Text(
-              'Submitted: $length chars',
-              style: const TextStyle(color: Color(0.4, 1, 0.4)),
+              'Selected: $_selected   ScrollY: $_scrollOffset   '
+              'Typed: $_typedGraphemeCount chars',
+              style: TextStyle(color: theme.info),
             ),
-        ],
+            if (_submittedLength case final length?)
+              Text(
+                'Submitted: $length chars',
+                style: TextStyle(color: theme.success),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

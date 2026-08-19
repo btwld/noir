@@ -11,6 +11,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 typedef _Package = ({String name, int size, String state});
 
 const _packages = <_Package>[
@@ -98,16 +100,17 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
       maxLines: 1,
       softWrap: false,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(color: _stateColor(package.state, column)),
+      style: TextStyle(color: _stateColor(context, package.state, column)),
     );
   }
 
-  Color _stateColor(String state, int column) {
-    if (column != 2) return Color.white;
+  Color _stateColor(BuildContext context, String state, int column) {
+    final theme = Theme.of(context);
+    if (column != 2) return theme.text;
     return switch (state) {
-      'ready' => Color.success,
-      'stale' => Color.warning,
-      _ => Color.error,
+      'ready' => theme.success,
+      'stale' => theme.warning,
+      _ => theme.danger,
     };
   }
 
@@ -115,20 +118,12 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
   Widget build(BuildContext context) => Focus(
     canRequestFocus: false,
     onKeyEvent: _onAppKey,
-    child: Container(
-      padding: const EdgeInsets.all(1),
+    child: DemoScaffold(
+      title: 'DataTable demo',
+      hint: '↑/↓ to move · Enter to open · click a header to sort · q quits',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'DataTable demo',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            '↑/↓ to move · Enter to open · click a header to sort · q quits',
-            style: TextStyle(color: Color(0.6, 0.6, 0.6)),
-          ),
-          const SizedBox(height: 1),
           DataTable(
             autofocus: true,
             columns: _columns,
@@ -146,7 +141,7 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
           const SizedBox(height: 1),
           Text(
             _opened == null ? 'No row opened yet.' : 'Opened $_opened.',
-            style: const TextStyle(color: Color(0.4, 1, 0.4)),
+            style: TextStyle(color: Theme.of(context).success),
           ),
         ],
       ),

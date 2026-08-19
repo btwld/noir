@@ -35,7 +35,7 @@ class LayoutBasics extends StatelessWidget {
     autofocus: true,
     onKeyEvent: _handleKey,
     child: Container(
-      color: Color.rgb(0.05, 0.05, 0.12),
+      color: Theme.of(context).surface,
       padding: const EdgeInsets.all(1),
       child: Column(
         children: const [
@@ -58,13 +58,22 @@ class _Section extends StatelessWidget {
   final String title;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 1,
-    alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 1),
-    color: Color.rgb(0.25, 0.35, 0.6),
-    child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 1,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      color: theme.selectedBackground,
+      child: Text(
+        title,
+        style: TextStyle(
+          color: theme.selectedForeground,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 }
 
 class _Block extends StatelessWidget {
@@ -96,7 +105,9 @@ class _MainAxisCenterRow extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 5, // retain breathing room around the two-row blocks
     padding: const EdgeInsets.all(1),
-    decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
+    decoration: BoxDecoration(
+      border: Border.all(color: Theme.of(context).border),
+    ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
@@ -117,7 +128,9 @@ class _MainAxisSpaceBetweenRow extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 5, // retain breathing room around the two-row blocks
     padding: const EdgeInsets.all(1),
-    decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
+    decoration: BoxDecoration(
+      border: Border.all(color: Theme.of(context).border),
+    ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: const [
@@ -136,7 +149,9 @@ class _FlexRow extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 6, // retain breathing room around the three-row blocks
     padding: const EdgeInsets.all(1),
-    decoration: BoxDecoration(border: Border.all(color: Color(1, 1, 1, 0.3))),
+    decoration: BoxDecoration(
+      border: Border.all(color: Theme.of(context).border),
+    ),
     child: Row(
       children: const [
         Expanded(

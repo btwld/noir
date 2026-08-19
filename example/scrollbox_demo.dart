@@ -8,6 +8,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -46,52 +48,46 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    onKeyEvent: _quitOnQ,
-    child: Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'ScrollBox demo',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            '↑/↓ PgUp/PgDn Home/End to scroll. q to quit.',
-            style: TextStyle(color: Color(0.7, 0.7, 0.7)),
-          ),
-          const SizedBox(height: 1),
-          SizedBox(
-            width: 40,
-            height: 10,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0.4, 0.4, 0.6)),
-              ),
-              child: ScrollBox(
-                controller: _scrollController,
-                autofocus: true,
-                onScroll: (offset) => setState(() {}),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List<Widget>.generate(
-                    40,
-                    (i) => Text('Line ${i + 1} — long-list content row'),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _quitOnQ,
+      child: DemoScaffold(
+        title: 'ScrollBox demo',
+        hint: '↑/↓ PgUp/PgDn Home/End to scroll. q to quit.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DemoPanel(
+              width: 42,
+              height: 10,
+              child: SizedBox(
+                width: 40,
+                height: 8,
+                child: ScrollBox(
+                  controller: _scrollController,
+                  autofocus: true,
+                  onScroll: (offset) => setState(() {}),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List<Widget>.generate(
+                      40,
+                      (i) => Text('Line ${i + 1} — long-list content row'),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 1),
-          Text(
-            'offset: ${_scrollController.offset.toStringAsFixed(0)} '
-            '/ max: ${_scrollController.maxScrollExtent.toStringAsFixed(0)}',
-            style: const TextStyle(color: Color(0.7, 0.9, 1)),
-          ),
-        ],
+            const SizedBox(height: 1),
+            Text(
+              'offset: ${_scrollController.offset.toStringAsFixed(0)} '
+              '/ max: ${_scrollController.maxScrollExtent.toStringAsFixed(0)}',
+              style: TextStyle(color: theme.info),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

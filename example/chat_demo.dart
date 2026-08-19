@@ -218,7 +218,7 @@ class _ChatDemoAppState extends State<ChatDemoApp>
     canRequestFocus: false,
     onKeyEvent: _handleRootKey,
     child: Container(
-      color: const Color(0.04, 0.05, 0.08),
+      color: Theme.of(context).surface,
       padding: const EdgeInsets.all(1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,14 +228,12 @@ class _ChatDemoAppState extends State<ChatDemoApp>
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0.07, 0.08, 0.11),
-                border: Border.all(color: const Color(0.22, 0.28, 0.36)),
+                color: Theme.of(context).surfaceVariant,
+                border: Border.all(color: Theme.of(context).border),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 1),
               child: ScrollBox(
                 controller: _transcriptController,
-                scrollbarColor: const Color(0.45, 0.74, 0.92),
-                trackColor: const Color(0.13, 0.15, 0.20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -273,39 +271,35 @@ class _Header extends StatelessWidget {
   final int messageCount;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 3,
-    decoration: BoxDecoration(
-      color: const Color(0.10, 0.13, 0.18),
-      border: Border.all(color: const Color(0.30, 0.40, 0.55)),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 1),
-    child: Row(
-      children: [
-        const Text(
-          'Noir Chat',
-          style: TextStyle(
-            color: Color(0.78, 0.90, 1),
-            fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        color: theme.surfaceVariant,
+        border: Border.all(color: theme.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Row(
+        children: [
+          Text(
+            'Noir Chat',
+            style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
           ),
-        ),
-        const SizedBox(width: 2),
-        Text(
-          thinking ? 'Thinking' : 'Ready',
-          style: TextStyle(
-            color: thinking
-                ? const Color(1, 0.78, 0.35)
-                : const Color(0.45, 0.92, 0.65),
+          const SizedBox(width: 2),
+          Text(
+            thinking ? 'Thinking' : 'Ready',
+            style: TextStyle(color: thinking ? theme.warning : theme.success),
           ),
-        ),
-        const SizedBox(width: 2),
-        Text(
-          '$messageCount messages',
-          style: const TextStyle(color: Color(0.56, 0.62, 0.70)),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(width: 2),
+          Text(
+            '$messageCount messages',
+            style: TextStyle(color: theme.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MessageBlock extends StatelessWidget {
@@ -344,8 +338,8 @@ class _ThinkingBlock extends StatelessWidget {
     margin: const EdgeInsets.only(top: 1),
     child: Text(
       'Noir is thinking $frame',
-      style: const TextStyle(
-        color: Color(1, 0.78, 0.35),
+      style: TextStyle(
+        color: Theme.of(context).warning,
         fontWeight: FontWeight.bold,
       ),
     ),
@@ -368,41 +362,36 @@ class _PromptBox extends StatelessWidget {
   final VoidCallback onSubmit;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 3,
-    decoration: BoxDecoration(
-      color: const Color(0.09, 0.10, 0.13),
-      border: Border.all(
-        color: thinking
-            ? const Color(1, 0.78, 0.35)
-            : const Color(0.42, 0.85, 1),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = thinking ? theme.warning : theme.accent;
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        color: theme.surfaceVariant,
+        border: Border.all(color: accent),
       ),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 1),
-    child: Row(
-      children: [
-        Text(
-          thinking ? '...' : '>',
-          style: TextStyle(
-            color: thinking
-                ? const Color(1, 0.78, 0.35)
-                : const Color(0.42, 0.85, 1),
-            fontWeight: FontWeight.bold,
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Row(
+        children: [
+          Text(
+            thinking ? '...' : '>',
+            style: TextStyle(color: accent, fontWeight: FontWeight.bold),
           ),
-        ),
-        const SizedBox(width: 1),
-        Expanded(
-          child: TextInput(
-            controller: controller,
-            focusNode: focusNode,
-            autofocus: autofocus,
-            placeholder: thinking ? 'Waiting for Noir' : 'Message Noir',
-            cursorColor: const Color(0.42, 0.85, 1),
-            color: const Color(0.94, 0.96, 1),
-            onSubmit: onSubmit,
+          const SizedBox(width: 1),
+          Expanded(
+            child: TextInput(
+              controller: controller,
+              focusNode: focusNode,
+              autofocus: autofocus,
+              placeholder: thinking ? 'Waiting for Noir' : 'Message Noir',
+              cursorColor: theme.accent,
+              color: theme.text,
+              onSubmit: onSubmit,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

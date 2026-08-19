@@ -10,6 +10,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -51,52 +53,40 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    onKeyEvent: _handleAppKey,
-    child: Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'TextArea demo',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            'Type. Enter=newline. Ctrl+D=submit. Esc=quit.',
-            style: TextStyle(color: Color(0.7, 0.7, 0.7)),
-          ),
-          const SizedBox(height: 1),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0.4, 0.4, 0.6)),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _handleAppKey,
+      child: DemoScaffold(
+        title: 'TextArea demo',
+        hint: 'Type. Enter=newline. Ctrl+D=submit. Esc=quit.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DemoPanel(
+              child: TextArea(
+                autofocus: true,
+                width: 50,
+                height: 6,
+                placeholder: 'Write something multi-line here…',
+                onChanged: (v) => setState(() => _value = v),
+                onSubmit: _submit,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 1),
-            child: TextArea(
-              autofocus: true,
-              width: 50,
-              height: 6,
-              placeholder: 'Write something multi-line here…',
-              onChanged: (v) => setState(() => _value = v),
-              onSubmit: _submit,
-            ),
-          ),
-          const SizedBox(height: 1),
-          Text(
-            'Length: $_graphemeLength',
-            style: const TextStyle(color: Color(0.7, 0.9, 1)),
-          ),
-          if (_lastSubmitted.isNotEmpty) ...[
             const SizedBox(height: 1),
-            const Text(
-              'Last submitted:',
-              style: TextStyle(color: Color(0.4, 1, 0.4)),
+            Text(
+              'Length: $_graphemeLength',
+              style: TextStyle(color: theme.info),
             ),
-            Text(_lastSubmitted),
+            if (_lastSubmitted.isNotEmpty) ...[
+              const SizedBox(height: 1),
+              Text('Last submitted:', style: TextStyle(color: theme.success)),
+              Text(_lastSubmitted),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

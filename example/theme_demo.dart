@@ -8,6 +8,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -72,6 +74,8 @@ class _ThemeDemoAppState extends State<ThemeDemoApp> {
 }
 
 /// Reads every token it paints from [Theme.of], so it never names a color.
+/// The frame itself is the shared [DemoScaffold], which resolves the same
+/// tokens — swapping the palette re-skins chrome and content together.
 class _ThemedPanel extends StatelessWidget {
   const _ThemedPanel({required this.paletteName});
 
@@ -80,21 +84,12 @@ class _ThemedPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      color: theme.surface,
-      padding: const EdgeInsets.all(1),
+    return DemoScaffold(
+      title: 'Theme demo — $paletteName',
+      hint: 'Press t to swap palettes, q to quit.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Theme demo — $paletteName',
-            style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Press t to swap palettes, q to quit.',
-            style: TextStyle(color: theme.textMuted),
-          ),
-          const SizedBox(height: 1),
           Container(
             decoration: BoxDecoration(
               color: theme.surfaceVariant,

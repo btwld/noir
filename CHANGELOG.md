@@ -44,6 +44,12 @@
   several lists on screen.
 - `DataTable` gained `columnSpacing` (default 1), so a right-aligned column
   no longer abuts the text of its neighbor.
+- The examples share one themed chrome (`example/src/demo_scaffold.dart`):
+  a `DemoScaffold` frame and `DemoPanel` bordered panel that resolve every
+  chrome color through `Theme.of`, replacing per-demo color literals. The
+  `counter` (Material homage), `like_reactor` (designed palette), and
+  `inherited_example` (teaches raw `InheritedWidget`) demos keep their own
+  looks deliberately.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

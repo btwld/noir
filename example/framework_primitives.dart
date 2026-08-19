@@ -7,6 +7,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -83,17 +85,13 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
       child: Focus(
         autofocus: true,
         onKeyEvent: _handleQuit,
-        child: Container(
-          color: const Color(0.05, 0.06, 0.1),
-          padding: const EdgeInsets.all(2),
+        child: DemoScaffold(
+          title: 'Framework primitives',
+          hint: 'Enter/Space/click increments. q quits.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 1,
             children: [
-              const Text(
-                'Framework primitives',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
               RichText(
                 text: TextSpan(
                   text: 'Count: ',
@@ -111,10 +109,6 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
               ),
               _ActivationSurface(key: _activationKey, onActivate: _activate),
               Text('Last activation: $_lastActivation'),
-              const Text(
-                'Enter/Space/click increments. q quits.',
-                style: TextStyle(color: Color.lightGray),
-              ),
             ],
           ),
         ),
@@ -148,7 +142,7 @@ class _ActivationSurfaceState extends State<_ActivationSurface> {
     child: Container(
       width: 18,
       height: 1,
-      color: const Color(0.2, 0.4, 0.8),
+      color: Theme.of(context).selectedBackground,
       child: const Text('Activate'),
     ),
   );

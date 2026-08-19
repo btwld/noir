@@ -11,6 +11,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
+import 'src/demo_scaffold.dart';
+
 void main() {
   late final TuiApp app;
   void quit() {
@@ -72,28 +74,18 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
   Widget build(BuildContext context) => Focus(
     canRequestFocus: false,
     onKeyEvent: _onAppKey,
-    child: Container(
-      padding: const EdgeInsets.all(1),
+    child: DemoScaffold(
+      title: 'Components demo',
+      hint: 'Tab to move · Space/Enter to activate · s spinner · q quit',
+      titleTrailing: [
+        Badge(label: _statusLabel, variant: _statusVariant),
+        // A spinner animates for as long as it is mounted, so stopping
+        // it means taking it out of the tree.
+        if (_spinning) const Spinner() else const Text('·'),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            spacing: 1,
-            children: [
-              const Text(
-                'Components demo',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Badge(label: _statusLabel, variant: _statusVariant),
-              // A spinner animates for as long as it is mounted, so stopping
-              // it means taking it out of the tree.
-              if (_spinning) const Spinner() else const Text('·'),
-            ],
-          ),
-          const Text(
-            'Tab to move · Space/Enter to activate · s spinner · q quit',
-            style: TextStyle(color: Color(0.6, 0.6, 0.6)),
-          ),
           const Divider(),
           Row(
             spacing: 2,
@@ -137,7 +129,7 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
               ProgressBar(value: _progress, width: 24),
               Text(
                 '$_steps/$_totalSteps',
-                style: const TextStyle(color: Color(0.7, 0.7, 0.7)),
+                style: TextStyle(color: Theme.of(context).textMuted),
               ),
             ],
           ),

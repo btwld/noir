@@ -32,48 +32,54 @@ class FlexLayoutShowcase extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    onKeyEvent: _handleKey,
-    child: Container(
-      color: Color.rgb(0.05, 0.05, 0.12),
-      padding: EdgeInsets.all(1),
-      child: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 1),
-          Expanded(
-            child: Row(
-              children: [
-                _buildNavigationPane(),
-                const SizedBox(width: 1),
-                Expanded(child: _buildContentArea()),
-              ],
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _handleKey,
+      child: Container(
+        color: theme.surface,
+        padding: EdgeInsets.all(1),
+        child: Column(
+          children: [
+            _buildHeader(theme),
+            const SizedBox(height: 1),
+            Expanded(
+              child: Row(
+                children: [
+                  _buildNavigationPane(theme),
+                  const SizedBox(width: 1),
+                  Expanded(child: _buildContentArea(theme)),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 1),
-          _buildFooter(),
-        ],
+            const SizedBox(height: 1),
+            _buildFooter(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) => Container(
+    height: 3,
+    alignment: Alignment.center,
+    padding: EdgeInsets.all(1),
+    color: theme.selectedBackground,
+    child: Text(
+      'Noir Flex Layout Showcase',
+      style: TextStyle(
+        color: theme.selectedForeground,
+        fontWeight: FontWeight.bold,
       ),
     ),
   );
 
-  Widget _buildHeader() => Container(
-    height: 3,
-    alignment: Alignment.center,
-    padding: EdgeInsets.all(1),
-    color: Color.rgb(0.2, 0.3, 0.8),
-    child: Text(
-      'Noir Flex Layout Showcase',
-      style: TextStyle(color: Color.white, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _buildNavigationPane() => Container(
+  Widget _buildNavigationPane(ThemeData theme) => Container(
     width: 24,
     decoration: BoxDecoration(
-      color: Color.rgb(0.12, 0.12, 0.2),
-      border: Border.all(color: Color(1, 1, 1, 0.3)),
+      color: theme.surfaceVariant,
+      border: Border.all(color: theme.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,81 +87,87 @@ class FlexLayoutShowcase extends StatelessWidget {
         Container(
           height: 3,
           alignment: Alignment.center,
-          color: Color.rgb(0.25, 0.35, 0.7),
-          child: Text('Sections', style: TextStyle(color: Color.white)),
+          color: theme.selectedBackground,
+          child: Text(
+            'Sections',
+            style: TextStyle(color: theme.selectedForeground),
+          ),
         ),
         const SizedBox(height: 1),
-        _buildNavItem('Main Axis Alignments'),
-        _buildNavItem('Cross Axis Alignments'),
-        _buildNavItem('Flex Factors'),
-        _buildNavItem('Nested Layouts'),
+        _buildNavItem(theme, 'Main Axis Alignments'),
+        _buildNavItem(theme, 'Cross Axis Alignments'),
+        _buildNavItem(theme, 'Flex Factors'),
+        _buildNavItem(theme, 'Nested Layouts'),
         const Expanded(child: SizedBox.shrink()),
         Container(
           height: 2,
           alignment: Alignment.center,
-          child: Text('Noir', style: TextStyle(color: Color(0.7, 0.7, 0.7))),
+          child: Text('Noir', style: TextStyle(color: theme.textMuted)),
         ),
       ],
     ),
   );
 
-  Widget _buildContentArea() => Container(
+  Widget _buildContentArea(ThemeData theme) => Container(
     decoration: BoxDecoration(
-      color: Color.rgb(0.1, 0.1, 0.18),
-      border: Border.all(color: Color(1, 1, 1, 0.3)),
+      color: theme.surfaceVariant,
+      border: Border.all(color: theme.border),
     ),
     child: ScrollBox(
       autofocus: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSectionHeader('MainAxisAlignment Examples'),
+          _buildSectionHeader(theme, 'MainAxisAlignment Examples'),
           _buildMainAxisExamples(),
           const SizedBox(height: 1),
-          _buildSectionHeader('CrossAxisAlignment Examples'),
+          _buildSectionHeader(theme, 'CrossAxisAlignment Examples'),
           _buildCrossAxisExamples(),
           const SizedBox(height: 1),
-          _buildSectionHeader('Flexible & Expanded Distribution'),
+          _buildSectionHeader(theme, 'Flexible & Expanded Distribution'),
           _buildFlexFactorExamples(),
           const SizedBox(height: 1),
-          _buildSectionHeader('Nested Layout: Dashboard Panel'),
+          _buildSectionHeader(theme, 'Nested Layout: Dashboard Panel'),
           SizedBox(height: 14, child: _buildDashboardSample()),
         ],
       ),
     ),
   );
 
-  Widget _buildFooter() => Container(
+  Widget _buildFooter(ThemeData theme) => Container(
     height: 2,
-    color: Color.rgb(0.18, 0.18, 0.26),
+    color: theme.surfaceVariant,
     padding: EdgeInsets.symmetric(horizontal: 2),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Text('Flex Layout Demo', style: TextStyle(color: Color.lightGray)),
+      children: [
+        Text('Flex Layout Demo', style: TextStyle(color: theme.textMuted)),
         Text(
           '↑/↓ to scroll · q or Ctrl+C to exit',
-          style: TextStyle(color: Color.lightGray),
+          style: TextStyle(color: theme.textMuted),
         ),
       ],
     ),
   );
 
-  Widget _buildNavItem(String label) => Container(
+  Widget _buildNavItem(ThemeData theme, String label) => Container(
     height: 2,
     alignment: Alignment.centerLeft,
     padding: EdgeInsets.symmetric(horizontal: 2),
-    child: Text(label, style: TextStyle(color: Color.lightGray)),
+    child: Text(label, style: TextStyle(color: theme.textMuted)),
   );
 
-  Widget _buildSectionHeader(String title) => Container(
+  Widget _buildSectionHeader(ThemeData theme, String title) => Container(
     height: 2,
     alignment: Alignment.centerLeft,
     padding: EdgeInsets.symmetric(horizontal: 2),
-    color: Color.rgb(0.25, 0.35, 0.6),
+    color: theme.selectedBackground,
     child: Text(
       title,
-      style: TextStyle(color: Color.white, fontWeight: FontWeight.bold),
+      style: TextStyle(
+        color: theme.selectedForeground,
+        fontWeight: FontWeight.bold,
+      ),
     ),
   );
 
