@@ -1,6 +1,7 @@
 // ignore_for_file: use_setters_to_change_properties
 import 'dart:async';
 
+import '../foundation/first_error.dart';
 import '../framework/widget.dart';
 
 /// Signature of a per-frame tick given the time elapsed since the ticker
@@ -172,6 +173,12 @@ class Ticker {
 
 /// Lets a [State] vend any number of tickers, disposing the survivors with
 /// the state.
+///
+/// A ticker still running at [dispose] is misuse and is reported in every
+/// build mode, not just debug — an [AnimationController] that outlives its
+/// [State] keeps requesting frames forever. Teardown still completes first:
+/// every ticker is disposed and the full `super.dispose()` chain runs before
+/// the first failure is thrown.
 mixin TickerProviderStateMixin<T extends StatefulWidget> on State<T>
     implements TickerProvider {
   final Set<Ticker> _tickers = <Ticker>{};
@@ -197,30 +204,37 @@ mixin TickerProviderStateMixin<T extends StatefulWidget> on State<T>
 
   @override
   void dispose() {
+    final failures = FirstErrorRecorder();
     for (final ticker in List<Ticker>.of(_tickers)) {
-      assert(
-        !ticker.isTicking,
-        'TickerProviderStateMixin.dispose called with an active ticker. '
-        'Dispose your AnimationController before calling super.dispose().',
-      );
-      ticker.dispose();
+      failures
+        ..attempt(() => _rejectActiveTicker(ticker, 'TickerProviderStateMixin'))
+        ..attempt(ticker.dispose);
     }
-    assert(_tickers.isEmpty);
-    super.dispose();
+    failures
+      ..attempt(super.dispose)
+      ..rethrowFirst();
   }
 }
 
 /// Lets a [State] vend exactly one ticker, disposed with the state.
+///
+/// Both the one-ticker cardinality and the ticker-still-running-at-teardown
+/// check are enforced in every build mode, not just debug: a second ticker
+/// would be dropped on the floor, and a surviving one requests frames forever.
 mixin SingleTickerProviderStateMixin<T extends StatefulWidget> on State<T>
     implements TickerProvider {
   Ticker? _ticker;
 
   @override
   Ticker createTicker(TickerCallback onTick, {String? debugLabel}) {
-    assert(
-      _ticker == null,
-      'SingleTickerProviderStateMixin can only be used to create a single ticker.',
-    );
+    // Rejected before the scheduler mints anything, so a rejected second
+    // request leaves no untracked ticker behind.
+    if (_ticker != null) {
+      throw StateError(
+        'SingleTickerProviderStateMixin can only be used to create a single '
+        'ticker. Use TickerProviderStateMixin to vend more than one.',
+      );
+    }
     final ticker = context.owner.tickerScheduler.createTicker(
       onTick,
       debugLabel: debugLabel ?? _debugTickerLabel(this),
@@ -231,15 +245,31 @@ mixin SingleTickerProviderStateMixin<T extends StatefulWidget> on State<T>
 
   @override
   void dispose() {
-    assert(
-      _ticker == null || !_ticker!.isTicking,
-      'SingleTickerProviderStateMixin.dispose called with an active ticker. '
-      'Dispose your AnimationController before calling super.dispose().',
-    );
-    _ticker?.dispose();
+    final failures = FirstErrorRecorder();
+    final ticker = _ticker;
+    if (ticker != null) {
+      failures
+        ..attempt(
+          () => _rejectActiveTicker(ticker, 'SingleTickerProviderStateMixin'),
+        )
+        ..attempt(ticker.dispose);
+    }
     _ticker = null;
-    super.dispose();
+    failures
+      ..attempt(super.dispose)
+      ..rethrowFirst();
   }
+}
+
+/// Rejects a ticker that is still running when its owning [State] tears down.
+void _rejectActiveTicker(Ticker ticker, String mixinName) {
+  if (!ticker.isTicking) {
+    return;
+  }
+  throw StateError(
+    '$mixinName.dispose called with an active ticker. Dispose your '
+    'AnimationController before calling super.dispose().',
+  );
 }
 
 String _debugTickerLabel(State<dynamic> state) {
