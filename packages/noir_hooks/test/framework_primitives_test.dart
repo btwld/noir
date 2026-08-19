@@ -217,7 +217,7 @@ void main() {
     expect(log, <String>['effect', 'cleanup', 'effect', 'cleanup']);
   });
 
-  test('runtime-type mismatch resets the impacted hook tail', () {
+  test('runtime-type mismatch throws outside reassemble', () {
     final host = TestElementHost();
     final log = <String>[];
     var useStateFirst = true;
@@ -238,12 +238,79 @@ void main() {
 
     host.mount(buildRoot());
     useStateFirst = false;
-    host.update(buildRoot());
 
+    expect(
+      () => host.update(buildRoot()),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.toString(),
+          'message',
+          contains('Hook type mismatch'),
+        ),
+      ),
+    );
     expect(log, <String>['tail disposed']);
 
     host.dispose();
+    expect(log, <String>['tail disposed']);
+  });
+
+  test('reassemble permits one structural hook replacement build', () {
+    final host = TestElementHost();
+    final log = <String>[];
+    var useStateFirst = true;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        if (useStateFirst) {
+          useState<int>(0);
+        } else {
+          useMemoized<Object>(Object.new);
+        }
+        useOnDispose(() {
+          log.add('tail disposed');
+        });
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    useStateFirst = false;
+    host.owner.reassemble();
+    host.pumpBuild();
+
+    expect(log, <String>['tail disposed']);
+
+    useStateFirst = true;
+    expect(
+      () => host.update(buildRoot()),
+      throwsA(isA<StateError>()),
+      reason: 'the reassemble recovery applies only to its scheduled build',
+    );
     expect(log, <String>['tail disposed', 'tail disposed']);
+
+    host.dispose();
+  });
+
+  test('HookState.reassemble attempts every retained hook', () {
+    final host = TestElementHost();
+    final log = <String>[];
+
+    host.mount(
+      HookBuilder(
+        builder: (context) {
+          use(_ReassembleProbeHook('first', log, shouldThrow: true));
+          use(_ReassembleProbeHook('second', log));
+          return const Container();
+        },
+      ),
+    );
+
+    expect(host.owner.reassemble, throwsA(isA<StateError>()));
+    expect(log, <String>['reassemble:first', 'reassemble:second']);
+
+    host.pumpBuild();
+    host.dispose();
   });
 
   test('class-based HookState.build may compose later hooks', () {
@@ -492,6 +559,35 @@ final class _ProbeHookState extends HookState<int, _ProbeHook> {
       super.dispose();
     }
   }
+}
+
+final class _ReassembleProbeHook extends Hook<Object?> {
+  const _ReassembleProbeHook(
+    this.label,
+    this.log, {
+    this.shouldThrow = false,
+  });
+
+  final String label;
+  final List<String> log;
+  final bool shouldThrow;
+
+  @override
+  _ReassembleProbeHookState createState() => _ReassembleProbeHookState();
+}
+
+final class _ReassembleProbeHookState
+    extends HookState<Object?, _ReassembleProbeHook> {
+  @override
+  void reassemble() {
+    hook.log.add('reassemble:${hook.label}');
+    if (hook.shouldThrow) {
+      throw StateError('reassemble failed');
+    }
+  }
+
+  @override
+  Object? build(BuildContext context) => null;
 }
 
 final class _InvalidUpdateHook extends Hook<Object?> {

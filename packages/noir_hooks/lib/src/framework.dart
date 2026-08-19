@@ -82,6 +82,13 @@ abstract class HookState<R, H extends Hook<R>> {
   @protected
   void deactivate() {}
 
+  /// Called after Noir hot reload swaps code and before the next build.
+  ///
+  /// Use this only to refresh development-time state that was derived by
+  /// [initHook]. Hooks must not be called from this callback.
+  @protected
+  void reassemble() {}
+
   /// Releases resources owned by this hook state.
   ///
   /// Overrides should release their resources and then call `super.dispose()`.
@@ -138,6 +145,12 @@ abstract class HookState<R, H extends Hook<R>> {
   void _deactivateEntry() {
     if (_mounted && !_disposing) {
       deactivate();
+    }
+  }
+
+  void _reassembleEntry() {
+    if (_mounted && !_disposing) {
+      reassemble();
     }
   }
 
@@ -247,6 +260,8 @@ final class _HookWidgetState extends State<HookWidget>
   int _hookIndex = 0;
   bool _isBuilding = false;
   bool _isResolvingHook = false;
+  bool _reassemblePending = false;
+  bool _isReassembleBuild = false;
 
   bool get isBuilding => _isBuilding;
 
@@ -256,8 +271,8 @@ final class _HookWidgetState extends State<HookWidget>
     if (_isResolvingHook) {
       throw StateError(
         'A hook cannot call another hook from initHook, didUpdateHook, '
-        'deactivate, dispose, or an effect callback. Compose hooks in a '
-        'top-level use... function or from HookState.build instead.',
+        'deactivate, reassemble, dispose, or an effect callback. Compose '
+        'hooks in a top-level use... function or from HookState.build instead.',
       );
     }
 
@@ -275,6 +290,14 @@ final class _HookWidgetState extends State<HookWidget>
         } else {
           final current = _hooks[index];
           if (current._hookType != nextHook.runtimeType) {
+            if (!_isReassembleBuild) {
+              throw StateError(
+                'Hook type mismatch at index $index:\n'
+                '- previous hook: ${current._hookType}\n'
+                '- new hook: ${nextHook.runtimeType}\n'
+                'Hooks must be called unconditionally and in the same order.',
+              );
+            }
             _disposeFrom(index);
             state = _createHookState(nextHook, nextKeys);
             _hooks.add(state);
@@ -307,6 +330,8 @@ final class _HookWidgetState extends State<HookWidget>
     _currentHookState = this;
     _hookIndex = 0;
     _isBuilding = true;
+    _isReassembleBuild = _reassemblePending;
+    _reassemblePending = false;
 
     Widget? result;
     final failures = _FirstErrorRecorder();
@@ -322,6 +347,7 @@ final class _HookWidgetState extends State<HookWidget>
       _currentHookState = previous;
       _isBuilding = false;
       _isResolvingHook = false;
+      _isReassembleBuild = false;
     }
 
     failures.rethrowFirst();
@@ -337,6 +363,25 @@ final class _HookWidgetState extends State<HookWidget>
     failures.attempt(() {
       super.deactivate();
     });
+    failures.rethrowFirst();
+  }
+
+  @override
+  void reassemble() {
+    _reassemblePending = true;
+    final failures = _FirstErrorRecorder();
+    final wasResolvingHook = _isResolvingHook;
+    _isResolvingHook = true;
+    try {
+      failures.attempt(() {
+        super.reassemble();
+      });
+      for (final hook in _hooks) {
+        failures.attempt(hook._reassembleEntry);
+      }
+    } finally {
+      _isResolvingHook = wasResolvingHook;
+    }
     failures.rethrowFirst();
   }
 
