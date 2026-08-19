@@ -48,11 +48,16 @@ dart run example/main.dart
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard mode controls are unavailable in that mode.
+- Every example is a one-line entry point — `void main() => runTuiApp(const
+  MyApp());` — and quits by calling `TuiApp.exit(context)` from its key
+  handler, so no example threads an `onQuit` callback or calls `dart:io`'s
+  `exit`. Mouse reporting is requested with `runTuiApp(..., enableMouse:
+  true)`.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
-  The layout, Select, ScrollBox, and framework-primitives examples also accept
-  `q`. Chat, TextArea, and the widget tour accept `Esc`. The inherited example
-  uses `t` to switch palettes. In the tour, `q` quits only while the TextArea
-  is not focused.
+  The layout, Select, ScrollBox, ListView, DataTable, components, theme, and
+  framework-primitives examples also accept `q`. Chat and TextArea accept
+  `Esc`. The widget tour accepts both: `Esc` always, and `q` only while the
+  TextArea is not focused. The inherited example uses `t` to switch palettes.
 - Quit wrappers around a real control use `Focus(canRequestFocus: false)` so
   Tab stays on the field, list, or viewport.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The

@@ -3,40 +3,25 @@
 library;
 
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(FlexLayoutShowcase(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const FlexLayoutShowcase(), enableMouse: true);
 
 class FlexLayoutShowcase extends StatelessWidget {
-  const FlexLayoutShowcase({required this.onQuit, super.key});
-
-  final VoidCallback onQuit;
-
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event.isPress && event.character == 'q') {
-      onQuit();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
+  const FlexLayoutShowcase({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Focus(
       canRequestFocus: false,
-      onKeyEvent: _handleKey,
+      onKeyEvent: (node, event) {
+        if (event.isPress && event.character == 'q') {
+          TuiApp.exit(context);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
       child: Container(
         color: theme.surface,
         padding: EdgeInsets.all(1),

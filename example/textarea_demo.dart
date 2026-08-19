@@ -6,26 +6,14 @@
 // Backspace, arrows, Home/End, PgUp/PgDn, Ctrl+Home/End all work.
 // Press Esc to quit.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(TextAreaDemoApp(onQuit: quit));
-}
+void main() => runTuiApp(const TextAreaDemoApp());
 
 class TextAreaDemoApp extends StatefulWidget {
-  const TextAreaDemoApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const TextAreaDemoApp({super.key});
 
   @override
   State<TextAreaDemoApp> createState() => _TextAreaDemoAppState();
@@ -42,7 +30,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   KeyEventResult _handleAppKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyD) {

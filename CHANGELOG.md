@@ -50,6 +50,19 @@
   `counter` (Material homage), `like_reactor` (designed palette), and
   `inherited_example` (teaches raw `InheritedWidget`) demos keep their own
   looks deliberately.
+- `runTuiApp` is now a Flutter-shaped entry point:
+  `void main() => runTuiApp(const MyApp(), enableMouse: true);`. It takes
+  `enableMouse` and registers the hot-reload extension itself, and its `width`
+  and `height` parameters are gone — a real terminal auto-sizes, and a custom
+  canvas is advanced hosting through `TuiBinding`.
+- Added `TuiApp.of`, `TuiApp.maybeOf`, and `TuiApp.exit(context)`. A widget
+  ends the app through the tree instead of an `onQuit` callback threaded down
+  from `main()`; `exit` disposes the app, sets the exit code, and lets the
+  event loop drain, with no `dart:io` exit call. It is idempotent and safe to
+  call from inside an event handler.
+- Every example is now a one-line entry point that quits through the tree; no
+  example threads a quit callback, hard-exits, or registers hot reload by
+  hand.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

@@ -1,39 +1,25 @@
 // ignore_for_file: cascade_invocations
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(LayoutBasics(onQuit: quit));
-}
+void main() => runTuiApp(const LayoutBasics());
 
 /// A compact demo showcasing core layout behaviors:
 /// - Row/Column structure
 /// - MainAxisAlignment variants (no stretch)
 /// - Flex distribution with Expanded/Flexible
 class LayoutBasics extends StatelessWidget {
-  const LayoutBasics({required this.onQuit, super.key});
-
-  final VoidCallback onQuit;
-
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event.isPress && event.character == 'q') {
-      onQuit();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
+  const LayoutBasics({super.key});
 
   @override
   Widget build(BuildContext context) => Focus(
     autofocus: true,
-    onKeyEvent: _handleKey,
+    onKeyEvent: (node, event) {
+      if (event.isPress && event.character == 'q') {
+        TuiApp.exit(context);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    },
     child: Container(
       color: Theme.of(context).surface,
       padding: const EdgeInsets.all(1),

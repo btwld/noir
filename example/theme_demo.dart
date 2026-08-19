@@ -4,21 +4,11 @@
 // InheritedWidget publishes a flat token set, and every widget below it
 // resolves its colors from the nearest enclosing Theme.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(ThemeDemoApp(onQuit: quit));
-}
+void main() => runTuiApp(const ThemeDemoApp());
 
 /// Two presets that differ in every token a demo row reads, so a single
 /// keypress visibly re-colors the whole subtree.
@@ -34,10 +24,7 @@ final _sunset = ThemeData.dark.copyWith(
 );
 
 class ThemeDemoApp extends StatefulWidget {
-  const ThemeDemoApp({required this.onQuit, super.key});
-
-  /// Invoked when the user presses `q`.
-  final void Function() onQuit;
+  const ThemeDemoApp({super.key});
 
   @override
   State<ThemeDemoApp> createState() => _ThemeDemoAppState();
@@ -49,7 +36,7 @@ class _ThemeDemoAppState extends State<ThemeDemoApp> {
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     if (event.character == 't') {

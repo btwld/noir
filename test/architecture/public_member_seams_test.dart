@@ -435,7 +435,9 @@ void main() {
             break;
         }
       }
-      expect(publicStaticMembers, isEmpty);
+      // Navigator-style tree accessors: a widget ends the app through the
+      // scope runTuiApp installs, rather than through a threaded callback.
+      expect(publicStaticMembers, const <String>{'of', 'maybeOf', 'exit'});
       expect(publicInstanceMembers, _tuiAppMembers);
 
       final factory = unit.unit.declarations
@@ -898,6 +900,7 @@ const Set<String> _tuiAppMembers = <String>{
   'enableKittyKeyboard',
   'disableKittyKeyboard',
   'reassemble',
+  'requestExit',
   'dispose',
 };
 

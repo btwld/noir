@@ -8,9 +8,7 @@ import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  runTuiApp(const HelloApp());
-}
+void main() => runTuiApp(const HelloApp());
 
 class HelloApp extends StatelessWidget {
   const HelloApp({super.key});

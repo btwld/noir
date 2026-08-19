@@ -10,30 +10,16 @@
 // grows by one window's worth per frame rather than by 500. The focused
 // list is the one whose highlight uses the selection accent.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
 const _rowCount = 500;
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(ListViewDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const ListViewDemoApp(), enableMouse: true);
 
 class ListViewDemoApp extends StatefulWidget {
-  const ListViewDemoApp({required this.onQuit, super.key});
-
-  /// Invoked when the user presses `q`.
-  final void Function() onQuit;
+  const ListViewDemoApp({super.key});
 
   @override
   State<ListViewDemoApp> createState() => _ListViewDemoAppState();
@@ -56,7 +42,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

@@ -4,27 +4,14 @@
 // Use ↑/↓ to scroll one line, PgUp/PgDn for a page, Home/End for ends.
 // Press q to quit.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(ScrollDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const ScrollDemoApp(), enableMouse: true);
 
 class ScrollDemoApp extends StatefulWidget {
-  const ScrollDemoApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const ScrollDemoApp({super.key});
 
   @override
   State<ScrollDemoApp> createState() => _ScrollDemoAppState();
@@ -41,7 +28,7 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
 
   KeyEventResult _quitOnQ(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

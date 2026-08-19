@@ -7,8 +7,6 @@
 // Sorting is presentational in DataTable: the table reports the request and
 // this demo reorders its own list, which is the only place row order lives.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
@@ -30,22 +28,10 @@ const _packages = <_Package>[
   (name: 'yaml', size: 52, state: 'ready'),
 ];
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(DataTableDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const DataTableDemoApp(), enableMouse: true);
 
 class DataTableDemoApp extends StatefulWidget {
-  const DataTableDemoApp({required this.onQuit, super.key});
-
-  /// Invoked when the user presses `q`.
-  final void Function() onQuit;
+  const DataTableDemoApp({super.key});
 
   @override
   State<DataTableDemoApp> createState() => _DataTableDemoAppState();
@@ -66,7 +52,7 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

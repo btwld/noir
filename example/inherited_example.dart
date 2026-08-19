@@ -144,6 +144,4 @@ class _ThemeSurface extends StatelessWidget {
   }
 }
 
-void main() {
-  runTuiApp(const ThemedApp());
-}
+void main() => runTuiApp(const ThemedApp());

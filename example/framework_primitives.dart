@@ -3,31 +3,18 @@
 //
 // Press Enter or Space, or click Activate, to increment. Press q to quit.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(FrameworkPrimitivesApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const FrameworkPrimitivesApp(), enableMouse: true);
 
 final class _IncrementIntent extends Intent {
   const _IncrementIntent();
 }
 
 class FrameworkPrimitivesApp extends StatefulWidget {
-  const FrameworkPrimitivesApp({required this.onQuit, super.key});
-
-  final VoidCallback onQuit;
+  const FrameworkPrimitivesApp({super.key});
 
   @override
   State<FrameworkPrimitivesApp> createState() => _FrameworkPrimitivesAppState();
@@ -55,7 +42,7 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
 
   KeyEventResult _handleQuit(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

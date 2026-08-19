@@ -5,27 +5,14 @@
 // Press Tab / Shift+Tab to move focus. Ctrl+D submits the TextArea.
 // Esc always quits. q quits unless the TextArea is focused.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(WidgetsTourApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const WidgetsTourApp(), enableMouse: true);
 
 class WidgetsTourApp extends StatefulWidget {
-  const WidgetsTourApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const WidgetsTourApp({super.key});
 
   @override
   State<WidgetsTourApp> createState() => _TourAppState();
@@ -83,7 +70,7 @@ class _TourAppState extends State<WidgetsTourApp> {
   KeyEventResult _scopeKeys(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     if (_textFocus.hasFocus &&
@@ -93,7 +80,7 @@ class _TourAppState extends State<WidgetsTourApp> {
       return KeyEventResult.handled;
     }
     if (event.character == 'q' && !_textFocus.hasFocus) {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

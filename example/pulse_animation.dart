@@ -1,9 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 import 'package:noir/noir.dart';
 
-void main() {
-  runTuiApp(const PulseAnimationDemo());
-}
+void main() => runTuiApp(const PulseAnimationDemo());
 
 class PulseAnimationDemo extends StatefulWidget {
   const PulseAnimationDemo({super.key});

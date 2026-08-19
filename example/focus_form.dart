@@ -4,9 +4,9 @@ import 'package:noir/noir.dart';
 import 'src/demo_scaffold.dart';
 
 void main() {
-  final app = runTuiApp(const FocusFormApp());
-  app.enableMouse();
-  app.enableKittyKeyboard();
+  // Kitty keyboard stays a handle method: only apps that want disambiguated
+  // escape codes ask for it.
+  runTuiApp(const FocusFormApp(), enableMouse: true).enableKittyKeyboard();
 }
 
 class FocusFormApp extends StatefulWidget {

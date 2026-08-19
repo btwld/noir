@@ -2,22 +2,13 @@
 // Run with: dart run example/chat_demo.dart
 
 import 'dart:async';
-import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
 typedef ChatResponder = FutureOr<String> Function(String prompt);
 
 void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(ChatDemoApp(onQuit: quit));
-  app.enableMouse();
-  app.enableKittyKeyboard();
+  runTuiApp(const ChatDemoApp(), enableMouse: true).enableKittyKeyboard();
 }
 
 enum ChatRole { user, assistant }
@@ -34,7 +25,6 @@ final class ChatMessage {
 class ChatDemoApp extends StatefulWidget {
   const ChatDemoApp({
     super.key,
-    this.onQuit,
     this.responder,
     this.responseDelay = const Duration(milliseconds: 900),
     this.initialMessages = _defaultMessages,
@@ -43,7 +33,6 @@ class ChatDemoApp extends StatefulWidget {
     this.autofocusInput = true,
   });
 
-  final VoidCallback? onQuit;
   final ChatResponder? responder;
   final Duration responseDelay;
   final List<ChatMessage> initialMessages;
@@ -125,7 +114,7 @@ class _ChatDemoAppState extends State<ChatDemoApp>
     }
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onQuit?.call();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.pageUp) {

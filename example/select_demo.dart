@@ -5,27 +5,14 @@
 // Demonstrates Select<T> rendering, focus, keyboard navigation, and the
 // onChanged vs onSelect callback split.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(SelectDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const SelectDemoApp(), enableMouse: true);
 
 class SelectDemoApp extends StatefulWidget {
-  const SelectDemoApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const SelectDemoApp({super.key});
 
   @override
   State<SelectDemoApp> createState() => _SelectDemoAppState();
@@ -53,7 +40,7 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

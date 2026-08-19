@@ -7,28 +7,14 @@
 // Shows every Phase B component in one screen: Checkbox, Switch, Button,
 // Divider, ProgressBar, Spinner, and Badge.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app = runTuiApp(ComponentsDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const ComponentsDemoApp(), enableMouse: true);
 
 class ComponentsDemoApp extends StatefulWidget {
-  const ComponentsDemoApp({required this.onQuit, super.key});
-
-  /// Invoked when the user presses `q` outside a text field.
-  final void Function() onQuit;
+  const ComponentsDemoApp({super.key});
 
   @override
   State<ComponentsDemoApp> createState() => _ComponentsDemoAppState();
@@ -48,7 +34,7 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
     if (!event.isPress) return KeyEventResult.ignored;
     switch (event.character) {
       case 'q':
-        widget.onQuit();
+        TuiApp.exit(context);
         return KeyEventResult.handled;
       case 's':
         setState(() => _spinning = !_spinning);

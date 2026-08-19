@@ -200,10 +200,14 @@ void main() {
       contains('pin an exact commit or release tag'),
     );
     expect(readme, contains('Noir is currently a prerelease.'));
+    // Three complete, runnable samples: the one-line entry point plus the
+    // two Quick Start apps. Fragments stay inline so every block compiles.
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
-      hasLength(2),
+      hasLength(3),
     );
+    expect(readme, contains('void main() => runTuiApp(const MyApp('));
+    expect(readme, contains('TuiApp.exit(context)'));
     expect(quickStart, contains('class HelloApp extends StatelessWidget'));
     expect(quickStart, contains('class CounterApp extends StatefulWidget'));
     expect(quickStart, contains('setState(() => _count++)'));
@@ -280,8 +284,8 @@ void main() {
 
   test('shipped lifecycle guidance matches the final TuiApp facade', () {
     expect(appSource, contains('TuiApp runTuiApp('));
-    expect(appSource, contains('return TuiApp._(binding);'));
-    expect(appSource, contains('TuiApp._(this._binding);'));
+    expect(appSource, contains('final handle = TuiApp._(binding, '));
+    expect(appSource, contains('TuiApp._(this._binding, this._exitCodeSink);'));
     for (final method in <String>['onKey', 'onMouse', 'onPaste']) {
       expect(
         appSource,
