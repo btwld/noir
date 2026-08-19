@@ -14,6 +14,7 @@ stable 1.0.
   `Align`, `Flexible`, and `Expanded`.
 - Handle text editing, selection, scrolling, keyboard focus, mouse input, and
   application-wide shortcuts.
+- Opt into reusable widget lifecycle hooks with `package:noir/hooks.dart`.
 - Drop to supported renderer, buffer, or raw FFI APIs when an application
   needs more control.
 
@@ -182,6 +183,32 @@ See
 for the complete styled version with a solid action button and
 hot-reload registration.
 
+## Widget Lifecycle Hooks
+
+Hooks ship in the main `noir` package but remain a separate opt-in library:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir/hooks.dart';
+```
+
+```dart
+class HookCounter extends HookWidget {
+  const HookCounter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useState(0);
+    return Text('Count: ${count.value}');
+  }
+}
+```
+
+The library includes state, effects, memoization, listenables, asynchronous
+snapshots, animation, focus, editing, scroll, and viewport hooks. Hooks use
+call order as identity and remain outside the default `noir.dart` namespace.
+See [the hooks guide](doc/hooks.md) for lifecycle rules and the complete API.
+
 ## Application Lifecycle and API Tiers
 
 `runTuiApp` mounts the root widget and returns a `TuiApp` handle synchronously.
@@ -209,9 +236,10 @@ It is the hot-reload hook: call it after a source swap succeeds, or call
 `runTuiApp` returned, so a development driver can invoke it over the VM
 service extension `ext.noir.reassemble`.
 
-Noir has three supported import tiers:
+Noir has four supported import surfaces:
 
 - `package:noir/noir.dart` — ordinary application and widget authoring.
+- `package:noir/hooks.dart` — opt-in widget lifecycle hooks.
 - `package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer
   access, and supported custom rendering.
 - `package:noir/noir_ffi.dart` — ABI-unstable raw FFI access.
@@ -225,6 +253,8 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
   stateful body, and solid action button controlled by Up/Down,
   `+`/`-`, Enter/Space, or click.
+- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — opt-in
+  `HookWidget`, `useState`, and effect lifecycle.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added the opt-in `package:noir/hooks.dart` library with `HookWidget`,
+  state and effect primitives, listenable and async observation, and Noir
+  controller and animation hooks.
+
 ## 0.0.1-alpha.1
 
 - The native-asset build hook now declares `native_manifest.json` and the
