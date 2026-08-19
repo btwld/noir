@@ -1,0 +1,80 @@
+name: Run hooks contract repair
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout target hooks branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: agent/add-noir-hooks-package
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Extract and run the reviewed repair
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/ci.yml').read_text()
+          marker = "          python3 <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index('\n          PY', start)
+          raw = workflow[start:end]
+          script = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in raw.splitlines()
+          )
+          Path('/tmp/hooks_contract_repair.py').write_text(script + '\n')
+          PY
+          python3 /tmp/hooks_contract_repair.py
+          rm -f scripts/hooks_contract_repair.trigger
+          rm -f .github/workflows/fix-hooks-core-contracts.yml
+
+      - name: Validate repaired branch
+        shell: bash
+        run: |
+          dart pub get
+          dart format lib/ test/ example/ bin/ hook/ scripts/
+          dart analyze --fatal-infos
+          dart test \
+            test/hooks \
+            test/architecture/hooks_library_test.dart \
+            test/architecture/package_distribution_ownership_test.dart \
+            test/architecture/semantic_public_api_docs_test.dart \
+            --concurrency=1
+
+      - name: Commit repaired branch locally
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix(hooks): align core-library distribution contracts'
+
+      - name: Validate clean publication archive
+        shell: bash
+        run: |
+          archive_root="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$archive_root"
+          dart pub get --directory "$archive_root"
+          dart pub publish --dry-run --directory "$archive_root"
+
+      - name: Push repaired hooks branch
+        shell: bash
+        run: git push origin HEAD:agent/add-noir-hooks-package
