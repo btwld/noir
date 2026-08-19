@@ -55,6 +55,26 @@ void main() {
       host.dispose();
     });
 
+    test('a base-type widget lookup walks past a nearer subclass to its '
+        'own type', () {
+      final results = _Results();
+      final outer = _BaseHost(
+        child: _DerivedHost(child: _LookupProbe(results)),
+      );
+      final host = TestElementHost()..mount(outer);
+
+      expect(
+        results.baseHost,
+        same(outer),
+        reason:
+            '_DerivedHost is not a _BaseHost lookup answer; the walk '
+            'continues to the farther exact ancestor',
+      );
+      expect(results.derivedHost, isA<_DerivedHost>());
+
+      host.dispose();
+    });
+
     test('findAncestorStateOfType still matches subtypes', () {
       final results = _Results();
       final host = TestElementHost()
