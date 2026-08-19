@@ -16,6 +16,23 @@ abstract class BuildContext {
   @internal
   BuildOwner get owner => element.owner;
 
+  /// Whether this context's element is still in the tree.
+  ///
+  /// Check this after any `await` before using the context again: the widget
+  /// may have been removed while the future was in flight, and every lookup
+  /// on this class then reads a torn-down element.
+  ///
+  /// This mirrors the framework's `mounted`, not its `active`: an element
+  /// removed by reconciliation stays mounted — and reports `true` here —
+  /// until the build pass finalizes and permanently unmounts it. That window
+  /// is exactly where a retained-`State` reinsertion would be observed, so
+  /// mounted is the liveness question a caller across an async gap is asking.
+  ///
+  /// It is also not `State.mounted`. The element leaves the tree before
+  /// `State.dispose()` runs, so this reads `false` for the whole of that call
+  /// while `State.mounted` deliberately stays `true`.
+  bool get mounted => element.mounted;
+
   /// Register a dependency on the nearest [InheritedWidget] of type [T].
   T? dependOnInheritedWidgetOfExactType<T extends InheritedWidget>({
     Object? aspect,
