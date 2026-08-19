@@ -1,0 +1,203 @@
+name: Apply hooks core-library contract fixes
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-contracts:
+    if: github.head_ref == 'agent/add-noir-hooks-package' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout pull request branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: agent/add-noir-hooks-package
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Update distribution contracts and documentation
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace(path_string: str, old: str, new: str) -> None:
+              path = Path(path_string)
+              content = path.read_text()
+              if old not in content:
+                  raise SystemExit(
+                      f'missing expected text in {path_string}: {old!r}'
+                  )
+              path.write_text(content.replace(old, new))
+
+          changelog = Path('CHANGELOG.md')
+          source = changelog.read_text()
+          old_prefix = '''# Changelog
+
+## Unreleased
+
+- Added the opt-in `package:noir/hooks.dart` library with `HookWidget`,
+  state and effect primitives, listenable and async observation, and Noir
+  controller and animation hooks.
+
+## 0.0.1-alpha.1
+
+'''
+          new_prefix = '''# Changelog
+
+## 0.0.1-alpha.1
+
+- Added the opt-in `package:noir/hooks.dart` library with `HookWidget`,
+  state and effect primitives, listenable and async observation, and Noir
+  controller and animation hooks.
+'''
+          if not source.startswith(old_prefix):
+              raise SystemExit('unexpected CHANGELOG prefix')
+          changelog.write_text(new_prefix + source[len(old_prefix):])
+
+          readme = Path('README.md')
+          source = readme.read_text()
+          start = source.index('## Widget Lifecycle Hooks\n')
+          end = source.index('## Application Lifecycle and API Tiers\n', start)
+          hook_section = '''## Widget Lifecycle Hooks
+
+Hooks ship in the main `noir` package but remain outside the default
+`noir.dart` namespace. Import `package:noir/hooks.dart` together with
+`package:noir/noir.dart`.
+
+The opt-in library includes state, effects, memoization, listenables,
+asynchronous snapshots, animation, focus, editing, scroll, and viewport hooks.
+Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
+[hooks counter example](example/hooks_counter.dart).
+
+'''
+          readme.write_text(source[:start] + hook_section + source[end:])
+
+          replace(
+              'lib/src/hooks/primitives.dart',
+              '  /// The current referenced value.',
+              '  /// Reading or assigning this field does not schedule a widget rebuild.',
+          )
+
+          distribution = Path(
+              'test/architecture/package_distribution_ownership_test.dart'
+          )
+          source = distribution.read_text()
+          source = source.replace(
+              "  final highLevelBarrel = _read('lib/noir.dart');\n",
+              "  final highLevelBarrel = _read('lib/noir.dart');\n"
+              "  final hooksBarrel = _read('lib/hooks.dart');\n",
+          )
+          source = source.replace(
+              "        'bin/high_level.dart',\n",
+              "        'bin/high_level.dart',\n        'bin/hooks.dart',\n",
+              1,
+          )
+          source = source.replace(
+              "      'high_level.dart': {'package:noir/noir.dart'},\n",
+              "      'high_level.dart': {'package:noir/noir.dart'},\n"
+              "      'hooks.dart': {\n"
+              "        'package:noir/hooks.dart',\n"
+              "        'package:noir/noir.dart',\n"
+              "      },\n",
+          )
+          source = source.replace(
+              "  test('shipped guidance describes the final three API tiers', () {",
+              "  test('shipped guidance describes the four supported import surfaces', () {",
+          )
+          source = source.replace(
+              "    expect(highLevelBarrel, contains(\"export 'src/app/app.dart' show TuiApp\"));\n",
+              "    expect(highLevelBarrel, contains(\"export 'src/app/app.dart' show TuiApp\"));\n"
+              "    expect(hooksBarrel, contains(\"export 'src/hooks/framework.dart'\"));\n",
+          )
+          source = source.replace(
+              "      '`package:noir/noir.dart` — ordinary application and widget authoring',\n",
+              "      '`package:noir/noir.dart` — ordinary application and widget authoring',\n"
+              "      '`package:noir/hooks.dart` — opt-in widget lifecycle hooks',\n",
+          )
+          source = source.replace(
+              "      'advanced hosting, renderer/buffer access, and supported custom render-object protocols',\n",
+              "      'widget lifecycle hooks are opt-in through `package:noir/hooks.dart`',\n"
+              "      'advanced hosting, renderer/buffer access, and supported custom render-object protocols',\n",
+          )
+          source = source.replace(
+              "        'package:noir/noir.dart',\n        'package:noir/noir_low_level.dart',\n",
+              "        'package:noir/noir.dart',\n        'package:noir/hooks.dart',\n"
+              "        'package:noir/noir_low_level.dart',\n",
+              1,
+          )
+          distribution.write_text(source)
+
+          skill = Path('skills/noir/SKILL.md')
+          source = skill.read_text()
+          source = source.replace(
+              '**Single import gets you the whole authoring surface:**',
+              '**The default authoring surface uses one import:**',
+          )
+          source = source.replace(
+              "```dart\nimport 'package:noir/noir.dart';\n```\n\n"
+              '`package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer\n',
+              "```dart\nimport 'package:noir/noir.dart';\n```\n\n"
+              'Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it\n'
+              'together with `package:noir/noir.dart` when using `HookWidget` or `use...`\n'
+              'functions.\n\n'
+              '`package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer\n',
+          )
+          source = source.replace(
+              'almost never need either companion import.',
+              'almost never need the low-level or FFI import.',
+          )
+          source = source.replace(
+              '`framework_primitives.dart`, `chat_demo.dart`, `widgets_tour.dart`)',
+              '`framework_primitives.dart`, `hooks_counter.dart`, `chat_demo.dart`,\n'
+              '`widgets_tour.dart`)',
+          )
+          skill.write_text(source)
+
+          temporary = Path('.github/workflows/fix-hooks-core-contracts.yml')
+          temporary.unlink()
+          PY
+
+      - name: Validate focused integration
+        shell: bash
+        run: |
+          dart pub get
+          dart format lib/ test/ example/ bin/ hook/ scripts/
+          dart analyze --fatal-infos
+          dart test \
+            test/hooks \
+            test/architecture/hooks_library_test.dart \
+            test/architecture/package_distribution_ownership_test.dart \
+            test/architecture/semantic_public_api_docs_test.dart \
+            --concurrency=1
+
+      - name: Commit fixes locally
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix(hooks): align core-library distribution contracts'
+
+      - name: Validate clean publication archive
+        shell: bash
+        run: |
+          archive_root="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$archive_root"
+          dart pub get --directory "$archive_root"
+          dart pub publish --dry-run --directory "$archive_root"
+
+      - name: Push reviewed fixes
+        shell: bash
+        run: git push origin HEAD:agent/add-noir-hooks-package
