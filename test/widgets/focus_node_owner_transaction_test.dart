@@ -3,6 +3,7 @@ import 'package:noir/src/framework/element.dart';
 import 'package:noir/src/widgets/focus_node_owner_mixin.dart';
 import 'package:test/test.dart';
 
+import '../helpers/listenable_liveness.dart';
 import '../helpers/test_element_host.dart';
 
 void main() {
@@ -20,7 +21,7 @@ void main() {
         expect(state.hookCalls, 1);
         expect(state.observedLiveOldNodes, [owned]);
         expect(
-          _isLive(owned),
+          isLive(owned),
           isFalse,
           reason: 'the owned node is released last',
         );
@@ -28,7 +29,7 @@ void main() {
 
         host.dispose();
         expect(
-          _isLive(supplied),
+          isLive(supplied),
           isTrue,
           reason: 'a widget-supplied node stays caller-owned',
         );
@@ -49,12 +50,12 @@ void main() {
       );
 
       expect(identical(state.focusNode, owned), isTrue);
-      expect(_isLive(owned), isTrue);
-      expect(_isLive(supplied), isTrue);
+      expect(isLive(owned), isTrue);
+      expect(isLive(supplied), isTrue);
 
       host.dispose();
       expect(
-        _isLive(owned),
+        isLive(owned),
         isFalse,
         reason: 'the retained node is still owned, so dispose() releases it',
       );
@@ -73,16 +74,16 @@ void main() {
 
       expect(state.createdNodes, hasLength(1));
       expect(
-        _isLive(state.createdNodes.single),
+        isLive(state.createdNodes.single),
         isFalse,
         reason: 'the rolled-back candidate is disposed, not leaked',
       );
       expect(identical(state.focusNode, supplied), isTrue);
-      expect(_isLive(supplied), isTrue);
+      expect(isLive(supplied), isTrue);
 
       host.dispose();
       expect(
-        _isLive(supplied),
+        isLive(supplied),
         isTrue,
         reason: 'ownership rolled back with the node',
       );
@@ -100,11 +101,11 @@ void main() {
       );
 
       expect(identical(state.focusNode, supplied), isTrue);
-      expect(_isLive(supplied), isTrue);
+      expect(isLive(supplied), isTrue);
       expect(state.hookCalls, 0);
 
       host.dispose();
-      expect(_isLive(supplied), isTrue);
+      expect(isLive(supplied), isTrue);
       supplied.dispose();
     });
   });
@@ -112,21 +113,6 @@ void main() {
 
 _SwapProbeState _stateOf(TestElementHost host) =>
     (host.root! as StatefulElement).state as _SwapProbeState;
-
-void _probeListener() {}
-
-/// Liveness probe: [ChangeNotifier.addListener] throws once `dispose()` ran.
-bool _isLive(FocusNode node) {
-  try {
-    node
-      ..addListener(_probeListener)
-      ..removeListener(_probeListener);
-    return true;
-    // ignore: avoid_catching_errors
-  } on StateError {
-    return false;
-  }
-}
 
 class _SwapProbe extends StatefulWidget {
   const _SwapProbe({
@@ -165,7 +151,7 @@ class _SwapProbeState extends State<_SwapProbe>
   @override
   void onFocusNodeReplaced(FocusNode oldNode) {
     hookCalls++;
-    if (_isLive(oldNode)) {
+    if (isLive(oldNode)) {
       observedLiveOldNodes.add(oldNode);
     }
     if (widget.hookFails) {

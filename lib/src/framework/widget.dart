@@ -132,20 +132,23 @@ abstract class State<T extends StatefulWidget> {
   /// [dispose] instead. [fn] is never invoked and no rebuild is requested
   /// when this throws.
   void setState(VoidCallback fn) {
-    if (_disposing) {
-      throw StateError(
-        'setState() called during dispose(): $runtimeType is tearing down '
-        'and cannot rebuild. This usually means a listener, timer, or '
-        'stream subscription fired while dispose() released it; cancel or '
-        'detach it before it can call back.',
-      );
-    }
+    // Checked before _disposing: _disposing is never reset, so once detach()
+    // clears _mounted this branch owns every later call and the message can
+    // say the teardown already finished.
     if (!_mounted) {
       throw StateError(
         'setState() called after dispose(): $runtimeType is no longer '
         'mounted. This usually means a timer, stream subscription, or '
         'callback outlived the State and fired after dispose() ran; cancel '
         'it in dispose() instead.',
+      );
+    }
+    if (_disposing) {
+      throw StateError(
+        'setState() called during dispose(): $runtimeType is tearing down '
+        'and cannot rebuild. This usually means a listener, timer, or '
+        'stream subscription fired while dispose() released it; cancel or '
+        'detach it before it can call back.',
       );
     }
     fn();

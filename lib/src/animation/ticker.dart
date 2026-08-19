@@ -1,6 +1,8 @@
 // ignore_for_file: use_setters_to_change_properties
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import '../foundation/first_error.dart';
 import '../framework/widget.dart';
 
@@ -182,6 +184,10 @@ class Ticker {
 mixin TickerProviderStateMixin<T extends StatefulWidget> on State<T>
     implements TickerProvider {
   final Set<Ticker> _tickers = <Ticker>{};
+
+  /// Number of live tickers this provider is still tracking.
+  @visibleForTesting
+  int get debugTrackedTickerCount => _tickers.length;
 
   @override
   Ticker createTicker(TickerCallback onTick, {String? debugLabel}) {

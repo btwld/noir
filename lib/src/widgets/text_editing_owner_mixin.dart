@@ -51,6 +51,11 @@ mixin TextEditingOwnerStateMixin<T extends StatefulWidget>
   /// controller is released, so a failing `addListener` — reachably, a caller
   /// supplying an already-disposed controller — leaves this state on its
   /// previous, still-live controller with its ownership unchanged.
+  ///
+  /// Deliberate design decision: attaching subsumes detaching. This replaced
+  /// an earlier guard that threw when a controller was already attached —
+  /// that guard would force callers to detach first, reopening the window
+  /// where the old controller is gone before the new one is proven usable.
   void attachController(
     TextEditingController next, {
     required bool ownsController,

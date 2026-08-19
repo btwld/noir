@@ -1,5 +1,3 @@
-import 'dart:mirrors';
-
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/framework/element.dart' show Element;
@@ -17,14 +15,14 @@ void main() {
 
         expect(host.state.mounted, isTrue);
         expect(controller.isAnimating, isTrue);
-        expect(_trackedTickers(host.state), hasLength(1));
+        expect(host.state.debugTrackedTickerCount, 1);
 
         controller.dispose();
         await run;
 
         expect(controller.isAnimating, isFalse);
         expect(controller.forward, throwsStateError);
-        expect(_trackedTickers(host.state), isEmpty);
+        expect(host.state.debugTrackedTickerCount, 0);
         expect(host.state.mounted, isTrue);
       }
     });
@@ -46,7 +44,7 @@ void main() {
       }
 
       current = host.state.createController()..forward();
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
       expect(
         host.state.dispose,
         throwsA(
@@ -61,7 +59,7 @@ void main() {
       );
 
       current.dispose();
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
       host.unmount();
       expect(host.state.mounted, isFalse);
     });
@@ -79,7 +77,7 @@ void main() {
         reason: 'the misused ticker is still released',
       );
       expect(idle.isDisposed, isTrue, reason: 'its siblings are not skipped');
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
       expect(
         host.state.superDisposeCalls,
         1,
@@ -94,13 +92,13 @@ void main() {
       final first = host.state.createRawTicker();
       final second = host.state.createRawTicker();
 
-      expect(_trackedTickers(host.state), hasLength(2));
+      expect(host.state.debugTrackedTickerCount, 2);
 
       host.unmount();
 
       expect(first.isDisposed, isTrue);
       expect(second.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
     });
 
     test('keeps stopped tickers until exactly-once terminal disposal', () {
@@ -108,21 +106,21 @@ void main() {
       addTearDown(host.unmount);
       final ticker = host.state.createRawTicker();
 
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
 
       ticker
         ..start()
         ..stop();
       expect(ticker.isTicking, isFalse);
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
 
       ticker.dispose();
       expect(ticker.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
 
       ticker.dispose();
       expect(ticker.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
     });
   });
 
@@ -159,17 +157,6 @@ void main() {
       host.unmount();
     });
   });
-}
-
-Set<Ticker> _trackedTickers(_MultiTickerHostState state) {
-  final tickerLibrary = currentMirrorSystem().libraries.values.singleWhere(
-    (library) => library.declarations.containsKey(
-      MirrorSystem.getSymbol('TickerProviderStateMixin', library),
-    ),
-  );
-  final field = MirrorSystem.getSymbol('_tickers', tickerLibrary);
-  return (reflect(state).getField(field).reflectee as Set<Object?>)
-      .cast<Ticker>();
 }
 
 _MountedHost<_MultiTickerHostState> _mountMultiTickerHost() {

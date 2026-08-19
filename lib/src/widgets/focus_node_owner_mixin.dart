@@ -48,9 +48,12 @@ mixin FocusNodeOwnerStateMixin<T extends StatefulWidget> on State<T> {
   /// Hook fired after [syncFocusNode] publishes the replacement node and
   /// before the old one is disposed, so `oldNode` is still usable here.
   /// Subclasses override to re-wire listeners, attachment, etc. If this
-  /// throws, [syncFocusNode] rolls the swap back. The mixin does NOT call
-  /// this from [initState]; subclasses that need post-init wiring should do
-  /// it directly there (see `_FocusState`).
+  /// throws, [syncFocusNode] rolls the swap back. The rollback restores only
+  /// this mixin's fields: side effects the override applied before throwing —
+  /// listeners already detached from `oldNode`, wiring already put on the new
+  /// [focusNode] — are not undone, so overrides must validate before they
+  /// mutate. The mixin does NOT call this from [initState]; subclasses that
+  /// need post-init wiring should do it directly there (see `_FocusState`).
   void onFocusNodeReplaced(FocusNode oldNode) {}
 
   @override

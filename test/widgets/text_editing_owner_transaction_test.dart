@@ -4,6 +4,7 @@ import 'package:noir/src/widgets/focus_node_owner_mixin.dart';
 import 'package:noir/src/widgets/text_editing_owner_mixin.dart';
 import 'package:test/test.dart';
 
+import '../helpers/listenable_liveness.dart';
 import '../helpers/test_element_host.dart';
 
 void main() {
@@ -20,7 +21,7 @@ void main() {
       );
 
       expect(identical(state.controller, owned), isTrue);
-      expect(_isLive(owned), isTrue);
+      expect(isLive(owned), isTrue);
       expect(owned.text, 'seed');
 
       final builds = state.builds;
@@ -34,7 +35,7 @@ void main() {
 
       host.dispose();
       expect(
-        _isLive(owned),
+        isLive(owned),
         isFalse,
         reason: 'ownership was retained with the controller',
       );
@@ -49,7 +50,7 @@ void main() {
       host.root!.update(_EditorProbe(controller: supplied));
 
       expect(identical(state.controller, supplied), isTrue);
-      expect(_isLive(owned), isFalse);
+      expect(isLive(owned), isFalse);
 
       final builds = state.builds;
       supplied.text = 'observed';
@@ -62,7 +63,7 @@ void main() {
 
       host.dispose();
       expect(
-        _isLive(supplied),
+        isLive(supplied),
         isTrue,
         reason: 'a widget-supplied controller stays caller-owned',
       );
@@ -73,21 +74,6 @@ void main() {
 
 _EditorProbeState _stateOf(TestElementHost host) =>
     (host.root! as StatefulElement).state as _EditorProbeState;
-
-void _probeListener() {}
-
-/// Liveness probe: [ChangeNotifier.addListener] throws once `dispose()` ran.
-bool _isLive(TextEditingController controller) {
-  try {
-    controller
-      ..addListener(_probeListener)
-      ..removeListener(_probeListener);
-    return true;
-    // ignore: avoid_catching_errors
-  } on StateError {
-    return false;
-  }
-}
 
 class _EditorProbe extends StatefulWidget {
   const _EditorProbe({this.controller, this.value});
