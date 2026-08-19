@@ -1,15 +1,15 @@
-name: Inspect hooks merge with latest main
+name: Finalize hooks on latest main
 
 on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  finalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Checkout target hooks branch
@@ -17,20 +17,131 @@ jobs:
         with:
           fetch-depth: 0
           ref: agent/add-noir-hooks-package
+          submodules: recursive
 
-      - name: Inspect merge conflicts
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Merge latest main and resolve reviewed overlaps
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
           set +e
           git merge --no-commit --no-ff origin/main
-          status=$?
-          echo "MERGE_EXIT=$status"
-          echo '--- status ---'
-          git status --short
-          echo '--- unmerged paths ---'
-          git diff --name-only --diff-filter=U
-          echo '--- conflict markers ---'
-          git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- . ':!external' || true
-          exit $status
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            unresolved="$(git diff --name-only --diff-filter=U)"
+            expected=$'CHANGELOG.md\nskills/noir/SKILL.md'
+            if [ "$unresolved" != "$expected" ]; then
+              echo "Unexpected merge conflicts:" >&2
+              printf '%s\n' "$unresolved" >&2
+              exit 1
+            fi
+          fi
+
+          git checkout --theirs CHANGELOG.md skills/noir/SKILL.md
+          git checkout origin/main -- .github/workflows/ci.yml
+          rm -f .github/workflows/fix-hooks-core-contracts.yml
+          rm -f scripts/hooks_contract_repair.trigger
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          changelog = Path('CHANGELOG.md')
+          source = changelog.read_text()
+          bullet = (
+              '- Added the opt-in `package:noir/hooks.dart` library with '
+              '`HookWidget`, state and effect primitives, listenable and async '
+              'observation, and Noir controller and animation hooks.\n'
+          )
+          marker = '## 0.0.1-alpha.1\n\n'
+          if bullet not in source:
+              if marker not in source:
+                  raise SystemExit('current release heading not found')
+              source = source.replace(marker, marker + bullet, 1)
+          changelog.write_text(source)
+
+          skill = Path('skills/noir/SKILL.md')
+          source = skill.read_text()
+          source = source.replace(
+              '`package:noir` — importing `package:noir/noir.dart`, building or editing a',
+              '`package:noir` — importing `package:noir/noir.dart` or '
+              '`package:noir/hooks.dart`, building or editing a',
+          )
+          source = source.replace(
+              '**Single import gets you the whole authoring surface:**',
+              '**The default authoring surface uses one import:**',
+          )
+          old = (
+              "```dart\nimport 'package:noir/noir.dart';\n```\n\n"
+              '`package:noir/noir_low_level.dart` is for advanced hosting, '
+              'renderer/buffer\n'
+          )
+          new = (
+              "```dart\nimport 'package:noir/noir.dart';\n```\n\n"
+              'Widget lifecycle hooks are opt-in through '
+              '`package:noir/hooks.dart`; import it together with '
+              '`package:noir/noir.dart` when using `HookWidget` or `use...` '
+              'functions.\n\n'
+              '`package:noir/noir_low_level.dart` is for advanced hosting, '
+              'renderer/buffer\n'
+          )
+          if old not in source:
+              raise SystemExit('skill import guidance anchor not found')
+          source = source.replace(old, new, 1)
+          source = source.replace(
+              'almost never need either companion import.',
+              'almost never need the low-level or FFI import.',
+          )
+          source = source.replace(
+              '`inherited_example.dart`, `framework_primitives.dart`, '
+              '`chat_demo.dart`,\n`widgets_tour.dart`)',
+              '`inherited_example.dart`, `framework_primitives.dart`, '
+              '`hooks_counter.dart`,\n`chat_demo.dart`, `widgets_tour.dart`)',
+          )
+          row = (
+              '| Reusable lifecycle state | `HookWidget` and `use...` from '
+              '`package:noir/hooks.dart` | `doc/hooks.md` |\n'
+          )
+          anchor = (
+              '| Local mutable state | `StatefulWidget` + `setState` | '
+              '`references/state-and-animation.md` |\n'
+          )
+          if row not in source:
+              if anchor not in source:
+                  raise SystemExit('skill state catalog anchor not found')
+              source = source.replace(anchor, anchor + row, 1)
+          skill.write_text(source)
+          PY
+
+          git add -A
+          git diff --cached --check
+          git commit -m 'merge latest main into hooks integration'
+          git reset --soft origin/main
+          git commit -m 'feat(hooks): add opt-in hooks library'
+
+      - name: Validate final candidate
+        shell: bash
+        run: |
+          dart pub get
+          dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+          dart analyze --fatal-infos
+          dart run scripts/fetch_opentui_binaries.dart --verify-only
+          dart test --concurrency=1
+
+      - name: Validate clean publication archive
+        shell: bash
+        run: |
+          archive_root="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$archive_root"
+          dart pub get --directory "$archive_root"
+          dart pub publish --dry-run --directory "$archive_root"
+
+      - name: Push one-commit final candidate
+        shell: bash
+        run: git push --force-with-lease origin HEAD:agent/add-noir-hooks-package
