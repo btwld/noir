@@ -229,10 +229,12 @@ abstract class Element {
   static RenderObject? findDescendantRenderObject(Element element) =>
       findRenderObjectElement(element)?.renderObject;
 
-  /// Registers this element as dependent on the nearest inherited widget of type [T].
+  /// Registers this element as dependent on the nearest inherited widget whose
+  /// runtime type is exactly [T].
   ///
-  /// Deliberate deviation: matches `is T` subtypes, unlike Flutter's
-  /// exact-runtimeType lookup.
+  /// A subclass of [T] does not answer the lookup, and the search continues
+  /// past it to an ancestor of exactly [T]. Use [findAncestorStateOfType] or
+  /// [findAncestorRenderObjectOfType] when subtype matching is what is wanted.
   InheritedElement? dependOnInheritedElementOfExactType<
     T extends InheritedWidget
   >({Object? aspect}) {
@@ -246,7 +248,8 @@ abstract class Element {
     return inherited;
   }
 
-  /// Returns the nearest inherited element of type [T] without registering a dependency.
+  /// Returns the nearest inherited element whose widget's runtime type is
+  /// exactly [T], without registering a dependency.
   InheritedElement?
   getElementForInheritedWidgetOfExactType<T extends InheritedWidget>() =>
       _findAncestorInheritedElementOfExactType<T>();
@@ -255,7 +258,7 @@ abstract class Element {
   _findAncestorInheritedElementOfExactType<T extends InheritedWidget>() {
     InheritedElement? result;
     visitAncestorElements((ancestor) {
-      if (ancestor is InheritedElement && ancestor.widget is T) {
+      if (ancestor is InheritedElement && ancestor.widget.runtimeType == T) {
         result = ancestor;
         return false;
       }
@@ -264,20 +267,21 @@ abstract class Element {
     return result;
   }
 
-  /// Returns the nearest ancestor widget of type [T].
+  /// Returns the nearest ancestor widget whose runtime type is exactly [T].
   ///
-  /// Deliberate deviation: matches `is T` subtypes, unlike Flutter's
-  /// exact-runtimeType lookup.
+  /// A subclass of [T] does not answer the lookup, and the search continues
+  /// past it to an ancestor of exactly [T]. Use [findAncestorStateOfType] or
+  /// [findAncestorRenderObjectOfType] when subtype matching is what is wanted.
   T? findAncestorWidgetOfExactType<T extends Widget>() {
-    T? result;
+    Widget? result;
     visitAncestorElements((ancestor) {
-      if (ancestor.widget is T) {
-        result = ancestor.widget as T;
+      if (ancestor.widget.runtimeType == T) {
+        result = ancestor.widget;
         return false;
       }
       return true;
     });
-    return result;
+    return result as T?;
   }
 
   /// Returns the nearest ancestor state of type [T].
@@ -499,7 +503,7 @@ class StatefulElement extends _ElementBase {
     // this node's own `dispose()`/`detach()` still run after every
     // descendant's.
     failures.attempt(super.unmount);
-    failures.attempt(_state.dispose);
+    failures.attempt(_state.disposeState);
     failures.attempt(_state.detach);
     failures.rethrowFirst();
   }

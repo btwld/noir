@@ -1,4 +1,5 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
+import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:meta/meta.dart';
@@ -315,11 +316,22 @@ final class TuiBinding {
   /// Call this once a hot-reload `reloadSources` request has succeeded. Only
   /// the existing element and render graphs are re-run: the renderer, terminal
   /// session, input drivers, and every native handle stay exactly as they are.
+  ///
+  /// A failing `State.reassemble()` never costs the reload its rebuild or its
+  /// repaint: it is reported to the zone this call began in, the same way a
+  /// failing ticker tick or change-notifier listener is. Rethrowing here would
+  /// abort the repaint and would be indistinguishable, at the hot-reload
+  /// service extension, from the disposal race that reports "not reassembled".
   void reassemble() {
     if (_disposed || _disposing) {
       return;
     }
-    _owner.reassemble();
+    final reportingZone = Zone.current;
+    try {
+      _owner.reassemble();
+    } on Object catch (error, stackTrace) {
+      reportingZone.handleUncaughtError(error, stackTrace);
+    }
     // Not redundant with the rebuild above. A reloaded `performLayout` or
     // `paint` body changes no widget configuration, so every value-equality
     // render setter declines to mark anything dirty and the frame would paint

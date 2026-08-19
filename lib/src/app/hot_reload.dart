@@ -39,7 +39,9 @@ bool _extensionRegistered = false;
 /// Source changes the Dart VM cannot swap into a live isolate still need a
 /// restart: `main()` bodies, `initState` bodies for already-mounted state,
 /// signatures referenced by frames on the stack, enum-to-class conversions,
-/// and any change to the bundled OpenTUI native library.
+/// and any change to the bundled OpenTUI native library. Override
+/// `State.reassemble()` to re-derive whatever an `initState` body computed
+/// from code the reload may have just changed.
 void registerHotReloadExtension(TuiApp app) {
   _hotReloadApp = app;
   if (_extensionRegistered) {

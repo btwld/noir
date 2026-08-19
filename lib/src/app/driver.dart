@@ -21,7 +21,8 @@
 /// - An app whose own quit path calls `exit` ends the session; the driver sees
 ///   only the process exit code.
 /// - `ext.noir.reassemble` inherits the documented [TuiApp.reassemble] limits:
-///   `main()` and `initState` bodies are never re-run.
+///   `main()` and `initState` bodies are never re-run. Override
+///   `State.reassemble()` to refresh values those `initState` bodies computed.
 library;
 
 import 'dart:async';
