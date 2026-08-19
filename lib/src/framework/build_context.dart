@@ -33,7 +33,11 @@ abstract class BuildContext {
   /// while `State.mounted` deliberately stays `true`.
   bool get mounted => element.mounted;
 
-  /// Register a dependency on the nearest [InheritedWidget] of type [T].
+  /// Register a dependency on the nearest [InheritedWidget] whose runtime type
+  /// is exactly [T].
+  ///
+  /// A subclass of [T] does not answer the lookup; the search continues past
+  /// it. Use [findAncestorStateOfType] when subtype matching is what is wanted.
   T? dependOnInheritedWidgetOfExactType<T extends InheritedWidget>({
     Object? aspect,
   }) {
@@ -43,18 +47,21 @@ abstract class BuildContext {
     return inherited?.widget as T?;
   }
 
-  /// Look up the nearest [InheritedElement] of type [T] without establishing a
-  /// dependency.
+  /// Look up the nearest [InheritedElement] whose widget's runtime type is
+  /// exactly [T], without establishing a dependency.
   @internal
   InheritedElement?
   getElementForInheritedWidgetOfExactType<T extends InheritedWidget>() =>
       element.getElementForInheritedWidgetOfExactType<T>();
 
-  /// Find the nearest ancestor widget of type [T].
+  /// Find the nearest ancestor widget whose runtime type is exactly [T].
+  ///
+  /// A subclass of [T] does not answer the lookup; the search continues past
+  /// it. Use [findAncestorStateOfType] when subtype matching is what is wanted.
   T? findAncestorWidgetOfExactType<T extends Widget>() =>
       element.findAncestorWidgetOfExactType<T>();
 
-  /// Find the nearest ancestor [State] of type [T].
+  /// Find the nearest ancestor [State] that is a [T], including subtypes.
   T? findAncestorStateOfType<T extends State<StatefulWidget>>() =>
       element.findAncestorStateOfType<T>();
 
