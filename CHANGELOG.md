@@ -2,74 +2,28 @@
 
 ## 0.0.1-alpha.1
 
-- Added `Theme` and `ThemeData`: a flat, inherited color-token palette that
-  built-in widgets resolve against as
-  `explicitParameter ?? Theme.maybeOf(context)?.token ?? widgetDefault`.
-  `ThemeData.dark` reproduces the literals the built-in widgets already used,
-  so an app with no `Theme` ancestor renders unchanged. The renamed
-  `DemoThemeData` in `example/inherited_example.dart` no longer shadows the
-  real API.
-- Added `ListView`, a windowed list that calls its row builder only for the
-  rows currently on screen, so list cost tracks the viewport rather than the
-  item count. One widget covers both a selectable list (arrows, `j`/`k`,
-  paging, Home/End, Enter, click) and a plain scrolling one; the mouse wheel
-  scrolls either.
-- Added `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
-  and `Badge`. The three interactive controls share one activation contract —
-  Space, Enter, or a left click — and are disabled by leaving their callback
-  null, which also drops them out of Tab traversal.
-- The development driver (`scripts/noir_drive.dart`) accepts `key space`.
-  `type` cannot send a lone space because the CLI trims each command line, so
-  Space was previously unreachable from a script.
-- Added `DataTable` and `DataColumn`: an aligned header over a windowed body,
-  with fixed or proportional columns, keyboard and mouse row selection, and
-  presentational click-to-sort headers. The header and every body row are
-  built from the same ordered column list, which is what keeps their cell
-  boundaries identical.
-- `Select`'s color parameters are now nullable and resolve through the
-  nearest `Theme`. An unthemed `Select` is byte-identical to before;
-  `backgroundColor: null` now means "the theme's surface, else no fill", so
-  pass `Color.transparent` for an explicitly unfilled list inside a themed
-  subtree.
-- `TextInput`, `TextArea`, and `ScrollBox` resolve their colors through the
-  nearest `Theme` on the same terms as `Select`: nullable parameters, previous
-  literals as the unthemed fallback, and an explicit argument always winning.
-- `Spinner` retunes its one `AnimationController` instead of replacing it. It
-  previously built a second controller when `interval` or the frame count
-  changed, which asked `SingleTickerProviderStateMixin` for a second ticker
-  and asserted.
-- `ListView`, `Select`, and `DataTable` now mute their highlight to
-  `ThemeData.surfaceVariant` while unfocused; the selection accent marks the
-  widget that owns the keyboard, which was previously indistinguishable with
-  several lists on screen.
-- `DataTable` gained `columnSpacing` (default 1), so a right-aligned column
-  no longer abuts the text of its neighbor.
-- The examples share one themed chrome (`example/src/demo_scaffold.dart`):
-  a `DemoScaffold` frame and `DemoPanel` bordered panel that resolve every
-  chrome color through `Theme.of`, replacing per-demo color literals. The
-  `counter` (Material homage), `like_reactor` (designed palette), and
-  `inherited_example` (teaches raw `InheritedWidget`) demos keep their own
-  looks deliberately.
-- `runTuiApp` is now a Flutter-shaped entry point:
-  `void main() => runTuiApp(const MyApp(), enableMouse: true);`. It takes
-  `enableMouse` and registers the hot-reload extension itself, and its `width`
-  and `height` parameters are gone — a real terminal auto-sizes, and a custom
-  canvas is advanced hosting through `TuiBinding`.
-- Added `TuiApp.of`, `TuiApp.maybeOf`, and `TuiApp.exit(context)`. A widget
-  ends the app through the tree instead of an `onQuit` callback threaded down
-  from `main()`; `exit` disposes the app, sets the exit code, and lets the
-  event loop drain, with no `dart:io` exit call. It is idempotent and safe to
-  call from inside an event handler.
-- Every example is now a one-line entry point that quits through the tree; no
-  example threads a quit callback, hard-exits, or registers hot reload by
-  hand.
-- `TuiApp.exit` during a build is rejected with a `StateError` instead of
-  tearing the tree down mid-reconciliation. An in-app exit under drive mode
-  ends the driven process with the requested code; the host follows the
-  disposed binding down.
-- The in-tree patch manager quits through `TuiApp.exit` like the examples.
-  Git load and stage failures still stay on the message screen; they do not
-  end the process.
+- Added `Theme` / `ThemeData` and a first component tier: `ListView`,
+  `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
+  `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as
+  `explicit ?? Theme.of(context).token`. `ThemeData.dark` is the unthemed
+  look. Nullable `backgroundColor` still uses `Theme.maybeOf` so "no fill"
+  stays expressible.
+- `Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
+  click. A null callback disables them. `ListView` is windowed; omit
+  `selectedIndex` for plain scroll. `DataTable` shares one column list
+  between header and body, with `columnSpacing` (default 1).
+- A focused `ListView`, `Select`, or `DataTable` paints
+  `selectedBackground`; unfocused, the highlight mutes to `surfaceVariant`.
+- `Select`, `TextInput`, `TextArea`, and `ScrollBox` take nullable colors
+  and resolve them through `Theme` the same way.
+- `runTuiApp` is one line: `runTuiApp(const MyApp(), enableMouse: true)`.
+  It registers hot reload itself and no longer takes `width`/`height`.
+  `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
+  the loop). A mid-build exit throws. Drive mode follows an in-app exit.
+  Examples and the patch manager quit through the tree.
+- Examples share `example/src/demo_scaffold.dart` for chrome. The authoring
+  skill catalogs the new widgets and how to compose them.
+- `scripts/noir_drive.dart` accepts `key space`.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

@@ -618,6 +618,80 @@ void main() {
       ),
     );
     expect(stateGuide, contains('dependOnInheritedWidgetOfExactType'));
+
+    expect(
+      skill,
+      isNot(
+        contains(
+          'There is no `Stack`, `Wrap`, `ListView`, or `GestureDetector`',
+        ),
+      ),
+      reason: 'ListView is shipped; the catalog must not list it as missing',
+    );
+    for (final name in const <String>[
+      'Theme',
+      'ThemeData',
+      'ListView',
+      'Checkbox',
+      'Switch',
+      'Button',
+      'Divider',
+      'ProgressBar',
+      'Spinner',
+      'Badge',
+      'DataTable',
+    ]) {
+      expect(skill, contains('`$name`'), reason: 'SKILL.md catalog: $name');
+    }
+    expect(widgetsGuide, contains('const Theme({required this.data'));
+    expect(widgetsGuide, contains('const ThemeData({'));
+    expect(widgetsGuide, contains('const Divider({'));
+    expect(widgetsGuide, contains('const Badge({'));
+    expect(widgetsGuide, contains('const ProgressBar({'));
+    expect(widgetsGuide, contains('const Spinner({'));
+    expect(inputsGuide, contains('const ListView({'));
+    expect(inputsGuide, contains('const Checkbox({'));
+    expect(inputsGuide, contains('const Switch({'));
+    expect(inputsGuide, contains('const Button({'));
+    expect(inputsGuide, contains('const DataTable({'));
+    expect(inputsGuide, contains('const DataColumn({'));
+    expect(skill, contains('Theme.of(context)'));
+    expect(skill, contains('selectedIndex'));
+
+    final listViewSource = _read('lib/src/widgets/list_view.dart');
+    expect(
+      listViewSource,
+      contains(
+        'Widget Function(BuildContext context, int index, bool selected)',
+      ),
+    );
+    expect(
+      inputsGuide,
+      contains(
+        'Widget Function(BuildContext context, int index, bool selected)',
+      ),
+    );
+    expect(inputsGuide, contains('itemBuilder: (context, index, selected)'));
+    expect(
+      inputsGuide,
+      isNot(contains('itemBuilder: (context, index) =>')),
+      reason: 'the builder takes selected; a 2-arg copy does not compile',
+    );
+
+    final switchSource = _read('lib/src/widgets/switch.dart');
+    expect(switchSource, contains('Falls back to [ThemeData.success]'));
+    expect(switchSource, contains('widget.activeColor ?? theme.success'));
+    expect(
+      inputsGuide,
+      contains('this.activeColor,                     // ThemeData.success'),
+    );
+    expect(
+      inputsGuide,
+      isNot(
+        contains('this.activeColor,                     // ThemeData.accent'),
+      ),
+      reason: 'Switch.on uses ThemeData.success, not accent',
+    );
   });
 
   test('shipped example guidance uses supported package imports', () {

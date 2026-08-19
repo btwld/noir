@@ -3,8 +3,10 @@ name: noir
 description: >-
   Build terminal user interfaces in Dart with the noir framework — a
   Flutter-like declarative widget system (StatelessWidget/StatefulWidget,
-  Row/Column/Container/Expanded, Text/TextStyle, TextInput/TextArea/Select/ScrollBox,
-  Focus, setState, AnimationController) that renders through OpenTUI over FFI.
+  Row/Column/Container/Expanded, Text/TextStyle, Theme/ThemeData,
+  TextInput/TextArea/Select/ListView/ScrollBox, Checkbox/Switch/Button,
+  DataTable, Focus, setState, AnimationController) that renders through
+  OpenTUI over FFI.
   Use this whenever writing or reviewing application code against
   `package:noir` — importing `package:noir/noir.dart`, building or editing a
   TUI app or example, wiring layout/state/focus/input/animation for a terminal
@@ -103,9 +105,10 @@ Add `noir` to `pubspec.yaml` (`dart pub add noir`), then `dart run` the file.
 Inside this repo, `example/` has a runnable reference for every major feature
 (`hello.dart`, `counter.dart`, `layout_basics.dart`, `layout_demo.dart`,
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
-`textarea_demo.dart`, `pulse_animation.dart`, `inherited_example.dart`,
-`framework_primitives.dart`, `chat_demo.dart`, `widgets_tour.dart`) — read one
-before inventing a pattern.
+`textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
+`data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
+`inherited_example.dart`, `framework_primitives.dart`, `chat_demo.dart`,
+`widgets_tour.dart`) — read one before inventing a pattern.
 
 ## Mental model
 
@@ -133,7 +136,7 @@ before inventing a pattern.
 Noir provides familiar layout building blocks including `Row`, `Column`,
 `Container`, `Padding`, `SizedBox`, `Align`, `Expanded`, `Flexible`,
 `ConstrainedBox`, `DecoratedBox`, `Text`, `RichText`, and layering through
-`Container.foregroundDecoration`. There is no `Stack`, `Wrap`, `ListView`, or
+`Container.foregroundDecoration`. There is no `Stack`, `Wrap`, or
 `GestureDetector` — check the catalog below before reaching for a Flutter name.
 
 ## Widget catalog (cheat sheet)
@@ -150,10 +153,20 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Plain or styled text | `Text`, `TextStyle`, `TextStyles` | `references/widgets.md` |
 | Mixed-style text runs | `RichText`, `TextSpan` | `references/widgets.md` |
 | Border / background paint | `BoxDecoration`, `Border`, `DecoratedBox` | `references/widgets.md` |
+| App-wide color tokens | `Theme`, `ThemeData` | `references/widgets.md` |
+| Horizontal / vertical rule | `Divider` | `references/widgets.md` |
+| Status tag | `Badge` | `references/widgets.md` |
+| Fraction of work | `ProgressBar` | `references/widgets.md` |
+| One-cell activity glyph | `Spinner` | `references/widgets.md` |
 | Single-line text field | `TextInput` | `references/inputs-and-focus.md` |
 | Multi-line editor | `TextArea` | `references/inputs-and-focus.md` |
-| Pick from a list | `Select<T>` | `references/inputs-and-focus.md` |
-| Scroll overflowing content | `ScrollBox`, `ScrollController` | `references/inputs-and-focus.md` |
+| Closed set of named options | `Select<T>` | `references/inputs-and-focus.md` |
+| Windowed builder list | `ListView` | `references/inputs-and-focus.md` |
+| Aligned columns + windowed body | `DataTable`, `DataColumn` | `references/inputs-and-focus.md` |
+| Two-state mark | `Checkbox` | `references/inputs-and-focus.md` |
+| Two-state on/off | `Switch` | `references/inputs-and-focus.md` |
+| Push action | `Button` | `references/inputs-and-focus.md` |
+| Scroll overflowing content | `ScrollBox`, `ScrollController` | `references/inputs-and-focus.md`
 | Keyboard focus | `Focus`, `FocusScope`, `FocusNode` | `references/inputs-and-focus.md` |
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
@@ -260,15 +273,42 @@ set `color`, `backgroundColor`, `fontWeight: FontWeight.bold` (also `.dim`),
 the prebuilt `TextStyles.error` / `.success` / `.muted` / `.bold` constants for
 common cases. Full styling surface in `references/widgets.md`.
 
+### Compose the shipped components
+
+Chrome — surfaces, borders, hints, selection highlight — reads
+`Theme.of(context).token`. `Theme.of` falls back to `ThemeData.dark`, which
+*is* the unthemed look of every built-in widget. Content color stays a
+literal only when the color is the subject (a speaker, a specimen block, a
+teaching palette).
+
+`Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
+click. A null callback disables the control (muted, skipped by Tab).
+Focused controls go bold; a focused `ListView`, `Select`, or `DataTable`
+paints `selectedBackground` and mutes to `surfaceVariant` when it does
+not own the keyboard.
+
+Pick the list by the job:
+
+- `Select<T>` — a closed set of named options; `onChanged` on highlight,
+  `onSelect` on Enter/click.
+- `ListView` — a windowed `itemBuilder` over `itemCount` rows. Pass
+  `selectedIndex` for a highlight; omit it for plain scroll.
+- `ScrollBox` — one child that may overflow. Not a list of items.
+- `DataTable` — aligned `DataColumn`s over a `ListView` body.
+
+Hand-roll a bordered box with `Container` + `BoxDecoration` +
+`Theme.of(context).border`. There is no public `Panel` widget.
+
 ### Interactive widgets (overview)
 
-`TextInput`, `TextArea`, `Select<T>`, and `ScrollBox` are focus-aware: give each
-a `FocusNode` (or `autofocus: true`). For anything you need to read or mutate
-from code — clearing a form, seeding a draft — pass a `TextEditingController`
-rather than the `value:` shorthand; the two are mutually exclusive. The callback
-split to remember: `Select.onChanged` fires as the highlight moves;
-`Select.onSelect` fires on confirm (Enter/click). Full constructors and key
-bindings are in `references/inputs-and-focus.md`.
+`TextInput`, `TextArea`, `Select<T>`, `ListView`, `ScrollBox`, `Checkbox`,
+`Switch`, and `Button` are focus-aware: give each a `FocusNode` (or
+`autofocus: true`). For anything you need to read or mutate from code —
+clearing a form, seeding a draft — pass a `TextEditingController` rather
+than the `value:` shorthand; the two are mutually exclusive. The callback
+split to remember: `Select.onChanged` / `ListView.onChanged` fire as the
+highlight moves; `onSelect` fires on confirm (Enter/click). Full
+constructors and key bindings are in `references/inputs-and-focus.md`.
 
 ## Hot reload during development
 
@@ -335,8 +375,8 @@ Load the file that matches your task — each is self-contained:
 
 | File | Covers |
 |---|---|
-| `references/widgets.md` | Every layout/text/painting widget: exact constructors, params, defaults, examples (`Container`, `Row`/`Column`, `Expanded`/`Flexible`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`, `Text`/`RichText`/`TextSpan`, `TextStyle`/`TextStyles`, `Color`, `BoxDecoration`/`Border`, `EdgeInsets`/`Alignment`/`BoxConstraints`) |
-| `references/inputs-and-focus.md` | `TextInput`, `TextArea`, `Select<T>`, `ScrollBox`; `Focus`/`FocusScope`/`FocusNode`; the key-routing pipeline; `KeyEvent`/`MouseEvent`/`LogicalKeyboardKey`; `PointerListener`; `Shortcuts`/`Actions`/`Intent`s |
+| `references/widgets.md` | Layout/text/painting plus `Theme`/`ThemeData`, `Divider`, `Badge`, `ProgressBar`, `Spinner`: exact constructors, params, defaults, examples |
+| `references/inputs-and-focus.md` | `TextInput`, `TextArea`, `Select<T>`, `ListView`, `DataTable`, `Checkbox`, `Switch`, `Button`, `ScrollBox`; `Focus`/`FocusScope`/`FocusNode`; the key-routing pipeline; `KeyEvent`/`MouseEvent`/`LogicalKeyboardKey`; `PointerListener`; `Shortcuts`/`Actions`/`Intent`s |
 | `references/state-and-animation.md` | `StatefulWidget` lifecycle, `setState`, `mounted`; `ChangeNotifier`/`ValueNotifier`; `TextEditingController`; `AnimationController` + `SingleTickerProviderStateMixin`; `InheritedWidget` |
 | `references/testing.md` | Testing an app through supported package APIs: headless mount/dispose, testable state owners, what noir does *not* export |
 
