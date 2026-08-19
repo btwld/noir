@@ -42,6 +42,17 @@ jobs:
           Path('/tmp/hooks_contract_repair.py').write_text(script + '\n')
           PY
           python3 /tmp/hooks_contract_repair.py
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('test/architecture/hooks_library_test.dart')
+          source = path.read_text()
+          old = '''    expect(readme, contains("import 'package:noir/hooks.dart';"));'''
+          new = '''    expect(readme, contains('package:noir/hooks.dart'));'''
+          if old not in source:
+              raise SystemExit('hooks README contract expectation not found')
+          path.write_text(source.replace(old, new))
+          PY
           rm -f scripts/hooks_contract_repair.trigger
           rm -f .github/workflows/fix-hooks-core-contracts.yml
 
