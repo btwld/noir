@@ -53,14 +53,15 @@ These catch the mistakes that don't surface until runtime:
    `decoration: BoxDecoration(color:, border:)` when you need a border. Note
    `Border.all()` defaults to **black**, which is invisible on a dark panel, so
    pass `color:` explicitly.
-4. **Keep the `TuiApp` that `runTuiApp` returns, and dispose it before you
-   exit.** `runTuiApp` returns the handle synchronously; the returned `TuiApp`
-   owns `onKey()`, `onMouse()`, and `onPaste()` app-priority registrations
-   (each returns an idempotent canceler) and the terminal session.
-   `dispose()` is idempotent. Calling `io.exit()` without it
-   leaves the terminal in raw mode. An unconsumed Ctrl+C key exits with cleanup
-   by default; app and focused-widget handlers may consume it to override that
-   fallback. To quit from code, `app.dispose()` then `io.exit(0)`.
+4. **Quit through the tree, not `dart:io`.** `runTuiApp` returns the handle
+   synchronously; the returned `TuiApp` owns `onKey()`, `onMouse()`, and
+   `onPaste()` app-priority registrations (each returns an idempotent
+   canceler) and the terminal session. `dispose()` is idempotent. Call
+   `TuiApp.exit(context)` from a widget to end the app — that disposes the
+   handle, sets the process exit code, and lets the event loop drain. Do not
+   call `io.exit()`; it leaves the terminal in raw mode if the app has not
+   been disposed. An unconsumed Ctrl+C key exits with cleanup by default;
+   app and focused-widget handlers may consume it to override that fallback.
 5. **Input is one ordered pipeline, and `app.onKey` runs before the focused
    widget.** This decides whether your key handler ever fires — see
    [Input routing](#input-routing-one-ordered-pipeline) below.
@@ -273,12 +274,15 @@ bindings are in `references/inputs-and-focus.md`.
 
 Noir apps hot reload through the VM service, in two steps a driver performs
 for you: `reloadSources` swaps edited code, then the `ext.noir.reassemble`
-extension rebuilds the live tree. Opt in once from `main()`:
+extension rebuilds the live tree. `runTuiApp` registers that extension
+automatically:
 
 ```dart
-final app = runTuiApp(const MyApp());
-registerHotReloadExtension(app);
+void main() => runTuiApp(const MyApp());
 ```
+
+The function stays exported for custom hosts that do not go through
+`runTuiApp`.
 
 Inside this repo, run the app under the bundled driver and save a `.dart`
 file to reload:
@@ -345,10 +349,11 @@ Load the file that matches your task — each is self-contained:
   render the caret through terminal cursor state rather than a character cell.
   Design tests around controller selection and observable callbacks instead of
   expecting a caret glyph in text output.
-- **Mouse reporting is opt-in.** Call `app.enableMouse()` once at startup for
-  clicks and wheel events. Pass `enableMovement: true` only when the app needs
-  hover, drag, or other pointer-move events. Use `MouseEvent.localPosition` for
-  hit logic rather than recomputing absolute origins.
+- **Mouse reporting is opt-in.** Pass `enableMouse: true` to `runTuiApp` for
+  clicks and wheel events. Use the handle's `enableMouse(enableMovement: true)`
+  only when the app needs hover, drag, or other pointer-move events. Use
+  `MouseEvent.localPosition` for hit logic rather than recomputing absolute
+  origins.
 - **Headless mode has no renderer.** `runTuiApp(..., headless: true)` mounts the
   widget tree with `isHeadless == true` and no owned terminal renderer, so
   mouse and Kitty keyboard mode controls are unavailable. It is a lifecycle

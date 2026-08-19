@@ -10,10 +10,9 @@
 // rebuilds and repaints without a restart. A compile error is reported and the
 // app keeps running on its last good sources. Ctrl-C stops both processes.
 //
-// The app opts in once from `main()`:
+// `runTuiApp` registers the extension itself:
 //
-//     final app = runTuiApp(const CounterApp());
-//     registerHotReloadExtension(app);
+//     void main() => runTuiApp(const CounterApp());
 //
 // Driver messages go to stderr, which overwrites terminal cells while the app
 // holds the alternate screen. Redirect them for a clean view:
@@ -193,7 +192,8 @@ Future<void> _reloadAndReassemble(VmService service, String isolateId) async {
   } on RPCError catch (error) {
     _log(
       'sources reloaded, but ext.noir.reassemble is unavailable '
-      '(${error.message}). Call registerHotReloadExtension(app) in main().',
+      '(${error.message}). runTuiApp registers ext.noir.reassemble; '
+      'a custom host must call registerHotReloadExtension(app).',
     );
   }
 }

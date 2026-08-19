@@ -6,8 +6,7 @@ import 'package:test/test.dart';
 
 import '../helpers/tui_test_app.dart';
 
-/// Contract for the tree-scoped exit that replaced each example's
-/// `late final TuiApp` + `onQuit` closure + `io.exit(0)` dance.
+/// Contract for tree-scoped [TuiApp.exit].
 void main() {
   test('exit disposes the app and reports the code through the sink', () async {
     final app = createTuiTestApp(const _ExitOnKey());
@@ -131,6 +130,20 @@ void main() {
     }
   });
 
+  test('exit during build is rejected instead of corrupting the tree', () {
+    // Dispose during build leaves the in-flight rebuild without a parent.
+    expect(
+      () => runTuiApp(const _ExitInBuild(), headless: true),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('event handler'),
+        ),
+      ),
+    );
+  });
+
   test('enableMouse on a rendererless headless app fails loudly', () {
     expect(
       () =>
@@ -146,7 +159,7 @@ Future<void> _settle(TuiTestApp app) async {
   app.pumpFrame();
 }
 
-/// Quits through the tree rather than through an injected `onQuit` closure.
+/// Requests exit from a key handler.
 class _ExitOnKey extends StatelessWidget {
   const _ExitOnKey({this.code = 0});
 
@@ -164,6 +177,17 @@ class _ExitOnKey extends StatelessWidget {
     },
     child: const Text('press q'),
   );
+}
+
+/// Calls [TuiApp.exit] from `build()`, which must fail.
+class _ExitInBuild extends StatelessWidget {
+  const _ExitInBuild();
+
+  @override
+  Widget build(BuildContext context) {
+    TuiApp.exit(context);
+    return const SizedBox.shrink();
+  }
 }
 
 class _ScopeProbe extends StatelessWidget {

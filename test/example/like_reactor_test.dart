@@ -375,7 +375,7 @@ void main() {
     () async {
       final source = io.File('example/like_reactor.dart').readAsStringSync();
 
-      // runTuiApp registers the hot-reload extension itself now.
+      // runTuiApp registers the hot-reload extension itself.
       expect(source, isNot(contains('registerHotReloadExtension')));
 
       final app = createTuiTestApp(

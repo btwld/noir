@@ -76,10 +76,7 @@ Stateful widgets persist a `State` object between supported rebuilds. Call
 ```dart
 import 'package:noir/noir.dart';
 
-void main() {
-  final app = runTuiApp(const CounterApp());
-  app.enableMouse();
-}
+void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});

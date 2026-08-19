@@ -152,6 +152,12 @@ class _Session {
           _fail('unknown command "$command". Try: $_commands');
       }
     } on Object catch (error) {
+      if (isDrivenServiceGone(error)) {
+        // The app exited; report its process code, not a command failure.
+        _exitCode = await _driver.waitForExit();
+        _quit = true;
+        return;
+      }
       _fail('$command failed: $error');
     }
   }

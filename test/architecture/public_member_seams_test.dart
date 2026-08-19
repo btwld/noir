@@ -802,6 +802,9 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   },
   _buildOwnerOwner: {
     'test',
+    'isBuilding',
+    'beginRebuild',
+    'endRebuild',
     'pipelineOwner',
     'scheduleBuild',
     'clearDirty',

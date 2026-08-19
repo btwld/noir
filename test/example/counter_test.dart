@@ -172,7 +172,7 @@ void main() {
 
     expect(RegExp('enableMouse: true').allMatches(source), hasLength(1));
     expect(source, isNot(contains('enableMouse(enableMovement: true)')));
-    // runTuiApp registers the hot-reload extension itself now.
+    // runTuiApp registers the hot-reload extension itself.
     expect(source, isNot(contains('registerHotReloadExtension')));
   });
 

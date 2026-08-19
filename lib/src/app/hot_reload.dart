@@ -18,17 +18,15 @@ bool _extensionRegistered = false;
 
 /// Lets a hot-reload driver rebuild [app] over the VM service.
 ///
-/// Call this once from `main()` with the handle [runTuiApp] returned. After a
-/// driver's `reloadSources` request succeeds, invoking the `ext.noir.reassemble`
+/// [runTuiApp] registers this automatically. Custom hosts that mount a
+/// [TuiApp] themselves can call it with that handle. After a driver's
+/// `reloadSources` request succeeds, invoking the `ext.noir.reassemble`
 /// service extension calls [TuiApp.reassemble], so edited `build()`,
 /// `performLayout`, and `paint` bodies show up on the next frame without
 /// restarting the process or recreating any native resource.
 ///
 /// ```dart
-/// void main() {
-///   final app = runTuiApp(const CounterApp());
-///   registerHotReloadExtension(app);
-/// }
+/// void main() => runTuiApp(const CounterApp());
 /// ```
 ///
 /// Calling this again replaces the target app; the underlying registration

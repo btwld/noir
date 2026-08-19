@@ -43,7 +43,13 @@ TuiApp runTuiApp(
 }) {
   final host = createDriveModeHost(io.Platform.environment);
   if (host != null) {
-    final driven = _mount(host.binding, app, enableMouse: enableMouse);
+    // The host timer is the only thing holding this process open.
+    final driven = _mount(
+      host.binding,
+      app,
+      enableMouse: enableMouse,
+      exitCodeSink: host.handleAppExit,
+    );
     host.start(driven);
     return driven;
   }
@@ -56,9 +62,8 @@ TuiApp runTuiApp(
   return handle;
 }
 
-/// Builds the handle, mounts [app] inside its scope, and applies mount-time
-/// terminal modes. Both branches go through here so neither can forget the
-/// scope that makes [TuiApp.exit] reachable from the tree.
+/// Builds the handle, wraps [app] in the app scope, and applies mount-time
+/// terminal modes.
 TuiApp _mount(
   TuiBinding binding,
   Widget app, {
@@ -146,14 +151,12 @@ final class TuiApp implements Disposable {
 
   /// Ends the app enclosing [context] with [code].
   ///
-  /// This is what a widget calls instead of threading an `onQuit` callback
-  /// down from `main()`. It disposes the app — restoring the terminal and
-  /// cancelling stdin, signal, and timer subscriptions — and records the exit
-  /// code; the event loop then drains and the process exits on its own.
+  /// Disposes the app — restoring the terminal and cancelling stdin, signal,
+  /// and timer subscriptions — and records the exit code. The event loop then
+  /// drains and the process exits on its own.
   ///
-  /// Safe to call from inside an event handler, and safe to call twice: a
-  /// second request is a no-op, because a double keypress racing the teardown
-  /// is ordinary.
+  /// Safe to call from an event handler. A second call is a no-op. Throws
+  /// [StateError] if called while the tree is building.
   static void exit(BuildContext context, {int code = 0}) {
     of(context).requestExit(code);
   }
@@ -161,6 +164,14 @@ final class TuiApp implements Disposable {
   /// Ends this app with [code]. See [exit] for the tree-facing form.
   void requestExit([int code = 0]) {
     if (_disposed) return;
+    if (_binding.buildOwner.isBuilding) {
+      // Dispose mid-build strips registrations the in-flight rebuild still
+      // needs.
+      throw StateError(
+        'TuiApp.exit() cannot be called while the tree is building. '
+        'Call it from an event handler instead.',
+      );
+    }
     dispose();
     _exitCodeSink(code);
   }

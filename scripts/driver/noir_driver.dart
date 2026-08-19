@@ -52,6 +52,13 @@ Future<bool> pollFrameAdvance({
 
 Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
 
+/// Whether [error] is the VM service disappearing with the driven isolate.
+///
+/// After [TuiApp.exit], in-flight input RPCs fail this way. That is the
+/// app's exit, not a driver fault.
+bool isDrivenServiceGone(Object error) =>
+    error is RPCError && error.code == RPCErrorKind.kServiceDisappeared.code;
+
 /// Drives one Noir app process over its `ext.noir.driver.*` surface.
 class NoirDriver {
   NoirDriver._({
@@ -266,6 +273,9 @@ class NoirDriver {
     return (reloaded: true, reassembled: reassembled, message: null);
   }
 
+  /// The driven process's exit code, once it has ended.
+  Future<int> waitForExit() => _exitCode;
+
   /// Asks the app to shut down, then returns its exit code.
   ///
   /// A request that fails means the app cannot acknowledge, so it is killed
@@ -293,9 +303,16 @@ class NoirDriver {
       args: <String, Object?>{'bytes': base64Encode(bytes)},
     );
     // Wait for a paint, not for the scheduler to go idle. A pulsing app
-    // never reports stable, and the frame from this input is already in
-    // `info().frames`.
-    await pollFrameAdvance(frames: _frames, before: before);
+    // never reports stable. If the input ended the app, the service is
+    // gone and there will never be another frame.
+    try {
+      await pollFrameAdvance(frames: _frames, before: before);
+    } on Object catch (error) {
+      if (isDrivenServiceGone(error)) {
+        return;
+      }
+      rethrow;
+    }
   }
 
   Future<int> _frames() async => (await info()).frames;

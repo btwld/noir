@@ -326,10 +326,26 @@ void main() {
       ),
     );
 
-    final currentAppGuidance = '$readme\n$skill\n$exampleGuide';
+    final currentAppGuidance =
+        '$readme\n$skill\n$exampleGuide\n$testingGuide\n$inputsGuide';
     expect(currentAppGuidance, isNot(contains('await runTuiApp')));
     expect(currentAppGuidance, isNot(contains('TuiBinding.instance')));
     expect(currentAppGuidance, isNot(contains('binding.inputManager')));
+    expect(currentAppGuidance, isNot(contains('app.enableMouse();')));
+    expect(currentAppGuidance, isNot(contains('tuiApp.enableMouse();')));
+    expect(
+      currentAppGuidance,
+      isNot(contains('app.dispose() then `io.exit(0)`')),
+    );
+    expect(
+      currentAppGuidance,
+      isNot(contains('registerHotReloadExtension(app);')),
+    );
+    expect(
+      testingGuide,
+      isNot(contains(RegExp(r'runTuiApp\([^;]*width:', dotAll: true))),
+      reason: 'runTuiApp no longer takes width/height',
+    );
     expect(
       currentAppGuidance.toLowerCase(),
       isNot(contains('dispose the binding')),

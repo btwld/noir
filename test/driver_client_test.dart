@@ -4,6 +4,7 @@ import 'package:noir/noir.dart';
 import 'package:noir/src/app/driver.dart';
 import 'package:noir/src/core/stdin_input_driver.dart';
 import 'package:test/test.dart';
+import 'package:vm_service/vm_service.dart';
 
 import '../scripts/driver/ansi_keys.dart';
 import '../scripts/driver/noir_driver.dart';
@@ -71,6 +72,17 @@ void main() {
 
     expect(advanced, isTrue);
     expect(frames, 1);
+  });
+
+  test('isDrivenServiceGone is only the vanished-service RPC', () {
+    expect(
+      isDrivenServiceGone(
+        RPCError('info', RPCErrorKind.kServiceDisappeared.code),
+      ),
+      isTrue,
+    );
+    expect(isDrivenServiceGone(RPCError('info', 100)), isFalse);
+    expect(isDrivenServiceGone(StateError('gone')), isFalse);
   });
 
   test('pollFrameAdvance returns false when frames never increase', () async {

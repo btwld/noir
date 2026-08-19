@@ -63,6 +63,10 @@
 - Every example is now a one-line entry point that quits through the tree; no
   example threads a quit callback, hard-exits, or registers hot reload by
   hand.
+- `TuiApp.exit` during a build is rejected with a `StateError` instead of
+  tearing the tree down mid-reconciliation. An in-app exit under drive mode
+  ends the driven process with the requested code; the host follows the
+  disposed binding down.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate
