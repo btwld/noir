@@ -16,6 +16,9 @@
 /scripts/
 /tools/
 
+# Companion workspace packages publish independently.
+/packages/
+
 # Internal Patch Manager implementation is development-only.
 /lib/src/tools/
 

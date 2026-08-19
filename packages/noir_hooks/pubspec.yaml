@@ -1,0 +1,30 @@
+name: noir_hooks
+description: Reusable lifecycle hooks for building reactive Noir terminal widgets.
+version: 0.0.1-alpha.0
+repository: https://github.com/leoafarias/noir/tree/main/packages/noir_hooks
+issue_tracker: https://github.com/leoafarias/noir/issues
+
+topics:
+  - noir
+  - hooks
+  - tui
+  - terminal
+  - widgets
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+resolution: workspace
+
+platforms:
+  linux:
+  macos:
+  windows:
+
+dependencies:
+  meta: ^1.12.0
+  noir: ^0.0.1-alpha.1
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

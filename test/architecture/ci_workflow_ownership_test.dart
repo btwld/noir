@@ -46,19 +46,30 @@ void main() {
     }
   });
 
-  test('CI gates bounded platform jobs behind analysis', () {
+  test('CI gates bounded workspace jobs behind analysis', () {
     final analyze = _job(workflow, 'analyze');
     final ubuntu = _job(workflow, 'ubuntu-test');
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('timeout-minutes: 8'));
+    expect(analyze, contains('timeout-minutes: 12'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
-    expect(analyze, contains('timeout-minutes: 2\n        run: dart format'));
-    expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
+    expect(analyze, contains('timeout-minutes: 2\n        run: |'));
+    expect(analyze, contains('dart format'));
+    expect(analyze, contains('git diff --exit-code'));
+    expect(analyze, contains('timeout-minutes: 6\n        run: |'));
+    expect(analyze, contains('dart analyze --fatal-infos'));
+    expect(analyze, contains('dart analyze --fatal-infos packages/noir_hooks'));
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 4\n'
+        '        run: dart run scripts/validate_noir_hooks_package.dart',
+      ),
+    );
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('timeout-minutes: 10'));
+    expect(ubuntu, contains('timeout-minutes: 14'));
     expect(
       ubuntu,
       contains(
@@ -69,10 +80,17 @@ void main() {
       ubuntu,
       contains('timeout-minutes: 8\n        run: dart test --concurrency=1'),
     );
+    expect(
+      ubuntu,
+      contains(
+        'timeout-minutes: 4\n'
+        '        run: dart test packages/noir_hooks/test --concurrency=1',
+      ),
+    );
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('timeout-minutes: 12'));
+    expect(desktop, contains('timeout-minutes: 16'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
@@ -84,35 +102,39 @@ void main() {
       desktop,
       contains('timeout-minutes: 10\n        run: dart test --concurrency=1'),
     );
+    expect(
+      desktop,
+      contains(
+        'timeout-minutes: 4\n'
+        '        run: dart test packages/noir_hooks/test --concurrency=1',
+      ),
+    );
   });
 
-  test(
-    'each CI job caches only the isolated pub cache and always resolves',
-    () {
-      expect('actions/cache@'.allMatches(workflow), hasLength(3));
-      expect(
-        r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}"
-            .allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
-            .allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        workflow,
-        isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
-        reason: 'runner context is unavailable in job-level env',
-      );
-      expect('run: dart pub get'.allMatches(workflow), hasLength(3));
-      expect(workflow, isNot(contains('.dart_tool')));
-    },
-  );
+  test('each CI job caches only the isolated pub cache and always resolves', () {
+    expect('actions/cache@'.allMatches(workflow), hasLength(3));
+    expect(
+      r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/**/pubspec.yaml') }}"
+          .allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
+          .allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      workflow,
+      isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
+      reason: 'runner context is unavailable in job-level env',
+    );
+    expect('run: dart pub get'.allMatches(workflow), hasLength(3));
+    expect(workflow, isNot(contains('.dart_tool')));
+  });
 
   test('ordinary suite has no removed wrapper, parity, or restricted lane', () {
     for (final stale in <String>[

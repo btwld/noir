@@ -29,11 +29,17 @@ work. See [`AGENTS.md`](AGENTS.md#opentui-reference-and-ownership).
 
 Run focused tests while developing, then:
 
-    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/ packages/noir_hooks/lib/ packages/noir_hooks/test/ packages/noir_hooks/example/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
+    dart test packages/noir_hooks/test --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
+
+Run the package dry-run before changing the companion package's release
+metadata:
+
+    dart run scripts/validate_noir_hooks_package.dart
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.

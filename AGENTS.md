@@ -31,6 +31,9 @@ methods remain the primary resource owner.
 - `package:noir/noir_low_level.dart`: supported advanced hosting and custom
   render-object protocols.
 - `package:noir/noir_ffi.dart`: guarded but ABI-unstable raw bindings.
+- `package:noir_hooks/noir_hooks.dart`: the companion workspace package for
+  reusable widget lifecycle hooks. Its production code depends only on Noir's
+  high-level public surface.
 
 Generated bindings, library discovery, concrete Element implementations, and
 recording/compositing internals remain framework-owned.
@@ -69,13 +72,15 @@ remove obsolete API shapes instead of adding compatibility shims.
 
 ## Authorized local verification
 
-    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/ packages/noir_hooks/lib/ packages/noir_hooks/test/ packages/noir_hooks/example/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
+    dart test packages/noir_hooks/test --concurrency=1
     dart test <focused test paths> --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
+    dart run scripts/validate_noir_hooks_package.dart
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.

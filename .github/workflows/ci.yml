@@ -16,88 +16,6 @@ jobs:
   analyze:
     name: Format and analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 8
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: recursive
-
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
-        with:
-          sdk: '3.10.0'
-
-      - name: Configure pub cache
-        shell: bash
-        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
-
-      - name: Cache pub packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
-
-      - name: Install dependencies
-        timeout-minutes: 3
-        run: dart pub get
-
-      - name: Check formatting
-        timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
-
-      - name: Run strict analysis
-        timeout-minutes: 4
-        run: dart analyze --fatal-infos
-
-  ubuntu-test:
-    name: Test (Ubuntu)
-    needs: analyze
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: recursive
-
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
-        with:
-          sdk: '3.10.0'
-
-      - name: Configure pub cache
-        shell: bash
-        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
-
-      - name: Cache pub packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
-
-      - name: Install dependencies
-        timeout-minutes: 3
-        run: dart pub get
-
-      - name: Verify bundled native assets
-        timeout-minutes: 2
-        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
-
-      - name: Run ordinary tests
-        timeout-minutes: 8
-        run: dart test --concurrency=1
-
-  desktop-test:
-    name: Test (${{ matrix.os }})
-    needs: analyze
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
     timeout-minutes: 12
 
     steps:
@@ -119,7 +37,104 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/**/pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Check formatting
+        timeout-minutes: 2
+        run: |
+          dart format \
+            lib/ test/ example/ bin/ hook/ scripts/ \
+            packages/noir_hooks/lib/ packages/noir_hooks/test/ \
+            packages/noir_hooks/example/
+          git diff --exit-code
+
+      - name: Run strict analysis
+        timeout-minutes: 6
+        run: |
+          dart analyze --fatal-infos
+          dart analyze --fatal-infos packages/noir_hooks
+
+      - name: Validate noir_hooks package archive
+        timeout-minutes: 4
+        run: dart run scripts/validate_noir_hooks_package.dart
+
+  ubuntu-test:
+    name: Test (Ubuntu)
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/**/pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Verify bundled native assets
+        timeout-minutes: 2
+        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+
+      - name: Run ordinary tests
+        timeout-minutes: 8
+        run: dart test --concurrency=1
+
+      - name: Run noir_hooks tests
+        timeout-minutes: 4
+        run: dart test packages/noir_hooks/test --concurrency=1
+
+  desktop-test:
+    name: Test (${{ matrix.os }})
+    needs: analyze
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 16
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/**/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -132,3 +147,7 @@ jobs:
       - name: Run ordinary tests
         timeout-minutes: 10
         run: dart test --concurrency=1
+
+      - name: Run noir_hooks tests
+        timeout-minutes: 4
+        run: dart test packages/noir_hooks/test --concurrency=1

@@ -14,6 +14,9 @@ topics:
 environment:
   sdk: '>=3.10.0 <4.0.0'
 
+workspace:
+  - packages/noir_hooks
+
 platforms:
   linux:
   macos:

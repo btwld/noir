@@ -1,0 +1,12 @@
+# Repository-only integration tests import Noir's shared test harness.
+test/
+
+# Local workspace and tool state.
+.dart_tool/
+build/
+coverage/
+pubspec.lock
+analysis_options.yaml
+.idea/
+.vscode/
+*.log
