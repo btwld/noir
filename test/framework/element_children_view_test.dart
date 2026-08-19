@@ -314,6 +314,7 @@ class _DisposingLeafState extends State<_DisposingLeaf> {
 
   @override
   void initState() {
+    super.initState();
     widget.states.add(this);
   }
 
@@ -322,6 +323,7 @@ class _DisposingLeafState extends State<_DisposingLeaf> {
 
   @override
   void dispose() {
+    super.dispose();
     disposeCount++;
     final failure = widget.failure;
     if (failure != null) {

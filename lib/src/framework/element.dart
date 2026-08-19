@@ -499,7 +499,7 @@ class StatefulElement extends _ElementBase {
     // this node's own `dispose()`/`detach()` still run after every
     // descendant's.
     failures.attempt(super.unmount);
-    failures.attempt(_state.dispose);
+    failures.attempt(_state.disposeState);
     failures.attempt(_state.detach);
     failures.rethrowFirst();
   }
