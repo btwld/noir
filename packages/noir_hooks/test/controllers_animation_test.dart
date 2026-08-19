@@ -143,65 +143,68 @@ void main() {
     expect(() => controller.addListener(() {}), throwsA(isA<StateError>()));
   });
 
-  test('animation controller updates duration and keys creation-only fields', () {
-    final host = TestElementHost();
-    var duration = const Duration(milliseconds: 100);
-    var lowerBound = 0.0;
-    var initialValue = 0.0;
-    var debugLabel = 'first';
-    var key = 0;
-    late AnimationController controller;
-    late double animatedValue;
-    var builds = 0;
+  test(
+    'animation controller updates duration and keys creation-only fields',
+    () {
+      final host = TestElementHost();
+      var duration = const Duration(milliseconds: 100);
+      var lowerBound = 0.0;
+      var initialValue = 0.0;
+      var debugLabel = 'first';
+      var key = 0;
+      late AnimationController controller;
+      late double animatedValue;
+      var builds = 0;
 
-    Widget buildRoot() => HookBuilder(
-      builder: (context) {
-        builds++;
-        controller = useAnimationController(
-          duration: duration,
-          lowerBound: lowerBound,
-          initialValue: initialValue,
-          debugLabel: debugLabel,
-          keys: <Object?>[key],
-        );
-        animatedValue = useAnimation<double>(controller);
-        return const Container();
-      },
-    );
+      Widget buildRoot() => HookBuilder(
+        builder: (context) {
+          builds++;
+          controller = useAnimationController(
+            duration: duration,
+            lowerBound: lowerBound,
+            initialValue: initialValue,
+            debugLabel: debugLabel,
+            keys: <Object?>[key],
+          );
+          animatedValue = useAnimation<double>(controller);
+          return const Container();
+        },
+      );
 
-    host.mount(buildRoot());
-    final firstController = controller;
+      host.mount(buildRoot());
+      final firstController = controller;
 
-    controller.value = 0.5;
-    host.pumpBuild();
-    expect(builds, 2);
-    expect(animatedValue, 0.5);
+      controller.value = 0.5;
+      host.pumpBuild();
+      expect(builds, 2);
+      expect(animatedValue, 0.5);
 
-    duration = const Duration(milliseconds: 250);
-    lowerBound = -1.0;
-    initialValue = -0.5;
-    debugLabel = 'second';
-    host.update(buildRoot());
+      duration = const Duration(milliseconds: 250);
+      lowerBound = -1.0;
+      initialValue = -0.5;
+      debugLabel = 'second';
+      host.update(buildRoot());
 
-    expect(controller, same(firstController));
-    expect(controller.duration, duration);
-    expect(controller.lowerBound, 0.0);
-    expect(controller.debugLabel, 'first');
-    expect(controller.value, 0.5);
+      expect(controller, same(firstController));
+      expect(controller.duration, duration);
+      expect(controller.lowerBound, 0.0);
+      expect(controller.debugLabel, 'first');
+      expect(controller.value, 0.5);
 
-    key = 1;
-    host.update(buildRoot());
-    expect(controller, isNot(same(firstController)));
-    expect(controller.lowerBound, -1.0);
-    expect(controller.debugLabel, 'second');
-    expect(controller.value, -0.5);
-    expect(
-      () => firstController.addListener(() {}),
-      throwsA(isA<StateError>()),
-    );
+      key = 1;
+      host.update(buildRoot());
+      expect(controller, isNot(same(firstController)));
+      expect(controller.lowerBound, -1.0);
+      expect(controller.debugLabel, 'second');
+      expect(controller.value, -0.5);
+      expect(
+        () => firstController.addListener(() {}),
+        throwsA(isA<StateError>()),
+      );
 
-    host.dispose();
-  });
+      host.dispose();
+    },
+  );
 
   test('useAnimationStatus rebuilds for status transitions', () async {
     final host = TestElementHost();

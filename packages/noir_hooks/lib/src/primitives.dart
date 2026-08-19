@@ -167,9 +167,7 @@ final class _MemoizedHookState<T> extends HookState<T, _MemoizedHook<T>> {
 
 final class _EffectHook extends Hook<Object?> {
   _EffectHook(this.effect, List<Object?>? keys)
-    : dependencyKeys = keys == null
-          ? null
-          : List<Object?>.unmodifiable(keys);
+    : dependencyKeys = keys == null ? null : List<Object?>.unmodifiable(keys);
 
   final Effect effect;
   final List<Object?>? dependencyKeys;

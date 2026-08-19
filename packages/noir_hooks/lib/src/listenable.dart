@@ -26,10 +26,8 @@ T useValueListenable<T>(ValueListenable<T> valueListenable) {
 ValueNotifier<T> useValueNotifier<T>(
   T initialValue, [
   List<Object?> keys = const <Object?>[],
-]) => useDisposable<ValueNotifier<T>>(
-  () => ValueNotifier<T>(initialValue),
-  keys,
-);
+]) =>
+    useDisposable<ValueNotifier<T>>(() => ValueNotifier<T>(initialValue), keys);
 
 /// Creates, owns, and subscribes to a [ChangeNotifier].
 T useChangeNotifier<T extends ChangeNotifier>(

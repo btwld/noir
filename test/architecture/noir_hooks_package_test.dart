@@ -22,10 +22,7 @@ void main() {
     final analysisOptions = File(
       'packages/noir_hooks/analysis_options.yaml',
     ).readAsStringSync();
-    expect(
-      analysisOptions,
-      contains('include: ../../analysis_options.yaml'),
-    );
+    expect(analysisOptions, contains('include: ../../analysis_options.yaml'));
     final packagePubignore = File(
       'packages/noir_hooks/.pubignore',
     ).readAsStringSync();

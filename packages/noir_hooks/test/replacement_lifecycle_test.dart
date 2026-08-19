@@ -44,10 +44,7 @@ void main() {
     Widget buildRoot() => HookBuilder(
       builder: (context) {
         builds++;
-        notifier = useValueNotifier<int>(
-          initialValue,
-          <Object?>[key],
-        );
+        notifier = useValueNotifier<int>(initialValue, <Object?>[key]);
         firstNotifier ??= notifier;
         return const Container();
       },
@@ -69,48 +66,48 @@ void main() {
     host.update(buildRoot());
     expect(notifier, isNot(same(firstNotifier)));
     expect(notifier.value, 7);
-    expect(
-      () => firstNotifier!.addListener(() {}),
-      throwsA(isA<StateError>()),
-    );
+    expect(() => firstNotifier!.addListener(() {}), throwsA(isA<StateError>()));
   });
 
-  test('useOnListenableChange keeps one subscription and the latest callback', () {
-    final host = TestElementHost();
-    final listenable = _CountingListenable();
-    addTearDown(() {
+  test(
+    'useOnListenableChange keeps one subscription and the latest callback',
+    () {
+      final host = TestElementHost();
+      final listenable = _CountingListenable();
+      addTearDown(() {
+        host.dispose();
+        listenable.dispose();
+      });
+      var version = 1;
+      var observedVersion = 0;
+
+      Widget buildRoot() => HookBuilder(
+        builder: (context) {
+          final currentVersion = version;
+          useOnListenableChange(listenable, () {
+            observedVersion = currentVersion;
+          });
+          return const Container();
+        },
+      );
+
+      host.mount(buildRoot());
+      expect(listenable.addCount, 1);
+      expect(listenable.removeCount, 0);
+
+      version = 2;
+      host.update(buildRoot());
+      expect(listenable.addCount, 1);
+      expect(listenable.removeCount, 0);
+
+      listenable.fire();
+      expect(observedVersion, 2);
+
       host.dispose();
-      listenable.dispose();
-    });
-    var version = 1;
-    var observedVersion = 0;
-
-    Widget buildRoot() => HookBuilder(
-      builder: (context) {
-        final currentVersion = version;
-        useOnListenableChange(listenable, () {
-          observedVersion = currentVersion;
-        });
-        return const Container();
-      },
-    );
-
-    host.mount(buildRoot());
-    expect(listenable.addCount, 1);
-    expect(listenable.removeCount, 0);
-
-    version = 2;
-    host.update(buildRoot());
-    expect(listenable.addCount, 1);
-    expect(listenable.removeCount, 0);
-
-    listenable.fire();
-    expect(observedVersion, 2);
-
-    host.dispose();
-    expect(listenable.addCount, 1);
-    expect(listenable.removeCount, 1);
-  });
+      expect(listenable.addCount, 1);
+      expect(listenable.removeCount, 1);
+    },
+  );
 
   test('useTickerProvider is stable and does not consume a hook slot', () {
     final host = TestElementHost();
