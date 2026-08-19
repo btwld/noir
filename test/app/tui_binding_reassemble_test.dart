@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
@@ -24,10 +26,38 @@ void main() {
     expect(log, <String>[
       'init',
       'build',
+      'reassemble',
       'build',
     ], reason: 'reassemble must rebuild once and must not re-run initState');
     expect(states, hasLength(2));
     expect(states.first, same(states.last));
+  });
+
+  test('a failing State hook keeps the rebuild, repaint, and the report', () {
+    final log = <String>[];
+    final errors = <Object>[];
+    final app = createTuiTestApp(
+      _StateProbe(log: log, onBuild: (_) {}, failReassemble: true),
+      width: 20,
+      height: 5,
+    );
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    final pipeline = app.binding.buildOwner.pipelineOwner;
+    log.clear();
+
+    runZonedGuarded(app.binding.reassemble, (error, _) => errors.add(error));
+
+    expect(errors, hasLength(1));
+    expect(errors.single, isA<StateError>());
+    expect(
+      pipeline.debugNeedsLayout,
+      isTrue,
+      reason: 'the repaint mark survives a failing hook',
+    );
+
+    app.pumpFrame(const Duration(milliseconds: 16));
+    expect(log, <String>['reassemble', 'build']);
   });
 
   test('reassemble marks the render root dirty for a render-stable tree', () {
@@ -86,10 +116,15 @@ void main() {
 /// Its `build` returns a `const` subtree so the render layer sees value-equal
 /// configuration on every rebuild.
 class _StateProbe extends StatefulWidget {
-  const _StateProbe({required this.log, required this.onBuild});
+  const _StateProbe({
+    required this.log,
+    required this.onBuild,
+    this.failReassemble = false,
+  });
 
   final List<String> log;
   final void Function(Object state) onBuild;
+  final bool failReassemble;
 
   @override
   State<_StateProbe> createState() => _StateProbeState();
@@ -100,6 +135,15 @@ class _StateProbeState extends State<_StateProbe> {
   void initState() {
     super.initState();
     widget.log.add('init');
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    widget.log.add('reassemble');
+    if (widget.failReassemble) {
+      throw StateError('reassemble failed');
+    }
   }
 
   @override

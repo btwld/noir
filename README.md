@@ -201,8 +201,9 @@ default.
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
 are unavailable in that mode.
 
-`TuiApp.reassemble()` rebuilds the whole widget tree and forces a full layout
-and paint pass without recreating any `State`, terminal, or native resource.
+`TuiApp.reassemble()` invokes `State.reassemble()` on every retained state,
+rebuilds the whole widget tree, and forces a full layout and paint pass
+without recreating any `State`, terminal, or native resource.
 It is the hot-reload hook: call it after a source swap succeeds, or call
 `registerHotReloadExtension(app)` once from `main()` with the handle
 `runTuiApp` returned, so a development driver can invoke it over the VM
@@ -352,10 +353,12 @@ corrupt package.
   overwrite prior shell rows. Callers must still dispose `TuiApp` so all owned
   resources and terminal modes are released.
 - Hot reload is bounded by what the Dart VM can swap into a live isolate.
-  `TuiApp.reassemble()` re-runs `build()`, layout, and paint bodies only: it
-  never re-runs `main()` or `initState`, so changes to those, to a signature
-  held by a frame on the stack, to an enum converted into a class, or to the
-  bundled OpenTUI native library still require a full restart.
+  `TuiApp.reassemble()` invokes `State.reassemble()` on every retained state
+  and re-runs `build()`, layout, and paint bodies; it never re-runs `main()` or
+  `initState`. Overriding `State.reassemble()` is the supported way to re-derive
+  what an `initState` body computed. Changes to `main()`/`initState`, to a
+  signature held by a frame on the stack, to an enum converted into a class, or
+  to the bundled OpenTUI native library still require a full restart.
 - The current Linux libraries retain absolute build/debug paths. They pass
   static integrity checks; this is visible upstream artifact metadata rather
   than a Noir rebuild output.
