@@ -67,6 +67,9 @@
   tearing the tree down mid-reconciliation. An in-app exit under drive mode
   ends the driven process with the requested code; the host follows the
   disposed binding down.
+- The in-tree patch manager quits through `TuiApp.exit` like the examples.
+  Git load and stage failures still stay on the message screen; they do not
+  end the process.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

@@ -1,5 +1,6 @@
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/app/app.dart' show mountTuiAppForTesting;
 
 /// Minimal headless harness for behavioural input tests.
 ///
@@ -40,11 +41,16 @@ class KeyDriver {
       height: height,
       headless: true,
       renderer: _renderer,
-    )..runApp(root);
+    );
+    mountTuiAppForTesting(app, root, exitCodeSink: _exitRequests.add);
   }
 
   late final TuiBinding app;
   final Renderer? _renderer;
+  final List<int> _exitRequests = <int>[];
+
+  /// Exit codes requested through [TuiApp.exit], in order.
+  List<int> get exitRequests => List<int>.unmodifiable(_exitRequests);
 
   /// Yields the microtask queue so initial focus, mount, and first build
   /// settle. Awaits any pending focus-change microtasks.

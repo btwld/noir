@@ -17,9 +17,7 @@ void main() {
         _QueuedOutcome.pending(),
         _QueuedOutcome.pending(),
       ]);
-      final driver = KeyDriver(
-        PatchManagerApp(repository: repo, onQuit: () {}),
-      );
+      final driver = KeyDriver(PatchManagerApp(repository: repo));
       await driver.ready();
       await _drain(driver);
       expect(repo.calls, 1);
@@ -57,9 +55,7 @@ void main() {
         _QueuedOutcome.pending(),
         _QueuedOutcome.pending(),
       ]);
-      final driver = KeyDriver(
-        PatchManagerApp(repository: repo, onQuit: () {}),
-      );
+      final driver = KeyDriver(PatchManagerApp(repository: repo));
       await driver.ready();
       await _drain(driver);
       await driver.sendCharacter('r');
@@ -82,9 +78,7 @@ void main() {
         _QueuedOutcome.pending(),
         _QueuedOutcome.pending(),
       ]);
-      final driver = KeyDriver(
-        PatchManagerApp(repository: repo, onQuit: () {}),
-      );
+      final driver = KeyDriver(PatchManagerApp(repository: repo));
       await driver.ready();
       await _drain(driver);
       await driver.sendCharacter('r');
@@ -108,9 +102,7 @@ void main() {
         _QueuedOutcome.pending(),
         _QueuedOutcome.pending(),
       ]);
-      final driver = KeyDriver(
-        PatchManagerApp(repository: repo, onQuit: () {}),
-      );
+      final driver = KeyDriver(PatchManagerApp(repository: repo));
       await driver.ready();
       await _drain(driver);
       await driver.sendCharacter('r');
@@ -132,9 +124,7 @@ void main() {
       'active load error with throwing toString is safely rendered',
       () async {
         final repo = _QueuedGitPatchRepository([_QueuedOutcome.pending()]);
-        final driver = KeyDriver(
-          PatchManagerApp(repository: repo, onQuit: () {}),
-        );
+        final driver = KeyDriver(PatchManagerApp(repository: repo));
         await driver.ready();
         await _drain(driver);
 
@@ -158,9 +148,7 @@ void main() {
           _QueuedOutcome.pending(),
           _QueuedOutcome.pending(),
         ]);
-        final driver = KeyDriver(
-          PatchManagerApp(repository: repo, onQuit: () {}),
-        );
+        final driver = KeyDriver(PatchManagerApp(repository: repo));
         await driver.ready();
         await _drain(driver);
         await driver.sendCharacter('r');
@@ -193,9 +181,7 @@ void main() {
           _QueuedOutcome.failNow('first boom'),
           _QueuedOutcome.pending(),
         ]);
-        final driver = KeyDriver(
-          PatchManagerApp(repository: repo, onQuit: () {}),
-        );
+        final driver = KeyDriver(PatchManagerApp(repository: repo));
         await driver.ready();
         await _drain(driver);
         expect(_treeText(driver), contains('first boom'));
@@ -320,9 +306,7 @@ void main() {
           _QueuedOutcome.pending(),
           _QueuedOutcome.pending(),
         ]);
-        final driver = KeyDriver(
-          PatchManagerApp(repository: repo, onQuit: () {}),
-        );
+        final driver = KeyDriver(PatchManagerApp(repository: repo));
         await driver.ready();
         await _drain(driver);
         await driver.sendCharacter('r');
@@ -366,9 +350,7 @@ void main() {
           _QueuedOutcome.pending(),
           _QueuedOutcome.pending(),
         ]);
-        final driver = KeyDriver(
-          PatchManagerApp(repository: repo, onQuit: () {}),
-        );
+        final driver = KeyDriver(PatchManagerApp(repository: repo));
         await driver.ready();
         await _drain(driver);
         await driver.sendCharacter('r');
@@ -542,7 +524,7 @@ class _RepositoryHostState extends State<_RepositoryHost> {
 
   @override
   Widget build(BuildContext context) =>
-      PatchManagerApp(repository: _repository, onQuit: () {});
+      PatchManagerApp(repository: _repository);
 }
 
 final class _ThrowingToString extends Error {
