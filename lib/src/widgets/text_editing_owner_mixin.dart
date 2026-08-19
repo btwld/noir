@@ -44,23 +44,22 @@ mixin TextEditingOwnerStateMixin<T extends StatefulWidget>
   /// means a plain single-line field simply rebuilds.
   void onControllerChanged() {}
 
-  /// Adopts [controller], owning its disposal only when [ownsController].
+  /// Adopts [next], owning its disposal only when [ownsController], and
+  /// releases whichever controller this state had attached before.
+  ///
+  /// The swap is transactional: [next] is subscribed before the previous
+  /// controller is released, so a failing `addListener` — reachably, a caller
+  /// supplying an already-disposed controller — leaves this state on its
+  /// previous, still-live controller with its ownership unchanged.
   void attachController(
     TextEditingController next, {
     required bool ownsController,
   }) {
-    if (_controllerListenerAttached) {
-      throw StateError('A text editing controller is already attached.');
-    }
+    next.addListener(handleControllerChanged);
+    detachController();
     _controller = next;
     _ownsController = ownsController;
-    try {
-      _controller.addListener(handleControllerChanged);
-      _controllerListenerAttached = true;
-    } catch (_) {
-      _ownsController = false;
-      rethrow;
-    }
+    _controllerListenerAttached = true;
   }
 
   /// Drops the current controller, disposing it when this state owns it.
@@ -99,7 +98,6 @@ mixin TextEditingOwnerStateMixin<T extends StatefulWidget>
   ) {
     var controllerChanged = false;
     if (!identical(widgetController, oldWidgetController)) {
-      detachController();
       attachController(
         _createWidgetController(),
         ownsController: widgetController == null,
