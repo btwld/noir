@@ -8,3 +8,5 @@
   deterministic reverse-order cleanup.
 - Preserve listener teardown order across keyed owner replacement, keep
   `useValueNotifier` non-subscribing, and avoid callback resubscription churn.
+- Forward Noir hot reload through `HookState.reassemble`, recover structural
+  hook edits only on the reassemble build, and report ordinary order mismatches.

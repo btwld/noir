@@ -1,15 +1,10 @@
 # noir_hooks
 
-`noir_hooks` adds reusable lifecycle hooks to Noir widgets. It is a companion
-package for `package:noir/noir.dart`. It does not use Flutter, Noir's concrete
-Element classes, Noir's low-level renderer API, or FFI.
-
-This package is unrelated to Dart's native build and link hooks. Noir uses
-Dart build hooks to bundle OpenTUI. `noir_hooks` provides UI lifecycle hooks.
+`noir_hooks` adds reusable widget lifecycle hooks to Noir. It is a companion
+package for `package:noir/noir.dart`; production code uses no private Element,
+low-level renderer, or FFI API.
 
 ## Install
-
-Add both packages:
 
 ```yaml
 dependencies:
@@ -47,7 +42,7 @@ class CounterApp extends HookWidget {
 }
 ```
 
-`HookBuilder` provides the same lifecycle for inline builders:
+Use `HookBuilder` when an inline builder needs hooks:
 
 ```dart
 final widget = HookBuilder(
@@ -58,38 +53,37 @@ final widget = HookBuilder(
 );
 ```
 
-## Noir-specific model
+## Noir model
 
-Noir is Flutter-like, but it is an independent widget framework. This package
-does not install a custom Element or copy Flutter's scheduler. `HookWidget` is
-a normal Noir `StatefulWidget`; rebuilds flow through Noir's `State` and
-`BuildOwner`, and animations use Noir's ticker scheduler. Effects run
-synchronously while the hook widget builds.
+`HookWidget` is a normal Noir `StatefulWidget`. Rebuilds use Noir's `State` and
+`BuildOwner`, animations use Noir's ticker scheduler, and effects run
+synchronously during the hook widget build.
 
-To combine explicit `State` lifecycle methods with hooks, keep a
-`HookBuilder` at a stable position inside the state's `build` method. The
-package does not expose a `StatefulHookWidget`: Noir's public API does not
-intercept an arbitrary user-created `State`, and the package does not depend
-on framework-owned Element classes to simulate that behavior.
+A normal `StatefulWidget` can keep a `HookBuilder` at a stable position in its
+`build` method. The package does not provide `StatefulHookWidget` because that
+would require framework-owned Element behavior that Noir does not expose as an
+application API.
+
+Noir hot reload is forwarded to retained class hooks through
+`HookState.reassemble`. The immediately following build may replace a
+structurally changed hook slot and its tail. An ordinary build reports a hook
+runtime-type mismatch instead of silently accepting reordered or conditional
+hook calls.
 
 ## Rules
 
 Stateful hooks use call order as identity. `useContext` and
-`useTickerProvider` are build-only lookups and do not consume hook slots.
+`useTickerProvider` are build-only lookups and do not consume a hook slot.
 
-- Call hooks only while a `HookWidget` or `HookBuilder` is building.
-- Call the same stateful hooks in the same order on every build.
-- Do not put stateful hook calls in conditions or loops.
-- Do not call any hook from event callbacks, effects, or class-based lifecycle
-  methods other than `HookState.build`.
-- Prefix custom hook functions with `use`.
-- Use top-level hook functions to compose other hooks.
+- Call stateful hooks unconditionally and in the same order on every build.
+- Do not call hooks from event, effect, cleanup, or non-build lifecycle
+  callbacks.
+- Compose custom hooks in top-level functions whose names start with `use`.
+- A key change recreates only that hook slot.
 
-A runtime hook-type change resets that slot and every later slot. A key change
-recreates only that hook slot. Later hook slots update before the old keyed
-state is disposed, so listeners can detach from replaced owners safely. Key
-lists are snapshotted, so later mutation of a caller-owned list cannot corrupt
-retained identity.
+Key lists are snapshotted. Later mutation of a caller-owned list cannot change
+stored hook identity. During keyed replacement, later slots update before the
+old state is disposed so listeners can detach safely.
 
 ## Included hooks
 
@@ -104,19 +98,17 @@ Observable values:
 - `useListenable`, `useValueListenable`, `useListenableSelector`
 - `useValueNotifier`, `useChangeNotifier`, `useOnListenableChange`
 
-`useState` owns a `ValueNotifier` and subscribes the widget to it.
-`useValueNotifier` only owns the notifier. Pair it with `useValueListenable`
-when a particular widget should rebuild for its changes.
+`useState` owns and observes a `ValueNotifier`. `useValueNotifier` only owns
+the notifier; pair it with `useValueListenable` when the widget should rebuild.
 
 Asynchronous values:
 
 - `useFuture` and `useStream`, returning `AsyncSnapshot`
-- stale future and stream callbacks are ignored after replacement or disposal
-- stream subscriptions are canceled when replaced or disposed
+- stale callbacks are ignored after replacement or disposal
+- replaced and disposed stream subscriptions are canceled
 
-Create futures and streams outside the build, or retain them with
-`useMemoized`. Creating a new asynchronous object on every build restarts its
-observation.
+Create futures and streams outside the build or retain them with
+`useMemoized`. A new asynchronous object on every build restarts observation.
 
 Noir integrations:
 
@@ -127,37 +119,27 @@ Noir integrations:
 
 ## Effects and cleanup
 
-`useEffect` is synchronous. Without keys, it cleans up and reruns on every
-build. With keys, it reruns when a key changes. Its cleanup runs before the next
-effect and during disposal.
+`useEffect` is synchronous. Without keys, cleanup and the effect run on every
+build. With keys, they run when a key changes. Cleanup also runs when the hook
+is removed or its widget is disposed.
 
 Owned hooks dispose in reverse call order. Cleanup continues after a failure,
-and the first error is rethrown after all cleanup attempts.
+then the first error is rethrown.
 
 ## Custom hooks
 
-Most custom hooks should be top-level functions that compose existing hooks:
+Prefer functions that compose built-in hooks:
 
 ```dart
 ValueNotifier<int> useCounter([int initialValue = 0]) {
   final counter = useState(initialValue);
   useEffect(() {
-    // Subscribe or record diagnostics here.
     return null;
   }, <Object?>[counter.value]);
   return counter;
 }
 ```
 
-For lifecycle logic that cannot be expressed by composition, extend `Hook` and
-`HookState`. A class-based hook can initialize state, respond to new hook
-configuration, request rebuilds, access the host context and ticker provider,
-and release resources. `HookState.build` may compose later hooks. Other
-class-based lifecycle callbacks must not call hooks.
-
-## Architecture
-
-`HookWidget` is implemented as a public Noir `StatefulWidget` adapter. Its
-`State` owns the ordered hook slots and shares Noir's ticker scheduler. This
-keeps widget identity and rebuild scheduling in Noir's normal framework path
-without exposing or depending on concrete Element implementations.
+For lifecycle behavior that composition cannot express, extend `Hook` and
+`HookState`. A class hook can initialize, update, reassemble, rebuild, access
+the host context and ticker provider, and dispose resources.
