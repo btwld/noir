@@ -53,6 +53,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DemoPanel(
+              title: 'Draft',
               child: TextArea(
                 autofocus: true,
                 width: 50,

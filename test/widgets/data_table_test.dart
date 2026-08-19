@@ -91,7 +91,7 @@ void main() {
       }
     });
 
-    test('the header sits above a separator and the body fills the rest', () {
+    test('the header sits on the first row and the body fills the rest', () {
       final capture = BufferCapture(width: 24, height: 8);
       try {
         final frame = capture.capture(
@@ -103,10 +103,10 @@ void main() {
           ),
         );
         expect(frame.findText('name'), hasLength(1));
-        // height 6 = header + separator + four body rows.
-        expect(frame.findText('item0').single.y, 2);
-        expect(frame.findText('item3').single.y, 5);
-        expect(frame.findText('item4'), isEmpty);
+        // height 6 = header + five body rows. No spacer under the header.
+        expect(frame.findText('item0').single.y, 1);
+        expect(frame.findText('item4').single.y, 5);
+        expect(frame.findText('item5'), isEmpty);
       } finally {
         capture.dispose();
       }
@@ -129,7 +129,7 @@ void main() {
             },
           ),
         );
-        expect(built, [0, 1, 2, 3]);
+        expect(built, [0, 1, 2, 3, 4]);
       } finally {
         capture.dispose();
       }
@@ -159,36 +159,33 @@ void main() {
       driver.dispose();
     });
 
-    test(
-      'clicking a body row selects it, offset past header and rule',
-      () async {
-        final selects = <int>[];
-        final driver = KeyDriver(
-          DataTable(
-            columns: _columns,
-            rowCount: 10,
-            height: 6,
-            selectedIndex: 0,
-            cellBuilder: _cell,
-            onSelect: selects.add,
-          ),
-          paintFrames: true,
-        );
-        await driver.ready();
+    test('clicking a body row selects it, offset past the header', () async {
+      final selects = <int>[];
+      final driver = KeyDriver(
+        DataTable(
+          columns: _columns,
+          rowCount: 10,
+          height: 6,
+          selectedIndex: 0,
+          cellBuilder: _cell,
+          onSelect: selects.add,
+        ),
+        paintFrames: true,
+      );
+      await driver.ready();
 
-        // y=2 is the first body row: y=0 is the header, y=1 the separator.
-        await driver.sendMouse(
-          MouseEvent(
-            type: MouseEventType.down,
-            button: MouseButton.left,
-            x: 1,
-            y: 3,
-          ),
-        );
-        expect(selects, [1]);
-        driver.dispose();
-      },
-    );
+      // y=1 is the first body row: y=0 is the header.
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          button: MouseButton.left,
+          x: 1,
+          y: 2,
+        ),
+      );
+      expect(selects, [1]);
+      driver.dispose();
+    });
 
     test(
       'a focused body paints its highlight on selectedBackgroundColor',
@@ -211,10 +208,10 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           app.pumpFrame();
           final frame = app.captureFrame();
-          expect(frame, BufferMatchers.hasBackgroundAt(0, 3, Color.magenta));
+          expect(frame, BufferMatchers.hasBackgroundAt(0, 2, Color.magenta));
           expect(
             frame,
-            isNot(BufferMatchers.hasBackgroundAt(0, 2, Color.magenta)),
+            isNot(BufferMatchers.hasBackgroundAt(0, 1, Color.magenta)),
           );
         } finally {
           app.dispose();

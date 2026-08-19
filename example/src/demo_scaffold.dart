@@ -6,6 +6,15 @@
 /// colors come from `Theme.of(context)`, so the demos render on
 /// `ThemeData.dark` by default and re-skin together under any `Theme`.
 ///
+/// The card is content-sized vertically. Horizontal room comes from the
+/// scaffold owning the terminal (`alignment: topLeft`) and a 2-cell side
+/// inset so the page title is not glued to the edge. A panel title lives
+/// on the top border (`Border.title`, `┌─ Name ─┐`); the body starts on
+/// the first inner row. Horizontal pad 1 is free (maxed with the border).
+/// Do not set [DemoPanel.height] unless the child is a viewport. The
+/// panel fill is [ThemeData.surfaceVariant] — the token whose job is a
+/// nested region.
+///
 /// Content colors (chat speakers, layout blocks, particles) stay in each demo:
 /// there the color is the subject, not the frame.
 library;
@@ -42,7 +51,8 @@ class DemoScaffold extends StatelessWidget {
     final hint = this.hint;
     return Container(
       color: theme.surface,
-      padding: const EdgeInsets.all(1),
+      alignment: Alignment.topLeft,
+      padding: const EdgeInsets(left: 2, top: 1, right: 2, bottom: 1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -83,7 +93,7 @@ class DemoPanel extends StatelessWidget {
     super.key,
   });
 
-  /// Bold label on the panel's first row; omitted when null.
+  /// Label drawn on the top border; omitted when null.
   final String? title;
 
   /// Whether to paint the border and title in the theme accent.
@@ -106,23 +116,15 @@ class DemoPanel extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(border: Border.all(color: chrome)),
+      decoration: BoxDecoration(
+        color: theme.surfaceVariant,
+        border: Border.all(
+          color: chrome,
+          title: title == null ? null : ' $title ',
+        ),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: title == null
-          ? child
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: focused ? theme.accent : theme.textMuted,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                child,
-              ],
-            ),
+      child: child,
     );
   }
 }

@@ -111,7 +111,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
     title: label,
     focused: focusNode.hasFocus,
     width: 54,
-    height: 4,
+    height: 3,
     child: TextInput(
       focusNode: focusNode,
       autofocus: autofocus,

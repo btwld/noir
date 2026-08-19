@@ -59,7 +59,7 @@ void main() {
     final app = createTuiTestApp(
       const DataTableDemoApp(),
       width: 50,
-      height: 18,
+      height: 20,
     );
     try {
       await _settle(app);
@@ -137,13 +137,14 @@ void main() {
   });
 }
 
-/// The package name in the table's first body row, which sits two rows below
-/// the header (header, then the separator rule).
+/// The package name in the table's first body row, immediately under the
+/// header. A titled DemoPanel may put a box-drawing cell in column 0.
 String _firstBodyRow(TuiTestApp app) {
   final frame = app.captureFrame();
   final header = frame.findText('package').single;
   return frame
-      .getRegion(0, header.y + 2, frame.width, 1)
+      .getRegion(0, header.y + 1, frame.width, 1)
+      .replaceAll(RegExp('[┌┐└┘─│]'), '')
       .trim()
       .split(RegExp(r'\s+'))
       .first;

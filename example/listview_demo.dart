@@ -34,9 +34,24 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
   var _plainBuilds = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _selectableFocus.addListener(_rebuild);
+    _plainFocus.addListener(_rebuild);
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    _selectableFocus.dispose();
-    _plainFocus.dispose();
+    _selectableFocus
+      ..removeListener(_rebuild)
+      ..dispose();
+    _plainFocus
+      ..removeListener(_rebuild)
+      ..dispose();
     super.dispose();
   }
 
@@ -76,13 +91,19 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
     required String label,
     required Widget list,
     required int builds,
+    required bool focused,
   }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: theme.accent)),
-        SizedBox(width: 22, child: list),
+        DemoPanel(
+          title: label,
+          focused: focused,
+          width: 24,
+          height: 10,
+          child: SizedBox(width: 22, child: list),
+        ),
         Text('rows built: $builds', style: TextStyle(color: theme.textMuted)),
       ],
     );
@@ -103,6 +124,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
             children: [
               _pane(
                 label: 'selectable',
+                focused: _selectableFocus.hasFocus,
                 builds: _selectableBuilds,
                 list: ListView(
                   focusNode: _selectableFocus,
@@ -117,6 +139,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
               ),
               _pane(
                 label: 'plain scroll',
+                focused: _plainFocus.hasFocus,
                 builds: _plainBuilds,
                 list: ListView(
                   focusNode: _plainFocus,

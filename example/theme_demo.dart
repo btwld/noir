@@ -77,19 +77,11 @@ class _ThemedPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: theme.surfaceVariant,
-              border: Border.all(color: theme.border),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 1),
+          DemoPanel(
+            title: 'surfaceVariant',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'surfaceVariant panel',
-                  style: TextStyle(color: theme.text),
-                ),
                 Container(
                   color: theme.accent,
                   child: Text(

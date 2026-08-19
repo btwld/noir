@@ -27,14 +27,12 @@ class HelloApp extends StatelessWidget {
             Expanded(
               child: DemoPanel(
                 title: 'Layout',
-                height: 4,
                 child: Text('Row, Column, Container, Expanded'),
               ),
             ),
             Expanded(
               child: DemoPanel(
                 title: 'State',
-                height: 4,
                 child: Text('StatelessWidget and StatefulWidget'),
               ),
             ),

@@ -71,64 +71,74 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 1,
         children: [
-          const Divider(),
-          Row(
-            spacing: 2,
-            children: [
-              Checkbox(
-                autofocus: true,
-                value: _wrap,
-                label: 'soft wrap',
-                onChanged: (next) => setState(() => _wrap = next),
-              ),
-              Switch(
-                value: _verbose,
-                label: 'verbose',
-                onChanged: (next) => setState(() => _verbose = next),
-              ),
-              const Checkbox(value: true, label: 'locked'),
-            ],
+          DemoPanel(
+            title: 'Controls',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 1,
+              children: [
+                Row(
+                  spacing: 2,
+                  children: [
+                    Checkbox(
+                      autofocus: true,
+                      value: _wrap,
+                      label: 'soft wrap',
+                      onChanged: (next) => setState(() => _wrap = next),
+                    ),
+                    Switch(
+                      value: _verbose,
+                      label: 'verbose',
+                      onChanged: (next) => setState(() => _verbose = next),
+                    ),
+                    const Checkbox(value: true, label: 'locked'),
+                  ],
+                ),
+                Row(
+                  spacing: 1,
+                  children: [
+                    Button(
+                      label: 'Step',
+                      onPressed: _steps == _totalSteps
+                          ? null
+                          : () => setState(() => _steps++),
+                    ),
+                    Button(
+                      label: 'Reset',
+                      onPressed: _steps == 0
+                          ? null
+                          : () => setState(() => _steps = 0),
+                    ),
+                  ],
+                ),
+                Row(
+                  spacing: 1,
+                  children: [
+                    ProgressBar(value: _progress, width: 24),
+                    Text(
+                      '$_steps/$_totalSteps',
+                      style: TextStyle(color: Theme.of(context).textMuted),
+                    ),
+                  ],
+                ),
+                const Divider(),
+              ],
+            ),
           ),
-          const SizedBox(height: 1),
-          Row(
-            spacing: 1,
-            children: [
-              Button(
-                label: 'Step',
-                onPressed: _steps == _totalSteps
-                    ? null
-                    : () => setState(() => _steps++),
-              ),
-              Button(
-                label: 'Reset',
-                onPressed: _steps == 0
-                    ? null
-                    : () => setState(() => _steps = 0),
-              ),
-            ],
-          ),
-          const SizedBox(height: 1),
-          Row(
-            spacing: 1,
-            children: [
-              ProgressBar(value: _progress, width: 24),
-              Text(
-                '$_steps/$_totalSteps',
-                style: TextStyle(color: Theme.of(context).textMuted),
-              ),
-            ],
-          ),
-          const Divider(),
-          Row(
-            spacing: 1,
-            children: [
-              const Badge(label: 'NEUTRAL'),
-              const Badge(label: 'OK', variant: BadgeVariant.success),
-              const Badge(label: 'WARN', variant: BadgeVariant.warning),
-              const Badge(label: 'FAIL', variant: BadgeVariant.danger),
-              const Badge(label: 'INFO', variant: BadgeVariant.info),
-            ],
+          DemoPanel(
+            title: 'Badges',
+            child: Row(
+              spacing: 1,
+              children: [
+                const Badge(label: 'NEUTRAL'),
+                const Badge(label: 'OK', variant: BadgeVariant.success),
+                const Badge(label: 'WARN', variant: BadgeVariant.warning),
+                const Badge(label: 'FAIL', variant: BadgeVariant.danger),
+                const Badge(label: 'INFO', variant: BadgeVariant.info),
+              ],
+            ),
           ),
         ],
       ),

@@ -110,19 +110,22 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DataTable(
-            autofocus: true,
-            columns: _columns,
-            rowCount: _rows.length,
-            height: 9,
-            selectedIndex: _selected,
-            sortColumnIndex: _sortColumn,
-            sortAscending: _ascending,
-            showScrollIndicator: true,
-            cellBuilder: _cell,
-            onSort: _sort,
-            onChanged: (index) => setState(() => _selected = index),
-            onSelect: (index) => setState(() => _opened = _rows[index].name),
+          DemoPanel(
+            title: 'Packages',
+            child: DataTable(
+              autofocus: true,
+              columns: _columns,
+              rowCount: _rows.length,
+              height: 9,
+              selectedIndex: _selected,
+              sortColumnIndex: _sortColumn,
+              sortAscending: _ascending,
+              showScrollIndicator: true,
+              cellBuilder: _cell,
+              onSort: _sort,
+              onChanged: (index) => setState(() => _selected = index),
+              onSelect: (index) => setState(() => _opened = _rows[index].name),
+            ),
           ),
           const SizedBox(height: 1),
           Text(

@@ -33,8 +33,20 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_rebuild);
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_rebuild)
+      ..dispose();
     super.dispose();
   }
 
@@ -59,6 +71,8 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DemoPanel(
+              title: 'Fruit',
+              focused: _focusNode.hasFocus,
               child: Select<String>(
                 focusNode: _focusNode,
                 autofocus: true,

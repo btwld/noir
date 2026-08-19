@@ -12,7 +12,6 @@ import '../framework/widget.dart';
 import '../render/geometry.dart';
 import 'align.dart';
 import 'container.dart';
-import 'divider.dart';
 import 'flexible.dart';
 import 'input.dart';
 import 'list_view.dart';
@@ -131,8 +130,7 @@ class DataTable extends StatefulWidget {
   /// Builds one cell; called only for rows in the visible window.
   final DataTableCellBuilder cellBuilder;
 
-  /// Rows of terminal height for the whole table, header and separator
-  /// included.
+  /// Rows of terminal height for the whole table, header included.
   final int height;
 
   /// Blank cells between adjacent columns, so a right-aligned column never
@@ -243,8 +241,9 @@ class _DataTableState extends State<DataTable> {
   Widget build(BuildContext context) {
     final theme = Theme.maybeOf(context);
     final palette = theme ?? ThemeData.dark;
-    // The header and its separator each cost a row; the rest is body.
-    final bodyHeight = math.max(0, widget.height - 2);
+    // The header costs one row; the rest is body. No spacer — a one-cell
+    // Divider under the header reads as an empty bar, not a rule.
+    final bodyHeight = math.max(0, widget.height - 1);
 
     Widget headerRow = _columnedRow([
       for (var i = 0; i < widget.columns.length; i++) _headerCell(i, palette),
@@ -267,7 +266,6 @@ class _DataTableState extends State<DataTable> {
           color: widget.headerColor ?? theme?.surfaceVariant,
           child: headerRow,
         ),
-        const Divider(),
         ListView(
           focusNode: widget.focusNode,
           autofocus: widget.autofocus,

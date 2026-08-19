@@ -21,8 +21,10 @@
   `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
   the loop). A mid-build exit throws. Drive mode follows an in-app exit.
   Examples and the patch manager quit through the tree.
-- Examples share `example/src/demo_scaffold.dart` for chrome. The authoring
-  skill catalogs the new widgets and how to compose them.
+- Examples share `example/src/demo_scaffold.dart` for chrome. Panel titles
+  sit on `Border.title`. `DataTable` no longer inserts a `Divider` under
+  the header. The authoring skill catalogs the new widgets and how to
+  compose them.
 - `scripts/noir_drive.dart` accepts `key space`.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore

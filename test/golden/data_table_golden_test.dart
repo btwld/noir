@@ -44,7 +44,7 @@ void main() {
       tester.dispose();
     });
 
-    test('header, rule, and aligned body columns', () async {
+    test('header and aligned body columns', () async {
       const widget = DataTable(
         columns: _columns,
         rowCount: 5,
