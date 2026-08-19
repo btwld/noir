@@ -21,29 +21,12 @@ final class ObjectRef<T> {
 }
 
 /// Read-only reducer state returned by [useReducer].
-///
-/// State changes only through [dispatch].
-final class Store<S, A> extends ChangeNotifier implements ValueListenable<S> {
-  /// Creates a store with [initialState] and [reducer].
-  Store(S initialState, Reducer<S, A> reducer)
-    : _value = initialState,
-      _reducer = reducer;
+abstract interface class Store<S, A> {
+  /// The current reducer state.
+  S get value;
 
-  S _value;
-  Reducer<S, A> _reducer;
-
-  @override
-  S get value => _value;
-
-  /// Applies [action] to the current value and publishes a changed result.
-  void dispatch(A action) {
-    final next = _reducer(_value, action);
-    if (_value == next) {
-      return;
-    }
-    _value = next;
-    notifyListeners();
-  }
+  /// Applies [action] to the current state.
+  void dispatch(A action);
 }
 
 /// Creates a [ValueNotifier] that rebuilds its widget when its value changes.
@@ -327,31 +310,29 @@ final class _ReducerHook<S, A> extends Hook<Store<S, A>> {
 }
 
 final class _ReducerHookState<S, A>
-    extends HookState<Store<S, A>, _ReducerHook<S, A>> {
-  late final Store<S, A> _store;
+    extends HookState<Store<S, A>, _ReducerHook<S, A>>
+    implements Store<S, A> {
+  late S _value;
 
   @override
-  void initHook() {
-    _store = Store<S, A>(hook.initialState, hook.reducer)
-      ..addListener(markMayNeedRebuild);
-  }
+  void initHook() => _value = hook.initialState;
 
   @override
-  void didUpdateHook(_ReducerHook<S, A> _) => _store._reducer = hook.reducer;
+  S get value => _value;
 
   @override
-  Store<S, A> build(BuildContext context) => _store;
-
-  @override
-  void dispose() {
-    try {
-      _store
-        ..removeListener(markMayNeedRebuild)
-        ..dispose();
-    } finally {
-      super.dispose();
+  void dispatch(A action) {
+    final next = hook.reducer(_value, action);
+    if (_value == next) {
+      return;
     }
+    setState(() {
+      _value = next;
+    });
   }
+
+  @override
+  Store<S, A> build(BuildContext context) => this;
 }
 
 final class _OnDisposeHook extends Hook<Object?> {
