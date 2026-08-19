@@ -251,22 +251,56 @@ void main() {
       driver.dispose();
     });
 
-    test('the selected row is painted on selectedBackgroundColor', () {
-      final capture = BufferCapture(width: 10, height: 4);
-      try {
-        final frame = capture.capture(
+    test(
+      'a focused list paints its highlight on selectedBackgroundColor',
+      () async {
+        final app = createTuiTestApp(
           ListView(
+            autofocus: true,
             itemCount: 4,
             height: 4,
             selectedIndex: 1,
             selectedBackgroundColor: Color.magenta,
             itemBuilder: (context, index, selected) => Text('r$index'),
           ),
+          width: 10,
+          height: 4,
         );
-        expect(frame, BufferMatchers.hasBackgroundAt(0, 1, Color.magenta));
+        try {
+          await _settle(app);
+          final frame = app.captureFrame();
+          expect(frame, BufferMatchers.hasBackgroundAt(0, 1, Color.magenta));
+        } finally {
+          app.dispose();
+        }
+      },
+    );
+
+    test('an unfocused list mutes its highlight to the surface variant', () {
+      // BufferCapture never runs the autofocus microtask, so this capture is
+      // the unfocused appearance by construction.
+      final capture = BufferCapture(width: 10, height: 4);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(surfaceVariant: Color.blue),
+            child: ListView(
+              itemCount: 4,
+              height: 4,
+              selectedIndex: 1,
+              selectedBackgroundColor: Color.magenta,
+              itemBuilder: (context, index, selected) => Text('r$index'),
+            ),
+          ),
+        );
         expect(
           frame,
-          isNot(BufferMatchers.hasBackgroundAt(0, 0, Color.magenta)),
+          BufferMatchers.hasBackgroundAt(0, 1, Color.blue),
+          reason: 'without focus the highlight is chrome, not accent',
+        );
+        expect(
+          frame,
+          isNot(BufferMatchers.hasBackgroundAt(0, 1, Color.magenta)),
         );
       } finally {
         capture.dispose();

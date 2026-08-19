@@ -1,4 +1,4 @@
-0,0:#ffffffff|#3366ccff|0 * 6
+0,0:#ffffffff|#0f1013ff|0 * 6
 6,0:#ffffffff|#000000ff|0 * 24
 0,1:#ffffffff|#000000ff|0 * 30
 0,2:#ffffffff|#000000ff|0 * 30

@@ -93,8 +93,10 @@ class Select<T> extends StatefulWidget {
   /// subtree.
   final Color? backgroundColor;
 
-  /// Fill color behind the highlighted row. Falls back to
-  /// [ThemeData.selectedBackground].
+  /// Fill color behind the highlighted row while the list has focus. Falls
+  /// back to [ThemeData.selectedBackground]. An unfocused [Select] mutes its
+  /// highlight to [ThemeData.surfaceVariant], so with several selectors on
+  /// screen the accent fill marks the one that owns the keyboard.
   final Color? selectedBackgroundColor;
 
   /// Foreground color of text on the highlighted row. Falls back to
@@ -136,6 +138,7 @@ class _SelectLayoutMetrics {
 class _SelectState<T> extends State<Select<T>>
     with FocusNodeOwnerStateMixin<Select<T>> {
   late int _highlighted;
+  bool _focused = false;
   late final ViewportController _viewport;
   final _SelectLayoutMetrics _layoutMetrics = _SelectLayoutMetrics();
 
@@ -218,6 +221,11 @@ class _SelectState<T> extends State<Select<T>>
   void _confirm() {
     if (widget.options.isEmpty) return;
     widget.onSelect?.call(_highlighted, widget.options[_highlighted]);
+  }
+
+  void _handleFocusChange(bool hasFocus) {
+    if (_focused == hasFocus) return;
+    setState(() => _focused = hasFocus);
   }
 
   Map<Type, Action<Intent>> get _actions => {
@@ -306,6 +314,7 @@ class _SelectState<T> extends State<Select<T>>
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
+          onFocusChange: _handleFocusChange,
           child: PointerListener(
             onPointerDown: _handlePointerDown,
             child: _SelectLeaf<T>(
@@ -319,8 +328,9 @@ class _SelectState<T> extends State<Select<T>>
               // Theme the list must keep painting no fill at all, which no
               // color can express.
               backgroundColor: widget.backgroundColor ?? theme?.surface,
-              selectedBackgroundColor:
-                  widget.selectedBackgroundColor ?? palette.selectedBackground,
+              selectedBackgroundColor: _focused
+                  ? widget.selectedBackgroundColor ?? palette.selectedBackground
+                  : palette.surfaceVariant,
               selectedTextColor:
                   widget.selectedTextColor ?? palette.selectedForeground,
               descriptionColor: widget.descriptionColor ?? palette.textMuted,

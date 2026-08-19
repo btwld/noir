@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
+import '../helpers/tui_test_app.dart';
 
 const _columns = [
   DataColumn(label: 'name', sortable: true),
@@ -54,10 +55,10 @@ void main() {
             cellBuilder: _cell,
           ),
         );
-        // 30 cells minus the fixed 4 leaves 26 split 1:2, so the first flex
-        // column takes 9 and the fixed column starts right after it.
+        // 30 cells minus the fixed 4 and two default spacing gaps leaves 24
+        // split 1:2 -> 8 and 16, with one blank cell between neighbors.
         expect(frame.findText('bb').single.x, 9);
-        expect(frame.findText('ccc').single.x, 13);
+        expect(frame.findText('ccc').single.x, 14);
       } finally {
         capture.dispose();
       }
@@ -189,11 +190,12 @@ void main() {
       },
     );
 
-    test('the selected row is painted on selectedBackgroundColor', () {
-      final capture = BufferCapture(width: 24, height: 6);
-      try {
-        final frame = capture.capture(
+    test(
+      'a focused body paints its highlight on selectedBackgroundColor',
+      () async {
+        final app = createTuiTestApp(
           const DataTable(
+            autofocus: true,
             columns: _columns,
             rowCount: 4,
             height: 5,
@@ -201,16 +203,24 @@ void main() {
             selectedBackgroundColor: Color.magenta,
             cellBuilder: _cell,
           ),
+          width: 24,
+          height: 6,
         );
-        expect(frame, BufferMatchers.hasBackgroundAt(0, 3, Color.magenta));
-        expect(
-          frame,
-          isNot(BufferMatchers.hasBackgroundAt(0, 2, Color.magenta)),
-        );
-      } finally {
-        capture.dispose();
-      }
-    });
+        try {
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          app.pumpFrame();
+          final frame = app.captureFrame();
+          expect(frame, BufferMatchers.hasBackgroundAt(0, 3, Color.magenta));
+          expect(
+            frame,
+            isNot(BufferMatchers.hasBackgroundAt(0, 2, Color.magenta)),
+          );
+        } finally {
+          app.dispose();
+        }
+      },
+    );
   });
 
   group('DataTable sorting', () {

@@ -105,6 +105,7 @@ class DataTable extends StatefulWidget {
     required this.cellBuilder,
     super.key,
     this.height = 10,
+    this.columnSpacing = 1,
     this.controller,
     this.selectedIndex,
     this.sortColumnIndex,
@@ -118,7 +119,8 @@ class DataTable extends StatefulWidget {
     this.onChanged,
     this.onSelect,
   }) : assert(rowCount >= 0),
-       assert(height >= 2);
+       assert(height >= 2),
+       assert(columnSpacing >= 0);
 
   /// Ordered column specifications, shared by the header and every body row.
   final List<DataColumn> columns;
@@ -132,6 +134,10 @@ class DataTable extends StatefulWidget {
   /// Rows of terminal height for the whole table, header and separator
   /// included.
   final int height;
+
+  /// Blank cells between adjacent columns, so a right-aligned column never
+  /// abuts the header or cell text of its neighbor.
+  final int columnSpacing;
 
   /// Scroll position of the body, shared with the caller. One is created
   /// internally when null.
@@ -154,8 +160,9 @@ class DataTable extends StatefulWidget {
   /// [ThemeData.surfaceVariant] under a [Theme].
   final Color? headerColor;
 
-  /// Fill painted behind the highlighted body row. Falls back to
-  /// [ThemeData.selectedBackground] under a [Theme].
+  /// Fill painted behind the highlighted body row while the body has focus.
+  /// Falls back to [ThemeData.selectedBackground]; an unfocused body mutes
+  /// its highlight to [ThemeData.surfaceVariant].
   final Color? selectedBackgroundColor;
 
   /// Whether the body reserves its last column for scroll-direction arrows.
@@ -183,6 +190,7 @@ class _DataTableState extends State<DataTable> {
   /// row go through this one function, which is what makes their cell
   /// boundaries identical rather than merely intended to be.
   Row _columnedRow(List<Widget> cells) => Row(
+    spacing: widget.columnSpacing,
     children: [
       for (var i = 0; i < widget.columns.length; i++)
         if (widget.columns[i].width case final int fixed)

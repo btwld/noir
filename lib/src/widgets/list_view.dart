@@ -109,8 +109,10 @@ class ListView extends StatefulWidget {
   /// subtree.
   final Color? backgroundColor;
 
-  /// Fill painted behind the highlighted row. Falls back to
-  /// [ThemeData.selectedBackground].
+  /// Fill painted behind the highlighted row while the list has focus. Falls
+  /// back to [ThemeData.selectedBackground]. An unfocused list mutes its
+  /// highlight to [ThemeData.surfaceVariant], so with several lists on screen
+  /// the accent fill marks the one that owns the keyboard.
   final Color? selectedBackgroundColor;
 
   /// Focus node controlling this list's keyboard input. One is created if null.
@@ -136,6 +138,7 @@ class _ListViewState extends State<ListView>
   late ViewportController _viewport;
   late bool _ownsViewport;
   int _highlighted = 0;
+  bool _focused = false;
 
   @override
   FocusNode? get widgetFocusNode => widget.focusNode;
@@ -203,6 +206,11 @@ class _ListViewState extends State<ListView>
 
   void _handleViewportChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _handleFocusChange(bool hasFocus) {
+    if (_focused == hasFocus) return;
+    setState(() => _focused = hasFocus);
   }
 
   void _setHighlighted(int index) {
@@ -315,8 +323,9 @@ class _ListViewState extends State<ListView>
     // `theme?.surface`, not `palette.surface`: no ancestor Theme has to keep
     // meaning "no fill", which no color can express.
     final background = widget.backgroundColor ?? theme?.surface;
-    final selectedBackground =
-        widget.selectedBackgroundColor ?? palette.selectedBackground;
+    final selectedBackground = _focused
+        ? widget.selectedBackgroundColor ?? palette.selectedBackground
+        : palette.surfaceVariant;
 
     final start = _viewport.scrollOffset;
     final end = math.min(widget.itemCount, start + _visibleRows);
@@ -369,6 +378,7 @@ class _ListViewState extends State<ListView>
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
+          onFocusChange: _handleFocusChange,
           child: PointerListener(
             onPointerDown: _handlePointerDown,
             onPointerScroll: _handlePointerScroll,

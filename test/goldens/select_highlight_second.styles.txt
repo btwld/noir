@@ -1,5 +1,5 @@
 0,0:#ffffffff|#000000ff|0 * 30
-0,1:#ffffffff|#3366ccff|0 * 5
+0,1:#ffffffff|#0f1013ff|0 * 5
 5,1:#ffffffff|#000000ff|0 * 25
 0,2:#ffffffff|#000000ff|0 * 30
 0,3:#ffffffff|#000000ff|0 * 30

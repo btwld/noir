@@ -38,6 +38,12 @@
   previously built a second controller when `interval` or the frame count
   changed, which asked `SingleTickerProviderStateMixin` for a second ticker
   and asserted.
+- `ListView`, `Select`, and `DataTable` now mute their highlight to
+  `ThemeData.surfaceVariant` while unfocused; the selection accent marks the
+  widget that owns the keyboard, which was previously indistinguishable with
+  several lists on screen.
+- `DataTable` gained `columnSpacing` (default 1), so a right-aligned column
+  no longer abuts the text of its neighbor.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate
