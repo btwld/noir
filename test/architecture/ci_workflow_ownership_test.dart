@@ -54,14 +54,9 @@ void main() {
     expect(analyze, contains('runs-on: ubuntu-latest'));
     expect(analyze, contains('timeout-minutes: 12'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
-    expect(
-      analyze,
-      contains(
-        'timeout-minutes: 2\n'
-        '        run: dart format --output=none --set-exit-if-changed',
-      ),
-    );
-    expect(analyze, isNot(contains('git diff --exit-code')));
+    expect(analyze, contains('timeout-minutes: 2\n        run: |'));
+    expect(analyze, contains('dart format'));
+    expect(analyze, contains('git diff --exit-code'));
     expect(analyze, contains('timeout-minutes: 6\n        run: |'));
     expect(analyze, contains('dart analyze --fatal-infos'));
     expect(analyze, contains('dart analyze --fatal-infos packages/noir_hooks'));

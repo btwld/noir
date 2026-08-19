@@ -45,7 +45,12 @@ jobs:
 
       - name: Check formatting
         timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/ packages/noir_hooks/lib/ packages/noir_hooks/test/ packages/noir_hooks/example/
+        run: |
+          dart format \
+            lib/ test/ example/ bin/ hook/ scripts/ \
+            packages/noir_hooks/lib/ packages/noir_hooks/test/ \
+            packages/noir_hooks/example/
+          git diff --exit-code
 
       - name: Run strict analysis
         timeout-minutes: 6
