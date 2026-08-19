@@ -298,6 +298,8 @@ Pick the list by the job:
 
 Hand-roll a bordered box with `Container` + `BoxDecoration` +
 `Theme.of(context).border`. There is no public `Panel` widget.
+Spacing, chrome tokens, and what not to invent are in
+`references/design.md`.
 
 ### Interactive widgets (overview)
 
@@ -378,6 +380,7 @@ Load the file that matches your task — each is self-contained:
 | `references/widgets.md` | Layout/text/painting plus `Theme`/`ThemeData`, `Divider`, `Badge`, `ProgressBar`, `Spinner`: exact constructors, params, defaults, examples |
 | `references/inputs-and-focus.md` | `TextInput`, `TextArea`, `Select<T>`, `ListView`, `DataTable`, `Checkbox`, `Switch`, `Button`, `ScrollBox`; `Focus`/`FocusScope`/`FocusNode`; the key-routing pipeline; `KeyEvent`/`MouseEvent`/`LogicalKeyboardKey`; `PointerListener`; `Shortcuts`/`Actions`/`Intent`s |
 | `references/state-and-animation.md` | `StatefulWidget` lifecycle, `setState`, `mounted`; `ChangeNotifier`/`ValueNotifier`; `TextEditingController`; `AnimationController` + `SingleTickerProviderStateMixin`; `InheritedWidget` |
+| `references/design.md` | Screen design: 0/1/2-cell spacing, `ThemeData` chrome, catalog-only layout, anti-slop |
 | `references/testing.md` | Testing an app through supported package APIs: headless mount/dispose, testable state owners, what noir does *not* export |
 
 ## Terminal-specific gotchas

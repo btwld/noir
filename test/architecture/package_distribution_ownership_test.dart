@@ -10,6 +10,7 @@ void main() {
   final widgetsGuide = _read('skills/noir/references/widgets.md');
   final inputsGuide = _read('skills/noir/references/inputs-and-focus.md');
   final stateGuide = _read('skills/noir/references/state-and-animation.md');
+  final designGuide = _read('skills/noir/references/design.md');
   final exampleGuide = _read('example/README.md');
   final pubspec = _read('pubspec.yaml');
   final packageVersion = _packageVersion(pubspec);
@@ -468,7 +469,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md'
+        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
@@ -657,6 +658,23 @@ void main() {
     expect(inputsGuide, contains('const DataColumn({'));
     expect(skill, contains('Theme.of(context)'));
     expect(skill, contains('selectedIndex'));
+    expect(skill, contains('`references/design.md`'));
+
+    expect(designGuide, contains('0 / 1 / 2'));
+    expect(
+      designGuide,
+      contains('EdgeInsets(left: 2, top: 1, right: 2, bottom: 1)'),
+    );
+    expect(
+      designGuide,
+      contains('per-side max of `padding` and border thickness'),
+    );
+    expect(designGuide, contains('Theme.of(context)'));
+    expect(designGuide, contains('There is no public `Panel`'));
+    expect(designGuide, contains('80×24'));
+    expect(designGuide, contains('8px grid'));
+    expect(designGuide, isNot(contains('MaterialApp')));
+    expect(designGuide, isNot(contains('border-radius')));
 
     final listViewSource = _read('lib/src/widgets/list_view.dart');
     expect(
