@@ -5,25 +5,14 @@
 // Demonstrates Select<T> rendering, focus, keyboard navigation, and the
 // onChanged vs onSelect callback split.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
+import 'src/demo_scaffold.dart';
 
-  app = runTuiApp(SelectDemoApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const SelectDemoApp(), enableMouse: true);
 
 class SelectDemoApp extends StatefulWidget {
-  const SelectDemoApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const SelectDemoApp({super.key});
 
   @override
   State<SelectDemoApp> createState() => _SelectDemoAppState();
@@ -44,62 +33,69 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_rebuild);
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_rebuild)
+      ..dispose();
     super.dispose();
   }
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    onKeyEvent: _onAppKey,
-    child: Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Select demo',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 1),
-          Text(_status, style: const TextStyle(color: Color(0.7, 0.7, 0.7))),
-          const SizedBox(height: 1),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0.4, 0.4, 0.6)),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 1),
-            child: Select<String>(
-              focusNode: _focusNode,
-              autofocus: true,
-              height: 6,
-              options: _options,
-              showScrollIndicator: true,
-              onChanged: (i, opt) =>
-                  setState(() => _status = 'Highlight: ${opt.name}'),
-              onSelect: (i, opt) => setState(() => _confirmed = opt.value),
-            ),
-          ),
-          const SizedBox(height: 1),
-          if (_confirmed != null)
-            Text(
-              'You picked: $_confirmed',
-              style: const TextStyle(
-                color: Color(0.4, 1, 0.4),
-                fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _onAppKey,
+      child: DemoScaffold(
+        title: 'Select demo',
+        hint: _status,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DemoPanel(
+              title: 'Fruit',
+              focused: _focusNode.hasFocus,
+              child: Select<String>(
+                focusNode: _focusNode,
+                autofocus: true,
+                height: 6,
+                options: _options,
+                showScrollIndicator: true,
+                onChanged: (i, opt) =>
+                    setState(() => _status = 'Highlight: ${opt.name}'),
+                onSelect: (i, opt) => setState(() => _confirmed = opt.value),
               ),
             ),
-        ],
+            const SizedBox(height: 1),
+            if (_confirmed != null)
+              Text(
+                'You picked: $_confirmed',
+                style: TextStyle(
+                  color: theme.success,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

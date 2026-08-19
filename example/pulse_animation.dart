@@ -1,9 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 import 'package:noir/noir.dart';
 
-void main() {
-  runTuiApp(const PulseAnimationDemo());
-}
+void main() => runTuiApp(const PulseAnimationDemo());
 
 class PulseAnimationDemo extends StatefulWidget {
   const PulseAnimationDemo({super.key});
@@ -54,9 +52,10 @@ class _PulseAnimationDemoState extends State<PulseAnimationDemo>
     final width = 8 + (value * 12).round();
     final height = 2 + (value * 4).round();
     final color = Color.rgb(0.2 + value * 0.6, 0.3, 0.6 + value * 0.3);
+    final theme = Theme.of(context);
 
     return Container(
-      color: Color.rgb(0.05, 0.05, 0.12),
+      color: theme.surface,
       alignment: Alignment.center,
       padding: EdgeInsets.all(2),
       child: Column(
@@ -65,24 +64,21 @@ class _PulseAnimationDemoState extends State<PulseAnimationDemo>
         children: [
           Text(
             'AnimationController demo',
-            style: TextStyle(color: Color.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
           ),
           Container(
             width: width,
             height: height,
             decoration: BoxDecoration(
               color: color,
-              border: Border.all(color: Color.white),
+              border: Border.all(color: theme.border),
             ),
           ),
           Text(
             'controller.value: ${value.toStringAsFixed(2)}',
-            style: TextStyle(color: Color(0.7, 0.9, 1)),
+            style: TextStyle(color: theme.info),
           ),
-          const Text(
-            '(Ctrl+C to exit)',
-            style: TextStyle(color: Color(0.6, 0.6, 0.6)),
-          ),
+          Text('(Ctrl+C to exit)', style: TextStyle(color: theme.textMuted)),
         ],
       ),
     );

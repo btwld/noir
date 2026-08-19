@@ -27,8 +27,8 @@ void main() {
     final body = _classBody(source, 'TuiApp');
 
     expect(source, contains('TuiApp runTuiApp('));
-    expect(source, contains('return TuiApp._(binding);'));
-    expect(body, contains('TuiApp._(this._binding)'));
+    expect(source, contains('final handle = TuiApp._(binding, '));
+    expect(body, contains('TuiApp._(this._binding, this._exitCodeSink)'));
     expect(body, contains('final TuiBinding _binding'));
     expect(body, contains('final Set<InputSubscription> _subscriptions'));
     expect(body, contains('bool get isHeadless'));

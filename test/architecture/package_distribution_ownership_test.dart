@@ -10,6 +10,7 @@ void main() {
   final widgetsGuide = _read('skills/noir/references/widgets.md');
   final inputsGuide = _read('skills/noir/references/inputs-and-focus.md');
   final stateGuide = _read('skills/noir/references/state-and-animation.md');
+  final designGuide = _read('skills/noir/references/design.md');
   final exampleGuide = _read('example/README.md');
   final pubspec = _read('pubspec.yaml');
   final packageVersion = _packageVersion(pubspec);
@@ -200,10 +201,14 @@ void main() {
       contains('pin an exact commit or release tag'),
     );
     expect(readme, contains('Noir is currently a prerelease.'));
+    // Three complete, runnable samples: the one-line entry point plus the
+    // two Quick Start apps. Fragments stay inline so every block compiles.
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
-      hasLength(2),
+      hasLength(3),
     );
+    expect(readme, contains('void main() => runTuiApp(const MyApp('));
+    expect(readme, contains('TuiApp.exit(context)'));
     expect(quickStart, contains('class HelloApp extends StatelessWidget'));
     expect(quickStart, contains('class CounterApp extends StatefulWidget'));
     expect(quickStart, contains('setState(() => _count++)'));
@@ -280,8 +285,8 @@ void main() {
 
   test('shipped lifecycle guidance matches the final TuiApp facade', () {
     expect(appSource, contains('TuiApp runTuiApp('));
-    expect(appSource, contains('return TuiApp._(binding);'));
-    expect(appSource, contains('TuiApp._(this._binding);'));
+    expect(appSource, contains('final handle = TuiApp._(binding, '));
+    expect(appSource, contains('TuiApp._(this._binding, this._exitCodeSink);'));
     for (final method in <String>['onKey', 'onMouse', 'onPaste']) {
       expect(
         appSource,
@@ -322,10 +327,26 @@ void main() {
       ),
     );
 
-    final currentAppGuidance = '$readme\n$skill\n$exampleGuide';
+    final currentAppGuidance =
+        '$readme\n$skill\n$exampleGuide\n$testingGuide\n$inputsGuide';
     expect(currentAppGuidance, isNot(contains('await runTuiApp')));
     expect(currentAppGuidance, isNot(contains('TuiBinding.instance')));
     expect(currentAppGuidance, isNot(contains('binding.inputManager')));
+    expect(currentAppGuidance, isNot(contains('app.enableMouse();')));
+    expect(currentAppGuidance, isNot(contains('tuiApp.enableMouse();')));
+    expect(
+      currentAppGuidance,
+      isNot(contains('app.dispose() then `io.exit(0)`')),
+    );
+    expect(
+      currentAppGuidance,
+      isNot(contains('registerHotReloadExtension(app);')),
+    );
+    expect(
+      testingGuide,
+      isNot(contains(RegExp(r'runTuiApp\([^;]*width:', dotAll: true))),
+      reason: 'runTuiApp no longer takes width/height',
+    );
     expect(
       currentAppGuidance.toLowerCase(),
       isNot(contains('dispose the binding')),
@@ -448,7 +469,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md'
+        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
@@ -598,6 +619,97 @@ void main() {
       ),
     );
     expect(stateGuide, contains('dependOnInheritedWidgetOfExactType'));
+
+    expect(
+      skill,
+      isNot(
+        contains(
+          'There is no `Stack`, `Wrap`, `ListView`, or `GestureDetector`',
+        ),
+      ),
+      reason: 'ListView is shipped; the catalog must not list it as missing',
+    );
+    for (final name in const <String>[
+      'Theme',
+      'ThemeData',
+      'ListView',
+      'Checkbox',
+      'Switch',
+      'Button',
+      'Divider',
+      'ProgressBar',
+      'Spinner',
+      'Badge',
+      'DataTable',
+    ]) {
+      expect(skill, contains('`$name`'), reason: 'SKILL.md catalog: $name');
+    }
+    expect(widgetsGuide, contains('const Theme({required this.data'));
+    expect(widgetsGuide, contains('const ThemeData({'));
+    expect(widgetsGuide, contains('const Divider({'));
+    expect(widgetsGuide, contains('const Badge({'));
+    expect(widgetsGuide, contains('const ProgressBar({'));
+    expect(widgetsGuide, contains('const Spinner({'));
+    expect(inputsGuide, contains('const ListView({'));
+    expect(inputsGuide, contains('const Checkbox({'));
+    expect(inputsGuide, contains('const Switch({'));
+    expect(inputsGuide, contains('const Button({'));
+    expect(inputsGuide, contains('const DataTable({'));
+    expect(inputsGuide, contains('const DataColumn({'));
+    expect(skill, contains('Theme.of(context)'));
+    expect(skill, contains('selectedIndex'));
+    expect(skill, contains('`references/design.md`'));
+
+    expect(designGuide, contains('0 / 1 / 2'));
+    expect(
+      designGuide,
+      contains('EdgeInsets(left: 2, top: 1, right: 2, bottom: 1)'),
+    );
+    expect(
+      designGuide,
+      contains('per-side max of `padding` and border thickness'),
+    );
+    expect(designGuide, contains('Theme.of(context)'));
+    expect(designGuide, contains('There is no public `Panel`'));
+    expect(designGuide, contains('80×24'));
+    expect(designGuide, contains('8px grid'));
+    expect(designGuide, isNot(contains('MaterialApp')));
+    expect(designGuide, isNot(contains('border-radius')));
+
+    final listViewSource = _read('lib/src/widgets/list_view.dart');
+    expect(
+      listViewSource,
+      contains(
+        'Widget Function(BuildContext context, int index, bool selected)',
+      ),
+    );
+    expect(
+      inputsGuide,
+      contains(
+        'Widget Function(BuildContext context, int index, bool selected)',
+      ),
+    );
+    expect(inputsGuide, contains('itemBuilder: (context, index, selected)'));
+    expect(
+      inputsGuide,
+      isNot(contains('itemBuilder: (context, index) =>')),
+      reason: 'the builder takes selected; a 2-arg copy does not compile',
+    );
+
+    final switchSource = _read('lib/src/widgets/switch.dart');
+    expect(switchSource, contains('Falls back to [ThemeData.success]'));
+    expect(switchSource, contains('widget.activeColor ?? theme.success'));
+    expect(
+      inputsGuide,
+      contains('this.activeColor,                     // ThemeData.success'),
+    );
+    expect(
+      inputsGuide,
+      isNot(
+        contains('this.activeColor,                     // ThemeData.accent'),
+      ),
+      reason: 'Switch.on uses ThemeData.success, not accent',
+    );
   });
 
   test('shipped example guidance uses supported package imports', () {

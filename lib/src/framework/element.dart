@@ -75,7 +75,7 @@ abstract class Element {
     registerElementWithBuildOwner(owner, this, parent);
     mounted = true;
     _registerGlobalKey();
-    performRebuild();
+    _buildSubtree();
   }
 
   /// Removes this element and its descendants from the tree permanently.
@@ -170,7 +170,7 @@ abstract class Element {
       _dependenciesToRemove = null;
     }
 
-    performRebuild();
+    _buildSubtree();
 
     final toRemove = _dependenciesToRemove;
     if (toRemove != null) {
@@ -182,7 +182,21 @@ abstract class Element {
   }
 
   /// Rebuilds this element's subtree from its current widget configuration.
+  @protected
   void performRebuild();
+
+  /// Runs [performRebuild] while [BuildOwner.isBuilding] is true.
+  ///
+  /// `mount` rebuilds outside [BuildOwner.buildScope], so this is what makes
+  /// the first build visible to [BuildOwner.isBuilding].
+  void _buildSubtree() {
+    owner.beginRebuild();
+    try {
+      performRebuild();
+    } finally {
+      owner.endRebuild();
+    }
+  }
 
   /// Walk up the element tree calling [visitor] for each ancestor until it
   /// returns `false` or the root is reached.
@@ -457,7 +471,7 @@ class StatefulElement extends _ElementBase {
     _registerGlobalKey();
     _state.initState();
     _state.didChangeDependencies();
-    performRebuild();
+    _buildSubtree();
   }
 
   @override

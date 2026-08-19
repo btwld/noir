@@ -100,6 +100,10 @@ const Map<String, String> _namedKeys = <String, String>{
   'left': '\x1b[D',
   'enter': '\r',
   'tab': '\t',
+  // `type` cannot send a lone space: the CLI trims each command line, so a
+  // trailing-space payload never survives. Space is an activation gesture for
+  // Checkbox, Switch, and Button, so it needs a name of its own.
+  'space': ' ',
   // A lone Escape is ambiguous until the next byte arrives, so the parser
   // holds it briefly before deciding. `waitStable` covers that delay.
   'esc': '\x1b',

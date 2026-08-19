@@ -18,8 +18,8 @@
 ///
 /// - A continuously animating app never reports `stable: true`; capture keeps
 ///   working regardless.
-/// - An app whose own quit path calls `exit` ends the session; the driver sees
-///   only the process exit code.
+/// - An app that ends itself through `TuiApp.exit` ends the session too: the
+///   host follows its binding down and the driver sees only the exit code.
 /// - `ext.noir.reassemble` inherits the documented [TuiApp.reassemble] limits:
 ///   `main()` and `initState` bodies are never re-run. Override
 ///   `State.reassemble()` to refresh values those `initState` bodies computed.
@@ -57,9 +57,8 @@ enum DriverCaptureFormat {
 /// and [runTuiApp] keeps its ordinary terminal path, so shipping the branch
 /// costs a map lookup. `NOIR_DRIVE_SIZE=WxH` overrides the emulated terminal
 /// size and defaults to 80x24: the driver, not the app, owns the geometry it
-/// is emulating, so the app's own `width` and `height` arguments do not apply
-/// here — a driver that wants a different size passes `NOIR_DRIVE_SIZE` or
-/// calls `ext.noir.driver.resize`.
+/// is emulating. A driver that wants a different size passes `NOIR_DRIVE_SIZE`
+/// or calls `ext.noir.driver.resize`.
 DriverHost? createDriveModeHost(Map<String, String> environment) {
   if (environment[_driveModeKey] != '1') {
     return null;
@@ -139,6 +138,8 @@ final class DriverHost {
   final void Function(int exitCode) _exitProcess;
   Timer? _keepAlive;
   bool _disposed = false;
+  bool _exiting = false;
+  int _exitStatus = 0;
 
   /// The binding this host drives.
   TuiBinding get binding => _binding;
@@ -302,6 +303,17 @@ final class DriverHost {
     return <String, Object?>{'type': 'Success', 'quitting': true};
   }
 
+  /// Ends the driven session after the app requested [code].
+  ///
+  /// The app has already disposed its binding. Shutdown is deferred like
+  /// [quit] so the VM service can finish the RPC that delivered the quit key.
+  void handleAppExit(int code) {
+    if (_disposed || _exiting) return;
+    _exiting = true;
+    _exitStatus = code;
+    Timer(_quitDelay, _shutdown);
+  }
+
   /// Releases the keep-alive timer, the binding, and the borrowed renderer.
   void dispose() {
     if (_disposed) {
@@ -345,7 +357,7 @@ final class DriverHost {
     try {
       dispose();
     } finally {
-      _exitProcess(0);
+      _exitProcess(_exitStatus);
     }
   }
 

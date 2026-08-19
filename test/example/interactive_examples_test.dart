@@ -13,21 +13,29 @@ import '../../example/widgets_tour.dart';
 import '../helpers/tui_test_app.dart';
 
 void main() {
-  test('mouse-capable example entrypoints enable mouse reporting once', () {
+  test('mouse-capable example entrypoints ask runTuiApp for mouse once', () {
     for (final path in <String>[
       'example/chat_demo.dart',
+      'example/components_demo.dart',
+      'example/data_table_demo.dart',
       'example/focus_form.dart',
       'example/like_reactor.dart',
       'example/layout_demo.dart',
+      'example/listview_demo.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
       'example/widgets_tour.dart',
     ]) {
       final source = io.File(path).readAsStringSync();
       expect(
-        RegExp(r'app\.enableMouse\(\);').allMatches(source),
+        RegExp('enableMouse: true').allMatches(source),
         hasLength(1),
         reason: path,
+      );
+      expect(
+        source,
+        isNot(contains('app.enableMouse(')),
+        reason: '$path enables mouse at the entry point, not after it',
       );
       expect(
         source,
@@ -37,25 +45,36 @@ void main() {
     }
   });
 
-  test('layout examples delegate q to their quit owner exactly once', () async {
-    final cases = <(String, Widget Function(VoidCallback))>[
-      ('layout basics', (onQuit) => LayoutBasics(onQuit: onQuit)),
-      ('layout showcase', (onQuit) => FlexLayoutShowcase(onQuit: onQuit)),
+  test('no example threads a quit callback or hard-exits', () {
+    for (final file
+        in io.Directory('example').listSync().whereType<io.File>().where(
+          (file) => file.path.endsWith('.dart'),
+        )) {
+      final source = file.readAsStringSync();
+      expect(source, isNot(contains('onQuit')), reason: file.path);
+      expect(source, isNot(contains('io.exit(')), reason: file.path);
+      expect(
+        source,
+        isNot(contains('registerHotReloadExtension')),
+        reason: '${file.path}: runTuiApp registers hot reload itself',
+      );
+    }
+  });
+
+  test('layout examples exit through the tree exactly once', () async {
+    final cases = <(String, Widget)>[
+      ('layout basics', const LayoutBasics()),
+      ('layout showcase', const FlexLayoutShowcase()),
     ];
 
-    for (final (name, build) in cases) {
-      var quits = 0;
-      final app = createTuiTestApp(
-        build(() => quits++),
-        width: 100,
-        height: 40,
-      );
+    for (final (name, widget) in cases) {
+      final app = createTuiTestApp(widget, width: 100, height: 40);
 
       try {
         await _settleAutofocus(app);
         app.mockInput.typeText('q');
         await _settleInput();
-        expect(quits, 1, reason: name);
+        expect(app.exitRequests, [0], reason: name);
       } finally {
         app.dispose();
       }
@@ -129,12 +148,7 @@ void main() {
   });
 
   test('scroll demo reaches the final row and q invokes quit', () async {
-    var quits = 0;
-    final app = createTuiTestApp(
-      ScrollDemoApp(onQuit: () => quits++),
-      width: 56,
-      height: 18,
-    );
+    final app = createTuiTestApp(const ScrollDemoApp(), width: 56, height: 18);
 
     try {
       await _settleAutofocus(app);
@@ -147,18 +161,14 @@ void main() {
       expect(frame, isNot(contains('offset: 0 /')));
 
       app.mockInput.typeText('q');
-      expect(quits, 1);
+      expect(app.exitRequests, [0]);
     } finally {
       app.dispose();
     }
   });
 
   test('scrollbox responds to a wheel event inside its viewport', () async {
-    final app = createTuiTestApp(
-      ScrollDemoApp(onQuit: () {}),
-      width: 56,
-      height: 18,
-    );
+    final app = createTuiTestApp(const ScrollDemoApp(), width: 56, height: 18);
     try {
       await _settleAutofocus(app);
       final firstLine = app.captureFrame().findText('Line 1').single;
@@ -172,12 +182,7 @@ void main() {
   });
 
   test('select demo distinguishes highlight, confirmation, and quit', () async {
-    var quits = 0;
-    final app = createTuiTestApp(
-      SelectDemoApp(onQuit: () => quits++),
-      width: 56,
-      height: 20,
-    );
+    final app = createTuiTestApp(const SelectDemoApp(), width: 56, height: 20);
 
     try {
       await _settleAutofocus(app);
@@ -192,18 +197,14 @@ void main() {
       expect(_render(app), contains('You picked: cherry'));
 
       app.mockInput.typeText('q');
-      expect(quits, 1);
+      expect(app.exitRequests, [0]);
     } finally {
       app.dispose();
     }
   });
 
   test('select option can be confirmed by mouse', () async {
-    final app = createTuiTestApp(
-      SelectDemoApp(onQuit: () {}),
-      width: 56,
-      height: 20,
-    );
+    final app = createTuiTestApp(const SelectDemoApp(), width: 56, height: 20);
     try {
       await _settleAutofocus(app);
       final cherry = app.captureFrame().findText('Cherry').single;
@@ -217,11 +218,7 @@ void main() {
   });
 
   test('select demo clips safely in a terminal shorter than its content', () {
-    final app = createTuiTestApp(
-      SelectDemoApp(onQuit: () {}),
-      width: 35,
-      height: 9,
-    );
+    final app = createTuiTestApp(const SelectDemoApp(), width: 35, height: 9);
     try {
       expect(app.pumpFrame, returnsNormally);
       expect(app.captureFrame().toText(), contains('Select demo'));
@@ -231,9 +228,8 @@ void main() {
   });
 
   test('textarea demo submits portable and xterm modified input', () async {
-    var quits = 0;
     final app = createTuiTestApp(
-      TextAreaDemoApp(onQuit: () => quits++),
+      const TextAreaDemoApp(),
       width: 64,
       height: 22,
     );
@@ -266,7 +262,7 @@ void main() {
       );
 
       app.mockInput.pressEscape();
-      expect(quits, 1);
+      expect(app.exitRequests, [0]);
     } finally {
       app.dispose();
     }
@@ -274,7 +270,7 @@ void main() {
 
   test('textarea demo reports grapheme clusters as its length', () async {
     final app = createTuiTestApp(
-      TextAreaDemoApp(onQuit: () {}),
+      const TextAreaDemoApp(),
       width: 64,
       height: 22,
     );
@@ -293,8 +289,7 @@ void main() {
   test(
     'widget tour drives all panels and submits text before quitting',
     () async {
-      var quits = 0;
-      final app = createTuiTestApp(WidgetsTourApp(onQuit: () => quits++));
+      final app = createTuiTestApp(const WidgetsTourApp());
 
       try {
         await _settleAutofocus(app);
@@ -316,11 +311,15 @@ void main() {
 
         app.mockInput.typeText('q');
         await _settleInput();
-        expect(quits, 0, reason: 'q remains editable while TextArea has focus');
+        expect(
+          app.exitRequests,
+          isEmpty,
+          reason: 'q remains editable while TextArea has focus',
+        );
         expect(_render(app), contains('Typed: 6 chars'));
 
         app.mockInput.pressEscape();
-        expect(quits, 1);
+        expect(app.exitRequests, [0]);
       } finally {
         app.dispose();
       }
@@ -329,7 +328,7 @@ void main() {
 
   test('textarea keeps typing after Tab leaves the quit wrapper', () async {
     final app = createTuiTestApp(
-      TextAreaDemoApp(onQuit: () {}),
+      const TextAreaDemoApp(),
       width: 64,
       height: 22,
     );
@@ -349,11 +348,7 @@ void main() {
   });
 
   test('select keeps highlight movement after Tab', () async {
-    final app = createTuiTestApp(
-      SelectDemoApp(onQuit: () {}),
-      width: 56,
-      height: 20,
-    );
+    final app = createTuiTestApp(const SelectDemoApp(), width: 56, height: 20);
 
     try {
       await _settleAutofocus(app);
@@ -370,11 +365,7 @@ void main() {
   });
 
   test('scroll demo keeps paging after Tab', () async {
-    final app = createTuiTestApp(
-      ScrollDemoApp(onQuit: () {}),
-      width: 56,
-      height: 18,
-    );
+    final app = createTuiTestApp(const ScrollDemoApp(), width: 56, height: 18);
 
     try {
       await _settleAutofocus(app);
@@ -390,7 +381,7 @@ void main() {
   });
 
   test('layout showcase pages with keyboard at 80x24', () async {
-    final app = createTuiTestApp(FlexLayoutShowcase(onQuit: () {}));
+    final app = createTuiTestApp(const FlexLayoutShowcase());
 
     try {
       await _settleAutofocus(app);
@@ -409,7 +400,7 @@ void main() {
   test(
     'layout showcase PageDown does not leak box drawing onto the footer',
     () async {
-      final app = createTuiTestApp(FlexLayoutShowcase(onQuit: () {}));
+      final app = createTuiTestApp(const FlexLayoutShowcase());
 
       try {
         await _settleAutofocus(app);
@@ -453,7 +444,7 @@ void main() {
   );
 
   test('widget tour Shift+Tab wraps to the TextArea', () async {
-    final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));
+    final app = createTuiTestApp(const WidgetsTourApp());
 
     try {
       await _settleAutofocus(app);
@@ -469,7 +460,7 @@ void main() {
   });
 
   test('widget tour reports and submits grapheme-cluster counts', () async {
-    final app = createTuiTestApp(WidgetsTourApp(onQuit: () {}));
+    final app = createTuiTestApp(const WidgetsTourApp());
 
     try {
       await _settleAutofocus(app);

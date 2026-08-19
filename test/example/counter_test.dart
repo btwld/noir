@@ -170,9 +170,10 @@ void main() {
   test('real counter entrypoint enables basic mouse reporting once', () {
     final source = io.File('example/counter.dart').readAsStringSync();
 
-    expect(RegExp(r'app\.enableMouse\(\);').allMatches(source), hasLength(1));
+    expect(RegExp('enableMouse: true').allMatches(source), hasLength(1));
     expect(source, isNot(contains('enableMouse(enableMovement: true)')));
-    expect(source, contains('registerHotReloadExtension(app);'));
+    // runTuiApp registers the hot-reload extension itself.
+    expect(source, isNot(contains('registerHotReloadExtension')));
   });
 
   test('counter keeps its primary hierarchy at compact dimensions', () async {

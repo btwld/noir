@@ -1,8 +1,9 @@
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/app/app.dart' show mountTuiAppForTesting;
 import 'package:noir/src/app/terminal_session.dart'
     show TerminalInputDriverFactory, TerminalPlatform;
-import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;
+import 'package:noir/src/app/tui_binding.dart' show createTuiBindingForTesting;
 import 'package:noir/src/core/input.dart' show InputManagerKernelAccess;
 import 'package:noir/src/core/stdin_input_driver.dart';
 
@@ -25,8 +26,7 @@ TuiTestApp createTuiTestApp(
 }) {
   final renderer = Renderer.create(width, height, testing: true)
     ..setAutoFlush(false);
-  final binding = runTuiAppForTesting(
-    app,
+  final binding = createTuiBindingForTesting(
     width: width,
     height: height,
     headless: headless,
@@ -35,6 +35,11 @@ TuiTestApp createTuiTestApp(
     inputDriverFactory: inputDriverFactory,
     exitProcess: exitProcess,
   );
+  // Mount through the same app scope `runTuiApp` installs, so a widget under
+  // test can reach TuiApp.exit exactly as it does in a real app. The recorded
+  // sink keeps a test's exit out of the host process's exit code.
+  final exitRequests = <int>[];
+  mountTuiAppForTesting(binding, app, exitCodeSink: exitRequests.add);
   if (kittyKeyboard) {
     binding.enableKittyKeyboard();
   }
@@ -43,6 +48,7 @@ TuiTestApp createTuiTestApp(
     binding: binding,
     renderer: renderer,
     inputDriver: driver,
+    exitRequests: exitRequests,
   );
 }
 
@@ -51,13 +57,19 @@ class TuiTestApp {
     required this.binding,
     required this.renderer,
     required StdinInputDriver inputDriver,
+    required List<int> exitRequests,
   }) : mockInput = MockInput(inputDriver),
-       mockMouse = MockMouse(inputDriver);
+       mockMouse = MockMouse(inputDriver),
+       _exitRequests = exitRequests;
 
   final TuiBinding binding;
   final Renderer renderer;
   final MockInput mockInput;
   final MockMouse mockMouse;
+  final List<int> _exitRequests;
+
+  /// Exit codes requested through `TuiApp.exit`, in order.
+  List<int> get exitRequests => List<int>.unmodifiable(_exitRequests);
   bool _disposed = false;
 
   void pumpFrame([Duration timestamp = Duration.zero]) {

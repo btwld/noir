@@ -6,6 +6,8 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 ## Contents
 
 - [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
+- [Theme](#theme): `Theme`, `ThemeData`
+- [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
 - [Painting](#painting): `Color`, `BoxDecoration`, `Border`
 - [Text](#text): `Text`, `TextStyle`, `TextStyles`, `RichText` / `TextSpan`
@@ -154,6 +156,125 @@ const DecoratedBox({
   DecorationPosition position = DecorationPosition.background, // or .foreground
   Widget? child,
   Key? key,
+})
+```
+
+---
+
+## Theme
+
+### Theme / ThemeData
+
+Built-in widgets resolve omitted colors as
+`explicitParameter ?? Theme.of(context).token`. `Theme.of` falls back to
+`ThemeData.dark`, which is the unthemed appearance — wrapping a tree in
+`Theme(data: ThemeData.dark)` changes nothing. The one exception is a
+nullable `backgroundColor`: no color means "no fill", so those resolve
+through `Theme.maybeOf` and stay empty without an ancestor `Theme`.
+
+```dart
+const Theme({required this.data, required super.child, super.key});
+
+const ThemeData({
+  this.surface = const Color(0.035, 0.038, 0.044),
+  this.surfaceVariant = const Color(0.06, 0.064, 0.075),
+  this.text = Color.white,
+  this.textMuted = const Color(0.6, 0.6, 0.6),
+  this.border = const Color(0.18, 0.22, 0.28),
+  this.accent = const Color(0.4, 0.85, 1),
+  this.accentForeground = const Color(0.02, 0.1, 0.16),
+  this.selectedBackground = const Color(0.2, 0.4, 0.8),
+  this.selectedForeground = Color.white,
+  this.cursor = Color.white,
+  this.scrollbarThumb = const Color(0.7, 0.7, 0.7),
+  this.scrollbarTrack = const Color(0.2, 0.2, 0.2),
+  this.success = Color.success,
+  this.warning = Color.warning,
+  this.danger = Color.error,
+  this.info = Color.info,
+});
+static const ThemeData dark = ThemeData();
+ThemeData copyWith({ Color? surface, /* + every other token */ })
+```
+
+```dart
+Theme(
+  data: ThemeData.dark.copyWith(accent: Color.magenta),
+  child: const Button(label: 'Run'),
+)
+```
+
+Use `Theme.of(context)` when you always need a color. Use `Theme.maybeOf`
+when "no theme" and "themed" must paint differently.
+
+---
+
+## Chrome
+
+### Divider
+
+A solid band of `thickness` cells, not a run of `─`. It spans the bounded
+cross axis. A horizontal rule in a `Column` is fine; a vertical rule in a
+`Row` needs an explicit height, because a loose `Row` offers unbounded
+height and the rule would paint zero cells.
+
+```dart
+const Divider({
+  Key? key,
+  this.thickness = 1,
+  this.color,                         // ThemeData.border
+  this.axis = Axis.horizontal,
+})
+```
+
+```dart
+Column(children: [header, const Divider(), body])
+SizedBox(height: 3, child: Divider(axis: Axis.vertical))
+```
+
+### Badge
+
+A short, bold, filled tag. Passive: no focus, no callback.
+
+```dart
+const Badge({
+  required this.label,
+  Key? key,
+  this.variant = BadgeVariant.neutral,  // neutral | success | warning | danger | info
+  this.color,
+  this.textColor,                       // ThemeData.accentForeground
+})
+```
+
+```dart
+Badge(label: 'STAGED', variant: BadgeVariant.success)
+```
+
+### ProgressBar
+
+One row, `width` cells, eighth-cell steps. `value` is clamped to `0..1`.
+
+```dart
+const ProgressBar({
+  required this.value,
+  Key? key,
+  this.width = 20,
+  this.color,                           // ThemeData.accent
+  this.trackColor,                      // ThemeData.scrollbarTrack
+})
+```
+
+### Spinner
+
+One-cell animated glyph. Animates while mounted; remove it when the work
+ends. `SpinnerFrames.dots` needs Braille; `SpinnerFrames.line` is ASCII.
+
+```dart
+const Spinner({
+  Key? key,
+  this.color,                           // ThemeData.accent
+  this.frames = SpinnerFrames.dots,
+  this.interval = const Duration(milliseconds: 80),
 })
 ```
 

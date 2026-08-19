@@ -6,24 +6,14 @@
 // Backspace, arrows, Home/End, PgUp/PgDn, Ctrl+Home/End all work.
 // Press Esc to quit.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
+import 'src/demo_scaffold.dart';
 
-  app = runTuiApp(TextAreaDemoApp(onQuit: quit));
-}
+void main() => runTuiApp(const TextAreaDemoApp());
 
 class TextAreaDemoApp extends StatefulWidget {
-  const TextAreaDemoApp({required this.onQuit, super.key});
-
-  final void Function() onQuit;
+  const TextAreaDemoApp({super.key});
 
   @override
   State<TextAreaDemoApp> createState() => _TextAreaDemoAppState();
@@ -40,7 +30,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   KeyEventResult _handleAppKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyD) {
@@ -51,52 +41,41 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    onKeyEvent: _handleAppKey,
-    child: Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'TextArea demo',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            'Type. Enter=newline. Ctrl+D=submit. Esc=quit.',
-            style: TextStyle(color: Color(0.7, 0.7, 0.7)),
-          ),
-          const SizedBox(height: 1),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0.4, 0.4, 0.6)),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _handleAppKey,
+      child: DemoScaffold(
+        title: 'TextArea demo',
+        hint: 'Type. Enter=newline. Ctrl+D=submit. Esc=quit.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DemoPanel(
+              title: 'Draft',
+              child: TextArea(
+                autofocus: true,
+                width: 50,
+                height: 6,
+                placeholder: 'Write something multi-line here…',
+                onChanged: (v) => setState(() => _value = v),
+                onSubmit: _submit,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 1),
-            child: TextArea(
-              autofocus: true,
-              width: 50,
-              height: 6,
-              placeholder: 'Write something multi-line here…',
-              onChanged: (v) => setState(() => _value = v),
-              onSubmit: _submit,
-            ),
-          ),
-          const SizedBox(height: 1),
-          Text(
-            'Length: $_graphemeLength',
-            style: const TextStyle(color: Color(0.7, 0.9, 1)),
-          ),
-          if (_lastSubmitted.isNotEmpty) ...[
             const SizedBox(height: 1),
-            const Text(
-              'Last submitted:',
-              style: TextStyle(color: Color(0.4, 1, 0.4)),
+            Text(
+              'Length: $_graphemeLength',
+              style: TextStyle(color: theme.info),
             ),
-            Text(_lastSubmitted),
+            if (_lastSubmitted.isNotEmpty) ...[
+              const SizedBox(height: 1),
+              Text('Last submitted:', style: TextStyle(color: theme.success)),
+              Text(_lastSubmitted),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

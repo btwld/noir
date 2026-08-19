@@ -9,9 +9,9 @@ add a small number of headless lifecycle and interactive integration checks.
 
 `runTuiApp(..., headless: true)` mounts the normal widget and element tree
 without creating an owned terminal renderer. It is useful for checking that an
-application can mount, build, and dispose through the public lifecycle. Pass
-`width`/`height` to pin the layout size so the test does not depend on the
-terminal running it (they default to 80×24):
+application can mount, build, and dispose through the public lifecycle. A
+headless run uses the 80×24 default; a custom canvas without a terminal is
+advanced hosting through `TuiBinding` in `package:noir/noir_low_level.dart`.
 
 ```dart
 import 'package:noir/noir.dart';
@@ -19,12 +19,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('mounts and disposes headlessly', () {
-    final app = runTuiApp(
-      const Text('ready'),
-      width: 40,
-      height: 10,
-      headless: true,
-    );
+    final app = runTuiApp(const Text('ready'), headless: true);
 
     expect(app.isHeadless, isTrue);
     app.dispose();   // idempotent; safe to call again in a tearDown

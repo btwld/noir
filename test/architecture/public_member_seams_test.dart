@@ -435,7 +435,9 @@ void main() {
             break;
         }
       }
-      expect(publicStaticMembers, isEmpty);
+      // Navigator-style tree accessors: a widget ends the app through the
+      // scope runTuiApp installs, rather than through a threaded callback.
+      expect(publicStaticMembers, const <String>{'of', 'maybeOf', 'exit'});
       expect(publicInstanceMembers, _tuiAppMembers);
 
       final factory = unit.unit.declarations
@@ -800,6 +802,9 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   },
   _buildOwnerOwner: {
     'test',
+    'isBuilding',
+    'beginRebuild',
+    'endRebuild',
     'pipelineOwner',
     'scheduleBuild',
     'clearDirty',
@@ -898,6 +903,7 @@ const Set<String> _tuiAppMembers = <String>{
   'enableKittyKeyboard',
   'disableKittyKeyboard',
   'reassemble',
+  'requestExit',
   'dispose',
 };
 

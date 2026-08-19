@@ -76,10 +76,7 @@ Stateful widgets persist a `State` object between supported rebuilds. Call
 ```dart
 import 'package:noir/noir.dart';
 
-void main() {
-  final app = runTuiApp(const CounterApp());
-  app.enableMouse();
-}
+void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});
@@ -179,35 +176,55 @@ class _CounterAppState extends State<CounterApp> {
 
 See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
-for the complete styled version with a solid action button and
-hot-reload registration.
+for the complete styled version with a solid action button.
 
 ## Application Lifecycle and API Tiers
 
-`runTuiApp` mounts the root widget and returns a `TuiApp` handle synchronously.
-Keep that handle when you register application-wide input or exit
-programmatically. `onKey`, `onMouse`, and `onPaste` install app-priority
-handlers, and each returns an idempotent canceler.
+A Noir entry point is one line:
+
+```dart
+void main() => runTuiApp(const MyApp(), enableMouse: true);
+```
+
+`runTuiApp` mounts the root widget and returns a `TuiApp` handle
+synchronously. Dart's event loop keeps the process alive after `main()`
+returns — the stdin subscription and signal watchers own the lifetime — so
+there is no future to await. A real terminal detects its own size and tracks
+resizes; pass a custom canvas size only through `TuiBinding` in
+`package:noir/noir_low_level.dart`.
+
+To quit, call `TuiApp.exit(context)` from anywhere in the tree — in a key
+handler, say — instead of threading a callback down from `main()`.
+
+`TuiApp.exit` disposes the app — restoring the terminal and cancelling stdin,
+signal, and timer subscriptions — and sets the process exit code; the event
+loop then drains and the process ends on its own, with no `dart:io` exit call.
+It is safe to call from inside an event handler and safe to call twice, since
+a double keypress racing the teardown is ordinary. `TuiApp.of(context)` and
+`TuiApp.maybeOf(context)` return the enclosing handle.
+
+Keep the returned handle when you register application-wide input or toggle
+terminal modes at runtime. `onKey`, `onMouse`, and `onPaste` install
+app-priority handlers, and each returns an idempotent canceler.
 
 `TuiApp.dispose()` is idempotent. It cancels every still-owned registration
-before disposing the mounted app, input modes, and renderer resources. Always
-dispose the handle before a programmatic process exit. The default POSIX
-signal handling performs cleanup for SIGINT, SIGTERM, and SIGHUP. In raw input
-mode, an unconsumed Ctrl+C key follows the same interrupt cleanup path and exits
-with status 130; an app or focused widget can consume it first to override that
-default.
+before disposing the mounted app, input modes, and renderer resources. The
+default POSIX signal handling performs cleanup for SIGINT, SIGTERM, and
+SIGHUP. In raw input mode, an unconsumed Ctrl+C key follows the same interrupt
+cleanup path and exits with status 130; an app or focused widget can consume it
+first to override that default.
 
 `headless: true` creates no owned terminal renderer and is exposed through
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
-are unavailable in that mode.
+are unavailable in that mode, so `enableMouse: true` fails loudly there.
 
 `TuiApp.reassemble()` invokes `State.reassemble()` on every retained state,
 rebuilds the whole widget tree, and forces a full layout and paint pass
-without recreating any `State`, terminal, or native resource.
-It is the hot-reload hook: call it after a source swap succeeds, or call
-`registerHotReloadExtension(app)` once from `main()` with the handle
-`runTuiApp` returned, so a development driver can invoke it over the VM
-service extension `ext.noir.reassemble`.
+without recreating any `State`, terminal, or native resource. It is the
+hot-reload hook: call it after a source swap succeeds. `runTuiApp` registers
+it for you, so a development driver can invoke it over the VM service
+extension `ext.noir.reassemble`; `registerHotReloadExtension(app)` stays
+exported for custom hosts that mount their own app.
 
 Noir has three supported import tiers:
 

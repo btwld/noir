@@ -69,7 +69,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 140,
-            onQuit: () {},
           ),
         );
 
@@ -109,7 +108,6 @@ void main() {
               controller: controller,
               autofocus: false,
               layoutWidthOverride: 100,
-              onQuit: () {},
             ),
           );
 
@@ -142,7 +140,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 100,
-            onQuit: () {},
           ),
         );
         final leftPane = buffer.getRegion(0, 0, 30, 30);
@@ -179,7 +176,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 140,
-            onQuit: () {},
           ),
         );
 
@@ -207,7 +203,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 140,
-            onQuit: () {},
           ),
         );
 
@@ -231,11 +226,7 @@ void main() {
         parsePatchFixture(_unsortedSidebarDiff),
       );
       final driver = KeyDriver(
-        PatchManagerView(
-          controller: controller,
-          onQuit: () {},
-          layoutWidthOverride: 140,
-        ),
+        PatchManagerView(controller: controller, layoutWidthOverride: 140),
         width: 140,
         height: 40,
         paintFrames: true,
@@ -257,11 +248,7 @@ void main() {
         parsePatchFixture(_unsortedSidebarDiff),
       );
       final driver = KeyDriver(
-        PatchManagerView(
-          controller: controller,
-          onQuit: () {},
-          layoutWidthOverride: 140,
-        ),
+        PatchManagerView(controller: controller, layoutWidthOverride: 140),
         width: 140,
         height: 40,
         paintFrames: true,
@@ -301,7 +288,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 100,
-            onQuit: () {},
           ),
         );
         final lines = buffer.toLines();
@@ -431,7 +417,6 @@ void main() {
               controller: PatchReviewController(DiffSet([testCase.file])),
               autofocus: false,
               layoutWidthOverride: 140,
-              onQuit: () {},
             ),
           );
           for (final text in testCase.expected) {
@@ -467,7 +452,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 140,
-            onQuit: () {},
           ),
         );
         final addedText = buffer.findText("print('new')").single;
@@ -494,7 +478,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 140,
-            onQuit: () {},
           ),
         );
         final addedText = buffer.findText("print('new')").single;
@@ -517,7 +500,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           layoutWidthOverride: 140,
           onStageContent: (selection) async {
             stagedSelections.add(selection);
@@ -562,11 +544,7 @@ void main() {
         parsePatchFixture(_twoHunkDiff),
       );
       final skipDriver = KeyDriver(
-        PatchManagerView(
-          controller: skipController,
-          onQuit: () {},
-          layoutWidthOverride: 140,
-        ),
+        PatchManagerView(controller: skipController, layoutWidthOverride: 140),
         width: 140,
         height: 40,
         paintFrames: true,
@@ -614,7 +592,6 @@ void main() {
           final driver = KeyDriver(
             PatchManagerView(
               controller: controller,
-              onQuit: () {},
               onStageContent: (selection) async {
                 stagedSelections.add(selection);
                 return const GitStageResult(
@@ -659,7 +636,6 @@ void main() {
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () {},
             onStageContent: (selection) async {
               contentCalls++;
               return _stageResult(GitStageOutcome.applied);
@@ -729,7 +705,6 @@ void main() {
           final driver = KeyDriver(
             PatchManagerView(
               controller: controller,
-              onQuit: () {},
               layoutWidthOverride: 140,
               onStageContent: (selection) async {
                 contentSelections.add(selection);
@@ -790,7 +765,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           layoutWidthOverride: 140,
           onStageWholeFile: (change) async {
             wholeCalls++;
@@ -844,7 +818,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) async {
             contentCalls++;
             return _stageResult(GitStageOutcome.applied);
@@ -889,7 +862,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) {
             contentCalls++;
             throw StateError('content callback escaped');
@@ -939,7 +911,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) async {
             contentCalls++;
             return _stageResult(GitStageOutcome.applied);
@@ -984,7 +955,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) {
             contentCalls++;
             throw _ThrowingToString();
@@ -1037,7 +1007,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) async {
             contentCalls++;
             return _stageResult(GitStageOutcome.applied);
@@ -1084,11 +1053,9 @@ void main() {
         var contentCalls = 0;
         var wholeCalls = 0;
         var refreshCalls = 0;
-        var quitCalls = 0;
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () => quitCalls++,
             layoutWidthOverride: 180,
             onStageContent: (selection) async {
               contentCalls++;
@@ -1123,10 +1090,8 @@ void main() {
           controller.statusForHunk(currentHunk),
           PatchReviewStatus.skipped,
         );
-        await driver.sendCharacter('q');
         await driver.sendCharacter('r');
         await _settleView();
-        expect(quitCalls, 1);
         expect(refreshCalls, 1);
 
         await driver.sendCharacter('s');
@@ -1152,6 +1117,9 @@ void main() {
         final buffer = _captureDriver(driver);
         expect(buffer.containsText('locked interaction uncertainty'), isTrue);
         expect(buffer.containsText('locked refresh still callable'), isTrue);
+
+        await driver.sendCharacter('q');
+        expect(driver.exitRequests, [0]);
         driver.dispose();
       },
     );
@@ -1168,7 +1136,6 @@ void main() {
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () {},
             onStageContent: (selection) async {
               contentCalls++;
               return _stageResult(
@@ -1233,7 +1200,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) async {
             contentCalls++;
             return _stageResult(
@@ -1286,7 +1252,6 @@ void main() {
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () {},
             onStageContent: (selection) async {
               contentCalls++;
               return contentCalls == 1
@@ -1358,7 +1323,6 @@ void main() {
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () {},
             onStageContent: (selection) async => const GitStageResult(
               outcome: GitStageOutcome.applied,
               stdout: '',
@@ -1392,7 +1356,6 @@ void main() {
               controller: controller,
               autofocus: false,
               layoutWidthOverride: 140,
-              onQuit: () {},
             ),
           );
           expect(buffer.containsText('staged'), isTrue);
@@ -1413,7 +1376,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onRefresh: () {
             final completer = Completer<DiffSet>();
             refreshes.add(completer);
@@ -1466,7 +1428,6 @@ void main() {
           final driver = KeyDriver(
             PatchManagerView(
               controller: controller,
-              onQuit: () {},
               onRefresh: () => completer.future,
             ),
           );
@@ -1497,7 +1458,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) async {
             stageCalls++;
             return const GitStageResult(
@@ -1538,7 +1498,6 @@ void main() {
         final driver = KeyDriver(
           PatchManagerView(
             controller: controller,
-            onQuit: () {},
             onStageWholeFile: (change) async {
               stagedChanges.add(change);
               return const GitStageResult(
@@ -1566,7 +1525,7 @@ void main() {
         parsePatchFixture(_longSectionDiff),
       );
       final driver = KeyDriver(
-        PatchManagerView(controller: controller, onQuit: () {}),
+        PatchManagerView(controller: controller),
         width: 100,
       );
 
@@ -1586,11 +1545,7 @@ void main() {
         parsePatchFixture(_threeFileDiff),
       );
       final driver = KeyDriver(
-        PatchManagerView(
-          controller: controller,
-          onQuit: () {},
-          layoutWidthOverride: 140,
-        ),
+        PatchManagerView(controller: controller, layoutWidthOverride: 140),
         width: 140,
         height: 40,
         paintFrames: true,
@@ -1633,11 +1588,7 @@ void main() {
           parsePatchFixture(_threeFileDiff),
         );
         final driver = KeyDriver(
-          PatchManagerView(
-            controller: controller,
-            onQuit: () {},
-            layoutWidthOverride: 140,
-          ),
+          PatchManagerView(controller: controller, layoutWidthOverride: 140),
           width: 140,
           height: 40,
           paintFrames: true,
@@ -1674,7 +1625,7 @@ void main() {
     test('arrow keys browse files while the file pane is focused', () async {
       final controller = PatchReviewController(parsePatchFixture(_twoFileDiff));
       final driver = KeyDriver(
-        PatchManagerView(controller: controller, onQuit: () {}),
+        PatchManagerView(controller: controller),
         width: 100,
       );
 
@@ -1691,7 +1642,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) {
             throw StateError('patch drifted');
           },
@@ -1718,7 +1668,6 @@ void main() {
       final driver = KeyDriver(
         PatchManagerView(
           controller: controller,
-          onQuit: () {},
           onStageContent: (selection) {
             stageCalls++;
             return completer.future;
@@ -1755,7 +1704,6 @@ void main() {
             controller: controller,
             autofocus: false,
             layoutWidthOverride: 100,
-            onQuit: () {},
           ),
         );
 
@@ -1778,7 +1726,6 @@ List<BufferPosition> _findHunkChipPositions(
         controller: controller,
         autofocus: false,
         layoutWidthOverride: 140,
-        onQuit: () {},
       ),
     );
     final positions = buffer

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
+import 'package:noir/src/app/app.dart' show mountTuiAppForTesting;
 import 'package:noir/src/app/driver.dart';
 import 'package:test/test.dart';
 
@@ -240,6 +242,43 @@ void main() {
       expect(exitCodes, <int>[0]);
     });
   });
+
+  test('an in-app exit shuts the driven session down', () async {
+    // Without the host following TuiApp.exit, the keep-alive timer outlives
+    // the UI.
+    final exits = <int>[];
+    final host = DriverHost.create(
+      width: 20,
+      height: 4,
+      exitProcess: exits.add,
+    );
+    final app = mountTuiAppForTesting(
+      host.binding,
+      const _QuitOnQ(),
+      exitCodeSink: host.handleAppExit,
+    );
+    host.start(app);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    host.sendBytes(base64Encode(utf8.encode('q')));
+    expect(
+      exits,
+      isEmpty,
+      reason: 'shutdown is deferred so the in-flight command can finish',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+
+    expect(exits, [0], reason: 'the driven process ends with the app');
+    expect(host.info, throwsStateError, reason: 'the host is disposed too');
+  });
+
+  test('runTuiApp wires a driven in-app exit to the host', () {
+    // The test above mounts through the host directly; this asserts the
+    // runTuiApp wiring.
+    final source = io.File('lib/src/app/app.dart').readAsStringSync();
+    expect(source, contains('exitCodeSink: host.handleAppExit'));
+  });
 }
 
 class _Scene extends StatelessWidget {
@@ -310,4 +349,21 @@ class _RepainterState extends State<_Repainter>
 
   @override
   Widget build(BuildContext context) => const Text('animating');
+}
+
+class _QuitOnQ extends StatelessWidget {
+  const _QuitOnQ();
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: (node, event) {
+      if (event.isPress && event.character == 'q') {
+        TuiApp.exit(context);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    },
+    child: const Text('q'),
+  );
 }

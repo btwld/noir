@@ -19,6 +19,34 @@ import '../rendering/render_view.dart';
 import '../scheduler/scheduler_binding.dart';
 import 'terminal_session.dart';
 
+/// Builds a [TuiBinding] with injectable terminal seams, without mounting.
+///
+/// Separate from [runTuiAppForTesting] because a harness that wraps the root
+/// widget — the app-scope wrapper `runTuiApp` installs, for instance — needs
+/// the binding before it can build the widget it mounts.
+@visibleForTesting
+TuiBinding createTuiBindingForTesting({
+  int width = 80,
+  int height = 24,
+  bool headless = false,
+  InputManager? inputManager,
+  Renderer? renderer,
+  TerminalPlatform? terminalPlatform,
+  RendererFactory? rendererFactory,
+  TerminalInputDriverFactory? inputDriverFactory,
+  void Function(int exitCode)? exitProcess,
+}) => TuiBinding._(
+  width: width,
+  height: height,
+  headless: headless,
+  inputManager: inputManager,
+  renderer: renderer,
+  terminalPlatform: terminalPlatform,
+  rendererFactory: rendererFactory,
+  inputDriverFactory: inputDriverFactory,
+  exitProcess: exitProcess,
+);
+
 /// Runs [app] through a [TuiBinding] with injectable terminal seams for tests.
 @visibleForTesting
 TuiBinding runTuiAppForTesting(
@@ -32,20 +60,17 @@ TuiBinding runTuiAppForTesting(
   RendererFactory? rendererFactory,
   TerminalInputDriverFactory? inputDriverFactory,
   void Function(int exitCode)? exitProcess,
-}) {
-  final binding = TuiBinding._(
-    width: width,
-    height: height,
-    headless: headless,
-    inputManager: inputManager,
-    renderer: renderer,
-    terminalPlatform: terminalPlatform,
-    rendererFactory: rendererFactory,
-    inputDriverFactory: inputDriverFactory,
-    exitProcess: exitProcess,
-  )..runApp(app);
-  return binding;
-}
+}) => createTuiBindingForTesting(
+  width: width,
+  height: height,
+  headless: headless,
+  inputManager: inputManager,
+  renderer: renderer,
+  terminalPlatform: terminalPlatform,
+  rendererFactory: rendererFactory,
+  inputDriverFactory: inputDriverFactory,
+  exitProcess: exitProcess,
+)..runApp(app);
 
 /// Owns the app lifecycle graph for an OpenTUI widget tree.
 final class TuiBinding {

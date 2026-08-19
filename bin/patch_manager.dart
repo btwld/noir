@@ -16,20 +16,11 @@ void main(List<String> args) {
   }
 
   final worktreePath = args.isEmpty ? io.Directory.current.path : args.single;
-  late final TuiApp app;
-
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
-
-  app =
-      runTuiApp(
-          PatchManagerApp(
-            repository: GitPatchRepository(worktreePath: worktreePath),
-            onQuit: quit,
-          ),
-        )
-        ..enableMouse(enableMovement: true)
-        ..enableKittyKeyboard();
+  runTuiApp(
+      PatchManagerApp(
+        repository: GitPatchRepository(worktreePath: worktreePath),
+      ),
+    )
+    ..enableMouse(enableMovement: true)
+    ..enableKittyKeyboard();
 }

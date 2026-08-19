@@ -19,7 +19,8 @@ void main() {
       expect(frame, BufferMatchers.containsText('Press Ctrl+C to exit.'));
 
       final title = frame.findText('Noir').single;
-      expect(frame.getForegroundColor(title.x, title.y), Color.yellow);
+      // The shared demo scaffold renders titles in ThemeData.dark.text.
+      expect(frame.getForegroundColor(title.x, title.y), Color.white);
       expect(frame.getCell(title.x, title.y).isBold, isTrue);
     } finally {
       app.dispose();
@@ -87,7 +88,7 @@ void main() {
 
   test('layout showcase renders all major regions in one terminal frame', () {
     final app = createTuiTestApp(
-      const layout_demo.FlexLayoutShowcase(onQuit: _noop),
+      const layout_demo.FlexLayoutShowcase(),
       width: 100,
       height: 40,
     );
@@ -107,8 +108,6 @@ void main() {
     }
   });
 }
-
-void _noop() {}
 
 CapturedBuffer _render(TuiTestApp app) {
   app.pumpFrame();

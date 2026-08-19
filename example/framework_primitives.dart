@@ -3,29 +3,18 @@
 //
 // Press Enter or Space, or click Activate, to increment. Press q to quit.
 
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 
-void main() {
-  late final TuiApp app;
-  void quit() {
-    app.dispose();
-    io.exit(0);
-  }
+import 'src/demo_scaffold.dart';
 
-  app = runTuiApp(FrameworkPrimitivesApp(onQuit: quit));
-  app.enableMouse();
-}
+void main() => runTuiApp(const FrameworkPrimitivesApp(), enableMouse: true);
 
 final class _IncrementIntent extends Intent {
   const _IncrementIntent();
 }
 
 class FrameworkPrimitivesApp extends StatefulWidget {
-  const FrameworkPrimitivesApp({required this.onQuit, super.key});
-
-  final VoidCallback onQuit;
+  const FrameworkPrimitivesApp({super.key});
 
   @override
   State<FrameworkPrimitivesApp> createState() => _FrameworkPrimitivesAppState();
@@ -53,7 +42,7 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
 
   KeyEventResult _handleQuit(FocusNode node, KeyEvent event) {
     if (event.isPress && event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -83,17 +72,13 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
       child: Focus(
         autofocus: true,
         onKeyEvent: _handleQuit,
-        child: Container(
-          color: const Color(0.05, 0.06, 0.1),
-          padding: const EdgeInsets.all(2),
+        child: DemoScaffold(
+          title: 'Framework primitives',
+          hint: 'Enter/Space/click increments. q quits.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 1,
             children: [
-              const Text(
-                'Framework primitives',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
               RichText(
                 text: TextSpan(
                   text: 'Count: ',
@@ -111,10 +96,6 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
               ),
               _ActivationSurface(key: _activationKey, onActivate: _activate),
               Text('Last activation: $_lastActivation'),
-              const Text(
-                'Enter/Space/click increments. q quits.',
-                style: TextStyle(color: Color.lightGray),
-              ),
             ],
           ),
         ),
@@ -148,7 +129,7 @@ class _ActivationSurfaceState extends State<_ActivationSurface> {
     child: Container(
       width: 18,
       height: 1,
-      color: const Color(0.2, 0.4, 0.8),
+      color: Theme.of(context).selectedBackground,
       child: const Text('Activate'),
     ),
   );

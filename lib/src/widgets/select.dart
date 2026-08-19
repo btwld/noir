@@ -18,6 +18,7 @@ import 'focus_node_owner_mixin.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
+import 'theme.dart';
 import 'viewport.dart';
 
 /// A single option in a [Select] list.
@@ -59,11 +60,11 @@ class Select<T> extends StatefulWidget {
     this.selectedIndex = 0,
     this.height = 8,
     this.showScrollIndicator = false,
-    this.color = Color.white,
+    this.color,
     this.backgroundColor,
-    this.selectedBackgroundColor = const Color(0.2, 0.4, 0.8),
-    this.selectedTextColor = Color.white,
-    this.descriptionColor = const Color(0.6, 0.6, 0.6),
+    this.selectedBackgroundColor,
+    this.selectedTextColor,
+    this.descriptionColor,
     this.focusNode,
     this.autofocus = false,
     this.onChanged,
@@ -82,20 +83,29 @@ class Select<T> extends StatefulWidget {
   /// Whether to render scroll-direction arrows in the last column when the list overflows.
   final bool showScrollIndicator;
 
-  /// Foreground color of unselected option text.
-  final Color color;
+  /// Foreground color of unselected option text. Falls back to
+  /// [ThemeData.text].
+  final Color? color;
 
-  /// Fill color behind the entire list. No fill when null.
+  /// Fill color behind the entire list. Falls back to [ThemeData.surface]
+  /// under a [Theme]; with neither, the list paints no fill. Pass
+  /// [Color.transparent] for an explicitly unfilled list inside a themed
+  /// subtree.
   final Color? backgroundColor;
 
-  /// Fill color behind the highlighted row.
-  final Color selectedBackgroundColor;
+  /// Fill color behind the highlighted row while the list has focus. Falls
+  /// back to [ThemeData.selectedBackground]. An unfocused [Select] mutes its
+  /// highlight to [ThemeData.surfaceVariant], so with several selectors on
+  /// screen the accent fill marks the one that owns the keyboard.
+  final Color? selectedBackgroundColor;
 
-  /// Foreground color of text on the highlighted row.
-  final Color selectedTextColor;
+  /// Foreground color of text on the highlighted row. Falls back to
+  /// [ThemeData.selectedForeground].
+  final Color? selectedTextColor;
 
-  /// Color of the secondary description text on unhighlighted rows.
-  final Color descriptionColor;
+  /// Color of the secondary description text on unhighlighted rows. Falls
+  /// back to [ThemeData.textMuted].
+  final Color? descriptionColor;
 
   /// Focus node controlling this widget's focus. One is created if null.
   final FocusNode? focusNode;
@@ -128,6 +138,7 @@ class _SelectLayoutMetrics {
 class _SelectState<T> extends State<Select<T>>
     with FocusNodeOwnerStateMixin<Select<T>> {
   late int _highlighted;
+  bool _focused = false;
   late final ViewportController _viewport;
   final _SelectLayoutMetrics _layoutMetrics = _SelectLayoutMetrics();
 
@@ -212,6 +223,11 @@ class _SelectState<T> extends State<Select<T>>
     widget.onSelect?.call(_highlighted, widget.options[_highlighted]);
   }
 
+  void _handleFocusChange(bool hasFocus) {
+    if (_focused == hasFocus) return;
+    setState(() => _focused = hasFocus);
+  }
+
   Map<Type, Action<Intent>> get _actions => {
     MoveSelectionUpIntent: CallbackAction<MoveSelectionUpIntent>((
       intent,
@@ -288,32 +304,43 @@ class _SelectState<T> extends State<Select<T>>
   }
 
   @override
-  Widget build(BuildContext context) => Shortcuts(
-    shortcuts: _shortcuts,
-    child: Actions(
-      actions: _actions,
-      child: Focus(
-        focusNode: focusNode,
-        autofocus: widget.autofocus,
-        child: PointerListener(
-          onPointerDown: _handlePointerDown,
-          child: _SelectLeaf<T>(
-            options: widget.options,
-            highlighted: _highlighted,
-            scrollOffset: _viewport.scrollOffset,
-            height: widget.height,
-            showScrollIndicator: widget.showScrollIndicator,
-            color: widget.color,
-            backgroundColor: widget.backgroundColor,
-            selectedBackgroundColor: widget.selectedBackgroundColor,
-            selectedTextColor: widget.selectedTextColor,
-            descriptionColor: widget.descriptionColor,
-            layoutMetrics: _layoutMetrics,
+  Widget build(BuildContext context) {
+    final theme = Theme.maybeOf(context);
+    final palette = theme ?? ThemeData.dark;
+    return Shortcuts(
+      shortcuts: _shortcuts,
+      child: Actions(
+        actions: _actions,
+        child: Focus(
+          focusNode: focusNode,
+          autofocus: widget.autofocus,
+          onFocusChange: _handleFocusChange,
+          child: PointerListener(
+            onPointerDown: _handlePointerDown,
+            child: _SelectLeaf<T>(
+              options: widget.options,
+              highlighted: _highlighted,
+              scrollOffset: _viewport.scrollOffset,
+              height: widget.height,
+              showScrollIndicator: widget.showScrollIndicator,
+              color: widget.color ?? palette.text,
+              // `theme?.surface`, not `palette.surface`: with no ancestor
+              // Theme the list must keep painting no fill at all, which no
+              // color can express.
+              backgroundColor: widget.backgroundColor ?? theme?.surface,
+              selectedBackgroundColor: _focused
+                  ? widget.selectedBackgroundColor ?? palette.selectedBackground
+                  : palette.surfaceVariant,
+              selectedTextColor:
+                  widget.selectedTextColor ?? palette.selectedForeground,
+              descriptionColor: widget.descriptionColor ?? palette.textMuted,
+              layoutMetrics: _layoutMetrics,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _SelectLeaf<T> extends RenderObjectWidget {

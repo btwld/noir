@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
 
+import '../../app/app.dart';
 import '../../core/input.dart';
 import '../../framework/build_context.dart';
 import '../../framework/focus_manager.dart';
@@ -39,14 +40,9 @@ typedef StageWholeFileChange =
 typedef RefreshPatchWorkspace = Future<DiffSet> Function();
 
 class PatchManagerApp extends StatefulWidget {
-  const PatchManagerApp({
-    required this.repository,
-    required this.onQuit,
-    super.key,
-  });
+  const PatchManagerApp({required this.repository, super.key});
 
   final GitPatchRepository repository;
-  final void Function() onQuit;
 
   @override
   State<PatchManagerApp> createState() => _PatchManagerAppState();
@@ -144,14 +140,12 @@ class _PatchManagerAppState extends State<PatchManagerApp> {
         title: 'Patch Manager',
         message: _status,
         loading: _loading,
-        onQuit: widget.onQuit,
         onRefresh: () => _startUserWorkspaceLoad(afterFailure: !_loading),
       );
     }
 
     return PatchManagerView(
       controller: controller,
-      onQuit: widget.onQuit,
       initialStatus: _status,
       onRefresh: widget.repository.loadWorkspace,
       onStageContent: widget.repository.stageContent,
@@ -165,7 +159,6 @@ typedef _WorkspaceLoadToken = ({int generation, GitPatchRepository repository});
 class PatchManagerView extends StatefulWidget {
   const PatchManagerView({
     required this.controller,
-    required this.onQuit,
     this.onStageContent,
     this.onStageWholeFile,
     this.onRefresh,
@@ -176,7 +169,6 @@ class PatchManagerView extends StatefulWidget {
   });
 
   final PatchReviewController controller;
-  final void Function() onQuit;
   final StagePatchContent? onStageContent;
   final StageWholeFileChange? onStageWholeFile;
   final RefreshPatchWorkspace? onRefresh;
@@ -262,7 +254,7 @@ class _PatchManagerViewState extends State<PatchManagerView> {
 
     if (event.logicalKey == LogicalKeyboardKey.escape ||
         event.character == 'q') {
-      widget.onQuit();
+      TuiApp.exit(context);
       return KeyEventResult.handled;
     }
 
@@ -783,14 +775,12 @@ class _MessageScreen extends StatelessWidget {
     required this.title,
     required this.message,
     required this.loading,
-    required this.onQuit,
     required this.onRefresh,
   });
 
   final String title;
   final String message;
   final bool loading;
-  final void Function() onQuit;
   final void Function() onRefresh;
 
   @override
@@ -800,7 +790,7 @@ class _MessageScreen extends StatelessWidget {
       if (!event.isPress) return KeyEventResult.ignored;
       if (event.logicalKey == LogicalKeyboardKey.escape ||
           event.character == 'q') {
-        onQuit();
+        TuiApp.exit(context);
         return KeyEventResult.handled;
       }
       if (event.character == 'r') {

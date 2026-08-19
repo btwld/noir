@@ -166,9 +166,9 @@ authorization.
 - Drive mode (`NOIR_DRIVE=1`) is headless by construction. It exercises the
   same layout, paint, and ANSI-parser paths the ordinary suite trusts, but it
   never proves real terminal escape rendering or raw-mode input. A continuously
-  animating app never reports `stable: true`, an app whose own quit path calls
-  `io.exit` ends the driven session, and `reload` inherits the `reassemble()`
-  limits recorded below.
+  animating app never reports `stable: true`, an in-app `TuiApp.exit` ends the
+  driven session (the host follows the binding down), and `reload` inherits
+  the `reassemble()` limits recorded below.
 - `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
   drives is proven by `test/app/driver_test.dart` and
   `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under

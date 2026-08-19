@@ -88,6 +88,26 @@ class BuildOwner {
   late final PointerRouter _pointerRouter;
   final TickerScheduler _tickerScheduler;
   bool _building = false;
+  int _activeRebuilds = 0;
+
+  /// Whether an element rebuild is in flight.
+  ///
+  /// Includes the first `mount` rebuild, which runs outside [buildScope].
+  /// Disposing the owner while this is true leaves that rebuild without a
+  /// registered parent.
+  @internal
+  bool get isBuilding => _building || _activeRebuilds > 0;
+
+  /// Starts one rebuild counted by [isBuilding].
+  @internal
+  void beginRebuild() => _activeRebuilds++;
+
+  /// Ends the matching [beginRebuild].
+  @internal
+  void endRebuild() {
+    if (_activeRebuilds > 0) _activeRebuilds--;
+  }
+
   bool _disposing = false;
   bool _disposed = false;
 

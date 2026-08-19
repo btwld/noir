@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
+import '../helpers/tui_test_app.dart';
 
 const _optionA = SelectOption<String>(name: 'A', value: 'a');
 const _optionB = SelectOption<String>(name: 'B', value: 'b');
@@ -169,6 +170,145 @@ void main() {
         expect(captured.getChar(1, 0), ' ');
         expect(captured.getChar(2, 0), ' ');
         expect(captured.getChar(3, 0), '😀');
+      } finally {
+        capture.dispose();
+      }
+    });
+  });
+
+  group('Select theming', () {
+    test('an unthemed, unfocused list mutes its highlight', () {
+      // BufferCapture never runs the autofocus microtask, so this is the
+      // unfocused appearance: the highlight is surfaceVariant chrome, not
+      // the selection accent.
+      final capture = BufferCapture(width: 6, height: 2);
+      try {
+        final frame = capture.capture(
+          const Select<String>(height: 2, options: _abcOptions),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.white));
+        expect(
+          frame,
+          BufferMatchers.hasBackgroundAt(
+            0,
+            0,
+            // 8-bit rounding of ThemeData.dark.surfaceVariant.
+            Color.fromHex('#0f1013'),
+          ),
+        );
+        expect(
+          frame,
+          BufferMatchers.hasBackgroundAt(0, 1, Color.black),
+          reason: 'no ancestor Theme still means no list fill',
+        );
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('a focused list keeps the original accent highlight', () async {
+      final app = createTuiTestApp(
+        const Select<String>(autofocus: true, height: 2, options: _abcOptions),
+        width: 6,
+        height: 2,
+      );
+      try {
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        app.pumpFrame();
+        final frame = app.captureFrame();
+        expect(
+          frame,
+          BufferMatchers.hasBackgroundAt(0, 0, const Color(0.2, 0.4, 0.8)),
+        );
+      } finally {
+        app.dispose();
+      }
+    });
+
+    test('an ancestor Theme supplies every unset color', () async {
+      final theme = ThemeData.dark.copyWith(
+        text: Color.yellow,
+        surface: Color.blue,
+        surfaceVariant: Color.red,
+        selectedBackground: Color.magenta,
+        selectedForeground: Color.cyan,
+      );
+
+      // Unfocused: the highlight uses the muted surfaceVariant token.
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: theme,
+            child: const Select<String>(height: 2, options: _abcOptions),
+          ),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 0, Color.cyan));
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 0, Color.red));
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.yellow));
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 1, Color.blue));
+      } finally {
+        capture.dispose();
+      }
+
+      // Focused: the highlight uses the selection accent.
+      final app = createTuiTestApp(
+        Theme(
+          data: theme,
+          child: const Select<String>(
+            autofocus: true,
+            height: 2,
+            options: _abcOptions,
+          ),
+        ),
+        width: 8,
+        height: 2,
+      );
+      try {
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        app.pumpFrame();
+        final frame = app.captureFrame();
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 0, Color.magenta));
+      } finally {
+        app.dispose();
+      }
+    });
+
+    test('an explicit color wins over the theme', () {
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(text: Color.yellow),
+            child: const Select<String>(
+              height: 2,
+              color: Color.red,
+              options: _abcOptions,
+            ),
+          ),
+        );
+        expect(frame, BufferMatchers.hasColorAt(0, 1, Color.red));
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('Color.transparent opts a themed list back out of a fill', () {
+      final capture = BufferCapture(width: 8, height: 2);
+      try {
+        final frame = capture.capture(
+          Theme(
+            data: ThemeData.dark.copyWith(surface: Color.blue),
+            child: const Select<String>(
+              height: 2,
+              backgroundColor: Color.transparent,
+              options: _abcOptions,
+            ),
+          ),
+        );
+        expect(frame, isNot(BufferMatchers.hasBackgroundAt(0, 1, Color.blue)));
       } finally {
         capture.dispose();
       }
