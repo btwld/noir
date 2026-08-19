@@ -4,11 +4,7 @@
 library;
 
 export 'src/animation.dart'
-    show
-        useAnimation,
-        useAnimationController,
-        useAnimationStatus,
-        useTickerProvider;
+    show useAnimation, useAnimationController, useAnimationStatus;
 export 'src/async.dart'
     show AsyncSnapshot, ConnectionState, useFuture, useStream;
 export 'src/controllers.dart'
@@ -25,7 +21,8 @@ export 'src/framework.dart'
         HookWidget,
         HookWidgetBuilder,
         use,
-        useContext;
+        useContext,
+        useTickerProvider;
 export 'src/listenable.dart'
     show
         ValueEquality,

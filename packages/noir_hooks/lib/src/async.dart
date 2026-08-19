@@ -101,6 +101,9 @@ final class AsyncSnapshot<T> {
 
 /// Observes [future] and rebuilds as it completes.
 ///
+/// Create a future outside the build or retain it with `useMemoized`. Creating
+/// a new future during every build restarts the observation on every build.
+///
 /// A replacement future ignores stale completion callbacks. When
 /// [preserveState] is true, the previous data or error remains visible while
 /// the replacement future is waiting. [initialData] is used only when this
@@ -118,6 +121,9 @@ AsyncSnapshot<T> useFuture<T>(
 );
 
 /// Observes [stream] and rebuilds for data, error, and completion events.
+///
+/// Create a stream outside the build or retain it with `useMemoized`. Creating
+/// a new stream during every build replaces the subscription on every build.
 ///
 /// Replacing the stream cancels the old subscription. When [preserveState] is
 /// true, its last payload remains visible while the replacement stream waits.
@@ -151,7 +157,7 @@ final class _FutureHook<T> extends Hook<AsyncSnapshot<T>> {
 final class _FutureHookState<T>
     extends HookState<AsyncSnapshot<T>, _FutureHook<T>> {
   late AsyncSnapshot<T> _snapshot;
-  _AsyncIdentity? _activeIdentity;
+  Object? _activeIdentity;
 
   @override
   void initHook() {
@@ -164,7 +170,7 @@ final class _FutureHookState<T>
     if (oldHook.future == hook.future) {
       return;
     }
-    _activeIdentity = _AsyncIdentity();
+    _activeIdentity = null;
     _snapshot = hook.preserveState
         ? _snapshot.inState(ConnectionState.none)
         : _initialSnapshot(hook.initialData);
@@ -176,7 +182,7 @@ final class _FutureHookState<T>
 
   @override
   void dispose() {
-    _activeIdentity = _AsyncIdentity();
+    _activeIdentity = null;
     super.dispose();
   }
 
@@ -185,7 +191,7 @@ final class _FutureHookState<T>
       _activeIdentity = null;
       return;
     }
-    final identity = _AsyncIdentity();
+    final identity = Object();
     _activeIdentity = identity;
     _snapshot = _snapshot.inState(ConnectionState.waiting);
     void handleValue(T value) {
@@ -233,7 +239,7 @@ final class _StreamHookState<T>
     extends HookState<AsyncSnapshot<T>, _StreamHook<T>> {
   late AsyncSnapshot<T> _snapshot;
   StreamSubscription<T>? _subscription;
-  _AsyncIdentity? _activeIdentity;
+  Object? _activeIdentity;
 
   @override
   void initHook() {
@@ -270,7 +276,7 @@ final class _StreamHookState<T>
       _activeIdentity = null;
       return;
     }
-    final identity = _AsyncIdentity();
+    final identity = Object();
     _activeIdentity = identity;
     _snapshot = _snapshot.inState(ConnectionState.waiting);
     void handleData(T value) {
@@ -313,15 +319,14 @@ final class _StreamHookState<T>
   }
 
   void _disconnect() {
-    _activeIdentity = _AsyncIdentity();
+    _activeIdentity = null;
     final subscription = _subscription;
     _subscription = null;
-    unawaited(subscription?.cancel());
+    final cancellation = subscription?.cancel();
+    cancellation?.ignore();
   }
 }
 
 AsyncSnapshot<T> _initialSnapshot<T>(T? initialData) => initialData == null
     ? AsyncSnapshot<T>.nothing()
     : AsyncSnapshot<T>.withData(ConnectionState.none, initialData);
-
-final class _AsyncIdentity {}

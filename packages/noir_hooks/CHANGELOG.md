@@ -6,3 +6,5 @@
   viewport hooks for Noir's public APIs.
 - Add keyed lifecycle replacement, stale async callback rejection, and
   deterministic reverse-order cleanup.
+- Preserve listener teardown order across keyed owner replacement, keep
+  `useValueNotifier` non-subscribing, and avoid callback resubscription churn.

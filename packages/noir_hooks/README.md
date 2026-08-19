@@ -74,8 +74,8 @@ on framework-owned Element classes to simulate that behavior.
 
 ## Rules
 
-Stateful hooks use call order as identity. `useContext` is a build-only
-lookup and does not consume a hook slot.
+Stateful hooks use call order as identity. `useContext` and
+`useTickerProvider` are build-only lookups and do not consume hook slots.
 
 - Call hooks only while a `HookWidget` or `HookBuilder` is building.
 - Call the same stateful hooks in the same order on every build.
@@ -86,8 +86,10 @@ lookup and does not consume a hook slot.
 - Use top-level hook functions to compose other hooks.
 
 A runtime hook-type change resets that slot and every later slot. A key change
-recreates only that hook slot. Key lists are snapshotted, so later mutation of
-a caller-owned list cannot corrupt retained identity.
+recreates only that hook slot. Later hook slots update before the old keyed
+state is disposed, so listeners can detach from replaced owners safely. Key
+lists are snapshotted, so later mutation of a caller-owned list cannot corrupt
+retained identity.
 
 ## Included hooks
 
@@ -102,11 +104,19 @@ Observable values:
 - `useListenable`, `useValueListenable`, `useListenableSelector`
 - `useValueNotifier`, `useChangeNotifier`, `useOnListenableChange`
 
+`useState` owns a `ValueNotifier` and subscribes the widget to it.
+`useValueNotifier` only owns the notifier. Pair it with `useValueListenable`
+when a particular widget should rebuild for its changes.
+
 Asynchronous values:
 
 - `useFuture` and `useStream`, returning `AsyncSnapshot`
 - stale future and stream callbacks are ignored after replacement or disposal
 - stream subscriptions are canceled when replaced or disposed
+
+Create futures and streams outside the build, or retain them with
+`useMemoized`. Creating a new asynchronous object on every build restarts its
+observation.
 
 Noir integrations:
 

@@ -18,7 +18,9 @@ abstract class Hook<R> {
   ///
   /// The hosting widget snapshots these values on every build. Mutating a list
   /// after passing it here therefore cannot retroactively change stored hook
-  /// identity.
+  /// identity. When the values change, the replacement state is installed
+  /// during the build and the old state is disposed after later hook slots have
+  /// had a chance to update their dependencies.
   final List<Object?>? keys;
 
   /// Creates the mutable state owned by this hook slot.
@@ -209,21 +211,29 @@ R use<R>(Hook<R> hook) {
 ///
 /// Unlike stateful hooks, this lookup does not consume a hook slot. It is
 /// valid only in the widget build body or [HookState.build].
-BuildContext useContext() {
+BuildContext useContext() => _requireHookBuild('useContext').context;
+
+/// Returns the shared [TickerProvider] for the current [HookWidget].
+///
+/// This lookup does not consume a hook slot. Class-based lifecycle callbacks
+/// can use [HookState.tickerProvider] instead.
+TickerProvider useTickerProvider() => _requireHookBuild('useTickerProvider');
+
+_HookWidgetState _requireHookBuild(String functionName) {
   final owner = _currentHookState;
   if (owner == null || !owner.isBuilding) {
     throw StateError(
-      'useContext() can only be called while a HookWidget or HookBuilder is '
-      'building.',
+      '$functionName() can only be called while a HookWidget or HookBuilder '
+      'is building.',
     );
   }
   if (owner.isResolvingHook) {
     throw StateError(
-      'useContext() cannot be called from hook lifecycle or effect '
-      'callbacks. Use HookState.context there instead.',
+      '$functionName() cannot be called from hook lifecycle or effect '
+      'callbacks. Use the corresponding HookState property there instead.',
     );
   }
-  return owner.context;
+  return owner;
 }
 
 _HookWidgetState? _currentHookState;
@@ -231,6 +241,8 @@ _HookWidgetState? _currentHookState;
 final class _HookWidgetState extends State<HookWidget>
     with TickerProviderStateMixin<HookWidget> {
   final List<HookState<dynamic, dynamic>> _hooks =
+      <HookState<dynamic, dynamic>>[];
+  final List<HookState<dynamic, dynamic>> _pendingDisposals =
       <HookState<dynamic, dynamic>>[];
   int _hookIndex = 0;
   bool _isBuilding = false;
@@ -267,10 +279,9 @@ final class _HookWidgetState extends State<HookWidget>
             state = _createHookState(nextHook, nextKeys);
             _hooks.add(state);
           } else if (!_keysEqual(current._storedKeys, nextKeys)) {
-            _hooks.removeAt(index);
-            current._unmount();
             state = _createHookState(nextHook, nextKeys);
-            _hooks.insert(index, state);
+            _hooks[index] = state;
+            _pendingDisposals.add(current);
           } else {
             current._updateHook(nextHook, nextKeys);
             state = current;
@@ -306,6 +317,7 @@ final class _HookWidgetState extends State<HookWidget>
       failures.attempt(() {
         _disposeFrom(_hookIndex);
       });
+      failures.attempt(_disposePendingReplacements);
     } finally {
       _currentHookState = previous;
       _isBuilding = false;
@@ -332,8 +344,15 @@ final class _HookWidgetState extends State<HookWidget>
   void dispose() {
     final failures = _FirstErrorRecorder();
     final hooks = List<HookState<dynamic, dynamic>>.of(_hooks);
+    final pendingDisposals = List<HookState<dynamic, dynamic>>.of(
+      _pendingDisposals,
+    );
     _hooks.clear();
+    _pendingDisposals.clear();
     for (final hook in hooks.reversed) {
+      failures.attempt(hook._unmount);
+    }
+    for (final hook in pendingDisposals.reversed) {
       failures.attempt(hook._unmount);
     }
     failures.attempt(() {
@@ -367,6 +386,25 @@ final class _HookWidgetState extends State<HookWidget>
     }
     final removed = _hooks.sublist(index);
     _hooks.removeRange(index, _hooks.length);
+    final failures = _FirstErrorRecorder();
+    final wasResolvingHook = _isResolvingHook;
+    _isResolvingHook = true;
+    try {
+      for (final hook in removed.reversed) {
+        failures.attempt(hook._unmount);
+      }
+    } finally {
+      _isResolvingHook = wasResolvingHook;
+    }
+    failures.rethrowFirst();
+  }
+
+  void _disposePendingReplacements() {
+    if (_pendingDisposals.isEmpty) {
+      return;
+    }
+    final removed = List<HookState<dynamic, dynamic>>.of(_pendingDisposals);
+    _pendingDisposals.clear();
     final failures = _FirstErrorRecorder();
     final wasResolvingHook = _isResolvingHook;
     _isResolvingHook = true;

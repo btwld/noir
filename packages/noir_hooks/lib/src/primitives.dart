@@ -20,15 +20,30 @@ final class ObjectRef<T> {
   T value;
 }
 
-/// A notifier-backed reducer store returned by [useReducer].
-final class Store<S, A> extends ValueNotifier<S> {
+/// Read-only reducer state returned by [useReducer].
+///
+/// State changes only through [dispatch].
+final class Store<S, A> extends ChangeNotifier implements ValueListenable<S> {
   /// Creates a store with [initialState] and [reducer].
-  Store(super.initialState, Reducer<S, A> reducer) : _reducer = reducer;
+  Store(S initialState, Reducer<S, A> reducer)
+    : _value = initialState,
+      _reducer = reducer;
 
+  S _value;
   Reducer<S, A> _reducer;
 
-  /// Applies [action] to the current value and publishes the result.
-  void dispatch(A action) => value = _reducer(value, action);
+  @override
+  S get value => _value;
+
+  /// Applies [action] to the current value and publishes a changed result.
+  void dispatch(A action) {
+    final next = _reducer(_value, action);
+    if (_value == next) {
+      return;
+    }
+    _value = next;
+    notifyListeners();
+  }
 }
 
 /// Creates a [ValueNotifier] that rebuilds its widget when its value changes.
@@ -151,9 +166,13 @@ final class _MemoizedHookState<T> extends HookState<T, _MemoizedHook<T>> {
 }
 
 final class _EffectHook extends Hook<Object?> {
-  const _EffectHook(this.effect, List<Object?>? keys) : super(keys: keys);
+  _EffectHook(this.effect, List<Object?>? keys)
+    : dependencyKeys = keys == null
+          ? null
+          : List<Object?>.unmodifiable(keys);
 
   final Effect effect;
+  final List<Object?>? dependencyKeys;
 
   @override
   _EffectHookState createState() => _EffectHookState();
@@ -167,7 +186,8 @@ final class _EffectHookState extends HookState<Object?, _EffectHook> {
 
   @override
   void didUpdateHook(_EffectHook oldHook) {
-    if (hook.keys == null) {
+    final keys = hook.dependencyKeys;
+    if (keys == null || !_effectKeysEqual(oldHook.dependencyKeys, keys)) {
       _runEffect();
     }
   }
@@ -385,4 +405,32 @@ final class _IsMountedHookState
 
   @override
   bool Function() build(BuildContext context) => _callback;
+}
+
+bool _effectKeysEqual(List<Object?>? left, List<Object?>? right) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left == null || right == null || left.length != right.length) {
+    return false;
+  }
+  for (var index = 0; index < left.length; index++) {
+    final leftValue = left[index];
+    final rightValue = right[index];
+    if (leftValue is num && rightValue is num) {
+      if (leftValue.isNaN && rightValue.isNaN) {
+        continue;
+      }
+      if (leftValue == 0 && rightValue == 0) {
+        if (leftValue.isNegative != rightValue.isNegative) {
+          return false;
+        }
+        continue;
+      }
+    }
+    if (leftValue != rightValue) {
+      return false;
+    }
+  }
+  return true;
 }

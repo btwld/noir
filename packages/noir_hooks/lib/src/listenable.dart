@@ -18,9 +18,18 @@ T useValueListenable<T>(ValueListenable<T> valueListenable) {
   return valueListenable.value;
 }
 
-/// Creates an owned [ValueNotifier] and rebuilds when its value changes.
-ValueNotifier<T> useValueNotifier<T>(T initialValue) =>
-    useState<T>(initialValue);
+/// Creates and owns a [ValueNotifier] without subscribing to its changes.
+///
+/// [initialValue] is used only when the notifier is created. Observe the
+/// returned notifier with [useValueListenable] when its changes should rebuild
+/// the current widget.
+ValueNotifier<T> useValueNotifier<T>(
+  T initialValue, [
+  List<Object?> keys = const <Object?>[],
+]) => useDisposable<ValueNotifier<T>>(
+  () => ValueNotifier<T>(initialValue),
+  keys,
+);
 
 /// Creates, owns, and subscribes to a [ChangeNotifier].
 T useChangeNotifier<T extends ChangeNotifier>(
@@ -40,15 +49,11 @@ T useListenableSelector<L extends Listenable, T>(
   ValueEquality<T>? equals,
 }) => use(_ListenableSelectorHook<L, T>(listenable, selector, equals));
 
-/// Registers [listener] with [listenable] for the lifetime of this hook.
+/// Registers the latest [listener] with [listenable] for this hook's lifetime.
+///
+/// Updating only [listener] does not remove and re-add the subscription.
 void useOnListenableChange(Listenable? listenable, VoidCallback listener) =>
-    useEffect(() {
-      if (listenable == null) {
-        return null;
-      }
-      listenable.addListener(listener);
-      return () => listenable.removeListener(listener);
-    }, <Object?>[listenable, listener]);
+    use<Object?>(_OnListenableChangeHook(listenable, listener));
 
 final class _ListenableHook<T extends Listenable?> extends Hook<T> {
   const _ListenableHook(this.listenable);
@@ -141,4 +146,43 @@ final class _ListenableSelectorHookState<L extends Listenable, T>
   }
 
   static bool _defaultEquals<T>(T previous, T current) => previous == current;
+}
+
+final class _OnListenableChangeHook extends Hook<Object?> {
+  const _OnListenableChangeHook(this.listenable, this.listener);
+
+  final Listenable? listenable;
+  final VoidCallback listener;
+
+  @override
+  _OnListenableChangeHookState createState() => _OnListenableChangeHookState();
+}
+
+final class _OnListenableChangeHookState
+    extends HookState<Object?, _OnListenableChangeHook> {
+  @override
+  void initHook() => hook.listenable?.addListener(_handleChange);
+
+  @override
+  void didUpdateHook(_OnListenableChangeHook oldHook) {
+    if (identical(oldHook.listenable, hook.listenable)) {
+      return;
+    }
+    oldHook.listenable?.removeListener(_handleChange);
+    hook.listenable?.addListener(_handleChange);
+  }
+
+  @override
+  Object? build(BuildContext context) => null;
+
+  @override
+  void dispose() {
+    try {
+      hook.listenable?.removeListener(_handleChange);
+    } finally {
+      super.dispose();
+    }
+  }
+
+  void _handleChange() => hook.listener();
 }

@@ -3,14 +3,12 @@ import 'package:noir/noir.dart';
 import 'framework.dart';
 import 'listenable.dart';
 
-/// Returns the shared [TickerProvider] for the current [HookWidget].
-TickerProvider useTickerProvider() => use(const _TickerProviderHook());
-
 /// Creates and owns a Noir [AnimationController].
 ///
 /// [duration] and [reverseDuration] update the retained controller. Changing
-/// [vsync], either bound, [debugLabel], or an explicit key recreates it.
-/// [initialValue] is used only when a controller is created.
+/// [vsync] or an explicit key recreates it because Noir's controller has no
+/// resync operation. [initialValue], [lowerBound], [upperBound], and
+/// [debugLabel] are used only when a controller is created.
 AnimationController useAnimationController({
   Duration duration = const Duration(milliseconds: 300),
   Duration? reverseDuration,
@@ -29,7 +27,7 @@ AnimationController useAnimationController({
     initialValue: initialValue,
     debugLabel: debugLabel,
     vsync: vsync,
-    keys: <Object?>[vsync, lowerBound, upperBound, debugLabel, ...keys],
+    keys: <Object?>[vsync, ...keys],
   ),
 );
 
@@ -39,19 +37,6 @@ T useAnimation<T>(Animation<T> animation) => useValueListenable<T>(animation);
 /// Subscribes to [animation]'s status and returns its current status.
 AnimationStatus useAnimationStatus<T>(Animation<T> animation) =>
     use(_AnimationStatusHook<T>(animation));
-
-final class _TickerProviderHook extends Hook<TickerProvider> {
-  const _TickerProviderHook();
-
-  @override
-  _TickerProviderHookState createState() => _TickerProviderHookState();
-}
-
-final class _TickerProviderHookState
-    extends HookState<TickerProvider, _TickerProviderHook> {
-  @override
-  TickerProvider build(BuildContext context) => tickerProvider;
-}
 
 final class _AnimationControllerHook extends Hook<AnimationController> {
   const _AnimationControllerHook({

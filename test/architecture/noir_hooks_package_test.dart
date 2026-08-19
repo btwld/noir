@@ -22,8 +22,10 @@ void main() {
     final analysisOptions = File(
       'packages/noir_hooks/analysis_options.yaml',
     ).readAsStringSync();
-    expect(analysisOptions, contains('package:lints/recommended.yaml'));
-    expect(analysisOptions, isNot(contains('../../analysis_options.yaml')));
+    expect(
+      analysisOptions,
+      contains('include: ../../analysis_options.yaml'),
+    );
     final packagePubignore = File(
       'packages/noir_hooks/.pubignore',
     ).readAsStringSync();
@@ -71,6 +73,7 @@ void main() {
       'controllers_animation_test.dart',
       'framework_primitives_test.dart',
       'listenable_async_test.dart',
+      'replacement_lifecycle_test.dart',
     };
     final lifecycleTests = Directory('packages/noir_hooks/test')
         .listSync()

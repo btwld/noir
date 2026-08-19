@@ -16,8 +16,9 @@ TextEditingController useTextEditingController({
 
 /// Creates and owns a [FocusNode].
 ///
-/// [onKeyEvent] and [canRequestFocus] update the retained node. Changing
-/// [debugLabel] or an explicit key recreates it.
+/// [onKeyEvent] and [canRequestFocus] update the retained node. [debugLabel]
+/// is used only when the node is created because Noir exposes it as immutable.
+/// Use an explicit key when a changed label should recreate the node.
 FocusNode useFocusNode({
   String? debugLabel,
   FocusOnKeyEvent? onKeyEvent,
@@ -30,7 +31,7 @@ FocusNode useFocusNode({
       onKeyEvent: onKeyEvent,
       canRequestFocus: canRequestFocus,
     ),
-    <Object?>[debugLabel, ...keys],
+    keys,
   );
   node
     ..onKeyEvent = onKeyEvent

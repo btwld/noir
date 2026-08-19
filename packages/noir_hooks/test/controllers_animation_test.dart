@@ -33,7 +33,7 @@ void main() {
     expect(() => controller.addListener(() {}), throwsA(isA<StateError>()));
   });
 
-  test('focus node updates mutable fields and keys its debug label', () {
+  test('focus node updates mutable fields and keys creation-only fields', () {
     final host = TestElementHost();
     KeyEventResult firstHandler(FocusNode _, KeyEvent _) =>
         KeyEventResult.ignored;
@@ -43,6 +43,7 @@ void main() {
     var currentHandler = firstHandler;
     var canRequestFocus = true;
     var debugLabel = 'first';
+    var key = 0;
     late FocusNode node;
 
     Widget buildRoot() => HookBuilder(
@@ -51,6 +52,7 @@ void main() {
           debugLabel: debugLabel,
           onKeyEvent: currentHandler,
           canRequestFocus: canRequestFocus,
+          keys: <Object?>[key],
         );
         return const Container();
       },
@@ -61,16 +63,19 @@ void main() {
 
     currentHandler = secondHandler;
     canRequestFocus = false;
-    host.update(buildRoot());
-
-    expect(node, same(firstNode));
-    expect(node.onKeyEvent, same(secondHandler));
-    expect(node.canRequestFocus, isFalse);
-
     debugLabel = 'second';
     host.update(buildRoot());
 
+    expect(node, same(firstNode));
+    expect(node.debugLabel, 'first');
+    expect(node.onKeyEvent, same(secondHandler));
+    expect(node.canRequestFocus, isFalse);
+
+    key = 1;
+    host.update(buildRoot());
+
     expect(node, isNot(same(firstNode)));
+    expect(node.debugLabel, 'second');
     expect(() => firstNode.addListener(() {}), throwsA(isA<StateError>()));
 
     host.dispose();
@@ -138,10 +143,13 @@ void main() {
     expect(() => controller.addListener(() {}), throwsA(isA<StateError>()));
   });
 
-  test('animation controller updates duration and recreates for bounds', () {
+  test('animation controller updates duration and keys creation-only fields', () {
     final host = TestElementHost();
     var duration = const Duration(milliseconds: 100);
     var lowerBound = 0.0;
+    var initialValue = 0.0;
+    var debugLabel = 'first';
+    var key = 0;
     late AnimationController controller;
     late double animatedValue;
     var builds = 0;
@@ -152,6 +160,9 @@ void main() {
         controller = useAnimationController(
           duration: duration,
           lowerBound: lowerBound,
+          initialValue: initialValue,
+          debugLabel: debugLabel,
+          keys: <Object?>[key],
         );
         animatedValue = useAnimation<double>(controller);
         return const Container();
@@ -167,14 +178,23 @@ void main() {
     expect(animatedValue, 0.5);
 
     duration = const Duration(milliseconds: 250);
+    lowerBound = -1.0;
+    initialValue = -0.5;
+    debugLabel = 'second';
     host.update(buildRoot());
+
     expect(controller, same(firstController));
     expect(controller.duration, duration);
+    expect(controller.lowerBound, 0.0);
+    expect(controller.debugLabel, 'first');
+    expect(controller.value, 0.5);
 
-    lowerBound = -1.0;
+    key = 1;
     host.update(buildRoot());
     expect(controller, isNot(same(firstController)));
-    expect(controller.value, -1.0);
+    expect(controller.lowerBound, -1.0);
+    expect(controller.debugLabel, 'second');
+    expect(controller.value, -0.5);
     expect(
       () => firstController.addListener(() {}),
       throwsA(isA<StateError>()),
