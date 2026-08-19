@@ -226,9 +226,12 @@ final class TuiApp implements Disposable {
 
   /// Rebuilds the whole widget tree and forces a full repaint.
   ///
-  /// Call this after a hot-reload source swap succeeds. Every `build()` body
-  /// re-executes once; owned `State`, focus, scroll, and animation state
-  /// survive, and no terminal or native resource is recreated.
+  /// Call this after a hot-reload source swap succeeds. Every retained
+  /// [State.reassemble] runs, then every `build()` body re-executes once;
+  /// owned `State`, focus, scroll, and animation state survive, and no
+  /// terminal or native resource is recreated. `main()` and [State.initState]
+  /// are not re-run; override [State.reassemble] to re-derive whatever
+  /// [State.initState] computed from code the reload may have just changed.
   void reassemble() {
     _checkNotDisposed();
     _binding.reassemble();

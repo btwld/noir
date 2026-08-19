@@ -237,13 +237,18 @@ class BuildOwner {
     }
   }
 
-  /// Marks every live element dirty so the next [buildScope] re-runs its
-  /// `build()`.
+  /// Invokes [State.reassemble] on every live retained state and marks every
+  /// live element dirty so the next [buildScope] re-runs its `build()`.
   ///
   /// This is hot reload's second step: `reloadSources` swaps method bodies but
   /// leaves the element tree untouched, so nothing re-executes an edited
   /// `build()` until something marks it dirty. No `State` is recreated and no
-  /// `initState` re-runs — only `build()` bodies re-execute.
+  /// `initState` re-runs — retained states get [State.reassemble] instead, in
+  /// document order (parents before children) so a child re-derives against an
+  /// already-refreshed parent. Every callback is attempted, the tree is marked
+  /// whether or not any of them fail, and the first failure is rethrown once
+  /// the pass is complete: a broken hook degrades the reload rather than
+  /// aborting it.
   ///
   /// Deliberate design decision: every registered element is marked, not only
   /// the root. Reconciliation currently has no identical-widget short-circuit,
@@ -263,9 +268,42 @@ class BuildOwner {
     }
     // Snapshot first: `scheduleBuild` requests a frame through `_onFrame`, and
     // a host callback may mount elements before this loop finishes.
-    for (final element in _depths.keys.toList(growable: false)) {
+    final registered = _depths.keys.toList(growable: false);
+    final failures = FirstErrorRecorder();
+    for (final element in _reassembleTargets(registered)) {
+      failures.attempt(element.state.reassemble);
+    }
+    for (final element in registered) {
       scheduleBuild(element);
     }
+    failures.rethrowFirst();
+  }
+
+  /// Live [StatefulElement]s in document order: each root's subtree walked
+  /// depth-first, parents before children.
+  ///
+  /// Roots are the registry's depth-zero entries, so ordering never reads an
+  /// Element parent edge. Registry iteration order itself is unspecified —
+  /// hence the walk. An inactive element prunes its whole subtree: it is
+  /// awaiting [finalizeTree] and will never build again.
+  List<StatefulElement> _reassembleTargets(List<Element> registered) {
+    final targets = <StatefulElement>[];
+    void visit(Element element) {
+      if (!element.active) {
+        return;
+      }
+      if (element is StatefulElement) {
+        targets.add(element);
+      }
+      element.visitChildren(visit);
+    }
+
+    for (final element in registered) {
+      if (_depths[element] == 0) {
+        visit(element);
+      }
+    }
+    return targets;
   }
 
   void _registerElement(Element element, Element? parent) {

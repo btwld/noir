@@ -32,6 +32,8 @@ void main() {
       'PASS:animation-reverse-duration',
       'PASS:animation-duration-setter',
       'PASS:animation-reverse-duration-setter',
+      'PASS:ticker-single-cardinality',
+      'PASS:ticker-active-at-dispose',
       'PASS:box-options-border-chars',
       'PASS:border-border-chars',
       'PASS:container-color-decoration',

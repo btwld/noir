@@ -60,6 +60,7 @@ abstract class State<T extends StatefulWidget> {
   T get widget => _widget!;
   T? _widget;
   bool _mounted = false;
+  bool _disposing = false;
 
   /// Whether this state is currently attached to the tree.
   bool get mounted => _mounted;
@@ -74,12 +75,15 @@ abstract class State<T extends StatefulWidget> {
   ///
   /// Override this to perform initialization that depends on the location at
   /// which this object was inserted into the tree.
+  @mustCallSuper
   void initState() {}
 
   /// Called when a dependency of this [State] object changes.
+  @mustCallSuper
   void didChangeDependencies() {}
 
   /// Called whenever the widget configuration changes.
+  @mustCallSuper
   void didUpdateWidget(covariant T oldWidget) {}
 
   /// Called when this object is removed from the tree.
@@ -92,30 +96,59 @@ abstract class State<T extends StatefulWidget> {
   /// completes before the original error is rethrown, and permanent teardown
   /// remains scheduled for finalization. The hook is not retried for the same
   /// removal.
+  @mustCallSuper
   void deactivate() {}
+
+  /// Called when a hot reload has swapped this app's code.
+  ///
+  /// Hot reload replaces method bodies in the live isolate and then re-runs
+  /// `build()`; it never recreates a [State] or re-runs [initState]. Override
+  /// this to re-derive whatever [initState] computed from code that may have
+  /// just changed — a parsed table, a precomputed layout, a cached format —
+  /// so a reloaded body is not left reading values the old body produced.
+  ///
+  /// Never called in a release build. The tree is rebuilt whether or not this
+  /// throws, so a failure here degrades the reload rather than aborting it.
+  @mustCallSuper
+  void reassemble() {}
 
   /// Called when this object is removed from the tree permanently.
   ///
   /// Override this to clean up any resources held by this object (cancel
   /// timers, close streams, etc).
+  ///
+  /// [mounted] and [context] stay readable for the whole call, but [setState]
+  /// is already rejected: teardown has begun and no rebuild can follow.
+  @mustCallSuper
   void dispose() {}
 
   /// Applies [fn] and schedules a rebuild.
   ///
-  /// Throws a [StateError] — in every build mode, not just debug — if this
-  /// state is no longer mounted (i.e. called after [dispose] has already
-  /// run and [detach] has cleared the State/Element association). This is
-  /// almost always a timer, stream subscription, or callback that outlived
-  /// the [State] and fired after teardown; cancel it in [dispose]
-  /// instead. [fn] is never invoked and no rebuild is requested when this
-  /// throws.
+  /// Throws a [StateError] — in every build mode, not just debug — once
+  /// teardown has begun: from the moment [dispose] starts running (where
+  /// [mounted] is still true) and forever after [detach] clears the
+  /// State/Element association. This is almost always a timer, stream
+  /// subscription, or callback that outlived the [State]; cancel it in
+  /// [dispose] instead. [fn] is never invoked and no rebuild is requested
+  /// when this throws.
   void setState(VoidCallback fn) {
+    // Checked before _disposing: _disposing is never reset, so once detach()
+    // clears _mounted this branch owns every later call and the message can
+    // say the teardown already finished.
     if (!_mounted) {
       throw StateError(
         'setState() called after dispose(): $runtimeType is no longer '
         'mounted. This usually means a timer, stream subscription, or '
         'callback outlived the State and fired after dispose() ran; cancel '
         'it in dispose() instead.',
+      );
+    }
+    if (_disposing) {
+      throw StateError(
+        'setState() called during dispose(): $runtimeType is tearing down '
+        'and cannot rebuild. This usually means a listener, timer, or '
+        'stream subscription fired while dispose() released it; cancel or '
+        'detach it before it can call back.',
       );
     }
     fn();
@@ -146,6 +179,16 @@ abstract class State<T extends StatefulWidget> {
     final old = _widget!;
     _widget = newWidget;
     didUpdateWidget(old);
+  }
+
+  /// Runs [dispose] with the teardown guard engaged, so a [setState] reached
+  /// from inside a disposing subscription is rejected instead of scheduling a
+  /// rebuild the element will never serve. Called only by
+  /// [StatefulElement.unmount]; not public app API.
+  @internal
+  void disposeState() {
+    _disposing = true;
+    dispose();
   }
 
   /// Detaches this state from the tree, marking it unmounted. Called only

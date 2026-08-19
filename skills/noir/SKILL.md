@@ -261,9 +261,11 @@ class _CounterState extends State<Counter> {
 ```
 
 Noir's current `State` hooks are `initState`, `didChangeDependencies`,
-`didUpdateWidget`, `deactivate`, and `dispose`, with the `mounted` guard.
-Check `mounted` before `setState` in an async callback. Details and disposal
-discipline are in `references/state-and-animation.md`.
+`didUpdateWidget`, `deactivate`, `reassemble`, and `dispose`, with the
+`mounted` guard. Check `mounted` before `setState` in an async callback.
+Override `reassemble` to refresh `initState`-derived values after a hot
+reload. Details and disposal discipline are in
+`references/state-and-animation.md`.
 
 ### Text & styling
 
@@ -335,12 +337,14 @@ dart run scripts/hot_reload_driver.dart example/counter.dart
 
 Outside the repo, any driver works that calls `reloadSources` and then the
 extension — for instance `package:hotreloader` with
-`onAfterReload: (_) => app.reassemble()`. `app.reassemble()` re-runs every
-`build()` and forces a full layout and paint pass; `State`, focus, scroll,
-and animation values survive, and no terminal or native resource is
-recreated. Changes the VM cannot swap still need a restart: `main()`,
-`initState` of already-mounted state, signatures held by live stack frames,
-enum-to-class conversions, and the native OpenTUI library.
+`onAfterReload: (_) => app.reassemble()`. `app.reassemble()` invokes
+`State.reassemble()` on every retained state, then re-runs every `build()`
+and forces a full layout and paint pass; `State`, focus, scroll, and
+animation values survive, and no terminal or native resource is recreated.
+`main()` and `initState` of already-mounted state are not re-run — override
+`State.reassemble()` to re-derive what those `initState` bodies computed.
+Other changes the VM cannot swap still need a restart: signatures held by
+live stack frames, enum-to-class conversions, and the native OpenTUI library.
 
 ## See and drive a running app (drive mode)
 

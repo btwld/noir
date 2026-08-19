@@ -21,7 +21,8 @@
 /// - An app that ends itself through `TuiApp.exit` ends the session too: the
 ///   host follows its binding down and the driver sees only the exit code.
 /// - `ext.noir.reassemble` inherits the documented [TuiApp.reassemble] limits:
-///   `main()` and `initState` bodies are never re-run.
+///   `main()` and `initState` bodies are never re-run. Override
+///   `State.reassemble()` to refresh values those `initState` bodies computed.
 library;
 
 import 'dart:async';

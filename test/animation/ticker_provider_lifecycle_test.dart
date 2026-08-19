@@ -1,5 +1,3 @@
-import 'dart:mirrors';
-
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/framework/element.dart' show Element;
@@ -17,14 +15,14 @@ void main() {
 
         expect(host.state.mounted, isTrue);
         expect(controller.isAnimating, isTrue);
-        expect(_trackedTickers(host.state), hasLength(1));
+        expect(host.state.debugTrackedTickerCount, 1);
 
         controller.dispose();
         await run;
 
         expect(controller.isAnimating, isFalse);
         expect(controller.forward, throwsStateError);
-        expect(_trackedTickers(host.state), isEmpty);
+        expect(host.state.debugTrackedTickerCount, 0);
         expect(host.state.mounted, isTrue);
       }
     });
@@ -46,11 +44,11 @@ void main() {
       }
 
       current = host.state.createController()..forward();
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
       expect(
         host.state.dispose,
         throwsA(
-          isA<AssertionError>().having(
+          isA<StateError>().having(
             (error) => error.message,
             'message',
             contains(
@@ -61,9 +59,32 @@ void main() {
       );
 
       current.dispose();
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
       host.unmount();
       expect(host.state.mounted, isFalse);
+    });
+
+    test('teardown drains every ticker and chains before it reports', () {
+      final host = _mountMultiTickerHost();
+      final active = host.state.createRawTicker()..start();
+      final idle = host.state.createRawTicker();
+
+      expect(host.state.dispose, throwsStateError);
+
+      expect(
+        active.isDisposed,
+        isTrue,
+        reason: 'the misused ticker is still released',
+      );
+      expect(idle.isDisposed, isTrue, reason: 'its siblings are not skipped');
+      expect(host.state.debugTrackedTickerCount, 0);
+      expect(
+        host.state.superDisposeCalls,
+        1,
+        reason: 'the full super.dispose() chain runs before the report',
+      );
+
+      host.unmount();
     });
 
     test('drains multiple inactive live tickers during teardown', () {
@@ -71,13 +92,13 @@ void main() {
       final first = host.state.createRawTicker();
       final second = host.state.createRawTicker();
 
-      expect(_trackedTickers(host.state), hasLength(2));
+      expect(host.state.debugTrackedTickerCount, 2);
 
       host.unmount();
 
       expect(first.isDisposed, isTrue);
       expect(second.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
     });
 
     test('keeps stopped tickers until exactly-once terminal disposal', () {
@@ -85,42 +106,57 @@ void main() {
       addTearDown(host.unmount);
       final ticker = host.state.createRawTicker();
 
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
 
       ticker
         ..start()
         ..stop();
       expect(ticker.isTicking, isFalse);
-      expect(_trackedTickers(host.state), hasLength(1));
+      expect(host.state.debugTrackedTickerCount, 1);
 
       ticker.dispose();
       expect(ticker.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
 
       ticker.dispose();
       expect(ticker.isDisposed, isTrue);
-      expect(_trackedTickers(host.state), isEmpty);
+      expect(host.state.debugTrackedTickerCount, 0);
     });
   });
 
-  test('SingleTickerProviderStateMixin remains single-use after disposal', () {
-    final host = _mountSingleTickerHost();
-    addTearDown(host.unmount);
-    host.state.createRawTicker().dispose();
+  group('SingleTickerProviderStateMixin', () {
+    test('remains single-use after disposal', () {
+      final host = _mountSingleTickerHost();
+      addTearDown(host.unmount);
+      host.state.createRawTicker().dispose();
 
-    expect(host.state.createRawTicker, throwsA(isA<AssertionError>()));
+      expect(host.state.createRawTicker, throwsStateError);
+    });
+
+    test('teardown releases an active ticker before it reports', () {
+      final host = _mountSingleTickerHost();
+      final ticker = host.state.createRawTicker()..start();
+
+      expect(
+        host.state.dispose,
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains(
+              'SingleTickerProviderStateMixin.dispose called with an active '
+              'ticker',
+            ),
+          ),
+        ),
+      );
+
+      expect(ticker.isDisposed, isTrue);
+      expect(host.state.superDisposeCalls, 1);
+
+      host.unmount();
+    });
   });
-}
-
-Set<Ticker> _trackedTickers(_MultiTickerHostState state) {
-  final tickerLibrary = currentMirrorSystem().libraries.values.singleWhere(
-    (library) => library.declarations.containsKey(
-      MirrorSystem.getSymbol('TickerProviderStateMixin', library),
-    ),
-  );
-  final field = MirrorSystem.getSymbol('_tickers', tickerLibrary);
-  return (reflect(state).getField(field).reflectee as Set<Object?>)
-      .cast<Ticker>();
 }
 
 _MountedHost<_MultiTickerHostState> _mountMultiTickerHost() {
@@ -161,8 +197,21 @@ class _MultiTickerHost extends StatefulWidget {
   State<_MultiTickerHost> createState() => _MultiTickerHostState();
 }
 
+/// Observes the `super.dispose()` chain below the ticker mixin under test.
+mixin _SuperDisposeProbe<T extends StatefulWidget> on State<T> {
+  int superDisposeCalls = 0;
+
+  @override
+  void dispose() {
+    superDisposeCalls++;
+    super.dispose();
+  }
+}
+
 class _MultiTickerHostState extends State<_MultiTickerHost>
-    with TickerProviderStateMixin<_MultiTickerHost> {
+    with
+        _SuperDisposeProbe<_MultiTickerHost>,
+        TickerProviderStateMixin<_MultiTickerHost> {
   AnimationController createController() =>
       AnimationController(vsync: this, duration: const Duration(seconds: 1));
 
@@ -180,7 +229,9 @@ class _SingleTickerHost extends StatefulWidget {
 }
 
 class _SingleTickerHostState extends State<_SingleTickerHost>
-    with SingleTickerProviderStateMixin<_SingleTickerHost> {
+    with
+        _SuperDisposeProbe<_SingleTickerHost>,
+        SingleTickerProviderStateMixin<_SingleTickerHost> {
   Ticker createRawTicker() => createTicker((_) {});
 
   @override
