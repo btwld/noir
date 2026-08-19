@@ -14,6 +14,7 @@ stable 1.0.
   `Align`, `Flexible`, and `Expanded`.
 - Handle text editing, selection, scrolling, keyboard focus, mouse input, and
   application-wide shortcuts.
+- Opt into reusable widget lifecycle hooks with `package:noir/hooks.dart`.
 - Drop to supported renderer, buffer, or raw FFI APIs when an application
   needs more control.
 
@@ -178,6 +179,17 @@ See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
 for the complete styled version with a solid action button.
 
+## Widget Lifecycle Hooks
+
+Hooks ship in the main `noir` package but remain outside the default
+`noir.dart` namespace. Import `package:noir/hooks.dart` together with
+`package:noir/noir.dart`.
+
+The opt-in library includes state, effects, memoization, listenables,
+asynchronous snapshots, animation, focus, editing, scroll, and viewport hooks.
+Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
+[hooks counter example](example/hooks_counter.dart).
+
 ## Application Lifecycle and API Tiers
 
 A Noir entry point is one line:
@@ -226,9 +238,10 @@ it for you, so a development driver can invoke it over the VM service
 extension `ext.noir.reassemble`; `registerHotReloadExtension(app)` stays
 exported for custom hosts that mount their own app.
 
-Noir has three supported import tiers:
+Noir has four supported import surfaces:
 
 - `package:noir/noir.dart` — ordinary application and widget authoring.
+- `package:noir/hooks.dart` — opt-in widget lifecycle hooks.
 - `package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer
   access, and supported custom rendering.
 - `package:noir/noir_ffi.dart` — ABI-unstable raw FFI access.
@@ -242,6 +255,8 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
   stateful body, and solid action button controlled by Up/Down,
   `+`/`-`, Enter/Space, or click.
+- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — opt-in
+  `HookWidget`, `useState`, and effect lifecycle.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.

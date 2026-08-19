@@ -8,7 +8,7 @@ description: >-
   DataTable, Focus, setState, AnimationController) that renders through
   OpenTUI over FFI.
   Use this whenever writing or reviewing application code against
-  `package:noir` — importing `package:noir/noir.dart`, building or editing a
+  `package:noir` — importing `package:noir/noir.dart` or `package:noir/hooks.dart`, building or editing a
   TUI app or example, wiring layout/state/focus/input/animation for a terminal
   app, or testing one — even if the user only says "terminal UI", "TUI", "CLI
   interface", or names a widget like Row, Column, Container, or Text without
@@ -26,17 +26,19 @@ but terminal constraints and noir's prerelease contracts differ. Noir
 signatures are authoritative — verify against them rather than assuming Flutter
 API parity.
 
-**Single import gets you the whole authoring surface:**
+**The default authoring surface uses one import:**
 
 ```dart
 import 'package:noir/noir.dart';
 ```
 
+Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it together with `package:noir/noir.dart` when using `HookWidget` or `use...` functions.
+
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
 implementations and the recorder/display-list/compositor backend stay
 framework-owned. Raw FFI lives in `package:noir/noir_ffi.dart`; ordinary apps
-almost never need either companion import.
+almost never need the low-level or FFI import.
 
 ## Critical rules
 
@@ -107,8 +109,8 @@ Inside this repo, `example/` has a runnable reference for every major feature
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
 `data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
-`inherited_example.dart`, `framework_primitives.dart`, `chat_demo.dart`,
-`widgets_tour.dart`) — read one before inventing a pattern.
+`inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
+`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
 
 ## Mental model
 
@@ -171,6 +173,7 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `doc/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |

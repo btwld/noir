@@ -150,7 +150,7 @@ void main() {
         final compact = _heartBounds(app.captureFrame());
 
         app.mockInput.typeText(' ');
-        await _settle(app);
+        app.pumpFrame();
         final full = _heartBounds(app.captureFrame());
 
         expect(simulation.burstCount, 2);

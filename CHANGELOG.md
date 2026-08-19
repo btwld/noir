@@ -2,6 +2,7 @@
 
 ## 0.0.1-alpha.1
 
+- Added the opt-in `package:noir/hooks.dart` library with `HookWidget`, state and effect primitives, listenable and async observation, and Noir controller and animation hooks.
 - Added `Theme` / `ThemeData` and a first component tier: `ListView`,
   `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
   `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as

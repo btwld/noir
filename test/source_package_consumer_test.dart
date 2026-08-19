@@ -102,17 +102,20 @@ void main() {
     );
   });
 
-  test('positive high, high+low, and FFI-only consumers analyze', () async {
-    final analysis = await _analyze(sandbox, 'bin');
-    expect(
-      analysis.exitCode,
-      0,
-      reason:
-          'source consumer analysis failed\n'
-          'stdout:\n${analysis.stdout}\n'
-          'stderr:\n${analysis.stderr}',
-    );
-  });
+  test(
+    'positive high, hooks, high+low, and FFI-only consumers analyze',
+    () async {
+      final analysis = await _analyze(sandbox, 'bin');
+      expect(
+        analysis.exitCode,
+        0,
+        reason:
+            'source consumer analysis failed\n'
+            'stdout:\n${analysis.stdout}\n'
+            'stderr:\n${analysis.stderr}',
+      );
+    },
+  );
 
   test(
     'consumer renders and captures a frame from its own directory',
@@ -356,6 +359,7 @@ Map<String, String> _officialNativeHashes(Directory sourceRoot) {
 const Set<String> _retainedFixtureFiles = <String>{
   'bin/ffi.dart',
   'bin/high_level.dart',
+  'bin/hooks.dart',
   'bin/low_level_multi_child.dart',
   'bin/low_level_single_child.dart',
   'bin/render.dart',
