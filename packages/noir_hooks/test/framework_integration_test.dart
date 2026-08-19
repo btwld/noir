@@ -27,9 +27,6 @@ void main() {
 
     expect(host.dispose, returnsNormally);
     expect(controller.isAnimating, isFalse);
-    expect(
-      () => controller.addListener(() {}),
-      throwsA(isA<StateError>()),
-    );
+    expect(() => controller.addListener(() {}), throwsA(isA<StateError>()));
   });
 }

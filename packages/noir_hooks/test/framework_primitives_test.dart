@@ -562,11 +562,7 @@ final class _ProbeHookState extends HookState<int, _ProbeHook> {
 }
 
 final class _ReassembleProbeHook extends Hook<Object?> {
-  const _ReassembleProbeHook(
-    this.label,
-    this.log, {
-    this.shouldThrow = false,
-  });
+  const _ReassembleProbeHook(this.label, this.log, {this.shouldThrow = false});
 
   final String label;
   final List<String> log;
