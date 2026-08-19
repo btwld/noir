@@ -1,15 +1,15 @@
-name: Run hooks contract repair
+name: Inspect hooks merge with latest main
 
 on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  repair:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 10
 
     steps:
       - name: Checkout target hooks branch
@@ -17,75 +17,18 @@ jobs:
         with:
           fetch-depth: 0
           ref: agent/add-noir-hooks-package
-          submodules: recursive
 
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
-        with:
-          sdk: '3.10.0'
-
-      - name: Extract and run the reviewed repair
+      - name: Inspect merge conflicts
         shell: bash
         run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          workflow = Path('.github/workflows/ci.yml').read_text()
-          marker = "          python3 <<'PY'\n"
-          start = workflow.index(marker) + len(marker)
-          end = workflow.index('\n          PY', start)
-          raw = workflow[start:end]
-          script = '\n'.join(
-              line[10:] if line.startswith('          ') else line
-              for line in raw.splitlines()
-          )
-          Path('/tmp/hooks_contract_repair.py').write_text(script + '\n')
-          PY
-          python3 /tmp/hooks_contract_repair.py
-          python3 <<'PY'
-          from pathlib import Path
-
-          path = Path('test/architecture/hooks_library_test.dart')
-          source = path.read_text()
-          old = '''    expect(readme, contains("import 'package:noir/hooks.dart';"));'''
-          new = '''    expect(readme, contains('package:noir/hooks.dart'));'''
-          if old not in source:
-              raise SystemExit('hooks README contract expectation not found')
-          path.write_text(source.replace(old, new))
-          PY
-          rm -f scripts/hooks_contract_repair.trigger
-          rm -f .github/workflows/fix-hooks-core-contracts.yml
-
-      - name: Validate repaired branch
-        shell: bash
-        run: |
-          dart pub get
-          dart format lib/ test/ example/ bin/ hook/ scripts/
-          dart analyze --fatal-infos
-          dart test \
-            test/hooks \
-            test/architecture/hooks_library_test.dart \
-            test/architecture/package_distribution_ownership_test.dart \
-            test/architecture/semantic_public_api_docs_test.dart \
-            --concurrency=1
-
-      - name: Commit repaired branch locally
-        shell: bash
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          git commit -m 'fix(hooks): align core-library distribution contracts'
-
-      - name: Validate clean publication archive
-        shell: bash
-        run: |
-          archive_root="$(mktemp -d)"
-          git archive HEAD | tar -x -C "$archive_root"
-          dart pub get --directory "$archive_root"
-          dart pub publish --dry-run --directory "$archive_root"
-
-      - name: Push repaired hooks branch
-        shell: bash
-        run: git push origin HEAD:agent/add-noir-hooks-package
+          set +e
+          git merge --no-commit --no-ff origin/main
+          status=$?
+          echo "MERGE_EXIT=$status"
+          echo '--- status ---'
+          git status --short
+          echo '--- unmerged paths ---'
+          git diff --name-only --diff-filter=U
+          echo '--- conflict markers ---'
+          git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- . ':!external' || true
+          exit $status
