@@ -62,6 +62,9 @@ ObjectRef<T> useRef<T>(T initialValue) =>
 /// An effect or cleanup must not synchronously request a hook rebuild. Update
 /// an [ObjectRef] for non-rebuilding bookkeeping, or perform state changes
 /// later from a timer, future, stream, or input callback.
+///
+/// This restriction is enforced at [HookState.setState]; it does not alter the
+/// core [State.setState] or `BuildOwner` scheduling contracts.
 void useEffect(Effect effect, [List<Object?>? keys]) =>
     use<Object?>(_EffectHook(effect, keys));
 

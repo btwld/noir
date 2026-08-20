@@ -254,13 +254,14 @@ void main() {
     final host = TestElementHost();
     addTearDown(host.dispose);
     final errors = <Object>[];
+    late ValueNotifier<int> counter;
     var effectCount = 0;
 
     runZonedGuarded(() {
       host.mount(
         HookBuilder(
           builder: (context) {
-            final counter = useState<int>(0);
+            counter = useState<int>(0);
             useEffect(() {
               effectCount++;
               if (effectCount < 3) {
@@ -276,10 +277,79 @@ void main() {
     expect(effectCount, 1);
     expect(errors, hasLength(1));
     expect(errors.single, _effectRebuildError);
+    expect(
+      counter.value,
+      1,
+      reason: 'ValueNotifier commits before its listener requests a rebuild',
+    );
 
     runZonedGuarded(host.pumpBuild, (error, stackTrace) => errors.add(error));
     expect(effectCount, 1, reason: 'no effect-driven rebuild was scheduled');
     expect(errors, hasLength(1));
+  });
+
+  test('useEffect rejects reducer dispatch without changing state', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    late Store<int, int> store;
+    var dispatchFromEffect = false;
+    var reducerCalls = 0;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        store = useReducer<int, int>((state, action) {
+          reducerCalls++;
+          return state + action;
+        }, 0);
+        useEffect(() {
+          if (dispatchFromEffect) {
+            store.dispatch(1);
+          }
+          return null;
+        });
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    dispatchFromEffect = true;
+
+    expect(() => host.update(buildRoot()), throwsA(_effectRebuildError));
+    expect(reducerCalls, 1);
+    expect(store.value, 0, reason: 'the guarded setState callback did not run');
+  });
+
+  test('useEffect allows state changes from a later microtask', () async {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final errors = <Object>[];
+    late Future<void> laterUpdate;
+    var builds = 0;
+    var visibleValue = -1;
+
+    await runZonedGuarded(() async {
+      host.mount(
+        HookBuilder(
+          builder: (context) {
+            builds++;
+            final counter = useState<int>(0);
+            useEffect(() {
+              laterUpdate = Future<void>.microtask(() => counter.value++);
+              return null;
+            }, const <Object?>[]);
+            visibleValue = counter.value;
+            return const Container();
+          },
+        ),
+      );
+
+      await laterUpdate;
+      host.pumpBuild();
+    }, (error, stackTrace) => errors.add(error));
+
+    expect(errors, isEmpty);
+    expect(builds, 2);
+    expect(visibleValue, 1);
   });
 
   test('effect cleanup rebuild failures preserve work and reset the guard', () {

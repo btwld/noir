@@ -134,6 +134,18 @@ the build queue to drain repeated effect-driven rebuilds. Assigning an
 from timers, futures, streams, or input callbacks are also valid because the
 effect has returned by then.
 
+The runtime guard is deliberately owned by the opt-in hooks library. It covers
+rebuilds requested through `HookState`, but does not modify core `State.setState`
+or `BuildOwner`. An effect must therefore also avoid synchronously invoking an
+ordinary state callback; that path does not receive the hook-specific error and
+can still schedule work during the current build drain.
+
+`useState` and other `ValueNotifier`-based sources update their notifier value
+before notifying listeners. When an observed notifier changes during an effect,
+the notifier keeps that value and `ChangeNotifier` reports the rejected hook
+rebuild to the current `Zone`; the guard prevents scheduling but does not roll
+back the notifier mutation.
+
 `useValueChanged` follows the established hooks contract: its callback receives
 the previous input value and the callback's previous result. The first build
 returns `null` without invoking the callback.

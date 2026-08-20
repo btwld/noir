@@ -105,6 +105,9 @@ abstract class HookState<R, H extends Hook<R>> {
   /// case.
   @protected
   void setState(VoidCallback fn) {
+    // Enforce the rule at the hook-owned scheduling boundary. This keeps the
+    // opt-in hooks implementation decoupled from core State and BuildOwner,
+    // while ensuring fn cannot enqueue another hook build from an effect.
     if (EffectExecutionGuard.isActive) {
       throw StateError(
         'HookState.setState() cannot request a rebuild while a useEffect '
