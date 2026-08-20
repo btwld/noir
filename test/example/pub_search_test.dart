@@ -1254,6 +1254,142 @@ void main() {
     },
   );
 
+  test(
+    'picker refresh uses the edited query and preserves the visible topic',
+    () async {
+      final catalog = _FakePubCatalog()
+        ..suggestions.add(const PubSuggestion.topic('terminal', 12))
+        ..searchResults.addAll([
+          _page(['topic_result']),
+          _page(['sorted_topic_result']),
+        ]);
+      final app = createTuiTestApp(
+        PubSearchApp(
+          catalog: catalog,
+          onQuit: () {},
+          initialQuery: '',
+          autoSearch: false,
+        ),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput.typeText('ter');
+        await _waitForCompletionDebounce(app);
+        app.mockInput
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+
+        app.mockInput
+          ..typeText('/')
+          ..typeText('minal')
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+        app.mockInput
+          ..pressArrow(ArrowDirection.down)
+          ..pressEnter();
+        await _settle(app);
+
+        expect(catalog.searchCalls, hasLength(2));
+        expect(catalog.searchCalls.last, (
+          query: 'terminal',
+          page: 1,
+          sort: PackageSort.text,
+          filter: PackageSearchFilter.any,
+          topic: 'terminal',
+        ));
+        expect(_render(app), contains('sorted_topic_result'));
+        expect(_render(app), contains('TOPIC  terminal'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('empty picker refresh keeps focus on its sort launcher', () async {
+    final refresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['kept_result']),
+        refresh.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+
+      refresh.complete(_pageValue([]));
+      await _settle(app);
+
+      expect(_render(app), contains('No packages found'));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+      );
+      expect(_tabStyle(app, '[TEXT ▾]').bold, isTrue);
+      expect(app.captureFrame().cursor.visible, isFalse);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('failed picker refresh keeps focus on its filter launcher', () async {
+    final refresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['kept_result']),
+        refresh.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+
+      refresh.completeError(Exception('refresh unavailable'));
+      await _settle(app);
+
+      expect(_render(app), contains('Search unavailable'));
+      expect(_render(app), contains('kept_result'));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose filter  Tab results  Esc quit'),
+      );
+      expect(_tabStyle(app, '[DART ▾]').bold, isTrue);
+      expect(app.captureFrame().cursor.visible, isFalse);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('Space opens filter picker and one click applies its option', () async {
     final refresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
@@ -2072,24 +2208,13 @@ void main() {
 
       expect(_render(app), contains('No packages found'));
       expect(_render(app), contains('FILTER [DART ▾]'));
-      expect(_render(app), contains('Tab sort'));
-
-      // Empty results return focus to the query. Tab reaches Sort, then
-      // Filter; Enter activates the same cycle action as a left click.
-      app.mockInput.pressTab();
-      await _settle(app);
-      expect(
-        _render(app),
-        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
-      );
-
-      app.mockInput.pressTab();
-      await _settle(app);
       expect(
         _render(app),
         contains('Enter/Space/click choose filter  Tab search  Esc quit'),
       );
 
+      // The empty chooser refresh retains its launcher focus, so Enter opens
+      // the filter picker again without an intervening traversal step.
       app.mockInput.pressEnter();
       await _settle(app);
       app.mockInput
@@ -2141,6 +2266,15 @@ void main() {
 
         expect(_render(app), contains('Search unavailable'));
         expect(_render(app), contains('last_good_package'));
+        expect(
+          _render(app),
+          contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+        );
+        expect(app.captureFrame().cursor.visible, isFalse);
+
+        final query = app.captureFrame().findText('noir').first;
+        app.mockMouse.click(query.x, query.y);
+        await _settle(app);
         expect(app.captureFrame().cursor.visible, isTrue);
 
         app.mockInput.pressEnter();
@@ -2160,7 +2294,7 @@ void main() {
       var quits = 0;
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
-          _page(['noir']),
+          _page(['noir'], hasNextPage: true),
           _page([]),
           _page(['recovered']),
         ]);
@@ -2174,11 +2308,9 @@ void main() {
         await _settle(app);
         app.mockInput
           ..pressTab()
-          ..pressEnter();
-        await _settle(app);
-        app.mockInput
-          ..pressArrow(ArrowDirection.down)
-          ..pressEnter();
+          ..pressTab()
+          ..pressTab()
+          ..typeText('n');
         await _settle(app);
         expect(_render(app), contains('No packages found'));
 
@@ -2508,7 +2640,6 @@ void main() {
         await _settle(app);
 
         app.mockInput
-          ..pressTab()
           ..pressTab()
           ..pressTab()
           ..pressEnter();

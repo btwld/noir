@@ -346,6 +346,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     String? query,
     String? topic,
     bool focusResultsOnSuccess = false,
+    bool preserveFocusOnEmptyOrError = false,
   }) async {
     if (!mounted) return;
     final request = ++_generation;
@@ -390,7 +391,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
           _autofocusResults = true;
         }
       });
-      if (isEmpty) _searchFocus.requestFocus();
+      if (isEmpty && !preserveFocusOnEmptyOrError) {
+        _searchFocus.requestFocus();
+      }
     } on Exception catch (error) {
       if (_isStale(request)) return;
       setState(() {
@@ -400,9 +403,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
         // back rather than naming the page that just failed.
         _page = _searchPage?.page ?? 1;
       });
-      // The error copy advertises Enter as retry, so return ownership to the
-      // query instead of leaving Enter bound to a preserved result row.
-      _searchFocus.requestFocus();
+      // Ordinary error copy advertises Enter as retry, so return ownership to
+      // the query. A chooser refresh retains its launcher ownership instead.
+      if (!preserveFocusOnEmptyOrError) _searchFocus.requestFocus();
     }
   }
 
@@ -501,8 +504,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
   void _refreshForChooser() {
     unawaited(
       _runSearch(
-        query: _searchPageCriteria?.query,
-        topic: _searchPageCriteria?.topic,
+        query: _queryController.text,
+        topic: _visibleTopic,
+        preserveFocusOnEmptyOrError: true,
       ),
     );
   }
