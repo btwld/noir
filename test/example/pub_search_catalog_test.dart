@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pub_api_client/pub_api_client.dart';
 import 'package:test/test.dart';
 
@@ -103,12 +105,17 @@ void main() {
       expect(snapshot.directDependencies['flutter']?.sdk, 'flutter');
       expect(snapshot.directDependencies['flutter']?.constraint, '^3.0.0');
       expect(snapshot.dependencyOverrides['meta']?.constraint, '^1.12.0');
-      expect(snapshot.releases.single.hasDocumentation, isTrue);
+      expect(snapshot.releases.map((release) => release.version), [
+        '0.0.1-alpha.1',
+        '0.0.1-alpha.0',
+      ]);
+      expect(snapshot.releases.first.hasDocumentation, isTrue);
       expect(
-        snapshot.releases.single.archiveUrl,
+        snapshot.releases.first.archiveUrl,
         'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
       );
-      expect(snapshot.releases.single.archiveSha256, 'abc123');
+      expect(snapshot.releases.first.archiveSha256, 'abc123');
+      expect(snapshot.downloadCount30Days, 56);
       expect(snapshot.weeklyDownloads, [4, 9, 16]);
       expect(
         snapshot.majorVersionDownloads.single.versionRange,
@@ -148,7 +155,7 @@ void main() {
       expect(snapshot.weeklyDownloads, isEmpty);
       expect(snapshot.analysisStatus, isNull);
       expect(snapshot.advisories, isEmpty);
-      expect(snapshot.releases.single.hasDocumentation, isNull);
+      expect(snapshot.releases.first.hasDocumentation, isNull);
     });
   });
 
@@ -242,17 +249,148 @@ void main() {
       expect(client.closed, isTrue);
     });
 
+    test('sends sdk and topic filters on search', () async {
+      final client = _FakePubClient();
+      final catalog = PubApiCatalog(client: client);
+
+      await catalog.search(
+        'noir',
+        filter: PackageSearchFilter.flutter,
+        topic: 'terminal',
+      );
+
+      expect(client.searchTags, [PackageTag.sdkFlutter]);
+      expect(client.searchTopics, ['terminal']);
+      catalog.close();
+    });
+
+    test('completes package names and topics from the hosted lists', () async {
+      final client = _FakePubClient();
+      final catalog = PubApiCatalog(client: client);
+
+      expect(await catalog.complete('no'), isEmpty);
+
+      final suggestions = await catalog.complete('noi');
+
+      expect(
+        suggestions.map((item) => (item.kind, item.name, item.packageCount)),
+        [
+          (PubSuggestionKind.package, 'noir', null),
+          (PubSuggestionKind.package, 'noir_router', null),
+        ],
+      );
+
+      final topics = await catalog.complete('term');
+      expect(
+        topics.single,
+        isA<PubSuggestion>()
+            .having((item) => item.kind, 'kind', PubSuggestionKind.topic)
+            .having((item) => item.name, 'name', 'terminal')
+            .having((item) => item.packageCount, 'count', 12),
+      );
+      catalog.close();
+    });
+
+    test('shares in-flight completion dataset requests', () async {
+      final names = Completer<List<String>>();
+      final topics = Completer<Map<String, int>>();
+      final client = _FakePubClient()
+        ..completionNamesRequest = names
+        ..topicCountsRequest = topics;
+      final catalog = PubApiCatalog(client: client);
+
+      final first = catalog.complete('noi');
+      final second = catalog.complete('noir');
+
+      expect(client.packageCompletionCalls, 1);
+      expect(client.topicCompletionCalls, 1);
+
+      names.complete(['noir', 'noir_router']);
+      topics.complete({'terminal': 12});
+      await Future.wait([first, second]);
+
+      expect(client.packageCompletionCalls, 1);
+      expect(client.topicCompletionCalls, 1);
+      catalog.close();
+    });
+
+    test(
+      'contains concurrent completion failures behind one safe error',
+      () async {
+        final client = _FakePubClient()
+          ..completionNamesError = Exception('private names response')
+          ..topicCountsError = Exception('private topics response');
+        final catalog = PubApiCatalog(client: client);
+
+        await expectLater(
+          catalog.complete('noi'),
+          throwsA(
+            isA<PubCatalogException>().having(
+              (error) => '$error',
+              'safe message',
+              'Load name completion failed. Please try again.',
+            ),
+          ),
+        );
+
+        expect(client.packageCompletionCalls, 1);
+        expect(client.topicCompletionCalls, 1);
+        catalog.close();
+      },
+    );
+
+    test('keeps package suggestions when topic completion fails', () async {
+      final client = _FakePubClient()
+        ..topicCountsError = Exception('private topics response');
+      final catalog = PubApiCatalog(client: client);
+
+      final suggestions = await catalog.complete('noi');
+
+      expect(suggestions.map((item) => item.name), ['noir', 'noir_router']);
+      expect(client.packageCompletionCalls, 1);
+      expect(client.topicCompletionCalls, 1);
+
+      client.topicCountsError = null;
+      final retried = await catalog.complete('term');
+      expect(retried.map((item) => item.name), ['terminal']);
+      expect(
+        client.packageCompletionCalls,
+        1,
+        reason: 'the successful package-name dataset stays cached',
+      );
+      expect(client.topicCompletionCalls, 2);
+      catalog.close();
+    });
+
+    test('keeps topic suggestions when package completion fails', () async {
+      final client = _FakePubClient()
+        ..completionNamesError = Exception('private names response');
+      final catalog = PubApiCatalog(client: client);
+
+      final suggestions = await catalog.complete('term');
+
+      expect(suggestions.map((item) => item.name), ['terminal']);
+      expect(client.packageCompletionCalls, 1);
+      expect(client.topicCompletionCalls, 1);
+      catalog.close();
+    });
+
     test('maps every public sort order to the client', () async {
       const expected = {
         PackageSort.top: SearchOrder.top,
         PackageSort.text: SearchOrder.text,
         PackageSort.created: SearchOrder.created,
         PackageSort.updated: SearchOrder.updated,
-        PackageSort.popularity: SearchOrder.popularity,
         PackageSort.downloads: SearchOrder.downloads,
         PackageSort.likes: SearchOrder.like,
         PackageSort.points: SearchOrder.points,
+        PackageSort.trending: SearchOrder.trending,
       };
+      expect(
+        expected.keys.toSet(),
+        PackageSort.values.toSet(),
+        reason: 'every PackageSort value must map to a live SearchOrder',
+      );
       final client = _FakePubClient();
       final catalog = PubApiCatalog(client: client);
 
@@ -364,6 +502,16 @@ final class _FakePubClient extends PubClient {
   String? searchQuery;
   int? searchPage;
   SearchOrder? searchOrder;
+  List<String> searchTags = const [];
+  List<String> searchTopics = const [];
+  List<String> completionNames = const ['noir', 'noir_router', 'http'];
+  Map<String, int> topicCounts = const {'terminal': 12, 'http': 80};
+  Completer<List<String>>? completionNamesRequest;
+  Completer<Map<String, int>>? topicCountsRequest;
+  Exception? completionNamesError;
+  Exception? topicCountsError;
+  int packageCompletionCalls = 0;
+  int topicCompletionCalls = 0;
   String? loadedPackage;
   bool closed = false;
   Exception? searchError;
@@ -382,6 +530,8 @@ final class _FakePubClient extends PubClient {
     searchQuery = query;
     searchPage = page;
     searchOrder = sort;
+    searchTags = tags;
+    searchTopics = topics;
     return const SearchResults(
       packages: [
         PackageResult(package: 'noir'),
@@ -389,6 +539,20 @@ final class _FakePubClient extends PubClient {
       ],
       next: 'https://pub.dev/api/search?page=3&q=terminal+ui',
     );
+  }
+
+  @override
+  Future<List<String>> packageNameCompletion() async {
+    packageCompletionCalls++;
+    if (completionNamesError case final error?) throw error;
+    return completionNamesRequest?.future ?? completionNames;
+  }
+
+  @override
+  Future<Map<String, int>> topicNameCompletion() async {
+    topicCompletionCalls++;
+    if (topicCountsError case final error?) throw error;
+    return topicCountsRequest?.future ?? topicCounts;
   }
 
   @override
@@ -443,14 +607,23 @@ final class _FakePubClient extends PubClient {
 Map<String, dynamic> _packagePayload() => {
   'name': 'noir',
   'latest': _versionPayload(),
-  'versions': [_versionPayload()],
+  'versions': [
+    _versionPayload(
+      version: '0.0.1-alpha.0',
+      published: '2026-08-09T12:00:00.000Z',
+    ),
+    _versionPayload(),
+  ],
   'isDiscontinued': false,
   'replacedBy': null,
   'advisoriesUpdated': '2026-08-17T00:00:00.000Z',
 };
 
-Map<String, dynamic> _versionPayload() => {
-  'version': '0.0.1-alpha.1',
+Map<String, dynamic> _versionPayload({
+  String version = '0.0.1-alpha.1',
+  String published = '2026-08-16T12:00:00.000Z',
+}) => {
+  'version': version,
   'pubspec': {
     'name': 'noir',
     'version': '0.0.1-alpha.1',
@@ -489,7 +662,7 @@ Map<String, dynamic> _versionPayload() => {
   },
   'archive_url': 'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
   'archive_sha256': 'abc123',
-  'published': '2026-08-16T12:00:00.000Z',
+  'published': published,
   'retracted': false,
 };
 
@@ -498,7 +671,6 @@ Map<String, dynamic> _metricsPayload() => {
     'grantedPoints': 160,
     'maxPoints': 160,
     'likeCount': 12,
-    'popularityScore': 0.42,
     'downloadCount30Days': 56,
     'tags': [
       'platform:linux',

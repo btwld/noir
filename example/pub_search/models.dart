@@ -14,9 +14,6 @@ enum PackageSort {
   /// Most recently updated first.
   updated,
 
-  /// Popularity score first.
-  popularity,
-
   /// Download count first.
   downloads,
 
@@ -25,6 +22,54 @@ enum PackageSort {
 
   /// Pub points first.
   points,
+
+  /// Recently accelerating package interest first.
+  trending,
+}
+
+/// API-supported search filters the example can send as pub.dev tags.
+enum PackageSearchFilter {
+  /// No extra tag.
+  any,
+
+  /// `sdk:dart`.
+  dart,
+
+  /// `sdk:flutter`.
+  flutter,
+
+  /// `is:flutter-favorite`.
+  favorite,
+}
+
+/// Kind of a prefix suggestion. Only the payloads pub.dev actually returns.
+enum PubSuggestionKind {
+  /// A package name from `packageNameCompletion` or `search`.
+  package,
+
+  /// A topic name plus package count from `topicNameCompletion`.
+  topic,
+}
+
+/// One completion row. Package rows are names only; topic rows carry a count.
+final class PubSuggestion {
+  /// A package-name suggestion.
+  const PubSuggestion.package(this.name)
+    : kind = PubSuggestionKind.package,
+      packageCount = null;
+
+  /// A topic suggestion with the number of packages using it.
+  const PubSuggestion.topic(this.name, this.packageCount)
+    : kind = PubSuggestionKind.topic;
+
+  /// Package or topic.
+  final PubSuggestionKind kind;
+
+  /// Package name or topic slug.
+  final String name;
+
+  /// Package count for a topic; null for a package name.
+  final int? packageCount;
 }
 
 /// One immutable page of package-name search results.
@@ -38,6 +83,7 @@ final class PackageSearchPage {
     required this.page,
     required List<String> packages,
     required this.hasNextPage,
+    this.message,
   }) : packages = List.unmodifiable(packages);
 
   /// One-based result page.
@@ -48,6 +94,9 @@ final class PackageSearchPage {
 
   /// Whether pub.dev supplied a next-page URL.
   final bool hasNextPage;
+
+  /// Server note when the query could not be fully honoured.
+  final String? message;
 }
 
 /// Documentation and release information for one published version.
@@ -289,10 +338,7 @@ final class PubPackageSnapshot {
     List<String> platforms = const [],
     List<String> runtimes = const [],
     List<String> licenses = const [],
-    List<String> tags = const [],
-    List<String> derivedTags = const [],
     this.publishTo,
-    List<String> ignoredAdvisories = const [],
     List<PackageScreenshotSummary> screenshots = const [],
     Map<String, PackageDependencySummary> directDependencies = const {},
     Map<String, PackageDependencySummary> devDependencies = const {},
@@ -301,11 +347,9 @@ final class PubPackageSnapshot {
     Map<String, String?> executables = const {},
     List<String> workspace = const [],
     this.resolution,
-    List<String> flutterKeys = const [],
     this.grantedPoints,
     this.maxPoints,
     this.likeCount,
-    this.popularityScore,
     this.downloadCount30Days,
     List<PackageRelease> releases = const [],
     this.isDiscontinued = false,
@@ -342,9 +386,6 @@ final class PubPackageSnapshot {
        platforms = List.unmodifiable(platforms),
        runtimes = List.unmodifiable(runtimes),
        licenses = List.unmodifiable(licenses),
-       tags = List.unmodifiable(tags),
-       derivedTags = List.unmodifiable(derivedTags),
-       ignoredAdvisories = List.unmodifiable(ignoredAdvisories),
        screenshots = List.unmodifiable(screenshots),
        directDependencies = Map.unmodifiable(directDependencies),
        devDependencies = Map.unmodifiable(devDependencies),
@@ -352,7 +393,6 @@ final class PubPackageSnapshot {
        transitiveDependencies = List.unmodifiable(transitiveDependencies),
        executables = Map.unmodifiable(executables),
        workspace = List.unmodifiable(workspace),
-       flutterKeys = List.unmodifiable(flutterKeys),
        releases = List.unmodifiable(releases),
        advisories = List.unmodifiable(advisories),
        healthSections = List.unmodifiable(healthSections),
@@ -426,10 +466,7 @@ final class PubPackageSnapshot {
       licenses: metricLicenses.isNotEmpty
           ? metricLicenses
           : _tagValues(tags, 'license:'),
-      tags: tags,
-      derivedTags: pana?.derivedTags ?? const <String>[],
       publishTo: pubspec.publishTo,
-      ignoredAdvisories: pubspec.ignoredAdvisories ?? const <String>[],
       screenshots: (pubspec.screenshots ?? const [])
           .map(
             (screenshot) => PackageScreenshotSummary(
@@ -454,28 +491,24 @@ final class PubPackageSnapshot {
       executables: pubspec.executables,
       workspace: pubspec.workspace ?? const <String>[],
       resolution: pubspec.resolution,
-      flutterKeys:
-          pubspec.flutter?.keys.cast<String>().toList(growable: false) ??
-          const <String>[],
       grantedPoints: effectiveScore?.grantedPoints,
       maxPoints: effectiveScore?.maxPoints,
       likeCount: effectiveScore?.likeCount,
-      popularityScore: effectiveScore?.popularityScore,
       downloadCount30Days: effectiveScore?.downloadCount30Days,
-      releases: package.versions
-          .map<PackageRelease>((release) {
-            final doc = docsByVersion[release.version];
-            return PackageRelease(
-              version: release.version,
-              published: release.published,
-              retracted: release.retracted,
-              archiveUrl: release.archiveUrl,
-              archiveSha256: release.archiveSha256,
-              hasDocumentation: doc?.hasDocumentation,
-              documentationStatus: doc?.status,
-            );
-          })
-          .toList(growable: false),
+      releases: _newestFirst(
+        package.versions.map<PackageRelease>((release) {
+          final doc = docsByVersion[release.version];
+          return PackageRelease(
+            version: release.version,
+            published: release.published,
+            retracted: release.retracted,
+            archiveUrl: release.archiveUrl,
+            archiveSha256: release.archiveSha256,
+            hasDocumentation: doc?.hasDocumentation,
+            documentationStatus: doc?.status,
+          );
+        }),
+      ),
       isDiscontinued:
           options?.isDiscontinued ?? package.isDiscontinued ?? false,
       replacedBy: options?.replacedBy ?? package.replacedBy,
@@ -615,17 +648,8 @@ final class PubPackageSnapshot {
   /// License identifiers and paths.
   final List<String> licenses;
 
-  /// Raw public score tags.
-  final List<String> tags;
-
-  /// Tags derived by pana.
-  final List<String> derivedTags;
-
   /// Pubspec publication target.
   final String? publishTo;
-
-  /// Advisories ignored by the package pubspec.
-  final List<String> ignoredAdvisories;
 
   /// Pubspec screenshots.
   final List<PackageScreenshotSummary> screenshots;
@@ -651,9 +675,6 @@ final class PubPackageSnapshot {
   /// Pub workspace resolution mode.
   final String? resolution;
 
-  /// Top-level Flutter configuration keys.
-  final List<String> flutterKeys;
-
   /// Granted pub points.
   final int? grantedPoints;
 
@@ -662,9 +683,6 @@ final class PubPackageSnapshot {
 
   /// Like count.
   final int? likeCount;
-
-  /// Popularity score.
-  final double? popularityScore;
 
   /// Downloads in the latest 30-day window.
   final int? downloadCount30Days;
@@ -779,6 +797,12 @@ List<int> recentDownloadCounts(List<int> values, {int limit = 26}) {
   }
   final start = values.length > limit ? values.length - limit : 0;
   return List.unmodifiable(values.skip(start));
+}
+
+List<PackageRelease> _newestFirst(Iterable<PackageRelease> releases) {
+  final ordered = releases.toList();
+  ordered.sort((a, b) => b.published.compareTo(a.published));
+  return List.unmodifiable(ordered);
 }
 
 List<PackageVersionDownloads> _versionDownloads(

@@ -61,6 +61,42 @@ void main() {
     }
   });
 
+  test('pub search client is a hosted 4.x pub.dev dependency', () {
+    final pubspec = io.File('pubspec.yaml').readAsStringSync();
+    expect(
+      pubspec,
+      matches(RegExp(r'^  pub_api_client:\s+\^4\.\d+', multiLine: true)),
+    );
+    expect(
+      pubspec,
+      isNot(contains(RegExp(r'pub_api_client:\s*\n\s+git:', multiLine: true))),
+    );
+
+    final lockfile = io.File('pubspec.lock').readAsStringSync();
+    final lockEntry = RegExp(
+      r'  pub_api_client:\n(?:    .*\n)*?    source: (\w+)\n    version: "([^"]+)"',
+    ).firstMatch(lockfile);
+    expect(
+      lockEntry,
+      isNotNull,
+      reason: 'pubspec.lock must list pub_api_client',
+    );
+    expect(lockEntry!.group(1), 'hosted');
+    expect(lockEntry.group(2), startsWith('4.'));
+    expect(lockfile, isNot(contains('github.com/leoafarias/pub_api_client')));
+  });
+
+  test('pub search exposes only the live pub.dev presentation', () {
+    final entrypoint = io.File('example/pub_search.dart').readAsStringSync();
+    final app = io.File('example/pub_search/app.dart').readAsStringSync();
+
+    expect(entrypoint, contains('PubApiCatalog()'));
+    expect(entrypoint, contains('enableMouse: true'));
+    expect(app, contains("Badge(label: 'LIVE PUB.DEV'"));
+    expect(app, isNot(contains('PubSearchConnection')));
+    expect(app, isNot(contains('OFFLINE DATA')));
+  });
+
   test('layout examples exit through the tree exactly once', () async {
     final cases = <(String, Widget)>[
       ('layout basics', const LayoutBasics()),

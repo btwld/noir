@@ -21,7 +21,7 @@ dart run example/main.dart
 | `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
-| `dart run example/pub_search.dart` | Live pub.dev search with a fake-backed catalog seam, paging and sort controls, and a spacious four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
+| `dart run example/pub_search.dart` | Live pub.dev search with an injectable test seam, paging and highlighted sort/filter controls, and a spacious four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
 | `dart run example/theme_demo.dart` | `Theme`/`ThemeData` token palette with `t` to swap presets across the whole subtree. |
 | `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
@@ -38,16 +38,22 @@ dart run example/main.dart
 
 ### Pub search controls
 
-The pub search example starts with a live search for `noir`. Press Enter to
-search or inspect the highlighted package, Tab to move between the query and
-results, and Up/Down to choose a result. With results focused, `s` cycles the
-sort and `n`/`p` move between pages. In package detail, Left/Right or `1`–`4`
-switch between Overview, Versions, Dependencies, and Health. Up/Down,
-PageUp/PageDown, Home/End, and the mouse wheel scroll the active section. `/`
-returns to the query; Escape returns to results and then exits.
+The pub search example starts with a live search for `noir`. After three
+characters, the query shows prefix suggestions from pub.dev name and topic
+completion (names, plus a package count on topics). Press Enter to search or
+inspect the highlighted package, Tab to move between the query and results,
+and Up/Down to choose a result. With results focused, `s` cycles sort, `f`
+cycles the sdk / Flutter-favorite filter, and `n`/`p` move between pages.
+The highlighted SORT and FILTER values can also be clicked.
+Confirming a topic suggestion applies that topic to the next search. In
+package detail, Left/Right, `1`–`4`, or a click on a section tab switch
+between Overview, Versions, Dependencies, and Health. Up/Down, PageUp/PageDown, Home/End, and the mouse
+wheel scroll the active section. `/` returns to the query; Escape returns to
+results and then exits.
 
-The live adapter is isolated behind `PubCatalog`. Tests inject a fake catalog,
-so async, empty, error, retry, paging, and stale-response behavior remain
+The executable always constructs the live `PubApiCatalog`; there is no offline
+data mode. The adapter is isolated behind `PubCatalog` so tests can inject a
+fake and keep async, empty, error, retry, paging, and stale-response behavior
 deterministic without network access.
 
 ## Tips

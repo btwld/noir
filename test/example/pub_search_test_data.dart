@@ -19,8 +19,6 @@ final examplePubPackage = PubPackageSnapshot(
   platforms: const ['linux', 'macos', 'windows'],
   runtimes: const ['native-aot'],
   licenses: const ['BSD-3-Clause (LICENSE)'],
-  tags: const ['platform:linux', 'runtime:native-aot'],
-  derivedTags: const ['sdk:dart'],
   publishTo: 'https://pub.dev',
   screenshots: const [
     PackageScreenshotSummary(
@@ -69,7 +67,6 @@ final examplePubPackage = PubPackageSnapshot(
   grantedPoints: 160,
   maxPoints: 160,
   likeCount: 12,
-  popularityScore: 0.42,
   downloadCount30Days: 56,
   releases: [
     PackageRelease(

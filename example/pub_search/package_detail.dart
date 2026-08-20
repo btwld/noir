@@ -1,5 +1,6 @@
 import 'package:noir/noir.dart';
 
+import '../src/demo_scaffold.dart';
 import 'models.dart';
 import 'theme.dart';
 
@@ -24,6 +25,7 @@ class PubPackageDetail extends StatelessWidget {
   const PubPackageDetail({
     required this.package,
     required this.activeTab,
+    required this.onTabSelected,
     required this.scrollController,
     required this.scrollFocusNode,
     super.key,
@@ -35,6 +37,9 @@ class PubPackageDetail extends StatelessWidget {
   /// Visible tab.
   final PackageDetailTab activeTab;
 
+  /// Selects a section from a tab click.
+  final ValueChanged<PackageDetailTab> onTabSelected;
+
   /// Vertical content position.
   final ScrollController scrollController;
 
@@ -43,164 +48,158 @@ class PubPackageDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final content = switch (activeTab) {
-      PackageDetailTab.overview => _buildOverview(package),
-      PackageDetailTab.versions => _buildVersions(package),
-      PackageDetailTab.dependencies => _buildDependencies(package),
-      PackageDetailTab.health => _buildHealth(package),
+      PackageDetailTab.overview => _buildOverview(package, theme),
+      PackageDetailTab.versions => _buildVersions(package, theme),
+      PackageDetailTab.dependencies => _buildDependencies(package, theme),
+      PackageDetailTab.health => _buildHealth(package, theme),
     };
-    return Container(
-      color: pubBackground,
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('PUB / PACKAGE', style: TextStyle(color: pubMuted)),
-          RichText(
-            text: TextSpan(
+    return DemoScaffold(
+      title: package.name,
+      hint: package.description,
+      titleTrailing: [
+        Text(
+          package.version,
+          style: const TextStyle(
+            color: pubEmphasis,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (package.publisher != null)
+          Text(package.publisher, style: TextStyle(color: theme.textMuted)),
+      ],
+      child: Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'dart pub add ${package.name}',
+              style: const TextStyle(
+                color: pubEmphasis,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            _headlineMetrics(package, theme),
+            const SizedBox(height: 1),
+            Row(
+              spacing: 1,
               children: [
-                TextSpan(
-                  text: package.name,
-                  style: const TextStyle(
-                    color: pubAccent,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextSpan(
-                  text: '  ${package.version}',
-                  style: const TextStyle(color: pubHighlight),
-                ),
+                for (final tab in PackageDetailTab.values)
+                  _tabLabel(tab, theme),
               ],
             ),
-          ),
-          Text(package.description, maxLines: 2),
-          Text(
-            'dart pub add ${package.name}',
-            style: const TextStyle(
-              color: pubHighlight,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 1),
-          _headlineMetrics(package),
-          const SizedBox(height: 1),
-          Row(
-            children: [
-              for (final tab in PackageDetailTab.values)
-                Expanded(child: _tabLabel(tab)),
-            ],
-          ),
-          const SizedBox(height: 1),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: pubPanel,
-                border: Border.all(color: pubBorder),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-              child: ScrollBox(
-                controller: scrollController,
-                focusNode: scrollFocusNode,
-                autofocus: true,
-                scrollbarColor: pubAccent,
-                trackColor: pubBorder,
-                child: content,
+            Expanded(
+              child: DemoPanel(
+                focused: scrollFocusNode.hasFocus,
+                child: ScrollBox(
+                  controller: scrollController,
+                  focusNode: scrollFocusNode,
+                  autofocus: true,
+                  child: content,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 1),
-          const Text(
-            '←→ / 1–4 section   ↑↓ / PgUp/PgDn scroll   / search   Esc results',
-            style: TextStyle(color: pubMuted),
-          ),
-        ],
+            const SizedBox(height: 1),
+            Text(
+              '←→/1–4/click tabs  ↑↓/PgUp/PgDn  / search  Esc back',
+              style: TextStyle(color: theme.textMuted),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _tabLabel(PackageDetailTab tab) {
+  Widget _tabLabel(PackageDetailTab tab, ThemeData theme) {
     final active = tab == activeTab;
-    return Container(
-      color: active ? pubActivePanel : pubBackground,
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Text(
-        '${tab.index + 1} ${tab.name.toUpperCase()}',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: active ? pubAccent : pubMuted,
-          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+    return PointerListener(
+      onPointerDown: (event) {
+        if (event.button == MouseButton.left) onTabSelected(tab);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 1),
+        color: active ? theme.accent : null,
+        child: Text(
+          '${tab.index + 1} ${tab.name.toUpperCase()}',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: active ? theme.accentForeground : theme.textMuted,
+            fontWeight: active ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
   }
 }
 
-Widget _headlineMetrics(PubPackageSnapshot package) => Row(
+Widget _headlineMetrics(PubPackageSnapshot package, ThemeData theme) => Row(
   children: [
     Expanded(
       child: _metric(
+        theme,
         '${package.grantedPoints ?? '—'}/${package.maxPoints ?? '—'}',
         'POINTS',
       ),
     ),
     Expanded(
-      child: _metric(_number(package.downloadCount30Days), 'DOWNLOADS / 30D'),
+      child: _metric(
+        theme,
+        _number(package.downloadCount30Days),
+        'DOWNLOADS 30D',
+      ),
     ),
-    Expanded(child: _metric(_number(package.likeCount), 'LIKES')),
-    Expanded(child: _metric('${package.releases.length}', 'VERSIONS')),
+    Expanded(child: _metric(theme, _number(package.likeCount), 'LIKES')),
+    Expanded(child: _metric(theme, '${package.releases.length}', 'VERSIONS')),
   ],
 );
 
-Widget _metric(String value, String label) => Column(
+Widget _metric(ThemeData theme, String value, String label) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
     Text(
       value,
-      style: const TextStyle(color: pubHighlight, fontWeight: FontWeight.bold),
+      style: const TextStyle(color: pubEmphasis, fontWeight: FontWeight.bold),
     ),
-    Text(label, style: const TextStyle(color: pubMuted)),
+    Text(label, style: TextStyle(color: theme.textMuted)),
   ],
 );
 
-Widget _buildOverview(PubPackageSnapshot package) => Column(
+Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
-    ..._section('PACKAGE PROFILE', [
-      _fact('PUBLISHER', package.publisher),
-      _fact('PUBLISHED', _date(package.published)),
-      _fact('LATEST', package.version),
-      _fact('STATUS', _packageStatus(package)),
-      _fact('REPLACED BY', package.replacedBy),
+    ..._section(theme, 'PACKAGE PROFILE', [
+      _fact(theme, 'PUBLISHED', _date(package.published)),
+      _fact(theme, 'LATEST', package.version),
+      _fact(theme, 'STATUS', _packageStatus(package)),
+      _fact(theme, 'REPLACED BY', package.replacedBy),
     ]),
-    ..._section('RUNS ON', [
-      _fact('PLATFORMS', _joined(package.platforms)),
-      _fact('RUNTIMES', _joined(package.runtimes)),
-      ..._mapFacts(package.environment),
+    ..._section(theme, 'RUNS ON', [
+      _fact(theme, 'PLATFORMS', _joined(package.platforms)),
+      _fact(theme, 'RUNTIMES', _joined(package.runtimes)),
+      ..._mapFacts(theme, package.environment),
     ]),
-    ..._section('DISCOVERY', [
-      _fact('TOPICS', _joined(package.topics)),
-      _fact('LICENSES', _joined(package.licenses)),
-      _fact('SCORE TAGS', _joined(package.tags)),
-      _fact('DERIVED TAGS', _joined(package.derivedTags)),
+    ..._section(theme, 'DISCOVERY', [
+      _fact(theme, 'TOPICS', _joined(package.topics)),
+      _fact(theme, 'LICENSES', _joined(package.licenses)),
     ]),
-    ..._section('LINKS', [
-      _fact('PUB.DEV', package.packageUrl),
-      _fact('CHANGELOG', package.changelogUrl),
-      _fact('HOMEPAGE', package.homepage),
-      _fact('REPOSITORY', package.repository),
-      _fact('ISSUES', package.issueTracker),
-      _fact('DOCUMENTATION', package.documentationUrl),
-      _fact('CONTRIBUTING', package.contributingUrl),
-      _fact('FUNDING', _joined(package.fundingUrls)),
+    ..._section(theme, 'LINKS', [
+      _fact(theme, 'PUB.DEV', package.packageUrl),
+      _fact(theme, 'CHANGELOG', package.changelogUrl),
+      _fact(theme, 'HOMEPAGE', package.homepage),
+      _fact(theme, 'REPOSITORY', package.repository),
+      _fact(theme, 'ISSUES', package.issueTracker),
+      _fact(theme, 'DOCUMENTATION', package.documentationUrl),
+      _fact(theme, 'CONTRIBUTING', package.contributingUrl),
+      _fact(theme, 'FUNDING', _joined(package.fundingUrls)),
     ]),
-    ..._section('PACKAGE CONFIG', [
-      _fact('PUBLISH TO', package.publishTo),
-      _fact('RESOLUTION', package.resolution),
-      _fact('WORKSPACE', _joined(package.workspace)),
-      _fact('FLUTTER KEYS', _joined(package.flutterKeys)),
-      _fact('IGNORED ADVISORIES', _joined(package.ignoredAdvisories)),
-      _fact('EXECUTABLES', _mapValue(package.executables)),
+    ..._section(theme, 'PACKAGE CONFIG', [
+      _fact(theme, 'PUBLISH TO', package.publishTo),
+      _fact(theme, 'RESOLUTION', package.resolution),
+      _fact(theme, 'WORKSPACE', _joined(package.workspace)),
+      _fact(theme, 'EXECUTABLES', _mapValue(package.executables)),
       _fact(
+        theme,
         'SCREENSHOTS',
         package.screenshots.isEmpty
             ? null
@@ -212,53 +211,69 @@ Widget _buildOverview(PubPackageSnapshot package) => Column(
   ],
 );
 
-Widget _buildVersions(PubPackageSnapshot package) => Column(
+Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
-    ..._section('PUBLISHED VERSIONS', [
+    ..._section(theme, 'PUBLISHED VERSIONS', [
       if (package.releases.isEmpty) const Text('Not provided'),
       for (final release in package.releases) ...[
-        Text(
-          '${release.version.padRight(18)} ${_date(release.published)}  '
-          '${release.retracted ? 'RETRACTED' : 'active'}  '
-          '${release.hasDocumentation == null
-              ? 'docs unknown'
-              : release.hasDocumentation!
-              ? 'documented'
-              : 'no docs'}'
-          '${release.documentationStatus == null ? '' : ' (${release.documentationStatus})'}',
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text:
+                    '${release.version.padRight(18)} ${_date(release.published)}  ',
+              ),
+              TextSpan(
+                text: release.retracted ? 'RETRACTED' : 'active',
+                style: release.retracted
+                    ? TextStyle(color: theme.danger)
+                    : null,
+              ),
+              TextSpan(text: '  ${_documentationLabel(release)}'),
+            ],
+          ),
         ),
-        _fact('ARCHIVE', release.archiveUrl),
-        _fact('SHA-256', release.archiveSha256),
+        _fact(theme, 'ARCHIVE', release.archiveUrl),
+        _fact(theme, 'SHA-256', release.archiveSha256),
         const SizedBox(height: 1),
       ],
     ]),
-    ..._section('LATEST ARCHIVE', [
-      _fact('URL', package.archiveUrl),
-      _fact('SHA-256', package.archiveSha256),
-      _fact('RETRACTED', package.retracted ? 'yes' : 'no'),
+    ..._section(theme, 'LATEST ARCHIVE', [
+      _fact(theme, 'URL', package.archiveUrl),
+      _fact(theme, 'SHA-256', package.archiveSha256),
+      _fact(theme, 'RETRACTED', package.retracted ? 'yes' : 'no'),
     ]),
-    ..._section('SCORECARD TARGET', [
-      _fact('PACKAGE VERSION', package.scorecardPackageVersion),
-      _fact('RUNTIME VERSION', package.scorecardRuntimeVersion),
-      _fact('METRICS UPDATED', _dateTime(package.metricsUpdated)),
+    ..._section(theme, 'SCORECARD TARGET', [
+      _fact(theme, 'PACKAGE VERSION', package.scorecardPackageVersion),
+      _fact(theme, 'RUNTIME VERSION', package.scorecardRuntimeVersion),
+      _fact(theme, 'METRICS UPDATED', _dateTime(package.metricsUpdated)),
     ]),
   ],
 );
 
-Widget _buildDependencies(PubPackageSnapshot package) => Column(
+Widget _buildDependencies(
+  PubPackageSnapshot package,
+  ThemeData theme,
+) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
     ..._section(
+      theme,
       'DIRECT DEPENDENCIES',
-      _dependencyFacts(package.directDependencies),
+      _dependencyFacts(theme, package.directDependencies),
     ),
-    ..._section('DEV DEPENDENCIES', _dependencyFacts(package.devDependencies)),
     ..._section(
-      'DEPENDENCY OVERRIDES',
-      _dependencyFacts(package.dependencyOverrides),
+      theme,
+      'DEV DEPENDENCIES',
+      _dependencyFacts(theme, package.devDependencies),
     ),
-    ..._section('ALL ANALYZED DEPENDENCIES', [
+    ..._section(
+      theme,
+      'DEPENDENCY OVERRIDES',
+      _dependencyFacts(theme, package.dependencyOverrides),
+    ),
+    ..._section(theme, 'ALL ANALYZED DEPENDENCIES', [
       Text(_joined(package.transitiveDependencies) ?? 'Not provided'),
     ]),
     // Executables, workspace members, and resolution are pubspec configuration
@@ -266,59 +281,67 @@ Widget _buildDependencies(PubPackageSnapshot package) => Column(
   ],
 );
 
-Widget _buildHealth(PubPackageSnapshot package) {
+Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
   final recentWeekly = recentDownloadCounts(package.weeklyDownloads);
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      ..._section('WEEKLY DOWNLOADS', [
+      ..._section(theme, 'PUB SCORE', [
+        Row(
+          spacing: 1,
+          children: [
+            _fact(
+              theme,
+              'POINTS',
+              '${package.grantedPoints ?? '—'} / ${package.maxPoints ?? '—'}',
+            )!,
+            if (package.grantedPoints != null &&
+                package.maxPoints != null &&
+                package.maxPoints! > 0)
+              ProgressBar(
+                value: package.grantedPoints! / package.maxPoints!,
+                width: 24,
+              ),
+          ],
+        ),
+        _fact(theme, 'LIKES', _number(package.likeCount)),
+        _fact(theme, 'DOWNLOADS / 30D', _number(package.downloadCount30Days)),
+      ]),
+      ..._section(theme, 'WEEKLY DOWNLOADS', [
         Text(
           downloadSparkline(recentWeekly),
-          style: const TextStyle(color: pubAccent, fontWeight: FontWeight.bold),
+          style: TextStyle(color: theme.accent, fontWeight: FontWeight.bold),
         ),
         _fact(
+          theme,
           'HISTORY',
           package.weeklyDownloads.isEmpty
               ? null
               : '${package.weeklyDownloads.length} weeks',
         ),
-        _fact('RECENT ${recentWeekly.length}', _joinedInts(recentWeekly)),
-        _fact('NEWEST WEEK', _date(package.weeklyDownloadsNewestDate)),
-        ..._rangeFacts('MAJOR', package.majorVersionDownloads),
-        ..._rangeFacts('MINOR', package.minorVersionDownloads),
-        ..._rangeFacts('PATCH', package.patchVersionDownloads),
+        _fact(theme, 'NEWEST WEEK', _date(package.weeklyDownloadsNewestDate)),
+        ..._rangeFacts(theme, 'MAJOR', package.majorVersionDownloads),
+        ..._rangeFacts(theme, 'MINOR', package.minorVersionDownloads),
+        ..._rangeFacts(theme, 'PATCH', package.patchVersionDownloads),
       ]),
-      ..._section('PUB SCORE', [
+      ..._section(theme, 'ANALYSIS', [
+        _fact(theme, 'PANA', package.analysisStatus),
+        _fact(theme, 'DARTDOC', package.dartdocStatus),
+        _fact(theme, 'TASK', package.taskStatus),
         _fact(
-          'POINTS',
-          '${package.grantedPoints ?? '—'} / ${package.maxPoints ?? '—'}',
-        ),
-        _fact('LIKES', _number(package.likeCount)),
-        _fact('DOWNLOADS / 30D', _number(package.downloadCount30Days)),
-        _fact(
-          'POPULARITY',
-          package.popularityScore == null
-              ? null
-              : '${(package.popularityScore! * 100).round()}%',
-        ),
-      ]),
-      ..._section('ANALYSIS', [
-        _fact('PANA', package.analysisStatus),
-        _fact('DARTDOC', package.dartdocStatus),
-        _fact('TASK', package.taskStatus),
-        _fact(
+          theme,
           'RESULT POINTS',
           package.analysisGrantedPoints == null &&
                   package.analysisMaxPoints == null
               ? null
               : '${package.analysisGrantedPoints ?? '—'} / ${package.analysisMaxPoints ?? '—'}',
         ),
-        _fact('ANALYZED', _dateTime(package.analysisUpdated)),
-        _fact('PANA VERSION', package.panaVersion),
-        _fact('SDK', package.analyzedSdkVersion),
-        _fact('FLUTTER', package.analyzedFlutterVersion),
+        _fact(theme, 'ANALYZED', _dateTime(package.analysisUpdated)),
+        _fact(theme, 'PANA VERSION', package.panaVersion),
+        _fact(theme, 'SDK', package.analyzedSdkVersion),
+        _fact(theme, 'FLUTTER', package.analyzedFlutterVersion),
       ]),
-      ..._section('REPORT SECTIONS', [
+      ..._section(theme, 'REPORT SECTIONS', [
         if (package.healthSections.isEmpty) const Text('Not provided'),
         for (final section in package.healthSections)
           Text(
@@ -327,88 +350,112 @@ Widget _buildHealth(PubPackageSnapshot package) {
             '${section.summary}',
           ),
       ]),
-      ..._section('SECURITY', [
-        _fact('UPDATED', _dateTime(package.advisoriesUpdated)),
+      ..._section(theme, 'SECURITY', [
+        _fact(theme, 'UPDATED', _dateTime(package.advisoriesUpdated)),
         if (package.advisories.isEmpty) const Text('No advisories reported'),
         for (final advisory in package.advisories) ...[
           Text(
             '${advisory.id} — ${advisory.summary ?? 'No summary'}',
-            style: const TextStyle(color: pubHighlight),
+            style: TextStyle(color: theme.warning),
           ),
-          _fact('DETAILS', advisory.details),
-          _fact('AFFECTED', _joined(advisory.affectedVersions)),
-          _fact('URL', advisory.url),
+          _fact(theme, 'DETAILS', advisory.details),
+          _fact(theme, 'AFFECTED', _joined(advisory.affectedVersions)),
+          _fact(theme, 'URL', advisory.url),
         ],
       ]),
-      ..._section('DIAGNOSTICS', [
-        _fact('URL PROBLEMS', _joined(package.urlProblems)),
-        _fact('SCREENSHOT CHECKS', _joined(package.analysisScreenshots)),
+      ..._section(theme, 'DIAGNOSTICS', [
+        _fact(theme, 'URL PROBLEMS', _joined(package.urlProblems)),
+        _fact(theme, 'SCREENSHOT CHECKS', _joined(package.analysisScreenshots)),
       ]),
-      ..._section('REPOSITORY', [
-        _fact('PROVIDER', package.repositorySummary?.provider),
-        _fact('HOST', package.repositorySummary?.host),
-        _fact('REPOSITORY', package.repositorySummary?.repository),
-        _fact('BRANCH', package.repositorySummary?.branch),
-        _fact('UNLISTED', package.isUnlisted ? 'yes' : 'no'),
-        _fact('DISCONTINUED', package.isDiscontinued ? 'yes' : 'no'),
+      ..._section(theme, 'REPOSITORY', [
+        _fact(theme, 'PROVIDER', package.repositorySummary?.provider),
+        _fact(theme, 'HOST', package.repositorySummary?.host),
+        _fact(theme, 'REPOSITORY', package.repositorySummary?.repository),
+        _fact(theme, 'BRANCH', package.repositorySummary?.branch),
+        _fact(theme, 'UNLISTED', package.isUnlisted ? 'yes' : 'no'),
+        _fact(theme, 'DISCONTINUED', package.isDiscontinued ? 'yes' : 'no'),
       ]),
     ],
   );
 }
 
-List<Widget> _section(String title, List<Widget> children) => [
-  Text(
-    title,
-    style: const TextStyle(color: pubMuted, fontWeight: FontWeight.bold),
-  ),
-  const SizedBox(height: 1),
-  ...children,
-  const SizedBox(height: 1),
-];
+List<Widget> _section(ThemeData theme, String title, List<Widget?> children) {
+  final items = children.whereType<Widget>().toList(growable: false);
+  if (items.isEmpty) return const [];
+  return [
+    Text(
+      title,
+      style: TextStyle(color: theme.textMuted, fontWeight: FontWeight.bold),
+    ),
+    ...items,
+    const SizedBox(height: 1),
+  ];
+}
 
-Widget _fact(String label, String? value) => RichText(
-  text: TextSpan(
-    children: [
-      TextSpan(
-        text: '${label.padRight(19)} ',
-        style: const TextStyle(color: pubMuted),
-      ),
-      TextSpan(text: _available(value)),
-    ],
-  ),
-);
+Widget? _fact(ThemeData theme, String label, String? value) {
+  if (value == null || value.isEmpty) return null;
+  return RichText(
+    text: TextSpan(
+      children: [
+        TextSpan(
+          text: '${label.padRight(16)} ',
+          style: TextStyle(color: theme.textMuted),
+        ),
+        TextSpan(text: value),
+      ],
+    ),
+  );
+}
 
-List<Widget> _mapFacts(Map<String, String> values) => values.isEmpty
+List<Widget> _mapFacts(ThemeData theme, Map<String, String> values) =>
+    values.isEmpty
     ? const [Text('Not provided')]
     : [
         for (final entry in values.entries)
-          _fact(entry.key.toUpperCase(), entry.value),
+          ?_fact(theme, entry.key.toUpperCase(), entry.value),
       ];
 
-List<Widget> _dependencyFacts(Map<String, PackageDependencySummary> values) =>
-    values.isEmpty
+List<Widget> _dependencyFacts(
+  ThemeData theme,
+  Map<String, PackageDependencySummary> values,
+) => values.isEmpty
     ? const [Text('None')]
     : [
         for (final entry in values.entries)
-          _fact(entry.key, entry.value.displayValue),
+          ?_fact(theme, entry.key, entry.value.displayValue),
       ];
 
-List<Widget> _rangeFacts(String label, List<PackageVersionDownloads> values) =>
-    values
-        .map((value) {
-          final counts = recentDownloadCounts(value.counts);
-          return _fact(
-            '$label ${value.versionRange}',
-            '${downloadSparkline(counts)}  ${_joinedInts(counts)}',
-          );
-        })
-        .toList(growable: false);
+List<Widget> _rangeFacts(
+  ThemeData theme,
+  String label,
+  List<PackageVersionDownloads> values,
+) => [
+  for (final value in values)
+    ?_fact(
+      theme,
+      '$label ${value.versionRange}',
+      downloadSparkline(recentDownloadCounts(value.counts)),
+    ),
+];
 
 String _packageStatus(PubPackageSnapshot package) {
   if (package.isDiscontinued) return 'discontinued';
   if (package.isUnlisted) return 'unlisted';
   if (package.retracted) return 'latest release retracted';
   return 'active';
+}
+
+String _documentationLabel(PackageRelease release) {
+  final status = release.documentationStatus?.trim();
+  final availability = switch (release.hasDocumentation) {
+    true => 'documented',
+    false => 'no docs',
+    null => 'docs unknown',
+  };
+  if (status == null || status.isEmpty) return availability;
+  if (release.hasDocumentation == null) return status;
+  if (status.toLowerCase() == availability) return availability;
+  return '$availability ($status)';
 }
 
 String _number(num? value) {
@@ -424,18 +471,23 @@ String _number(num? value) {
 String? _joined(List<String> values) =>
     values.isEmpty ? null : values.join(', ');
 
-String? _joinedInts(List<int> values) =>
-    values.isEmpty ? null : values.map(_number).join(', ');
-
 String? _mapValue(Map<String, String?> values) => values.isEmpty
     ? null
     : values.entries
           .map((entry) => '${entry.key}: ${entry.value ?? entry.key}')
           .join(', ');
 
-String _available(String? value) =>
-    value == null || value.isEmpty ? 'Not provided' : value;
+String? _date(DateTime? value) =>
+    value?.toUtc().toIso8601String().split('T').first;
 
-String? _date(DateTime? value) => value?.toIso8601String().split('T').first;
-
-String? _dateTime(DateTime? value) => value?.toUtc().toIso8601String();
+String? _dateTime(DateTime? value) {
+  if (value == null) return null;
+  final utc = value.toUtc();
+  final date = _date(utc)!;
+  if (utc.hour == 0 && utc.minute == 0 && utc.second == 0) {
+    return date;
+  }
+  final hours = utc.hour.toString().padLeft(2, '0');
+  final minutes = utc.minute.toString().padLeft(2, '0');
+  return '$date $hours:$minutes UTC';
+}

@@ -4,6 +4,7 @@ import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../../example/pub_search/package_detail.dart';
+import '../../example/pub_search/theme.dart';
 import '../example/pub_search_test_data.dart';
 import '../helpers/golden_testing.dart';
 
@@ -35,11 +36,15 @@ void main() {
 
     test('quiet tabs overview', () async {
       await tester.expectGolden(
-        PubPackageDetail(
-          package: examplePubPackage,
-          activeTab: PackageDetailTab.overview,
-          scrollController: scrollController,
-          scrollFocusNode: scrollFocusNode,
+        Theme(
+          data: pubTheme,
+          child: PubPackageDetail(
+            package: examplePubPackage,
+            activeTab: PackageDetailTab.overview,
+            onTabSelected: (_) {},
+            scrollController: scrollController,
+            scrollFocusNode: scrollFocusNode,
+          ),
         ),
         'pub_search_detail',
         updateGoldens: _updateGoldens,
