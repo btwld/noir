@@ -35,12 +35,82 @@ enum PubLoadState {
   error,
 }
 
+enum _SearchChooser { sort, filter }
+
+const _sortOptions = <SelectOption<PackageSort>>[
+  SelectOption(
+    name: 'TOP',
+    description: 'Pub.dev ranking',
+    value: PackageSort.top,
+  ),
+  SelectOption(
+    name: 'TEXT',
+    description: 'Text relevance',
+    value: PackageSort.text,
+  ),
+  SelectOption(
+    name: 'CREATED',
+    description: 'Newest packages',
+    value: PackageSort.created,
+  ),
+  SelectOption(
+    name: 'UPDATED',
+    description: 'Recently updated',
+    value: PackageSort.updated,
+  ),
+  SelectOption(
+    name: 'DOWNLOADS',
+    description: 'Most downloads',
+    value: PackageSort.downloads,
+  ),
+  SelectOption(
+    name: 'LIKES',
+    description: 'Most likes',
+    value: PackageSort.likes,
+  ),
+  SelectOption(
+    name: 'POINTS',
+    description: 'Most pub points',
+    value: PackageSort.points,
+  ),
+  SelectOption(
+    name: 'TRENDING',
+    description: 'Trending now',
+    value: PackageSort.trending,
+  ),
+];
+
+const _filterOptions = <SelectOption<PackageSearchFilter>>[
+  SelectOption(
+    name: 'ANY',
+    description: 'All packages',
+    value: PackageSearchFilter.any,
+  ),
+  SelectOption(
+    name: 'DART',
+    description: 'Dart SDK',
+    value: PackageSearchFilter.dart,
+  ),
+  SelectOption(
+    name: 'FLUTTER',
+    description: 'Flutter SDK',
+    value: PackageSearchFilter.flutter,
+  ),
+  SelectOption(
+    name: 'FAVORITE',
+    description: 'Flutter favorites',
+    value: PackageSearchFilter.favorite,
+  ),
+];
+
 typedef _SearchCriteria = ({
   PackageSearchFilter filter,
   String query,
   PackageSort sort,
   String? topic,
 });
+
+const _completionDebounceDuration = Duration(milliseconds: 300);
 
 /// Search-first pub.dev browser with a separate package detail view.
 class PubSearchApp extends StatefulWidget {
@@ -75,6 +145,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   final _resultsFocus = FocusNode(debugLabel: 'pub results');
   final _sortFocus = FocusNode(debugLabel: 'pub sort');
   final _filterFocus = FocusNode(debugLabel: 'pub filter');
+  final _chooserFocus = FocusNode(debugLabel: 'pub chooser');
   final _detailStatusFocus = FocusNode(debugLabel: 'pub detail status');
   final _detailFocus = FocusNode(debugLabel: 'pub detail');
   final _detailScroll = ScrollController();
@@ -88,10 +159,14 @@ class _PubSearchAppState extends State<PubSearchApp> {
   PubPackageSnapshot? _package;
   PackageSort _sort = PackageSort.top;
   PackageSearchFilter _filter = PackageSearchFilter.any;
+  _SearchChooser? _chooser;
+  var _chooserHighlightedIndex = 0;
   _SearchCriteria? _requestedCriteria;
   _SearchCriteria? _searchPageCriteria;
   var _suggestions = const <PubSuggestion>[];
   var _showSuggestions = false;
+  Timer? _completionDebounce;
+  var _completionLoading = false;
   var _completeGeneration = 0;
   PackageDetailTab _activeTab = PackageDetailTab.overview;
   String? _selectedPackage;
@@ -118,6 +193,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _resultsFocus.addListener(_handleFocusChanged);
     _sortFocus.addListener(_handleFocusChanged);
     _filterFocus.addListener(_handleFocusChanged);
+    _chooserFocus.addListener(_handleChooserFocusChanged);
     _detailFocus.addListener(_handleFocusChanged);
     // A queued auto-search is already a request, so the first paint is the
     // searching surface rather than an idle prompt against a prefilled query.
@@ -141,11 +217,13 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _package = null;
     _sort = PackageSort.top;
     _filter = PackageSearchFilter.any;
+    _chooser = null;
+    _chooserHighlightedIndex = 0;
     _requestedCriteria = null;
     _searchPageCriteria = null;
     _suggestions = const [];
     _showSuggestions = false;
-    _completeGeneration++;
+    _invalidateCompletion();
     _activeTab = PackageDetailTab.overview;
     _selectedPackage = null;
     _selectedIndex = 0;
@@ -166,6 +244,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   @override
   void dispose() {
     _generation++;
+    _invalidateCompletion();
     widget.catalog.close();
     _queryController.removeListener(_handleQueryChanged);
     _queryController.dispose();
@@ -174,11 +253,13 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _resultsFocus.removeListener(_handleFocusChanged);
     _sortFocus.removeListener(_handleFocusChanged);
     _filterFocus.removeListener(_handleFocusChanged);
+    _chooserFocus.removeListener(_handleChooserFocusChanged);
     _detailFocus.removeListener(_handleFocusChanged);
     _searchFocus.dispose();
     _resultsFocus.dispose();
     _sortFocus.dispose();
     _filterFocus.dispose();
+    _chooserFocus.dispose();
     _detailStatusFocus.dispose();
     _detailFocus.dispose();
     _detailScroll.dispose();
@@ -197,34 +278,57 @@ class _PubSearchAppState extends State<PubSearchApp> {
     setState(() {});
   }
 
+  void _handleChooserFocusChanged() {
+    if (!mounted || _chooserFocus.hasFocus || _chooser == null) return;
+    _cancelChooser();
+  }
+
   void _handleQueryChanged() {
     final text = _queryController.text;
     if (text == _completionText) return;
     _completionText = text;
-    unawaited(_runComplete(text));
+    _scheduleComplete(text);
   }
 
-  Future<void> _runComplete(String prefix) async {
-    final request = ++_completeGeneration;
+  void _scheduleComplete(String prefix) {
+    _invalidateCompletion();
     final needle = prefix.trim();
+    setState(() {});
     if (needle.length < 3) {
-      if (!mounted || request != _completeGeneration) return;
-      setState(() {
-        _suggestions = const [];
-        _showSuggestions = false;
-      });
       return;
     }
+
+    final request = _completeGeneration;
+    _completionDebounce = Timer(_completionDebounceDuration, () {
+      _completionDebounce = null;
+      if (!mounted || request != _completeGeneration) return;
+      setState(() => _completionLoading = true);
+      unawaited(_runComplete(prefix, request));
+    });
+  }
+
+  void _invalidateCompletion() {
+    _completionDebounce?.cancel();
+    _completionDebounce = null;
+    _completeGeneration++;
+    _completionLoading = false;
+    _suggestions = const [];
+    _showSuggestions = false;
+  }
+
+  Future<void> _runComplete(String prefix, int request) async {
     try {
       final items = await widget.catalog.complete(prefix);
       if (!mounted || request != _completeGeneration) return;
       setState(() {
+        _completionLoading = false;
         _suggestions = items;
         _showSuggestions = items.isNotEmpty && _searchFocus.hasFocus;
       });
     } on Exception {
       if (!mounted || request != _completeGeneration) return;
       setState(() {
+        _completionLoading = false;
         _suggestions = const [];
         _showSuggestions = false;
       });
@@ -251,7 +355,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       sort: _sort,
       topic: topic,
     );
-    _completeGeneration++;
+    _invalidateCompletion();
     final keepResultsFocus = _resultsFocus.hasFocus;
     setState(() {
       _view = PubSearchView.search;
@@ -315,6 +419,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Future<void> _loadPackage(String name) async {
     final request = ++_generation;
+    _invalidateCompletion();
     setState(() {
       _view = PubSearchView.detail;
       // Opening detail increments generation and abandons the refresh, so
@@ -354,37 +459,58 @@ class _PubSearchAppState extends State<PubSearchApp> {
     }
   }
 
-  void _cycleSort() {
-    final focusResults =
-        _sortFocus.hasFocus ||
-        _filterFocus.hasFocus ||
-        (_searchPage?.packages.isEmpty ?? false);
-    final next = (_sort.index + 1) % PackageSort.values.length;
-    setState(() => _sort = PackageSort.values[next]);
+  void _openChooser(_SearchChooser chooser) {
+    if (_chooser == chooser) return;
+    setState(() {
+      _chooser = chooser;
+      _chooserHighlightedIndex = switch (chooser) {
+        _SearchChooser.sort => _sort.index,
+        _SearchChooser.filter => _filter.index,
+      };
+    });
+  }
+
+  void _cancelChooser() {
+    final chooser = _chooser;
+    if (chooser == null) return;
+    setState(() => _chooser = null);
+    final launcher = _chooserLauncherFocus(chooser);
+    if (launcher.isAttached) launcher.requestFocus();
+  }
+
+  void _confirmSort(PackageSort sort) {
+    final changed = sort != _sort;
+    setState(() {
+      _chooser = null;
+      _sort = sort;
+    });
+    _sortFocus.requestFocus();
+    if (changed) _refreshForChooser();
+  }
+
+  void _confirmFilter(PackageSearchFilter filter) {
+    final changed = filter != _filter;
+    setState(() {
+      _chooser = null;
+      _filter = filter;
+    });
+    _filterFocus.requestFocus();
+    if (changed) _refreshForChooser();
+  }
+
+  void _refreshForChooser() {
     unawaited(
       _runSearch(
         query: _searchPageCriteria?.query,
         topic: _searchPageCriteria?.topic,
-        focusResultsOnSuccess: focusResults,
       ),
     );
   }
 
-  void _cycleFilter() {
-    final focusResults =
-        _sortFocus.hasFocus ||
-        _filterFocus.hasFocus ||
-        (_searchPage?.packages.isEmpty ?? false);
-    final next = (_filter.index + 1) % PackageSearchFilter.values.length;
-    setState(() => _filter = PackageSearchFilter.values[next]);
-    unawaited(
-      _runSearch(
-        query: _searchPageCriteria?.query,
-        topic: _searchPageCriteria?.topic,
-        focusResultsOnSuccess: focusResults,
-      ),
-    );
-  }
+  FocusNode _chooserLauncherFocus(_SearchChooser chooser) => switch (chooser) {
+    _SearchChooser.sort => _sortFocus,
+    _SearchChooser.filter => _filterFocus,
+  };
 
   void _nextPage() {
     final page = _searchPage;
@@ -435,6 +561,14 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
+    if (_chooser != null) {
+      if (event.logicalKey == LogicalKeyboardKey.escape ||
+          event.logicalKey == LogicalKeyboardKey.tab) {
+        _cancelChooser();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       if (_view == PubSearchView.detail) {
         _returnToResults();
@@ -483,10 +617,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
     if (_showSuggestions) return KeyEventResult.ignored;
     switch (event.character) {
       case 's':
-        _cycleSort();
+        _openChooser(_SearchChooser.sort);
         return KeyEventResult.handled;
       case 'f':
-        _cycleFilter();
+        _openChooser(_SearchChooser.filter);
         return KeyEventResult.handled;
       case 'n':
         _nextPage();
@@ -509,11 +643,17 @@ class _PubSearchAppState extends State<PubSearchApp> {
   );
 
   String get _searchHint {
+    if (_chooser != null) {
+      return '↑↓ choose  Enter/click apply  Tab/Esc cancel';
+    }
     if (_sortFocus.hasFocus) {
-      return 'Enter/Space cycle sort  Tab filter  Esc quit';
+      return 'Enter/Space/click choose sort  Tab filter  Esc quit';
     }
     if (_filterFocus.hasFocus) {
-      return 'Enter/Space cycle filter  Tab search  Esc quit';
+      final next = _searchPage?.packages.isNotEmpty ?? false
+          ? 'results'
+          : 'search';
+      return 'Enter/Space/click choose filter  Tab $next  Esc quit';
     }
     if (_resultsFocus.hasFocus && _showSuggestions && _suggestions.isNotEmpty) {
       return '↑↓ select  Enter/click choose  / search  Esc quit';
@@ -527,10 +667,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
         if (_searchState == PubLoadState.idle) {
           return 'Enter search   Tab results   Esc quit';
         }
-        return 'Enter search  Tab results  Click SORT/FILTER  Esc quit';
+        return 'Enter search  Tab sort  Esc quit';
       }
       if (_searchPage != null) {
-        return 'Enter search  Tab controls  Esc quit';
+        return 'Enter search  Tab sort  Esc quit';
       }
       return 'Enter search   Esc quit';
     }
@@ -543,13 +683,13 @@ class _PubSearchAppState extends State<PubSearchApp> {
       return [
         '↑↓ select',
         'Enter/click',
-        's/f',
+        's/f pick',
         pageHint,
-        '/ search',
+        '/ query',
         'Esc',
       ].join('  ');
     }
-    return '↑↓ select  Enter/click  / search  s/f/click  Esc quit';
+    return '↑↓ select  Enter/click open  s/f pick  / query  Esc';
   }
 
   String? get _pageCommandHint {
@@ -576,10 +716,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
     return DemoScaffold(
       title: 'PUB / FIND',
       hint: _searchHint,
-      titleTrailing: [
-        const Badge(label: 'LIVE PUB.DEV', variant: BadgeVariant.success),
-        if (_searchState == PubLoadState.loading) const Spinner(),
-      ],
       child: Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -587,12 +723,20 @@ class _PubSearchAppState extends State<PubSearchApp> {
             DemoPanel(
               title: 'SEARCH',
               focused: _searchFocus.hasFocus,
-              child: TextInput(
-                controller: _queryController,
-                focusNode: _searchFocus,
-                autofocus: _autofocusSearch,
-                placeholder: 'package name or pub.dev search expression',
-                onSubmit: _submitSearch,
+              child: Row(
+                spacing: 1,
+                children: [
+                  Expanded(
+                    child: TextInput(
+                      controller: _queryController,
+                      focusNode: _searchFocus,
+                      autofocus: _autofocusSearch,
+                      placeholder: 'package name or pub.dev search expression',
+                      onSubmit: _submitSearch,
+                    ),
+                  ),
+                  if (_completionLoading) const Spinner(),
+                ],
               ),
             ),
             if (_showSearchControls) ...[
@@ -600,21 +744,19 @@ class _PubSearchAppState extends State<PubSearchApp> {
               Row(
                 spacing: 3,
                 children: [
-                  _cycleControl(
+                  _chooserLauncher(
                     theme: theme,
                     label: 'SORT',
                     value: _sort.name,
-                    focusable: _searchPage!.packages.isEmpty,
                     focusNode: _sortFocus,
-                    onActivate: _cycleSort,
+                    onActivate: () => _openChooser(_SearchChooser.sort),
                   ),
-                  _cycleControl(
+                  _chooserLauncher(
                     theme: theme,
                     label: 'FILTER',
                     value: _filter.name,
-                    focusable: _searchPage!.packages.isEmpty,
                     focusNode: _filterFocus,
-                    onActivate: _cycleFilter,
+                    onActivate: () => _openChooser(_SearchChooser.filter),
                   ),
                   if (topic != null)
                     Expanded(
@@ -650,61 +792,33 @@ class _PubSearchAppState extends State<PubSearchApp> {
     );
   }
 
-  Widget _cycleControl({
+  Widget _chooserLauncher({
     required ThemeData theme,
     required String label,
     required String value,
-    required bool focusable,
     required FocusNode focusNode,
     required VoidCallback onActivate,
-  }) {
-    final plainLabel = Text(label, style: TextStyle(color: theme.textMuted));
-    if (focusable) {
-      return Row(
-        spacing: 1,
-        children: [
-          PointerListener(
-            onPointerDown: (event) {
-              if (event.button == MouseButton.left) onActivate();
-            },
-            child: plainLabel,
-          ),
-          Button(
-            label: value.toUpperCase(),
-            focusNode: focusNode,
-            onPressed: onActivate,
-          ),
-        ],
-      );
-    }
-    return PointerListener(
-      onPointerDown: (event) {
-        if (event.button == MouseButton.left) onActivate();
-      },
-      child: Row(
-        spacing: 1,
-        children: [
-          plainLabel,
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 1),
-            color: theme.accent,
-            child: Text(
-              value.toUpperCase(),
-              style: TextStyle(
-                color: theme.accentForeground,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+  }) => Row(
+    children: [
+      Text(label, style: TextStyle(color: theme.textMuted)),
+      Button(
+        label: '[${value.toUpperCase()} ▾]',
+        focusNode: focusNode,
+        onPressed: onActivate,
       ),
-    );
-  }
+    ],
+  );
 
   Widget _buildResults(BuildContext context) => DemoPanel(
-    title: _showSuggestions ? 'SUGGESTIONS' : 'RESULTS',
-    focused: _resultsFocus.hasFocus,
-    child: _showSuggestions && _suggestions.isNotEmpty
+    title: switch (_chooser) {
+      _SearchChooser.sort => 'CHOOSE SORT',
+      _SearchChooser.filter => 'CHOOSE FILTER',
+      null => _showSuggestions ? 'SUGGESTIONS' : 'RESULTS',
+    },
+    focused: _chooser == null ? _resultsFocus.hasFocus : _chooserFocus.hasFocus,
+    child: _chooser != null
+        ? _buildChooser()
+        : _showSuggestions && _suggestions.isNotEmpty
         ? _buildSuggestionList()
         : switch (_searchState) {
             PubLoadState.idle => Text(
@@ -719,6 +833,49 @@ class _PubSearchAppState extends State<PubSearchApp> {
             PubLoadState.error => _buildSearchError(context),
             PubLoadState.ready => _buildResultList(context),
           },
+  );
+
+  Widget _buildChooser() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (_searchState == PubLoadState.loading) ...[
+        const Row(spacing: 1, children: [Spinner(), Text('Updating results…')]),
+        const SizedBox(height: 1),
+      ],
+      Expanded(
+        child: switch (_chooser!) {
+          _SearchChooser.sort => Select<PackageSort>(
+            focusNode: _chooserFocus,
+            autofocus: true,
+            selectedIndex: _chooserHighlightedIndex,
+            options: _sortOptions,
+            onChanged: (index, option) {
+              if (index == _chooserHighlightedIndex) return;
+              setState(() => _chooserHighlightedIndex = index);
+            },
+            onSelect: (index, option) {
+              final value = option.value;
+              if (value != null) _confirmSort(value);
+            },
+          ),
+          _SearchChooser.filter => Select<PackageSearchFilter>(
+            focusNode: _chooserFocus,
+            autofocus: true,
+            selectedIndex: _chooserHighlightedIndex,
+            height: 4,
+            options: _filterOptions,
+            onChanged: (index, option) {
+              if (index == _chooserHighlightedIndex) return;
+              setState(() => _chooserHighlightedIndex = index);
+            },
+            onSelect: (index, option) {
+              final value = option.value;
+              if (value != null) _confirmFilter(value);
+            },
+          ),
+        },
+      ),
+    ],
   );
 
   Widget _buildSearchLoading(BuildContext context) {

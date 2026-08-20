@@ -25,9 +25,12 @@ void main() {
       await _settle(app);
       expect(catalog.searchCalls.single.query, 'noir');
       expect(_render(app), contains('noir_router'));
-      expect(_render(app), contains('LIVE PUB.DEV'));
+      expect(_render(app), isNot(contains('LIVE PUB.DEV')));
+      expect(_render(app), isNot(contains('OFFLINE DATA')));
 
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -120,11 +123,7 @@ void main() {
   });
 
   test('keeps letters editable and scopes result shortcuts', () async {
-    final catalog = _FakePubCatalog()
-      ..searchResults.addAll([
-        _page(['searchable']),
-        _page(['sorted']),
-      ]);
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['searchable']));
     final app = createTuiTestApp(
       PubSearchApp(
         catalog: catalog,
@@ -148,10 +147,12 @@ void main() {
 
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..typeText('s');
       await _settle(app);
-      expect(catalog.searchCalls.last.sort, PackageSort.text);
-      expect(_render(app), contains('sorted'));
+      expect(catalog.searchCalls, hasLength(1));
+      expect(_render(app), contains('CHOOSE SORT'));
     } finally {
       app.dispose();
     }
@@ -163,17 +164,17 @@ void main() {
 
     try {
       await _settle(app);
-      expect(
-        _render(app),
-        contains('Enter search  Tab results  Click SORT/FILTER  Esc quit'),
-      );
+      expect(_render(app), contains('Enter search  Tab sort  Esc quit'));
 
-      app.mockInput.pressTab();
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab();
       await _settle(app);
 
       expect(
         _render(app),
-        contains('↑↓ select  Enter/click  / search  s/f/click  Esc quit'),
+        contains('↑↓ select  Enter/click open  s/f pick  / query  Esc'),
       );
     } finally {
       app.dispose();
@@ -200,7 +201,10 @@ void main() {
 
       try {
         await _settle(app);
-        app.mockInput.pressTab();
+        app.mockInput
+          ..pressTab()
+          ..pressTab()
+          ..pressTab();
         await _settle(app);
         final frame = _render(app);
 
@@ -262,7 +266,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('noi');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       expect(
         _render(app),
         contains('Enter search   Tab suggestions   Esc quit'),
@@ -305,6 +309,8 @@ void main() {
 
         app.mockInput
           ..pressTab()
+          ..pressTab()
+          ..pressTab()
           ..pressEnter();
         await _settle(app);
         app.mockInput.pressEscape();
@@ -318,7 +324,7 @@ void main() {
           app.mockInput.pressBackspace();
         }
         app.mockInput.typeText('http');
-        await _settle(app);
+        await _waitForCompletionDebounce(app);
 
         expect(_render(app), contains('http'));
         expect(_render(app), contains('SUGGESTIONS'));
@@ -363,13 +369,317 @@ void main() {
       expect(catalog.completeCalls, isEmpty);
 
       app.mockInput.typeText('i');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       expect(catalog.completeCalls, ['noi']);
       expect(_render(app), contains('SUGGESTIONS'));
       expect(_render(app), contains('noir_router'));
     } finally {
       app.dispose();
     }
+  });
+
+  test(
+    'debounces the latest completion and only spins during its request',
+    () async {
+      final completion = Completer<List<PubSuggestion>>();
+      final catalog = _FakePubCatalog()..completionResult = completion.future;
+      final app = createTuiTestApp(
+        PubSearchApp(
+          catalog: catalog,
+          onQuit: () {},
+          initialQuery: '',
+          autoSearch: false,
+        ),
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput.typeText('noi');
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await _settle(app);
+
+        expect(catalog.completeCalls, isEmpty);
+        expect(_spinnerPositions(app), isEmpty);
+
+        app.mockInput.typeText('r');
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await _settle(app);
+
+        expect(catalog.completeCalls, isEmpty);
+        expect(_spinnerPositions(app), isEmpty);
+
+        await Future<void>.delayed(const Duration(milliseconds: 75));
+        await _settle(app);
+
+        expect(catalog.completeCalls, ['noir']);
+        final spinner = _spinnerPositions(app).single;
+        expect(spinner.y, app.captureFrame().findText('noir').single.y);
+
+        completion.complete(const [PubSuggestion.package('noir_router')]);
+        await _settle(app);
+
+        expect(_spinnerPositions(app), isEmpty);
+        expect(_render(app), contains('noir_router'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'short queries clear completion loading and reject stale responses',
+    () async {
+      final completion = Completer<List<PubSuggestion>>();
+      final catalog = _FakePubCatalog()..completionResult = completion.future;
+      final app = createTuiTestApp(
+        PubSearchApp(
+          catalog: catalog,
+          onQuit: () {},
+          initialQuery: '',
+          autoSearch: false,
+        ),
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput.typeText('noi');
+        await _waitForCompletionDebounce(app);
+        expect(catalog.completeCalls, ['noi']);
+        expect(_spinnerPositions(app), hasLength(1));
+
+        app.mockInput.pressBackspace();
+        await _settle(app);
+
+        expect(catalog.completeCalls, ['noi']);
+        expect(_spinnerPositions(app), isEmpty);
+        expect(_render(app), isNot(contains('SUGGESTIONS')));
+
+        completion.complete(const [PubSuggestion.package('noir')]);
+        await _settle(app);
+
+        expect(_spinnerPositions(app), isEmpty);
+        expect(_render(app), isNot(contains('noir_router')));
+        expect(_render(app), isNot(contains('SUGGESTIONS')));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'completion failure clears its spinner without replacing results or search',
+    () async {
+      final completion = Completer<List<PubSuggestion>>();
+      final catalog = _FakePubCatalog()
+        ..completionResult = completion.future
+        ..searchResults.addAll([
+          _page(['kept_result']),
+          _page(['searched_result']),
+        ]);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput.typeText('x');
+        await _waitForCompletionDebounce(app);
+
+        expect(_spinnerPositions(app), hasLength(1));
+        expect(_render(app), contains('kept_result'));
+
+        completion.completeError(Exception('completion unavailable'));
+        await _settle(app);
+
+        expect(_spinnerPositions(app), isEmpty);
+        expect(_render(app), contains('kept_result'));
+        expect(_render(app), isNot(contains('Search unavailable')));
+
+        app.mockInput.pressEnter();
+        await _settle(app);
+
+        expect(catalog.searchCalls, hasLength(2));
+        expect(catalog.searchCalls.last.query, 'noirx');
+        expect(_render(app), contains('searched_result'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('search submission invalidates an active completion request', () async {
+    final completion = Completer<List<PubSuggestion>>();
+    final search = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..completionResult = completion.future
+      ..searchResults.add(search.future);
+    final app = createTuiTestApp(
+      PubSearchApp(
+        catalog: catalog,
+        onQuit: () {},
+        initialQuery: '',
+        autoSearch: false,
+      ),
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput.typeText('noir');
+      await _waitForCompletionDebounce(app);
+      expect(_spinnerPositions(app), hasLength(1));
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+
+      expect(catalog.searchCalls.single.query, 'noir');
+      expect(_spinnerPositions(app), hasLength(1));
+      expect(_render(app), contains('Searching pub.dev…'));
+
+      completion.complete(const [PubSuggestion.package('stale_completion')]);
+      await _settle(app);
+
+      expect(_render(app), isNot(contains('stale_completion')));
+      expect(_spinnerPositions(app), hasLength(1));
+
+      search.complete(_pageValue(['search_result']));
+      await _settle(app);
+      expect(_spinnerPositions(app), isEmpty);
+      expect(_render(app), isNot(contains('LIVE PUB.DEV')));
+      expect(_render(app), isNot(contains('OFFLINE DATA')));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('search submission cancels a pending completion debounce', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['result']));
+    final app = createTuiTestApp(
+      PubSearchApp(
+        catalog: catalog,
+        onQuit: () {},
+        initialQuery: '',
+        autoSearch: false,
+      ),
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..typeText('noir')
+        ..pressEnter();
+      await _waitForCompletionDebounce(app);
+
+      expect(catalog.completeCalls, isEmpty);
+      expect(catalog.searchCalls.single.query, 'noir');
+      expect(_render(app), contains('result'));
+      expect(_spinnerPositions(app), isEmpty);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('catalog replacement invalidates active completion ownership', () async {
+    final staleCompletion = Completer<List<PubSuggestion>>();
+    final oldCatalog = _FakePubCatalog()
+      ..completionResult = staleCompletion.future
+      ..searchResults.add(_page(['old_result']));
+    final newCatalog = _FakePubCatalog()
+      ..searchResults.add(_page(['new_result']));
+    late _CatalogHostState host;
+    final app = createTuiTestApp(
+      _CatalogHost(
+        initialCatalog: oldCatalog,
+        onReady: (state) => host = state,
+      ),
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput.typeText('x');
+      await _waitForCompletionDebounce(app);
+      expect(_spinnerPositions(app), hasLength(1));
+
+      host.replaceCatalog(newCatalog);
+      await _settle(app);
+
+      expect(oldCatalog.closed, isTrue);
+      expect(_spinnerPositions(app), isEmpty);
+      expect(_render(app), contains('new_result'));
+
+      staleCompletion.complete(const [
+        PubSuggestion.package('stale_completion'),
+      ]);
+      await _settle(app);
+      expect(_render(app), isNot(contains('stale_completion')));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test(
+    'opening detail replaces completion loading with its local spinner',
+    () async {
+      final completion = Completer<List<PubSuggestion>>();
+      final detail = Completer<PubPackageSnapshot>();
+      final catalog = _FakePubCatalog()
+        ..completionResult = completion.future
+        ..searchResults.add(_page(['kept_result']))
+        ..detailResults['kept_result'] = detail.future;
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput.typeText('x');
+        await _waitForCompletionDebounce(app);
+        expect(_spinnerPositions(app), hasLength(1));
+
+        final result = app.captureFrame().findText('kept_result').single;
+        app.mockMouse.click(result.x, result.y);
+        await _settle(app);
+
+        expect(_render(app), contains('Loading kept_result…'));
+        expect(_spinnerPositions(app), hasLength(1));
+
+        completion.complete(const [PubSuggestion.package('stale_completion')]);
+        await _settle(app);
+        expect(_render(app), isNot(contains('stale_completion')));
+        expect(_spinnerPositions(app), hasLength(1));
+
+        detail.complete(examplePubPackage);
+        await _settle(app);
+        expect(_spinnerPositions(app), isEmpty);
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('disposal revokes an active completion response', () async {
+    final completion = Completer<List<PubSuggestion>>();
+    final catalog = _FakePubCatalog()..completionResult = completion.future;
+    final app = createTuiTestApp(
+      PubSearchApp(
+        catalog: catalog,
+        onQuit: () {},
+        initialQuery: '',
+        autoSearch: false,
+      ),
+    );
+
+    await _settle(app);
+    app.mockInput.typeText('noir');
+    await _waitForCompletionDebounce(app);
+    expect(_spinnerPositions(app), hasLength(1));
+
+    app.dispose();
+    completion.complete(const [PubSuggestion.package('stale_completion')]);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(catalog.closed, isTrue);
   });
 
   test('shows prefix suggestions while the query is being edited', () async {
@@ -393,7 +703,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('noi');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
 
       expect(catalog.completeCalls, isNotEmpty);
       expect(catalog.completeCalls.last, 'noi');
@@ -426,7 +736,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('ter');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput
         ..pressTab()
         ..pressEnter();
@@ -471,7 +781,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('ter');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput
         ..pressTab()
         ..pressEnter();
@@ -479,9 +789,21 @@ void main() {
 
       app.mockInput.typeText('s');
       await _settle(app);
-      app.mockInput.typeText('f');
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
       await _settle(app);
-      app.mockInput.typeText('n');
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..typeText('n');
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(4));
@@ -520,7 +842,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('ter');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput
         ..pressTab()
         ..pressEnter();
@@ -560,7 +882,7 @@ void main() {
       app.mockMouse.click(query.x + 4, query.y);
       await _settle(app);
       app.mockInput.typeText('a');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput.pressTab();
       await _settle(app);
       expect(_render(app), contains('SUGGESTIONS'));
@@ -598,7 +920,7 @@ void main() {
         app.mockMouse.click(query.x + 4, query.y);
         await _settle(app);
         app.mockInput.typeText('x');
-        await _settle(app);
+        await _waitForCompletionDebounce(app);
         app.mockInput.pressTab();
         await _settle(app);
 
@@ -631,11 +953,13 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..typeText('/');
       await _settle(app);
 
       expect(_render(app), isNot(contains('noir/')));
-      expect(_render(app), contains('Enter search  Tab results'));
+      expect(_render(app), contains('Enter search  Tab sort'));
     } finally {
       app.dispose();
     }
@@ -662,7 +986,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('noi');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput
         ..pressTab()
         ..pressEnter();
@@ -691,7 +1015,7 @@ void main() {
       await _settle(app);
       final frame = _render(app);
       expect(frame, contains('PUB / FIND'));
-      expect(frame, contains('LIVE PUB.DEV'));
+      expect(frame, isNot(contains('LIVE PUB.DEV')));
       expect(frame, isNot(contains('OFFLINE DATA')));
       expect(frame, contains('Press Enter to search pub.dev.'));
       expect(frame, isNot(contains('SORT')));
@@ -755,7 +1079,7 @@ void main() {
   );
 
   test(
-    'cycles filter on the search surface and sends it to the catalog',
+    'result shortcut filter picker sends its selection to the catalog',
     () async {
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
@@ -770,14 +1094,22 @@ void main() {
 
       try {
         await _settle(app);
-        expect(_render(app), contains('FILTER  ANY'));
+        expect(_render(app), contains('FILTER [ANY ▾]'));
 
         app.mockInput
           ..pressTab()
+          ..pressTab()
+          ..pressTab()
           ..typeText('f');
         await _settle(app);
+        expect(_render(app), contains('CHOOSE FILTER'));
 
-        expect(_render(app), contains('FILTER  DART'));
+        app.mockInput
+          ..pressArrow(ArrowDirection.down)
+          ..pressEnter();
+        await _settle(app);
+
+        expect(_render(app), contains('FILTER [DART ▾]'));
         expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
         expect(_render(app), contains('filtered'));
       } finally {
@@ -786,42 +1118,44 @@ void main() {
     },
   );
 
+  test('clicking the Sort value opens and applies one picker option', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['noir']),
+        _page(['sorted']),
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final sort = app.captureFrame().findText('[TOP ▾]').single;
+      app.mockMouse.click(sort.x, sort.y);
+      await _settle(app);
+      expect(_render(app), contains('CHOOSE SORT'));
+
+      final text = app.captureFrame().findText('TEXT').single;
+      app.mockMouse.click(text.x, text.y);
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(2));
+      expect(catalog.searchCalls.last.sort, PackageSort.text);
+      expect(_render(app), contains('SORT [TEXT ▾]'));
+      expect(_render(app), contains('sorted'));
+      final style = _tabStyle(app, '[TEXT ▾]');
+      expect(style.background, _painted(pubTheme.accent));
+      expect(style.foreground, _painted(pubTheme.accentForeground));
+      expect(style.bold, isTrue);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test(
-    'clicking Sort cycles the live query and highlights its value',
-    () async {
-      final catalog = _FakePubCatalog()
-        ..searchResults.addAll([
-          _page(['noir']),
-          _page(['sorted']),
-        ]);
-      final app = createTuiTestApp(
-        PubSearchApp(catalog: catalog, onQuit: () {}),
-        width: 100,
-        height: 32,
-      );
-
-      try {
-        await _settle(app);
-        final sort = app.captureFrame().findText('SORT').last;
-        app.mockMouse.click(sort.x, sort.y);
-        await _settle(app);
-
-        expect(catalog.searchCalls, hasLength(2));
-        expect(catalog.searchCalls.last.sort, PackageSort.text);
-        expect(_render(app), contains('SORT  TEXT'));
-        expect(_render(app), contains('sorted'));
-        final style = _tabStyle(app, 'TEXT');
-        expect(style.background, _painted(pubTheme.accent));
-        expect(style.foreground, _painted(pubTheme.accentForeground));
-        expect(style.bold, isTrue);
-      } finally {
-        app.dispose();
-      }
-    },
-  );
-
-  test(
-    'clicking Filter cycles the live query and highlights its value',
+    'clicking the Filter value opens and applies one picker option',
     () async {
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
@@ -836,15 +1170,20 @@ void main() {
 
       try {
         await _settle(app);
-        final filter = app.captureFrame().findText('FILTER').last;
+        final filter = app.captureFrame().findText('[ANY ▾]').single;
         app.mockMouse.click(filter.x, filter.y);
+        await _settle(app);
+        expect(_render(app), contains('CHOOSE FILTER'));
+
+        final dart = app.captureFrame().findText('DART').single;
+        app.mockMouse.click(dart.x, dart.y);
         await _settle(app);
 
         expect(catalog.searchCalls, hasLength(2));
         expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
-        expect(_render(app), contains('FILTER  DART'));
+        expect(_render(app), contains('FILTER [DART ▾]'));
         expect(_render(app), contains('filtered'));
-        final style = _tabStyle(app, 'DART');
+        final style = _tabStyle(app, '[DART ▾]');
         expect(style.background, _painted(pubTheme.accent));
         expect(style.foreground, _painted(pubTheme.accentForeground));
         expect(style.bold, isTrue);
@@ -853,6 +1192,339 @@ void main() {
       }
     },
   );
+
+  test(
+    'keyboard sort picker applies exact criteria and restores focus',
+    () async {
+      final refresh = Completer<PackageSearchPage>();
+      final catalog = _FakePubCatalog()
+        ..searchResults.addAll([
+          _page(['noir']),
+          refresh.future,
+        ]);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        expect(_render(app), contains('SORT [TOP ▾]'));
+        expect(_render(app), contains('FILTER [ANY ▾]'));
+
+        app.mockInput
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+
+        expect(_render(app), contains('CHOOSE SORT'));
+        expect(_render(app), contains('Pub.dev ranking'));
+        expect(_render(app), contains('Most downloads'));
+
+        app.mockInput.pressArrow(ArrowDirection.down);
+        await _settle(app);
+        expect(_render(app), contains('SORT [TOP ▾]'));
+        expect(catalog.searchCalls, hasLength(1));
+
+        app.mockInput.pressEnter();
+        await _settle(app);
+
+        expect(catalog.searchCalls, hasLength(2));
+        expect(catalog.searchCalls.last, (
+          query: 'noir',
+          page: 1,
+          sort: PackageSort.text,
+          filter: PackageSearchFilter.any,
+          topic: null,
+        ));
+        expect(_render(app), contains('SORT [TEXT ▾]'));
+        expect(_render(app), contains('noir'));
+        expect(
+          _render(app),
+          contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+        );
+
+        refresh.complete(_pageValue(['sorted_result']));
+        await _settle(app);
+        expect(_render(app), contains('sorted_result'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('Space opens filter picker and one click applies its option', () async {
+    final refresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['kept_result']),
+        refresh.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..typeText(' ');
+      await _settle(app);
+
+      expect(_render(app), contains('CHOOSE FILTER'));
+      expect(_render(app), contains('All packages'));
+      expect(_render(app), contains('Dart SDK'));
+      expect(_render(app), contains('Flutter SDK'));
+      expect(_render(app), contains('Flutter favorites'));
+
+      final flutter = app.captureFrame().findText('FLUTTER').first;
+      app.mockMouse.click(flutter.x, flutter.y);
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(2));
+      expect(catalog.searchCalls.last.filter, PackageSearchFilter.flutter);
+      expect(catalog.searchCalls.last.sort, PackageSort.top);
+      expect(_render(app), contains('FILTER [FLUTTER ▾]'));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose filter  Tab results  Esc quit'),
+      );
+
+      refresh.complete(_pageValue(['flutter_result']));
+      await _settle(app);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('same-value and cancelled picker choices issue no request', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput.pressEnter();
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(1));
+      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+      );
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEscape();
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(1));
+      expect(_render(app), contains('SORT [TOP ▾]'));
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressTab();
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(1));
+      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+      );
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      final query = app.captureFrame().findText('noir').first;
+      app.mockMouse.click(query.x, query.y);
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(1));
+      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('result shortcuts open sort and filter pickers', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..typeText('s');
+      await _settle(app);
+      expect(_render(app), contains('CHOOSE SORT'));
+
+      app.mockInput.pressEscape();
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..typeText('f');
+      await _settle(app);
+
+      expect(_render(app), contains('CHOOSE FILTER'));
+      expect(catalog.searchCalls, hasLength(1));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('empty results keep both picker launchers in traversal', () async {
+    final refresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([_page([]), refresh.future]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      expect(_render(app), contains('SORT [TOP ▾]'));
+      expect(_render(app), contains('FILTER [ANY ▾]'));
+
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+
+      expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
+      expect(_render(app), contains('FILTER [DART ▾]'));
+      expect(
+        _render(app),
+        contains('Enter/Space/click choose filter  Tab search  Esc quit'),
+      );
+
+      refresh.complete(_pageValue(['dart_result']));
+      await _settle(app);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test(
+    'picker replaces search loading copy with one updating indicator',
+    () async {
+      final nextPage = Completer<PackageSearchPage>();
+      final catalog = _FakePubCatalog()
+        ..searchResults.addAll([
+          _page(['kept_result'], hasNextPage: true),
+          nextPage.future,
+        ]);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput
+          ..pressTab()
+          ..pressTab()
+          ..pressTab()
+          ..typeText('n')
+          ..typeText('s');
+        await _settle(app);
+
+        expect(_render(app), contains('CHOOSE SORT'));
+        expect(_render(app), contains('Updating results…'));
+        expect(_render(app), isNot(contains('Searching pub.dev…')));
+        expect(_spinnerPositions(app), hasLength(1));
+        expect(_render(app), contains('Pub.dev ranking'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('a second picker choice wins over an earlier search', () async {
+    final firstRefresh = Completer<PackageSearchPage>();
+    final secondRefresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['kept_result']),
+        firstRefresh.future,
+        secondRefresh.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+
+      expect(catalog.searchCalls.map((call) => call.sort), [
+        PackageSort.top,
+        PackageSort.text,
+        PackageSort.created,
+      ]);
+      expect(_render(app), contains('SORT [CREATED ▾]'));
+
+      secondRefresh.complete(_pageValue(['latest_result']));
+      await _settle(app);
+      firstRefresh.complete(_pageValue(['stale_result']));
+      await _settle(app);
+
+      expect(_render(app), contains('latest_result'));
+      expect(_render(app), isNot(contains('stale_result')));
+    } finally {
+      app.dispose();
+    }
+  });
 
   test('moves the panel focus highlight when Tab changes focus', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
@@ -869,7 +1541,10 @@ void main() {
 
       // Tab alone changes focus without any app-level setState, so the
       // highlight only follows if the state listens to its own focus nodes.
-      app.mockInput.pressTab();
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab();
       await _settle(app);
       final after = _panelBorders(app);
 
@@ -894,6 +1569,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -937,7 +1614,10 @@ void main() {
 
     try {
       await _settle(app);
-      app.mockInput.pressTab();
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab();
       await _settle(app);
 
       final frame = app.captureFrame();
@@ -969,7 +1649,7 @@ void main() {
     try {
       await _settle(app);
       app.mockInput.typeText('ter');
-      await _settle(app);
+      await _waitForCompletionDebounce(app);
       app.mockInput
         ..pressTab()
         ..pressEnter();
@@ -1032,6 +1712,41 @@ void main() {
     }
   });
 
+  test('keeps launcher and picker help variants within 80 columns', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
+
+    try {
+      await _settle(app);
+
+      app.mockInput.pressTab();
+      await _settle(app);
+      var frame = app.captureFrame();
+      expect(
+        frame.findText('Enter/Space/click choose sort').single.y,
+        frame.findText('Esc quit').single.y,
+      );
+
+      app.mockInput.pressTab();
+      await _settle(app);
+      frame = app.captureFrame();
+      expect(
+        frame.findText('Enter/Space/click choose filter').single.y,
+        frame.findText('Esc quit').single.y,
+      );
+
+      app.mockInput.pressEnter();
+      await _settle(app);
+      frame = app.captureFrame();
+      expect(
+        frame.findText('↑↓ choose').single.y,
+        frame.findText('Tab/Esc cancel').single.y,
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('Escape returns to results before requesting quit', () async {
     var quits = 0;
     final catalog = _FakePubCatalog()
@@ -1046,6 +1761,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -1099,6 +1816,8 @@ void main() {
       try {
         await _settle(app);
         app.mockInput
+          ..pressTab()
+          ..pressTab()
           ..pressTab()
           ..pressEnter();
         await _settle(app);
@@ -1191,6 +1910,8 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..pressEnter();
       await _settle(app);
       app.mockInput.typeText('4');
@@ -1216,6 +1937,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -1244,6 +1967,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -1310,10 +2035,10 @@ void main() {
         expect(catalog.searchCalls, hasLength(2));
         expect(catalog.searchCalls.last.query, 'noir');
         expect(_render(app), contains('No packages found'));
-        expect(_render(app), contains('Enter search  Tab controls  Esc quit'));
+        expect(_render(app), contains('Enter search  Tab sort  Esc quit'));
         expect(_render(app), isNot(contains('Tab results')));
-        expect(_render(app), contains('SORT  TOP'));
-        expect(_render(app), contains('FILTER  ANY'));
+        expect(_render(app), contains('SORT [TOP ▾]'));
+        expect(_render(app), contains('FILTER [ANY ▾]'));
       } finally {
         app.dispose();
       }
@@ -1337,12 +2062,17 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
-        ..typeText('f');
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
       await _settle(app);
 
       expect(_render(app), contains('No packages found'));
-      expect(_render(app), contains('FILTER  DART'));
-      expect(_render(app), contains('Tab controls'));
+      expect(_render(app), contains('FILTER [DART ▾]'));
+      expect(_render(app), contains('Tab sort'));
 
       // Empty results return focus to the query. Tab reaches Sort, then
       // Filter; Enter activates the same cycle action as a left click.
@@ -1350,17 +2080,21 @@ void main() {
       await _settle(app);
       expect(
         _render(app),
-        contains('Enter/Space cycle sort  Tab filter  Esc quit'),
+        contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
       );
 
       app.mockInput.pressTab();
       await _settle(app);
       expect(
         _render(app),
-        contains('Enter/Space cycle filter  Tab search  Esc quit'),
+        contains('Enter/Space/click choose filter  Tab search  Esc quit'),
       );
 
       app.mockInput.pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
       await _settle(app);
 
       expect(catalog.searchCalls.map((call) => call.filter), [
@@ -1396,7 +2130,11 @@ void main() {
 
         app.mockInput
           ..pressTab()
-          ..typeText('s');
+          ..pressEnter();
+        await _settle(app);
+        app.mockInput
+          ..pressArrow(ArrowDirection.down)
+          ..pressEnter();
         await _settle(app);
         failedRefresh.completeError(Exception('refresh unavailable'));
         await _settle(app);
@@ -1436,7 +2174,11 @@ void main() {
         await _settle(app);
         app.mockInput
           ..pressTab()
-          ..typeText('s');
+          ..pressEnter();
+        await _settle(app);
+        app.mockInput
+          ..pressArrow(ArrowDirection.down)
+          ..pressEnter();
         await _settle(app);
         expect(_render(app), contains('No packages found'));
 
@@ -1514,6 +2256,8 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..typeText('n');
       await _settle(app);
       expect(catalog.searchCalls.last.page, 2);
@@ -1552,6 +2296,8 @@ void main() {
 
         app.mockInput
           ..pressTab()
+          ..pressTab()
+          ..pressTab()
           ..typeText('n');
         await _settle(app);
 
@@ -1581,6 +2327,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressArrow(ArrowDirection.down)
         ..pressArrow(ArrowDirection.down);
@@ -1619,6 +2367,8 @@ void main() {
 
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..typeText('n');
       await _settle(app);
       // The page 2 request is still in flight; the header must not keep
@@ -1638,50 +2388,53 @@ void main() {
     }
   });
 
-  test(
-    'keeps last results and sort shortcuts while a refresh is loading',
-    () async {
-      final refresh = Completer<PackageSearchPage>();
-      final afterRefresh = Completer<PackageSearchPage>();
-      final catalog = _FakePubCatalog()
-        ..searchResults.addAll([
-          _page(['kept_package']),
-          refresh.future,
-          afterRefresh.future,
-        ]);
-      final app = createTuiTestApp(
-        PubSearchApp(catalog: catalog, onQuit: () {}),
-        width: 100,
-        height: 32,
-      );
+  test('keeps last results while repeated sort choices are loading', () async {
+    final refresh = Completer<PackageSearchPage>();
+    final afterRefresh = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['kept_package']),
+        refresh.future,
+        afterRefresh.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
 
-      try {
-        await _settle(app);
-        app.mockInput
-          ..pressTab()
-          ..typeText('s');
-        await _settle(app);
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
 
-        expect(_render(app), contains('Searching pub.dev…'));
-        expect(_render(app), contains('kept_package'));
-        expect(_render(app), contains('SORT  TEXT'));
+      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_render(app), contains('kept_package'));
+      expect(_render(app), contains('SORT [TEXT ▾]'));
 
-        // A second `s` used to be ignored: loading unmounted the Select, so
-        // `_resultsFocus.hasFocus` was false and the key was dropped.
-        app.mockInput.typeText('s');
-        await _settle(app);
-        expect(catalog.searchCalls.map((call) => call.sort), [
-          PackageSort.top,
-          PackageSort.text,
-          PackageSort.created,
-        ]);
-        expect(_render(app), contains('SORT  CREATED'));
-        expect(_render(app), contains('kept_package'));
-      } finally {
-        app.dispose();
-      }
-    },
-  );
+      app.mockInput.pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
+      await _settle(app);
+      expect(catalog.searchCalls.map((call) => call.sort), [
+        PackageSort.top,
+        PackageSort.text,
+        PackageSort.created,
+      ]);
+      expect(_render(app), contains('SORT [CREATED ▾]'));
+      expect(_render(app), contains('kept_package'));
+    } finally {
+      app.dispose();
+    }
+  });
 
   test('opening a package abandons an in-flight refresh', () async {
     final refresh = Completer<PackageSearchPage>();
@@ -1701,18 +2454,25 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
-        ..typeText('s');
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput
+        ..pressArrow(ArrowDirection.down)
+        ..pressEnter();
       await _settle(app);
       expect(_render(app), contains('Searching pub.dev…'));
 
-      app.mockInput.pressEnter();
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
       await _settle(app);
       app.mockInput.pressEscape();
       await _settle(app);
 
       expect(_render(app), contains('kept_package'));
       expect(_render(app), isNot(contains('Searching pub.dev…')));
-      expect(_render(app), contains('SORT  TOP'));
+      expect(_render(app), contains('SORT [TOP ▾]'));
     } finally {
       app.dispose();
     }
@@ -1738,12 +2498,18 @@ void main() {
         await _settle(app);
         app.mockInput
           ..pressTab()
-          ..typeText('s');
+          ..pressEnter();
+        await _settle(app);
+        app.mockInput
+          ..pressArrow(ArrowDirection.down)
+          ..pressEnter();
         await _settle(app);
         failedRefresh.completeError(Exception('refresh unavailable'));
         await _settle(app);
 
         app.mockInput
+          ..pressTab()
+          ..pressTab()
           ..pressTab()
           ..pressEnter();
         await _settle(app);
@@ -1779,6 +2545,8 @@ void main() {
       await _settle(app);
       app.mockInput
         ..pressTab()
+        ..pressTab()
+        ..pressTab()
         ..typeText('n');
       await _settle(app);
       expect(_render(app), contains('PAGE  2'));
@@ -1810,6 +2578,8 @@ void main() {
     try {
       await _settle(app);
       app.mockInput
+        ..pressTab()
+        ..pressTab()
         ..pressTab()
         ..pressEnter();
       await _settle(app);
@@ -1951,9 +2721,14 @@ Future<PackageSearchPage> _page(
   List<String> packages, {
   int page = 1,
   bool hasNextPage = false,
-}) => Future.value(
-  PackageSearchPage(page: page, packages: packages, hasNextPage: hasNextPage),
-);
+}) => Future.value(_pageValue(packages, page: page, hasNextPage: hasNextPage));
+
+PackageSearchPage _pageValue(
+  List<String> packages, {
+  int page = 1,
+  bool hasNextPage = false,
+}) =>
+    PackageSearchPage(page: page, packages: packages, hasNextPage: hasNextPage);
 
 String _render(TuiTestApp app) {
   app.pumpFrame();
@@ -2006,6 +2781,21 @@ _TabStyle _tabStyle(TuiTestApp app, String label) {
 }
 
 Color _painted(Color color) => Color.fromHex(color.toHex());
+
+List<({int x, int y})> _spinnerPositions(TuiTestApp app) {
+  app.pumpFrame();
+  final frame = app.captureFrame();
+  return [
+    for (var y = 0; y < frame.height; y++)
+      for (var x = 0; x < frame.width; x++)
+        if (SpinnerFrames.dots.contains(frame.getChar(x, y))) (x: x, y: y),
+  ];
+}
+
+Future<void> _waitForCompletionDebounce(TuiTestApp app) async {
+  await Future<void>.delayed(const Duration(milliseconds: 325));
+  await _settle(app);
+}
 
 Future<void> _settle(TuiTestApp app) async {
   for (var i = 0; i < 4; i++) {
