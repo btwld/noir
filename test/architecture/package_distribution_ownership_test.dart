@@ -482,7 +482,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
+        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir-hooks/SKILL.md skills/noir-hooks/agents/openai.yaml'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
@@ -691,7 +691,8 @@ void main() {
     expect(skill, contains('`references/design.md`'));
     expect(driveCli, contains('scroll takes <up|down|left|right> <x> <y>.'));
     expect(skill, contains('scroll <up|down|left|right> <x> <y>'));
-    expect(skill, contains('the driver has no `--size` option'));
+    expect(driveCli, contains("argument == '--size'"));
+    expect(skill, contains('`--size 80x24`'));
 
     expect(designGuide, contains('0 / 1 / 2'));
     expect(

@@ -59,7 +59,7 @@ almost never need the low-level or FFI import.
 | Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
 | Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
 | Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
-| Opt-in widget lifecycle hooks and effect rules | `../../doc/hooks.md` |
+| Opt-in widget lifecycle hooks and effect rules | `../noir-hooks/SKILL.md`, then `../../doc/hooks.md` |
 | Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
 | Consumer-facing test strategy and supported seams | `references/testing.md` |
 
@@ -276,10 +276,10 @@ printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
 `--plain`/`--cells` give text or JSON. Other commands: `tree [depth]`,
 `key <name>`, `type <text>`, `click <x> <y>`,
 `scroll <up|down|left|right> <x> <y>`, `resize <WxH>`, `reload` (hot reload +
-reassemble), and `watch on|off`. Set the launch size with
-`NOIR_DRIVE_SIZE=80x24`; the driver has no `--size` option. Viewing an app at
-several sizes this way is how layout problems at small terminals get caught
-early.
+reassemble), and `watch on|off`. Set the CLI launch size with `--size 80x24`;
+the client passes that geometry to the app through `NOIR_DRIVE_SIZE`. Use
+`resize <WxH>` to change it during a session. Viewing an app at several sizes
+this way is how layout problems at small terminals get caught early.
 
 Outside the repo the extension surface still activates, but the CLI and the
 `NoirDriver` client are not part of the published package, and the surface is

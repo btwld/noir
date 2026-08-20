@@ -189,7 +189,7 @@ Hooks ship in the main `noir` package but remain outside the default
 The opt-in library includes state, effects, memoization, listenables,
 asynchronous snapshots, animation, focus, editing, scroll, and viewport hooks.
 Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
-[hooks counter example](example/hooks_counter.dart).
+[interactive hooks counter example](example/hooks_counter.dart).
 
 ## Application Lifecycle and API Tiers
 
@@ -256,8 +256,9 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
   stateful body, and solid action button controlled by Up/Down,
   `+`/`-`, Enter/Space, or click.
-- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — opt-in
-  `HookWidget`, `useState`, and effect lifecycle.
+- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — polished opt-in
+  `HookWidget` and `useState` example with a focused `Button` for Enter, Space,
+  and mouse input.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.

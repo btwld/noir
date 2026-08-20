@@ -16,32 +16,35 @@ import 'package:noir/hooks.dart';
 ## Quick start
 
 ```dart
-import 'dart:async';
-
 import 'package:noir/noir.dart';
 import 'package:noir/hooks.dart';
 
-void main() => runTuiApp(const CounterApp());
+void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
 class CounterApp extends HookWidget {
   const CounterApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final count = useState(0);
-
-    useEffect(() {
-      final timer = Timer.periodic(
-        const Duration(seconds: 1),
-        (_) => count.value++,
-      );
-      return timer.cancel;
-    }, const <Object?>[]);
-
-    return Text('Ticks: ${count.value}');
+    final count = useState<int>(0);
+    return Column(
+      children: [
+        Text('Count: ${count.value}'),
+        Button(
+          autofocus: true,
+          label: '+ Add one',
+          onPressed: () => count.value++,
+        ),
+      ],
+    );
   }
 }
 ```
+
+Input-driven state changes belong in input callbacks like `onPressed`. Do not
+route a button action through `useEffect`; effects synchronize external
+resources and their cleanup. See the polished version in
+[`example/hooks_counter.dart`](../example/hooks_counter.dart).
 
 Use `HookBuilder` when an inline builder needs hooks:
 
@@ -155,15 +158,15 @@ then the first error is rethrown.
 
 ## Custom hooks
 
-Prefer functions that compose built-in hooks:
+Prefer top-level functions that compose built-in hooks. Return values and
+callbacks that keep the owning notifier private when callers do not need it:
 
 ```dart
-ValueNotifier<int> useCounter([int initialValue = 0]) {
+typedef CounterState = ({int value, VoidCallback increment});
+
+CounterState useCounter([int initialValue = 0]) {
   final counter = useState(initialValue);
-  useEffect(() {
-    return null;
-  }, <Object?>[counter.value]);
-  return counter;
+  return (value: counter.value, increment: () => counter.value++);
 }
 ```
 
