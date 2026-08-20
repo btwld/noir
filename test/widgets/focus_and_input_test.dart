@@ -32,27 +32,41 @@ void main() {
     expect(node.isAttached, isFalse);
   });
 
-  test('a supplied FocusNode survives relocation within one build', () {
+  test('a supplied FocusNode retains focus during one-build relocation', () {
     // Reconciliation deactivates the outgoing Focus but does not unmount it
     // until the build pass finalizes, so the node has to come free at
     // deactivation for the incoming Focus to take it in the same pass.
     final node = FocusNode(debugLabel: 'relocated');
+    final firstScope = FocusScopeNode(debugLabel: 'first relocation scope');
+    final secondScope = FocusScopeNode(debugLabel: 'second relocation scope');
     final owner = BuildOwner();
     addTearDown(node.dispose);
+    addTearDown(firstScope.dispose);
+    addTearDown(secondScope.dispose);
     addTearDown(owner.dispose);
 
     late _RelocateState state;
     final element = _Relocate(
       node: node,
+      firstScope: firstScope,
+      secondScope: secondScope,
       onReady: (value) => state = value,
     ).createElement();
     addTearDown(element.unmount);
     element.mount(null, owner);
 
+    node.requestFocus();
+    expect(owner.focusManager.primaryFocus, same(node));
+    expect(firstScope.focusedChild, same(node));
+
     state.relocate();
     owner.buildScope();
 
     expect(node.isAttached, isTrue);
+    expect(owner.focusManager.primaryFocus, same(node));
+    expect(node.hasFocus, isTrue);
+    expect(firstScope.focusedChild, isNull);
+    expect(secondScope.focusedChild, same(node));
   });
 
   test('one FocusNode cannot migrate between live focus managers', () {
@@ -290,9 +304,16 @@ void main() {
 /// Moves one supplied-node [Focus] to a different position, under a different
 /// parent, in a single rebuild.
 final class _Relocate extends StatefulWidget {
-  const _Relocate({required this.node, required this.onReady});
+  const _Relocate({
+    required this.node,
+    required this.firstScope,
+    required this.secondScope,
+    required this.onReady,
+  });
 
   final FocusNode node;
+  final FocusScopeNode firstScope;
+  final FocusScopeNode secondScope;
   final void Function(_RelocateState state) onReady;
 
   @override
@@ -316,13 +337,17 @@ final class _RelocateState extends State<_Relocate> {
       focusNode: widget.node,
       child: const SizedBox(width: 1, height: 1),
     );
-    return Column(
-      children: _relocated
-          ? [
-              const SizedBox(width: 1, height: 1),
-              Column(children: [focus]),
-            ]
-          : [focus],
+    return Row(
+      children: [
+        FocusScope(
+          node: widget.firstScope,
+          child: Column(children: _relocated ? const [] : [focus]),
+        ),
+        FocusScope(
+          node: widget.secondScope,
+          child: Column(children: _relocated ? [focus] : const []),
+        ),
+      ],
     );
   }
 }

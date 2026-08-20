@@ -356,6 +356,17 @@ class FocusManager {
       return;
     }
 
+    final previousElement = identical(node._manager, this)
+        ? _nodeToElement[node]
+        : null;
+    if (previousElement != null) {
+      // Reconciliation has already made the outgoing element inactive, so
+      // transfer the existing attachment instead of clearing focus between
+      // the old and new Focus widgets.
+      _reparentNode(node, previousElement, element);
+      return;
+    }
+
     node._manager = this;
     node._isAttached = true;
     _bindNodeToElement(node, element);
@@ -371,7 +382,11 @@ class FocusManager {
         identical(_nodeToElement[node], element)) {
       return;
     }
-    if (node._manager != null) {
+    final previousElement = identical(node._manager, this)
+        ? _nodeToElement[node]
+        : null;
+    final canTransfer = previousElement != null && !previousElement.active;
+    if (node._manager != null && !canTransfer) {
       throw StateError(
         'FocusNode${node.debugLabel == null ? '' : ' "${node.debugLabel}"'} '
         'is already attached to a live Focus widget. Detach it before reuse.',
@@ -394,9 +409,16 @@ class FocusManager {
     if (identical(oldElement, element)) {
       return;
     }
-    _detachFromParent(node);
+    final carriesFocus = node._hasFocus || node._descendantsHaveFocus;
+    final oldParent = node._parent;
+    _detachFromParent(node, preserveFocus: true);
+    if (carriesFocus) {
+      _updateAncestorChainForLoss(oldParent, node);
+    }
     _bindNodeToElement(node, element);
-    _updateAncestorsForGain(node);
+    if (carriesFocus) {
+      _updateAncestorsForGain(node);
+    }
   }
 
   /// Records the node/element mapping and adopts [node] under the focus
@@ -432,7 +454,7 @@ class FocusManager {
     _invalidateTraversalCache();
   }
 
-  void _detachFromParent(FocusNode node) {
+  void _detachFromParent(FocusNode node, {bool preserveFocus = false}) {
     final parent = node._parent;
     if (parent != null) {
       parent._dropChild(node);
@@ -442,8 +464,10 @@ class FocusManager {
       _updateAncestorsForLoss(parent, child: node);
     }
     node._parent = null;
-    node._setDescendantsHaveFocus(false);
-    node._setHasFocus(false);
+    if (!preserveFocus) {
+      node._setDescendantsHaveFocus(false);
+      node._setHasFocus(false);
+    }
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -721,8 +745,13 @@ class FocusManager {
   }
 
   void _updateAncestorsForLoss(FocusNode node, {FocusNode? child}) {
-    FocusNode? currentChild = child ?? node;
-    var ancestor = node._parent;
+    _updateAncestorChainForLoss(node._parent, child ?? node);
+  }
+
+  void _updateAncestorChainForLoss(
+    FocusNode? ancestor,
+    FocusNode currentChild,
+  ) {
     while (ancestor != null) {
       final hasFocusedDescendant = ancestor._children.any(
         (c) => c._hasFocus || c._descendantsHaveFocus,

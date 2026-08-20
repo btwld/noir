@@ -161,19 +161,6 @@ class _FocusState extends State<Focus> with FocusNodeOwnerStateMixin<Focus> {
   }
 
   @override
-  void deactivate() {
-    // Reconciliation deactivates the outgoing subtree but defers unmounting to
-    // `BuildOwner.finalizeTree`, so holding the attachment until `dispose`
-    // would make a supplied node look occupied to a `Focus` mounting later in
-    // the same build pass — which is what relocating one costs. Release it
-    // here; `didChangeDependencies` reattaches if this element is ever
-    // reinserted.
-    _attachment?.detach();
-    _attachment = null;
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
     _teardownNode(focusNode);
     _attachment?.detach();
