@@ -1,0 +1,4 @@
+interface:
+  display_name: "Noir Hooks"
+  short_description: "Build clean HookWidget apps with Noir"
+  default_prompt: "Use $noir-hooks to build or review a clean hook-based Noir application."

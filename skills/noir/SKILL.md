@@ -1,42 +1,67 @@
 ---
 name: noir
 description: >-
-  Build terminal user interfaces in Dart with the noir framework — a
-  Flutter-like declarative widget system (StatelessWidget/StatefulWidget,
-  Row/Column/Container/Expanded, Text/TextStyle, Theme/ThemeData,
-  TextInput/TextArea/Select/ListView/ScrollBox, Checkbox/Switch/Button,
-  DataTable, Focus, setState, AnimationController) that renders through
-  OpenTUI over FFI.
-  Use this whenever writing or reviewing application code against
-  `package:noir` — importing `package:noir/noir.dart`, building or editing a
-  TUI app or example, wiring layout/state/focus/input/animation for a terminal
-  app, or testing one — even if the user only says "terminal UI", "TUI", "CLI
-  interface", or names a widget like Row, Column, Container, or Text without
-  saying "noir". Not for the TypeScript/React/Solid OpenTUI bindings
-  (`@opentui/react`, `@opentui/core`, Bun/tsx projects), and not for changing
-  noir's own internals — see the "Boundaries" section for where those go.
+  Build, review, and test Dart terminal applications with package:noir, a
+  Flutter-inspired declarative widget framework backed by OpenTUI. Use for
+  Noir app and example code involving widget layout, text and styling, themes,
+  state, animation, focus, keyboard or mouse input, scrolling, forms, lists,
+  tables, lifecycle, hot reload, drive mode, and application-facing tests.
+  Trigger on package:noir imports, including package:noir/hooks.dart, or Dart
+  TUI work in a Noir project. Do not use for Noir framework internals or the
+  TypeScript/React/Solid OpenTUI APIs.
 ---
 
 # Noir — Flutter-like TUI framework for Dart
 
-Noir uses a Flutter-inspired declarative widget model for the terminal. You
-write `Widget` trees; noir lays them out in character cells and paints them
-through OpenTUI's native renderer over Dart FFI. Familiar concepts transfer,
-but terminal constraints and noir's prerelease contracts differ. Noir
-signatures are authoritative — verify against them rather than assuming Flutter
-API parity.
+Build Noir applications as declarative `Widget` trees. Noir lays them out in
+character cells and paints them through OpenTUI's native renderer over Dart
+FFI. Transfer Flutter concepts cautiously: terminal constraints and Noir's
+prerelease contracts differ. Noir signatures are authoritative; verify them
+instead of assuming Flutter API parity.
 
-**Single import gets you the whole authoring surface:**
+Import the complete application-authoring surface from one library:
 
 ```dart
 import 'package:noir/noir.dart';
 ```
 
+Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it
+together with `package:noir/noir.dart` when using `HookWidget` or `use...`
+functions.
+
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
 implementations and the recorder/display-list/compositor backend stay
 framework-owned. Raw FFI lives in `package:noir/noir_ffi.dart`; ordinary apps
-almost never need either companion import.
+almost never need the low-level or FFI import.
+
+## Workflow
+
+1. **Confirm the boundary.** Use this skill for application and example code.
+   For render objects, Elements, the compositor, FFI, native assets, or a new
+   framework widget, follow the repository's contributor workflow instead.
+2. **Verify the available version.** In this repository, check `lib/noir.dart`
+   and a nearby file in `example/` when a signature matters. In a consumer
+   project, check the installed Noir version rather than assuming repository
+   head.
+3. **Load only the matching reference.** Use the routing table below; do not
+   load every reference for a focused task.
+4. **Compose from the shipped catalog.** Prefer an existing widget or example
+   pattern. Do not invent Flutter or generic-TUI APIs that Noir does not export.
+5. **Validate at the right layer.** Test state owners and callbacks directly,
+   add a headless lifecycle check when useful, and inspect a drive-mode capture
+   for visual or interactive work.
+
+## Reference routing
+
+| Task | Load |
+|---|---|
+| Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
+| Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
+| Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
+| Opt-in widget lifecycle hooks and effect rules | `../noir-hooks/SKILL.md`, then `../../doc/hooks.md` |
+| Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
+| Consumer-facing test strategy and supported seams | `references/testing.md` |
 
 ## Critical rules
 
@@ -65,8 +90,9 @@ These catch the mistakes that don't surface until runtime:
    been disposed. An unconsumed Ctrl+C key exits with cleanup by default;
    app and focused-widget handlers may consume it to override that fallback.
 5. **Input is one ordered pipeline, and `app.onKey` runs before the focused
-   widget.** This decides whether your key handler ever fires — see
-   [Input routing](#input-routing-one-ordered-pipeline) below.
+   widget.** This decides whether your key handler ever fires. Read
+   [How a key reaches your code](references/inputs-and-focus.md#how-a-key-reaches-your-code)
+   before adding a handler.
 6. **Whatever you construct, you dispose.** `FocusNode`, `FocusScopeNode`,
    `TextEditingController`, `ScrollController`, `AnimationController`, and
    notifiers are all caller-owned when you pass them in; dispose them in
@@ -107,8 +133,8 @@ Inside this repo, `example/` has a runnable reference for every major feature
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
 `data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
-`inherited_example.dart`, `framework_primitives.dart`, `chat_demo.dart`,
-`widgets_tour.dart`) — read one before inventing a pattern.
+`inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
+`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
 
 ## Mental model
 
@@ -166,153 +192,36 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Two-state mark | `Checkbox` | `references/inputs-and-focus.md` |
 | Two-state on/off | `Switch` | `references/inputs-and-focus.md` |
 | Push action | `Button` | `references/inputs-and-focus.md` |
-| Scroll overflowing content | `ScrollBox`, `ScrollController` | `references/inputs-and-focus.md`
+| Scroll overflowing content | `ScrollBox`, `ScrollController` | `references/inputs-and-focus.md` |
 | Keyboard focus | `Focus`, `FocusScope`, `FocusNode` | `references/inputs-and-focus.md` |
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `../../doc/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
 | Share data down the tree | `InheritedWidget` | `references/state-and-animation.md` |
 
-## Common patterns
+## Application invariants
 
-### Layout: Row / Column / Expanded
-
-`Row` and `Column` are the two concrete `Flex` subclasses (`Flex` itself is
-abstract — you can name the type but not construct it). `mainAxisAlignment`
-positions along the axis; `crossAxisAlignment` across it; `spacing` inserts
-gaps between children. Wrap a child in `Expanded` to make it absorb leftover
-main-axis space; leave a child unwrapped to keep its natural or fixed size:
-
-```dart
-Column(
-  crossAxisAlignment: CrossAxisAlignment.stretch,     // full-width children
-  children: [
-    Expanded(                                         // above the status bar
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,  // full-height panes
-        children: [
-          SizedBox(width: 24, child: _sidebar()),     // fixed 24 cells
-          Expanded(child: _main()),                   // the rest of the width
-        ],
-      ),
-    ),
-    SizedBox(height: 1, child: _statusBar()),         // pinned last row
-  ],
-)
-```
-
-Equal `flex` values split evenly; `Expanded(flex: 2)` beside `Expanded(flex: 1)`
-takes two-thirds. Note the explicit `crossAxisAlignment`: it defaults to
-`center`, which shrink-wraps children on the cross axis — a full-bleed panel or
-status bar needs `stretch`.
-
-### Input routing: one ordered pipeline
-
-Every key event walks the same path, and the first handler that returns
-`KeyEventResult.handled` (or calls `event.consume()`) ends the walk:
-
-1. **`app.onKey` handlers** on the `TuiApp` handle — these run *before* the
-   focus tree.
-2. **`Shortcuts`** ancestors of the focused element: matching activator →
-   `Intent` → nearest `Actions` handler.
-3. **Printable characters** dispatched as `InsertTextIntent` — this is how text
-   fields receive typing.
-4. **`onKeyEvent`** on the focused `FocusNode`, then each ancestor node
-   (`Focus`, `FocusScope`), bubbling up.
-5. **Default Tab / Shift+Tab focus traversal** — only if nothing above handled
-   the event.
-6. **Terminal-session Ctrl+C fallback** — an unconsumed key press restores the
-   terminal and exits with interrupt status 130.
-
-Two consequences worth internalizing:
-
-- **Tab already moves focus.** A `FocusScope` traverses its focusable
-  descendants for free. Hand-written Tab handling runs at step 4 and pre-empts
-  the built-in policy, so only write it when you deliberately want different
-  traversal.
-- **A bare-letter global binding steals typing.** `app.onKey` sees `q` before a
-  focused `TextInput` does, which makes the letter untypable. Use a modifier
-  (`Ctrl+Q`) for app-level bindings, or scope the binding with `Shortcuts`
-  inside the tree so it only applies where focus is.
-- **Ctrl+C is overridable.** Consume it in an app, shortcut, or focused-widget
-  handler when the application needs different behavior; otherwise the final
-  terminal-session fallback shuts down cleanly.
-
-### State: StatefulWidget + setState
-
-```dart
-class Counter extends StatefulWidget {
-  const Counter({super.key});
-  @override
-  State<Counter> createState() => _CounterState();
-}
-
-class _CounterState extends State<Counter> {
-  int _count = 0;
-  @override
-  Widget build(BuildContext context) => Column(children: [
-    Text('Count: $_count'),
-    // call setState(() => _count++) from an input handler to rebuild
-  ]);
-}
-```
-
-Noir's current `State` hooks are `initState`, `didChangeDependencies`,
-`didUpdateWidget`, `deactivate`, `reassemble`, and `dispose`, with the
-`mounted` guard. Check `mounted` before `setState` in an async callback.
-Override `reassemble` to refresh `initState`-derived values after a hot
-reload. Details and disposal discipline are in
-`references/state-and-animation.md`.
-
-### Text & styling
-
-`Text(data, style: TextStyle(...))`. `TextStyle` defaults to white foreground;
-set `color`, `backgroundColor`, `fontWeight: FontWeight.bold` (also `.dim`),
-`fontStyle: FontStyle.italic`, `decoration`, and terminal `effect`s. Reach for
-the prebuilt `TextStyles.error` / `.success` / `.muted` / `.bold` constants for
-common cases. Full styling surface in `references/widgets.md`.
-
-### Compose the shipped components
-
-Chrome — surfaces, borders, hints, selection highlight — reads
-`Theme.of(context).token`. `Theme.of` falls back to `ThemeData.dark`, which
-*is* the unthemed look of every built-in widget. Content color stays a
-literal only when the color is the subject (a speaker, a specimen block, a
-teaching palette).
-
-`Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
-click. A null callback disables the control (muted, skipped by Tab).
-Focused controls go bold; a focused `ListView`, `Select`, or `DataTable`
-paints `selectedBackground` and mutes to `surfaceVariant` when it does
-not own the keyboard.
-
-Pick the list by the job:
-
-- `Select<T>` — a closed set of named options; `onChanged` on highlight,
-  `onSelect` on Enter/click.
-- `ListView` — a windowed `itemBuilder` over `itemCount` rows. Pass
-  `selectedIndex` for a highlight; omit it for plain scroll.
-- `ScrollBox` — one child that may overflow. Not a list of items.
-- `DataTable` — aligned `DataColumn`s over a `ListView` body.
-
-Hand-roll a bordered box with `Container` + `BoxDecoration` +
-`Theme.of(context).border`. There is no public `Panel` widget.
-Spacing, chrome tokens, and what not to invent are in
-`references/design.md`.
-
-### Interactive widgets (overview)
-
-`TextInput`, `TextArea`, `Select<T>`, `ListView`, `ScrollBox`, `Checkbox`,
-`Switch`, and `Button` are focus-aware: give each a `FocusNode` (or
-`autofocus: true`). For anything you need to read or mutate from code —
-clearing a form, seeding a draft — pass a `TextEditingController` rather
-than the `value:` shorthand; the two are mutually exclusive. The callback
-split to remember: `Select.onChanged` / `ListView.onChanged` fire as the
-highlight moves; `onSelect` fires on confirm (Enter/click). Full
-constructors and key bindings are in `references/inputs-and-focus.md`.
+- Use `Row` and `Column` as the concrete `Flex` widgets. Add `Expanded` only
+  where a child should consume remaining space, and set
+  `crossAxisAlignment: CrossAxisAlignment.stretch` for full-bleed regions.
+- Let Tab and Shift+Tab traverse focus. Do not intercept Tab unless a custom
+  policy is intentional. Avoid bare-letter `app.onKey` bindings because they
+  run before a focused text field; prefer modified or scoped `Shortcuts`.
+- Use the current `State` hooks: `initState`, `didChangeDependencies`,
+  `didUpdateWidget`, `deactivate`, `reassemble`, and `dispose`. Guard async
+  callbacks with `mounted` before calling `setState`.
+- Resolve chrome through `Theme.of(context)` and `ThemeData` tokens. For
+  `ListView`, omit `selectedIndex` for plain scrolling; use it only when the
+  list owns a selection highlight.
+- Give focus-aware fields and controls a `FocusNode` or `autofocus: true`.
+  Pass a `TextEditingController` when code must read or mutate text; do not
+  pass both `controller` and `value`.
+- Read the routed reference for exact constructors, defaults, callback timing,
+  and key bindings before producing non-trivial code.
 
 ## Hot reload during development
 
@@ -325,8 +234,8 @@ automatically:
 void main() => runTuiApp(const MyApp());
 ```
 
-The function stays exported for custom hosts that do not go through
-`runTuiApp`.
+`registerHotReloadExtension` stays exported for custom hosts that do not
+go through `runTuiApp`.
 
 Inside this repo, run the app under the bundled driver and save a `.dart`
 file to reload:
@@ -365,27 +274,18 @@ printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
 
 `capture --ansi` prints the frame in true color ("see the design");
 `--plain`/`--cells` give text or JSON. Other commands: `tree [depth]`,
-`key <name>`, `type <text>`, `click <x> <y>`, `scroll`, `resize <WxH>`,
-`reload` (hot reload + reassemble), `watch on|off`. Viewing an app at several
-sizes this way is how layout problems at small terminals get caught early.
+`key <name>`, `type <text>`, `click <x> <y>`,
+`scroll <up|down|left|right> <x> <y>`, `resize <WxH>`, `reload` (hot reload +
+reassemble), and `watch on|off`. Set the CLI launch size with `--size 80x24`;
+the client passes that geometry to the app through `NOIR_DRIVE_SIZE`. Use
+`resize <WxH>` to change it during a session. Viewing an app at several sizes
+this way is how layout problems at small terminals get caught early.
 
 Outside the repo the extension surface still activates, but the CLI and the
 `NoirDriver` client are not part of the published package, and the surface is
 development tooling rather than stable API. Drive mode is for looking at and
 driving a live app; automated assertions belong in ordinary tests
 (`references/testing.md`).
-
-## Reference index
-
-Load the file that matches your task — each is self-contained:
-
-| File | Covers |
-|---|---|
-| `references/widgets.md` | Layout/text/painting plus `Theme`/`ThemeData`, `Divider`, `Badge`, `ProgressBar`, `Spinner`: exact constructors, params, defaults, examples |
-| `references/inputs-and-focus.md` | `TextInput`, `TextArea`, `Select<T>`, `ListView`, `DataTable`, `Checkbox`, `Switch`, `Button`, `ScrollBox`; `Focus`/`FocusScope`/`FocusNode`; the key-routing pipeline; `KeyEvent`/`MouseEvent`/`LogicalKeyboardKey`; `PointerListener`; `Shortcuts`/`Actions`/`Intent`s |
-| `references/state-and-animation.md` | `StatefulWidget` lifecycle, `setState`, `mounted`; `ChangeNotifier`/`ValueNotifier`; `TextEditingController`; `AnimationController` + `SingleTickerProviderStateMixin`; `InheritedWidget` |
-| `references/design.md` | Screen design: 0/1/2-cell spacing, `ThemeData` chrome, catalog-only layout, anti-slop |
-| `references/testing.md` | Testing an app through supported package APIs: headless mount/dispose, testable state owners, what noir does *not* export |
 
 ## Terminal-specific gotchas
 
