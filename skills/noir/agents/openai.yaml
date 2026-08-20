@@ -1,0 +1,4 @@
+interface:
+  display_name: "Noir"
+  short_description: "Build Dart terminal apps with Noir"
+  default_prompt: "Use $noir to build or improve a Dart terminal application with Noir."
