@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 void main() {
   final readme = File('README.md').readAsStringSync();
   final skill = _read('skills/noir/SKILL.md');
+  final skillAgentMetadata = _read('skills/noir/agents/openai.yaml');
   final testingGuide = _read('skills/noir/references/testing.md');
   final widgetsGuide = _read('skills/noir/references/widgets.md');
   final inputsGuide = _read('skills/noir/references/inputs-and-focus.md');
@@ -469,7 +470,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
+        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
@@ -546,6 +547,15 @@ void main() {
     final stateSource = _read('lib/src/framework/widget.dart');
     final shortcutTests = _read('test/widgets/shortcuts_actions_test.dart');
     final borderSource = _read('lib/src/painting/box_border.dart');
+    final driveCli = _read('scripts/noir_drive.dart');
+
+    const expectedSkillAgentMetadata =
+        'interface:\n'
+        '  display_name: "Noir"\n'
+        '  short_description: "Build Dart terminal apps with Noir"\n'
+        r'  default_prompt: "Use $noir to build or improve a Dart terminal application with Noir."'
+        '\n';
+    expect(skillAgentMetadata, expectedSkillAgentMetadata);
 
     final layoutEvidence = [
       _read('lib/src/widgets/row_column.dart'),
@@ -594,6 +604,14 @@ void main() {
     );
     expect(inputsGuide, contains('Physical Tab and Shift+Tab move focus'));
     expect(inputsGuide, contains('dispatching an `InsertTabIntent`'));
+    expect(
+      inputsGuide,
+      contains('event.logicalKey == LogicalKeyboardKey.keyQ'),
+    );
+    expect(
+      inputsGuide,
+      isNot(contains('event.logicalKey == LogicalKeyboardKey.keyA`.')),
+    );
     expect(inputsGuide, contains('repository-contributor implementation rule'));
     expect(inputsGuide, contains('must not import `package:noir/src/**`'));
 
@@ -659,6 +677,9 @@ void main() {
     expect(skill, contains('Theme.of(context)'));
     expect(skill, contains('selectedIndex'));
     expect(skill, contains('`references/design.md`'));
+    expect(driveCli, contains('scroll takes <up|down|left|right> <x> <y>.'));
+    expect(skill, contains('scroll <up|down|left|right> <x> <y>'));
+    expect(skill, contains('the driver has no `--size` option'));
 
     expect(designGuide, contains('0 / 1 / 2'));
     expect(

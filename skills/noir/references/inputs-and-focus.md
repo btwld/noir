@@ -410,8 +410,8 @@ final FocusNode _node = FocusNode();          // FocusNode({String? debugLabel, 
 ```dart
 KeyEventResult _onKey(FocusNode node, KeyEvent event) {
   if (!event.isPress) return KeyEventResult.ignored;
-  if (event.logicalKey == LogicalKeyboardKey.tab) {
-    (_emailFocus.hasFocus ? _nameFocus : _emailFocus).requestFocus();
+  if (event.logicalKey == LogicalKeyboardKey.enter && _emailFocus.hasFocus) {
+    _submit();
     return KeyEventResult.handled;
   }
   return KeyEventResult.ignored;
@@ -446,7 +446,7 @@ event.keyCode           // int
 For dynamic matching: `LogicalKeyboardKey.forCharacter('q')`.
 
 Tip: to catch a plain letter, compare `event.character == 'q'` (simplest) or
-`event.logicalKey == LogicalKeyboardKey.keyA`.
+`event.logicalKey == LogicalKeyboardKey.keyQ`.
 
 ### MouseEvent
 

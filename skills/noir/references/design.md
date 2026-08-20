@@ -8,6 +8,17 @@ Plan the screen, then build from the catalog. Do not start from a web
 design skill or a generic TUI gallery — those assume typefaces, overlays,
 and widgets Noir does not have.
 
+## Contents
+
+- [Process](#process)
+- [Spacing: 0 / 1 / 2 cells](#spacing-0--1--2-cells)
+- [Chrome color: `ThemeData`, not a hex sheet](#chrome-color-themedata-not-a-hex-sheet)
+- [Type and copy](#type-and-copy)
+- [Anti-slop](#anti-slop)
+- [Floor before shipping a screen](#floor-before-shipping-a-screen)
+
+---
+
 ## Process
 
 1. **Name the job.** One sentence: who this is for and what this screen
