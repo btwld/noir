@@ -102,7 +102,7 @@ class PubPackageDetail extends StatelessWidget {
             ),
             const SizedBox(height: 1),
             Text(
-              '←→/1–4/click tabs  ↑↓/PgUp/PgDn  / search  Esc back',
+              '←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results',
               style: TextStyle(color: theme.textMuted),
             ),
           ],

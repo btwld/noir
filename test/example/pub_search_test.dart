@@ -216,6 +216,9 @@ void main() {
                 : isNot(contains(command)),
           );
         }
+        if (testCase.expected != null) {
+          expect(frame, contains('Enter/click open'));
+        }
       } finally {
         app.dispose();
       }
@@ -2113,7 +2116,9 @@ void main() {
 
       expect(
         _render(app),
-        contains('←→/1–4/click tabs  ↑↓/PgUp/PgDn  / search  Esc back'),
+        contains(
+          '←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results',
+        ),
       );
 
       const cases = [
@@ -2373,6 +2378,40 @@ void main() {
     expect(newCatalog.closed, isTrue);
   });
 
+  test('catalog replacement supersedes the queued initial search', () async {
+    final oldCatalog = _FakePubCatalog()
+      ..searchResults.add(_page(['old_catalog_package']));
+    final newCatalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['new_catalog_package']),
+        _page(['duplicate_new_catalog_package']),
+      ]);
+    late _CatalogHostState host;
+    final app = createTuiTestApp(
+      _CatalogHost(
+        initialCatalog: oldCatalog,
+        onReady: (state) => host = state,
+      ),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      host.replaceCatalog(newCatalog);
+      app.pumpFrame();
+      await _settle(app);
+
+      expect(oldCatalog.searchCalls, isEmpty);
+      expect(oldCatalog.closed, isTrue);
+      expect(newCatalog.searchCalls, hasLength(1));
+      expect(_render(app), contains('new_catalog_package'));
+      expect(_render(app), isNot(contains('old_catalog_package')));
+    } finally {
+      app.dispose();
+    }
+    expect(newCatalog.closed, isTrue);
+  });
+
   test('pages forward and backward only from result focus', () async {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
@@ -2517,6 +2556,90 @@ void main() {
       expect(_render(app), contains('Search unavailable'));
       expect(_render(app), contains('page_one'));
       expect(_render(app), contains('PAGE  1'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('pending next page suppresses help and rejects another next', () async {
+    final secondPage = Completer<PackageSearchPage>();
+    final duplicatePage = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['page_one'], hasNextPage: true),
+        secondPage.future,
+        duplicatePage.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..typeText('n');
+      await _settle(app);
+
+      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_render(app), contains('page_one'));
+      expect(_render(app), isNot(contains('n next')));
+      expect(_render(app), isNot(contains('n/p page')));
+      expect(_render(app), isNot(contains('p prev')));
+
+      app.mockInput.typeText('n');
+      await _settle(app);
+
+      expect(catalog.searchCalls.map((call) => call.page), [1, 2]);
+      expect(_render(app), contains('page_one'));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('pending previous page rejects both retained-page directions', () async {
+    final previousPage = Completer<PackageSearchPage>();
+    final wrongNext = Completer<PackageSearchPage>();
+    final duplicatePrevious = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['page_two'], page: 2, hasNextPage: true),
+        previousPage.future,
+        wrongNext.future,
+        duplicatePrevious.future,
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..typeText('p');
+      await _settle(app);
+
+      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_render(app), contains('page_two'));
+      expect(_render(app), isNot(contains('n/p page')));
+      expect(_render(app), isNot(contains('n next')));
+      expect(_render(app), isNot(contains('p prev')));
+
+      app.mockInput
+        ..typeText('n')
+        ..typeText('p');
+      await _settle(app);
+
+      expect(catalog.searchCalls.map((call) => call.page), [1, 1]);
+      expect(_render(app), contains('page_two'));
     } finally {
       app.dispose();
     }

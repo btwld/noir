@@ -28,5 +28,5 @@
   │HOMEPAGE         https://github.com/leoafarias/noir                                           │  
   └──────────────────────────────────────────────────────────────────────────────────────────────┘  
                                                                                                     
-  ←→/1–4/click tabs  ↑↓/PgUp/PgDn  / search  Esc back                                               
+  ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     
                                                                                                     

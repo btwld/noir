@@ -199,7 +199,11 @@ class _PubSearchAppState extends State<PubSearchApp> {
     // searching surface rather than an idle prompt against a prefilled query.
     _searchState = widget.autoSearch ? PubLoadState.loading : PubLoadState.idle;
     if (widget.autoSearch) {
-      scheduleMicrotask(() => unawaited(_runSearch()));
+      final initialCatalog = widget.catalog;
+      scheduleMicrotask(() {
+        if (!mounted || !identical(widget.catalog, initialCatalog)) return;
+        unawaited(_runSearch());
+      });
     }
   }
 
@@ -517,6 +521,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   };
 
   void _nextPage() {
+    if (_searchState == PubLoadState.loading) return;
     final page = _searchPage;
     if (page == null || !page.hasNextPage) return;
     unawaited(
@@ -529,6 +534,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   }
 
   void _previousPage() {
+    if (_searchState == PubLoadState.loading) return;
     final page = _searchPage;
     if (page == null || page.page <= 1) return;
     unawaited(
@@ -686,8 +692,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     if (pageHint != null) {
       return [
         '↑↓ select',
-        'Enter/click',
-        's/f pick',
+        'Enter/click open',
+        's/f',
         pageHint,
         '/ query',
         'Esc',
@@ -697,6 +703,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   }
 
   String? get _pageCommandHint {
+    if (_searchState == PubLoadState.loading) return null;
     final page = _searchPage;
     if (page == null) return null;
     final previous = page.page > 1;

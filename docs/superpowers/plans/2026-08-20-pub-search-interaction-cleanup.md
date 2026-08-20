@@ -20,6 +20,13 @@
 - Use only authorized repository checks; no PTY, crash, native-build, ABI, publication, or manual-workflow operations beyond the user-authorized visual session.
 - Preserve unrelated worktree edits and do not stage overlapping WIP without a clean ownership boundary.
 
+> **Superseded traversal note:** Task 1 below records the pre-selector
+> implementation steps. Its one-Tab examples and `Tab results` copy are not
+> current behavior. The implemented order is query → Sort → Filter →
+> results when results exist; query help says `Tab sort`, and each launcher
+> names the next available control. The later selector-polish contract and
+> application tests are authoritative.
+
 ---
 
 ### Task 1: Contextual Search Commands
