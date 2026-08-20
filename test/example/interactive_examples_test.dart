@@ -93,16 +93,45 @@ void main() {
       'example/pub_search/catalog.dart',
     ).readAsStringSync();
 
-    expect(entrypoint, contains('PubApiCatalog()'));
-    expect(entrypoint, contains('enableMouse: true'));
+    expect(
+      entrypoint,
+      matches(
+        RegExp(
+          r'runTuiApp\s*\(\s*PubSearchApp\s*\(\s*'
+          r'catalog:\s*PubApiCatalog\s*\(\s*\)\s*,?\s*\)\s*,\s*'
+          r'enableMouse:\s*true\s*,?\s*\)',
+          dotAll: true,
+        ),
+      ),
+    );
     expect(entrypoint, isNot(contains('PubSearchConnection')));
     expect(app, isNot(contains('PubSearchConnection')));
     expect(app, isNot(contains('LIVE PUB.DEV')));
     expect(app, isNot(contains('OFFLINE DATA')));
-    expect(catalog, isNot(contains('_packageNamesRequest')));
-    expect(catalog, isNot(contains('_topicCountsRequest')));
-    expect(catalog, isNot(contains('_packageNames =')));
-    expect(catalog, isNot(contains('_topicCounts =')));
+    final fields = RegExp(
+      r'final class PubApiCatalog implements PubCatalog\s*\{(.*?)^\s*@override',
+      dotAll: true,
+      multiLine: true,
+    ).firstMatch(catalog);
+    expect(fields, isNotNull, reason: 'locate PubApiCatalog instance fields');
+    expect(
+      fields!.group(1),
+      isNot(
+        matches(
+          RegExp(
+            r'^\s*(?:final|var)?\s*'
+            r'(?:Future\s*<\s*(?:List\s*<\s*String\s*>|'
+            r'Map\s*<\s*String\s*,\s*int\s*>)\s*>|'
+            r'List\s*<\s*String\s*>|Map\s*<\s*String\s*,\s*int\s*>)'
+            r'\s*\?\s+_[A-Za-z]*(?:package|topic)[A-Za-z]*\s*;',
+            caseSensitive: false,
+            multiLine: true,
+          ),
+        ),
+      ),
+      reason:
+          'PubApiCatalog must not retain nullable completion datasets or futures',
+    );
   });
 
   test('layout examples exit through the tree exactly once', () async {
