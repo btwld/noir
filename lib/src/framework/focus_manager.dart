@@ -752,19 +752,23 @@ class FocusManager {
     FocusNode? ancestor,
     FocusNode currentChild,
   ) {
-    while (ancestor != null) {
-      final hasFocusedDescendant = ancestor._children.any(
+    var currentAncestor = ancestor;
+    var child = currentChild;
+    while (currentAncestor != null) {
+      final hasFocusedDescendant = currentAncestor._children.any(
         (c) => c._hasFocus || c._descendantsHaveFocus,
       );
-      ancestor._setDescendantsHaveFocus(hasFocusedDescendant);
-      if (ancestor is FocusScopeNode &&
-          identical(ancestor.focusedChild, currentChild)) {
-        ancestor._setFocusedChild(
-          hasFocusedDescendant ? _findFirstFocusableChild(ancestor) : null,
+      currentAncestor._setDescendantsHaveFocus(hasFocusedDescendant);
+      if (currentAncestor is FocusScopeNode &&
+          identical(currentAncestor.focusedChild, child)) {
+        currentAncestor._setFocusedChild(
+          hasFocusedDescendant
+              ? _findFirstFocusableChild(currentAncestor)
+              : null,
         );
       }
-      currentChild = ancestor;
-      ancestor = ancestor._parent;
+      child = currentAncestor;
+      currentAncestor = currentAncestor._parent;
     }
   }
 
