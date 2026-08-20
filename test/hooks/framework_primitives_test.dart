@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:noir/hooks.dart';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
@@ -132,6 +134,37 @@ void main() {
     expect(tailValue, same(firstTailValue));
   });
 
+  test('useCallback retains identity until its keys change', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    var key = 0;
+    var value = 1;
+    late int Function() callback;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        final capturedValue = value;
+        callback = useCallback<int Function()>(() => capturedValue, <Object?>[
+          key,
+        ]);
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    final firstCallback = callback;
+
+    value = 2;
+    host.update(buildRoot());
+    expect(callback, same(firstCallback));
+    expect(callback(), 1);
+
+    key = 1;
+    host.update(buildRoot());
+    expect(callback, isNot(same(firstCallback)));
+    expect(callback(), 2);
+  });
+
   test('keys preserve NaN and distinguish signed zero', () {
     final host = TestElementHost();
     addTearDown(host.dispose);
@@ -215,6 +248,207 @@ void main() {
     host.dispose();
 
     expect(log, <String>['effect', 'cleanup', 'effect', 'cleanup']);
+  });
+
+  test('useEffect fails fast when it synchronously requests a rebuild', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final errors = <Object>[];
+    var effectCount = 0;
+
+    runZonedGuarded(() {
+      host.mount(
+        HookBuilder(
+          builder: (context) {
+            final counter = useState<int>(0);
+            useEffect(() {
+              effectCount++;
+              if (effectCount < 3) {
+                counter.value++;
+              }
+              return null;
+            });
+            return const Container();
+          },
+        ),
+      );
+    }, (error, stackTrace) => errors.add(error));
+    expect(effectCount, 1);
+    expect(errors, hasLength(1));
+    expect(errors.single, _effectRebuildError);
+
+    runZonedGuarded(host.pumpBuild, (error, stackTrace) => errors.add(error));
+    expect(effectCount, 1, reason: 'no effect-driven rebuild was scheduled');
+    expect(errors, hasLength(1));
+  });
+
+  test('effect cleanup rebuild failures preserve work and reset the guard', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final errors = <Object>[];
+    final log = <String>[];
+    late ValueNotifier<int> counter;
+    var requestRebuildFromCleanup = true;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        counter = useState<int>(0);
+        useEffect(() {
+          log.add('effect');
+          return () {
+            log.add('cleanup');
+            if (requestRebuildFromCleanup) {
+              requestRebuildFromCleanup = false;
+              counter.value++;
+            }
+          };
+        });
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+
+    runZonedGuarded(
+      () => host.update(buildRoot()),
+      (error, stackTrace) => errors.add(error),
+    );
+    expect(errors, hasLength(1));
+    expect(errors.single, _effectRebuildError);
+    expect(log, <String>[
+      'effect',
+      'cleanup',
+      'effect',
+    ], reason: 'the replacement effect is still attempted after cleanup');
+    runZonedGuarded(
+      () => counter.value++,
+      (error, stackTrace) => errors.add(error),
+    );
+    expect(errors, hasLength(1), reason: 'the effect guard must be restored');
+  });
+
+  test('keyless effects preserve the first cleanup failure', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final cleanupError = StateError('cleanup failed');
+    final effectError = StateError('effect failed');
+    final errors = <Object>[];
+    final log = <String>[];
+    late ValueNotifier<int> counter;
+    var fail = false;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        counter = useState<int>(0);
+        useEffect(() {
+          log.add('effect');
+          if (fail) {
+            throw effectError;
+          }
+          return () {
+            log.add('cleanup');
+            if (fail) {
+              throw cleanupError;
+            }
+          };
+        });
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    fail = true;
+
+    expect(() => host.update(buildRoot()), throwsA(same(cleanupError)));
+    expect(log, <String>['effect', 'cleanup', 'effect']);
+    runZonedGuarded(
+      () => counter.value++,
+      (error, stackTrace) => errors.add(error),
+    );
+    expect(errors, isEmpty, reason: 'the effect guard must restore on failure');
+  });
+
+  test('keyed effect cleanup rebuild failures preserve replacement order', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final errors = <Object>[];
+    final log = <String>[];
+    var key = 0;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        final counter = useState<int>(0);
+        final effectKey = key;
+        useEffect(() {
+          log.add('effect:first:$effectKey');
+          return () {
+            log.add('cleanup:first:$effectKey');
+          };
+        }, <Object?>[effectKey]);
+        useEffect(() {
+          log.add('effect:second:$effectKey');
+          return () {
+            log.add('cleanup:second:$effectKey');
+            if (effectKey == 0) {
+              counter.value++;
+            }
+          };
+        }, <Object?>[effectKey]);
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    key = 1;
+    runZonedGuarded(
+      () => host.update(buildRoot()),
+      (error, stackTrace) => errors.add(error),
+    );
+
+    expect(errors, hasLength(1));
+    expect(errors.single, _effectRebuildError);
+    expect(log, <String>[
+      'effect:first:0',
+      'effect:second:0',
+      'effect:first:1',
+      'effect:second:1',
+      'cleanup:second:0',
+      'cleanup:first:0',
+    ]);
+  });
+
+  test('effect disposal cleanup rebuild failures preserve later cleanup', () {
+    final host = TestElementHost();
+    final errors = <Object>[];
+    final log = <String>[];
+
+    host.mount(
+      HookBuilder(
+        builder: (context) {
+          final counter = useState<int>(0);
+          useEffect(
+            () => () {
+              log.add('first');
+            },
+            const <Object?>[],
+          );
+          useEffect(
+            () => () {
+              log.add('second');
+              counter.value++;
+            },
+            const <Object?>[],
+          );
+          return const Container();
+        },
+      ),
+    );
+
+    runZonedGuarded(host.dispose, (error, stackTrace) => errors.add(error));
+
+    expect(errors, hasLength(1));
+    expect(errors.single, _effectRebuildError);
+    expect(log, <String>['second', 'first']);
   });
 
   test('runtime-type mismatch throws outside reassemble', () {
@@ -518,6 +752,30 @@ void main() {
     expect(calls, hasLength(2));
   });
 
+  test('usePrevious reports null, updates, and repeated equal values', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    var value = 1;
+    late int? previous;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        previous = usePrevious<int>(value);
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    expect(previous, isNull);
+
+    value = 2;
+    host.update(buildRoot());
+    expect(previous, 1);
+
+    host.update(buildRoot());
+    expect(previous, 2);
+  });
+
   test('useIsMounted returns one stable lifecycle callback', () {
     final host = TestElementHost();
     late bool Function() isMounted;
@@ -548,6 +806,13 @@ void main() {
     expect(isMounted(), isFalse);
   });
 }
+
+final Matcher _effectRebuildError = isA<StateError>().having(
+  (error) => error.message,
+  'message',
+  'HookState.setState() cannot request a rebuild while a useEffect callback '
+      'or cleanup is running.',
+);
 
 final class _ComposedStateHook extends Hook<ValueNotifier<int>> {
   const _ComposedStateHook(this.initialValue);

@@ -61,6 +61,11 @@ are complete; `0.0.1-alpha.2` is not published.
       candidate and clean clone. Documentation had zero warnings and errors,
       and both clean-tree publish dry-runs validated the intended 15 MB archive
       with zero warnings.
+- [x] On the alpha.2 hook review-closure tree, focused hook and Like Reactor
+      tests, formatting, strict analysis, architecture tests, the full ordinary
+      suite, all six bundled-binary checks, and diff checks passed. The
+      clean-workspace publish dry-run produced the intended 15 MB archive with
+      zero warnings; its clean-clone repeat remains in the open gates above.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and

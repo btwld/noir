@@ -1,5 +1,6 @@
 import 'package:noir/noir.dart';
 
+import 'effect_guard.dart';
 import 'framework.dart';
 
 /// Releases resources created by an effect.
@@ -57,6 +58,10 @@ ObjectRef<T> useRef<T>(T initialValue) =>
 /// With keys, a changed effect is installed before the previous cleanup so
 /// later hook slots can update first. Cleanup also runs when the hook is
 /// removed or its widget is disposed.
+///
+/// An effect or cleanup must not synchronously request a hook rebuild. Update
+/// an [ObjectRef] for non-rebuilding bookkeeping, or perform state changes
+/// later from a timer, future, stream, or input callback.
 void useEffect(Effect effect, [List<Object?>? keys]) =>
     use<Object?>(_EffectHook(effect, keys));
 
@@ -180,7 +185,9 @@ final class _EffectHookState extends HookState<Object?, _EffectHook> {
     try {
       final cleanup = _cleanup;
       _cleanup = null;
-      cleanup?.call();
+      if (cleanup != null) {
+        EffectExecutionGuard.run(cleanup);
+      }
     } finally {
       super.dispose();
     }
@@ -193,14 +200,16 @@ final class _EffectHookState extends HookState<Object?, _EffectHook> {
     final cleanup = _cleanup;
     _cleanup = null;
     try {
-      cleanup?.call();
+      if (cleanup != null) {
+        EffectExecutionGuard.run(cleanup);
+      }
     } on Object catch (error, stackTrace) {
       firstError = error;
       firstStackTrace = stackTrace;
     }
 
     try {
-      _cleanup = hook.effect();
+      _cleanup = EffectExecutionGuard.run(hook.effect);
     } on Object catch (error, stackTrace) {
       firstError ??= error;
       firstStackTrace ??= stackTrace;

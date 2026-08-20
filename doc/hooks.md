@@ -126,6 +126,14 @@ replacement build and the old cleanup runs after later hook slots have updated,
 so those slots can detach from an effect-owned resource safely. Cleanup also
 runs when the hook is removed or its widget is disposed.
 
+Effect callbacks and cleanup must not synchronously request a hook rebuild.
+That includes updating `useState` or another observed value from inside the
+callback. Noir reports a targeted `StateError` immediately instead of allowing
+the build queue to drain repeated effect-driven rebuilds. Assigning an
+`ObjectRef` remains valid because it does not rebuild. State changes made later
+from timers, futures, streams, or input callbacks are also valid because the
+effect has returned by then.
+
 `useValueChanged` follows the established hooks contract: its callback receives
 the previous input value and the callback's previous result. The first build
 returns `null` without invoking the callback.

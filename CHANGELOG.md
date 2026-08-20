@@ -6,6 +6,9 @@
   and effect primitives, listenable and async observation, and Noir controller
   and animation hooks. Keyed effects defer old cleanup until later hook slots
   rewire, and `useValueChanged` receives the previous input and callback result.
+  Synchronous effect callbacks and cleanup fail fast if they request a hook
+  rebuild; non-rebuilding reference writes and later asynchronous updates stay
+  supported.
 
 ## 0.0.1-alpha.1
 

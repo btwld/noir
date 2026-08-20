@@ -1,6 +1,8 @@
 import 'package:meta/meta.dart';
 import 'package:noir/noir.dart';
 
+import 'effect_guard.dart';
+
 /// Builds a widget from a [BuildContext] while hooks are active.
 typedef HookWidgetBuilder = Widget Function(BuildContext context);
 
@@ -98,10 +100,17 @@ abstract class HookState<R, H extends Hook<R>> {
 
   /// Applies [fn] and schedules the hosting widget to rebuild.
   ///
-  /// This throws after disposal starts. The callback is not invoked in that
+  /// This throws after disposal starts or while a synchronous `useEffect`
+  /// callback or cleanup is running. The callback is not invoked in either
   /// case.
   @protected
   void setState(VoidCallback fn) {
+    if (EffectExecutionGuard.isActive) {
+      throw StateError(
+        'HookState.setState() cannot request a rebuild while a useEffect '
+        'callback or cleanup is running.',
+      );
+    }
     if (!_mounted || _disposing) {
       throw StateError(
         'HookState.setState() called after dispose(): $runtimeType is no '
