@@ -1,13 +1,7 @@
 import 'package:noir/hooks.dart';
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
-
-final _counterAccent = Color.fromHex('#7DD3FC');
-final _counterTheme = ThemeData.dark.copyWith(
-  accent: _counterAccent,
-  info: _counterAccent,
-);
+final _counterTheme = ThemeData.dark.copyWith(accent: Color.fromHex('#7DD3FC'));
 
 void main() => runTuiApp(const HooksCounterApp(), enableMouse: true);
 
@@ -19,49 +13,47 @@ class HooksCounterApp extends HookWidget {
     // Hook calls stay at the top level and in the same order on every build.
     // useState owns the notifier and rebuilds this HookWidget when it changes.
     final count = useState<int>(0);
+    final theme = _counterTheme;
 
     return Theme(
-      data: _counterTheme,
-      child: _CounterView(
-        count: count.value,
-        // Input-driven state belongs in the input callback. useEffect is for
-        // synchronizing an external resource and its cleanup, not button work.
-        onIncrement: () => count.value++,
-      ),
-    );
-  }
-}
-
-class _CounterView extends StatelessWidget {
-  const _CounterView({required this.count, required this.onIncrement});
-
-  final int count;
-  final VoidCallback onIncrement;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DemoScaffold(
-      title: 'Hooks counter',
-      hint: 'Enter / Space / click to add one · Ctrl+C exits',
-      titleTrailing: const [Badge(label: 'HOOKS', variant: BadgeVariant.info)],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          DemoPanel(
-            title: 'Current count',
-            width: 36,
-            child: Text(
-              '$count',
-              style: TextStyle(
-                color: theme.accent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+      data: theme,
+      child: Container(
+        color: theme.surface,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(2),
+        child: Container(
+          width: 42,
+          decoration: BoxDecoration(
+            color: theme.surfaceVariant,
+            border: Border.all(color: theme.border, title: ' Hooks counter '),
           ),
-          Button(autofocus: true, label: '+ Add one', onPressed: onIncrement),
-        ],
+          padding: const EdgeInsets.symmetric(horizontal: 1),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 1,
+            children: [
+              Text(
+                'Count: ${count.value}',
+                style: TextStyle(
+                  color: theme.accent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Button(
+                autofocus: true,
+                label: '+ Add one',
+                // Input-driven state belongs in the input callback.
+                // useEffect is for external resources and their cleanup.
+                onPressed: () => count.value++,
+              ),
+              Text(
+                'Enter / Space / click · Ctrl+C exits',
+                style: TextStyle(color: theme.textMuted),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
