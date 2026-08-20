@@ -142,7 +142,7 @@ void main() {
     expect(tail, same(firstTail));
   });
 
-  test('useEffect keeps cleanup-before-rerun key semantics', () {
+  test('useEffect keeps keyed rerun and cleanup counts', () {
     final host = TestElementHost();
     addTearDown(host.dispose);
     var key = double.nan;
@@ -179,6 +179,36 @@ void main() {
 
     host.dispose();
     expect(cleanupCount, 3);
+  });
+
+  test('keyed effects detach later listeners before old cleanup', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    var key = 0;
+    _StrictNotifier? firstNotifier;
+    late _StrictNotifier notifier;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        final notifierRef = useRef<_StrictNotifier?>(null);
+        useEffect(() {
+          final created = _StrictNotifier();
+          notifierRef.value = created;
+          firstNotifier ??= created;
+          return created.dispose;
+        }, <Object?>[key]);
+        notifier = notifierRef.value!;
+        useListenable<_StrictNotifier>(notifier);
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    key = 1;
+
+    expect(() => host.update(buildRoot()), returnsNormally);
+    expect(notifier, isNot(same(firstNotifier)));
+    expect(firstNotifier!.disposed, isTrue);
   });
 }
 

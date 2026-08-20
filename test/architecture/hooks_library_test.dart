@@ -103,4 +103,17 @@ void main() {
     expect(pubignore, isNot(contains('/lib/hooks.dart')));
     expect(pubignore, isNot(contains('/lib/src/hooks/')));
   });
+
+  test('the Noir skill links to the root hooks guide', () {
+    final skillDirectory = Directory('skills/noir').absolute.uri;
+    final hooksGuide = File.fromUri(
+      skillDirectory.resolve('../../doc/hooks.md'),
+    );
+    final skill = File.fromUri(
+      skillDirectory.resolve('SKILL.md'),
+    ).readAsStringSync();
+
+    expect(hooksGuide.existsSync(), isTrue);
+    expect(skill, contains('`../../doc/hooks.md`'));
+  });
 }

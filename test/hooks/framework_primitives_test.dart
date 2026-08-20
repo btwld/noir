@@ -162,7 +162,7 @@ void main() {
     expect(value, isNot(same(positiveZeroValue)));
   });
 
-  test('useEffect cleans before keyed rerun and on disposal', () {
+  test('keyed useEffect installs its replacement before old cleanup', () {
     final host = TestElementHost();
     final log = <String>[];
     var key = 'a';
@@ -188,10 +188,10 @@ void main() {
 
     key = 'b';
     host.update(buildRoot());
-    expect(log, <String>['effect:a', 'cleanup:a', 'effect:b']);
+    expect(log, <String>['effect:a', 'effect:b', 'cleanup:a']);
 
     host.dispose();
-    expect(log, <String>['effect:a', 'cleanup:a', 'effect:b', 'cleanup:b']);
+    expect(log, <String>['effect:a', 'effect:b', 'cleanup:a', 'cleanup:b']);
   });
 
   test('useEffect without keys reruns on every build', () {
@@ -478,6 +478,44 @@ void main() {
 
     expect(store, same(firstStore));
     expect(store.value, 8);
+  });
+
+  test('useValueChanged accumulates from the previous callback result', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    var value = 2;
+    late int? result;
+    final calls = <(int, int?)>[];
+
+    int accumulate(int oldValue, int? oldResult) {
+      calls.add((oldValue, oldResult));
+      return (oldResult ?? 0) + oldValue;
+    }
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        result = useValueChanged<int, int>(value, accumulate);
+        return const Container();
+      },
+    );
+
+    host.mount(buildRoot());
+    expect(result, isNull);
+    expect(calls, isEmpty);
+
+    value = 3;
+    host.update(buildRoot());
+    expect(result, 2);
+    expect(calls, <(int, int?)>[(2, null)]);
+
+    value = 5;
+    host.update(buildRoot());
+    expect(result, 5);
+    expect(calls, <(int, int?)>[(2, null), (3, 2)]);
+
+    host.update(buildRoot());
+    expect(result, 5);
+    expect(calls, hasLength(2));
   });
 
   test('useIsMounted returns one stable lifecycle callback', () {

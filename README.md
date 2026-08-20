@@ -24,7 +24,8 @@ Install the latest prerelease from pub.dev:
 
     dart pub add noir
 
-When developing against a local checkout, use a path dependency:
+The source tree can be ahead of the latest published prerelease. When
+evaluating an unreleased API, use a path dependency:
 
     dependencies:
       noir:

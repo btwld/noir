@@ -53,9 +53,10 @@ ObjectRef<T> useRef<T>(T initialValue) =>
 
 /// Runs [effect] synchronously during build and manages its cleanup.
 ///
-/// With no [keys], the previous cleanup and the effect run on every build.
-/// With keys, they run once and then whenever any key changes. Cleanup also
-/// runs when the hook is removed or its widget is disposed.
+/// With no [keys], the previous cleanup runs before the effect on every build.
+/// With keys, a changed effect is installed before the previous cleanup so
+/// later hook slots can update first. Cleanup also runs when the hook is
+/// removed or its widget is disposed.
 void useEffect(Effect effect, [List<Object?>? keys]) =>
     use<Object?>(_EffectHook(effect, keys));
 
@@ -70,10 +71,11 @@ T? usePrevious<T>(T value) => use(_PreviousHook<T>(value));
 
 /// Invokes [valueChange] when [value] changes after the first build.
 ///
-/// The most recent callback result is retained until the next change.
+/// The callback receives the previous value and its own previous result. The
+/// most recent callback result is retained until the next change.
 R? useValueChanged<T, R>(
   T value,
-  R Function(T previous, T current) valueChange,
+  R? Function(T oldValue, R? oldResult) valueChange,
 ) => use(_ValueChangedHook<T, R>(value, valueChange));
 
 /// Creates a reducer [Store] that rebuilds its widget after each state change.
@@ -149,11 +151,9 @@ final class _MemoizedHookState<T> extends HookState<T, _MemoizedHook<T>> {
 }
 
 final class _EffectHook extends Hook<Object?> {
-  _EffectHook(this.effect, List<Object?>? keys)
-    : dependencyKeys = keys == null ? null : List<Object?>.unmodifiable(keys);
+  const _EffectHook(this.effect, List<Object?>? keys) : super(keys: keys);
 
   final Effect effect;
-  final List<Object?>? dependencyKeys;
 
   @override
   _EffectHookState createState() => _EffectHookState();
@@ -167,8 +167,7 @@ final class _EffectHookState extends HookState<Object?, _EffectHook> {
 
   @override
   void didUpdateHook(_EffectHook oldHook) {
-    final keys = hook.dependencyKeys;
-    if (keys == null || !_effectKeysEqual(oldHook.dependencyKeys, keys)) {
+    if (hook.keys == null) {
       _runEffect();
     }
   }
@@ -268,7 +267,7 @@ final class _ValueChangedHook<T, R> extends Hook<R?> {
   const _ValueChangedHook(this.value, this.valueChange);
 
   final T value;
-  final R Function(T previous, T current) valueChange;
+  final R? Function(T oldValue, R? oldResult) valueChange;
 
   @override
   _ValueChangedHookState<T, R> createState() => _ValueChangedHookState<T, R>();
@@ -276,26 +275,17 @@ final class _ValueChangedHook<T, R> extends Hook<R?> {
 
 final class _ValueChangedHookState<T, R>
     extends HookState<R?, _ValueChangedHook<T, R>> {
-  late T _previous;
-  bool _initialized = false;
   R? _result;
 
   @override
-  R? build(BuildContext context) {
-    final current = hook.value;
-    if (!_initialized) {
-      _previous = current;
-      _initialized = true;
-      return _result;
+  void didUpdateHook(_ValueChangedHook<T, R> oldHook) {
+    if (oldHook.value != hook.value) {
+      _result = hook.valueChange(oldHook.value, _result);
     }
-    if (_previous != current) {
-      final previous = _previous;
-      final result = hook.valueChange(previous, current);
-      _previous = current;
-      _result = result;
-    }
-    return _result;
   }
+
+  @override
+  R? build(BuildContext context) => _result;
 }
 
 final class _ReducerHook<S, A> extends Hook<Store<S, A>> {
@@ -384,32 +374,4 @@ final class _IsMountedHookState
 
   @override
   bool Function() build(BuildContext context) => _callback;
-}
-
-bool _effectKeysEqual(List<Object?>? left, List<Object?>? right) {
-  if (identical(left, right)) {
-    return true;
-  }
-  if (left == null || right == null || left.length != right.length) {
-    return false;
-  }
-  for (var index = 0; index < left.length; index++) {
-    final leftValue = left[index];
-    final rightValue = right[index];
-    if (leftValue is num && rightValue is num) {
-      if (leftValue.isNaN && rightValue.isNaN) {
-        continue;
-      }
-      if (leftValue == 0 && rightValue == 0) {
-        if (leftValue.isNegative != rightValue.isNegative) {
-          return false;
-        }
-        continue;
-      }
-    }
-    if (leftValue != rightValue) {
-      return false;
-    }
-  }
-  return true;
 }

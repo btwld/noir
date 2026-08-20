@@ -473,6 +473,12 @@ void main() {
     expect(_normalizeLineEndings('a\r\nb\rc\n'), 'a\nb\nc\n');
   });
 
+  test('generated API documentation stays outside the publish archive', () {
+    final pubignoreLines = _read('.pubignore').split('\n');
+
+    expect(pubignoreLines, contains('/doc/api/'));
+  });
+
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
         'skills/noir/SKILL.md skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'

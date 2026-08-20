@@ -121,8 +121,14 @@ Noir integrations:
 ## Effects and cleanup
 
 `useEffect` is synchronous. Without keys, cleanup and the effect run on every
-build. With keys, they run when a key changes. Cleanup also runs when the hook
-is removed or its widget is disposed.
+build, with cleanup first. With keys, a changed effect is installed during the
+replacement build and the old cleanup runs after later hook slots have updated,
+so those slots can detach from an effect-owned resource safely. Cleanup also
+runs when the hook is removed or its widget is disposed.
+
+`useValueChanged` follows the established hooks contract: its callback receives
+the previous input value and the callback's previous result. The first build
+returns `null` without invoking the callback.
 
 Owned hooks dispose in reverse call order. Cleanup continues after a failure,
 then the first error is rethrown.

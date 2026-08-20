@@ -173,7 +173,7 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
-| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `doc/hooks.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `../../doc/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
@@ -389,6 +389,7 @@ Load the file that matches your task — each is self-contained:
 | `references/state-and-animation.md` | `StatefulWidget` lifecycle, `setState`, `mounted`; `ChangeNotifier`/`ValueNotifier`; `TextEditingController`; `AnimationController` + `SingleTickerProviderStateMixin`; `InheritedWidget` |
 | `references/design.md` | Screen design: 0/1/2-cell spacing, `ThemeData` chrome, catalog-only layout, anti-slop |
 | `references/testing.md` | Testing an app through supported package APIs: headless mount/dispose, testable state owners, what noir does *not* export |
+| `../../doc/hooks.md` | Opt-in hooks: lifecycle rules, built-in hook families, effects, and custom hooks |
 
 ## Terminal-specific gotchas
 
