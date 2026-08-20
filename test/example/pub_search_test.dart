@@ -1379,6 +1379,8 @@ void main() {
 
       expect(_render(app), contains('Search unavailable'));
       expect(_render(app), contains('kept_result'));
+      expect(_render(app), contains('Go to the query to edit or retry.'));
+      expect(_render(app), isNot(contains('Enter to retry')));
       expect(
         _render(app),
         contains('Enter/Space/click choose filter  Tab results  Esc quit'),

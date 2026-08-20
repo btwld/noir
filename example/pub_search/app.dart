@@ -915,7 +915,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
         Text('Search unavailable', style: TextStyle(color: theme.danger)),
         Text(_error ?? 'Unknown error'),
         Text(
-          'Edit the query or press Enter to retry.',
+          _searchFocus.hasFocus
+              ? 'Edit the query or press Enter to retry.'
+              : 'Go to the query to edit or retry.',
           style: TextStyle(color: theme.textMuted),
         ),
         if (previous != null && previous.packages.isNotEmpty) ...[
