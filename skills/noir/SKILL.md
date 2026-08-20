@@ -6,8 +6,9 @@ description: >-
   Noir app and example code involving widget layout, text and styling, themes,
   state, animation, focus, keyboard or mouse input, scrolling, forms, lists,
   tables, lifecycle, hot reload, drive mode, and application-facing tests.
-  Trigger on package:noir imports or Dart TUI work in a Noir project. Do not
-  use for Noir framework internals or the TypeScript/React/Solid OpenTUI APIs.
+  Trigger on package:noir imports, including package:noir/hooks.dart, or Dart
+  TUI work in a Noir project. Do not use for Noir framework internals or the
+  TypeScript/React/Solid OpenTUI APIs.
 ---
 
 # Noir — Flutter-like TUI framework for Dart
@@ -24,11 +25,15 @@ Import the complete application-authoring surface from one library:
 import 'package:noir/noir.dart';
 ```
 
+Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it
+together with `package:noir/noir.dart` when using `HookWidget` or `use...`
+functions.
+
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
 implementations and the recorder/display-list/compositor backend stay
 framework-owned. Raw FFI lives in `package:noir/noir_ffi.dart`; ordinary apps
-almost never need either companion import.
+almost never need the low-level or FFI import.
 
 ## Workflow
 
@@ -54,6 +59,7 @@ almost never need either companion import.
 | Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
 | Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
 | Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
+| Opt-in widget lifecycle hooks and effect rules | `../noir-hooks/SKILL.md`, then `../../doc/hooks.md` |
 | Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
 | Consumer-facing test strategy and supported seams | `references/testing.md` |
 
@@ -127,8 +133,8 @@ Inside this repo, `example/` has a runnable reference for every major feature
 `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
 `data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
-`inherited_example.dart`, `framework_primitives.dart`, `chat_demo.dart`,
-`widgets_tour.dart`) — read one before inventing a pattern.
+`inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
+`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
 
 ## Mental model
 
@@ -191,6 +197,7 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `../../doc/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
@@ -269,10 +276,10 @@ printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
 `--plain`/`--cells` give text or JSON. Other commands: `tree [depth]`,
 `key <name>`, `type <text>`, `click <x> <y>`,
 `scroll <up|down|left|right> <x> <y>`, `resize <WxH>`, `reload` (hot reload +
-reassemble), and `watch on|off`. Set the launch size with
-`NOIR_DRIVE_SIZE=80x24`; the driver has no `--size` option. Viewing an app at
-several sizes this way is how layout problems at small terminals get caught
-early.
+reassemble), and `watch on|off`. Set the CLI launch size with `--size 80x24`;
+the client passes that geometry to the app through `NOIR_DRIVE_SIZE`. Use
+`resize <WxH>` to change it during a session. Viewing an app at several sizes
+this way is how layout problems at small terminals get caught early.
 
 Outside the repo the extension surface still activates, but the CLI and the
 `NoirDriver` client are not part of the published package, and the surface is

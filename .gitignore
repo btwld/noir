@@ -17,6 +17,7 @@ test/failures/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/noir
+!.claude/skills/noir-hooks
 .context/
 
 # FVM Version Cache

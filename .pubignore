@@ -46,7 +46,8 @@ debug.log
 .gitmodules
 .gitignore
 
-# Documentation and guides not needed in package
+# Generated documentation and repository guides not needed in package
+/doc/api/
 /docs/
 AGENTS.md
 CLAUDE.md

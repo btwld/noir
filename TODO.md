@@ -1,27 +1,28 @@
-# Release TODO — `0.0.1-alpha.1`
+# Release TODO — `0.0.1-alpha.2`
 
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
-Noir is **not** cleared for a tag, GitHub release, native build, manual workflow
-dispatch, or public repository visibility until the applicable open items below
-are closed. The pub.dev publication recorded below is complete.
+Noir is **not** cleared for publication, a tag, GitHub release, native build,
+manual workflow dispatch, or public repository visibility until the applicable
+open items below are closed. The previous pub.dev publications recorded below
+are complete; `0.0.1-alpha.2` is not published.
 
 ## Open — remaining release operations
 
 - [x] **Independent behavior and full-diff review** of the current candidate,
       with no unresolved finding.
-- [x] **Recovery bundle and clean-clone verification** recorded: the committed
+- [ ] **Recovery bundle and clean-clone verification** recorded: the committed
       candidate and pinned OpenTUI gitlink were restored into a fresh checkout,
       the verification commands below passed, and all six bundled binaries
       verified against `native_manifest.json`.
-- [x] **Clean-tree publish dry-run** completed with zero warnings and the
+- [ ] **Clean-tree publish dry-run** completed with zero warnings and the
       intended 15 MB archive contents, both in the workspace and clean clone.
 - [x] **Manual real-terminal check** of hot reload. Ordinary verification is
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
-- [x] **Publish the current candidate to pub.dev** as a separate deliberate
+- [ ] **Publish `0.0.1-alpha.2` to pub.dev** as a separate deliberate
       action after the candidate checks above are complete.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
       separate, deliberate decision. The repository is private today.
@@ -32,7 +33,7 @@ are closed. The pub.dev publication recorded below is complete.
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled
       library as cache inputs, with a focused regression test.
-- [x] The current manual pub.dev publication is live as `noir 0.0.1-alpha.1`.
+- [x] The latest manual pub.dev publication is live as `noir 0.0.1-alpha.1`.
       The public package API reports it as latest with archive SHA-256
       `71f8c0f029ec11d6e891161f375aa41a9ca86cf325740e249466c817659a2338`.
       The downloaded archive matches that hash, declares the exact version,
@@ -54,11 +55,17 @@ are closed. The pub.dev publication recorded below is complete.
 - [x] Automatic `push`/`pull_request` CI is analysis-gated, bounded,
       least-privilege, and immutable-action pinned. Platform suites run in
       parallel after the gate; manual dispatch and rerun remain controlled.
-- [x] Format, strict analysis, 157 architecture tests, the 1272-test ordinary
-      suite, downstream-consumer checks, native-asset verification, and diff
-      checks pass on the committed candidate and clean clone. Documentation has
-      zero warnings and errors, and both clean-tree publish dry-runs validate
-      the intended 15 MB archive with zero warnings.
+- [x] For the published alpha.1 baseline, format, strict analysis, 157
+      architecture tests, the 1272-test ordinary suite, downstream-consumer
+      checks, native-asset verification, and diff checks passed on the committed
+      candidate and clean clone. Documentation had zero warnings and errors,
+      and both clean-tree publish dry-runs validated the intended 15 MB archive
+      with zero warnings.
+- [x] On the alpha.2 hook review-closure tree, focused hook and Like Reactor
+      tests, formatting, strict analysis, architecture tests, the full ordinary
+      suite, all six bundled-binary checks, and diff checks passed. The
+      clean-workspace publish dry-run produced the intended 15 MB archive with
+      zero warnings; its clean-clone repeat remains in the open gates above.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and

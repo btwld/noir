@@ -16,8 +16,9 @@ import 'package:noir/src/rendering/render_view.dart';
 /// Lifecycle:
 ///   1. construct with optional [InputManager] / [Renderer]
 ///   2. [mount] a widget — owns the [BuildOwner] and root [Element]
-///   3. [pumpFrame] runs build + pipeline layout/paint
-///   4. [dispose] tears everything down
+///   3. [pumpBuild] processes scheduled widget rebuilds without layout
+///   4. [pumpFrame] runs build + pipeline layout/paint
+///   5. [dispose] tears everything down
 class TestElementHost {
   TestElementHost({InputManager? inputManager, Renderer? renderer})
     : _externalInputManager = inputManager,
@@ -70,6 +71,23 @@ class TestElementHost {
     _renderView = renderView;
   }
 
+  /// Reconciles the mounted root element with [widget].
+  void update(Widget widget) {
+    final root = _root;
+    if (root == null) {
+      throw StateError('TestElementHost is not mounted');
+    }
+    root.update(widget);
+  }
+
+  /// Processes rebuilds scheduled through state or listenable notifications.
+  void pumpBuild() {
+    if (_root == null) {
+      throw StateError('TestElementHost is not mounted');
+    }
+    owner.buildScope();
+  }
+
   /// Run a single frame through the same pipeline boundary as `TuiBinding`.
   void pumpFrame({Buffer? buffer, BoxConstraints? constraints}) {
     final root = _root;
@@ -103,20 +121,48 @@ class TestElementHost {
 
   /// Unmount and release references. The supplied renderer / input manager
   /// are NOT disposed here — they are owned by the caller.
+  ///
+  /// Teardown attempts every owned cleanup step and then rethrows the first
+  /// failure with its original stack trace.
   void dispose() {
     final owner = _owner;
-    if (owner != null && _externalRenderer != null) {
-      owner.clearRenderer();
-    }
-    _root?.unmount();
+    final root = _root;
     final renderView = _renderView;
-    if (owner != null && renderView != null) {
-      owner.clearRootRenderObject(renderView);
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    void attempt(void Function() action) {
+      try {
+        action();
+      } on Object catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
     }
-    owner?.dispose();
-    _root = null;
-    _renderView = null;
-    _owner = null;
+
+    try {
+      if (owner != null && _externalRenderer != null) {
+        attempt(owner.clearRenderer);
+      }
+      if (root != null) {
+        attempt(root.unmount);
+      }
+      if (owner != null && renderView != null) {
+        attempt(() => owner.clearRootRenderObject(renderView));
+      }
+      if (owner != null) {
+        attempt(owner.dispose);
+      }
+    } finally {
+      _root = null;
+      _renderView = null;
+      _owner = null;
+    }
+
+    final error = firstError;
+    if (error != null) {
+      Error.throwWithStackTrace(error, firstStackTrace!);
+    }
   }
 }
 
