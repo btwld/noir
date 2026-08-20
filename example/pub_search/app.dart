@@ -901,8 +901,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
         children: [searching],
       );
     }
-    // Keep the last Select mounted so result-scoped `s`/`n`/`p` still fire
-    // while the next page is in flight. Unmounting it dropped those keys.
+    // Keep the last Select mounted so result-scoped picker shortcuts and
+    // package activation remain available while paging is suppressed for the
+    // pending request.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

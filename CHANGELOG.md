@@ -9,6 +9,20 @@
   Synchronous effect callbacks and cleanup fail fast if they request a hook
   rebuild; non-rebuilding reference writes and later asynchronous updates stay
   supported.
+- Added the Pub search example, a live pub.dev browser demonstrating an
+  injected async data source behind an application-owned `PubCatalog` seam,
+  explicit loading/empty/error/ready states, stale-response suppression, paging,
+  sort and filter pickers, and a four-tab package detail view. Its tests inject
+  a fake catalog, so every async path stays deterministic without network
+  access.
+- A focused supplied `FocusNode` now remains attached and focused when its
+  `Focus` widget relocates within one build. The transfer is limited to an
+  inactive element owned by the same focus manager; active duplicates and
+  cross-manager reuse remain rejected, and permanent removal still detaches.
+- `Select`'s scroll indicator now describes the rows layout actually granted
+  rather than the constructor `height` hint, so a list constrained shorter than
+  its hint shows its up/down arrows, positions the down arrow on the last
+  painted row, and draws no arrow at all when no option row was painted.
 
 ## 0.0.1-alpha.1
 
@@ -45,22 +59,6 @@
   asset verification.
 - Added the Like Reactor example, demonstrating deterministic heart particles,
   animation-driven morphing, and overlapping keyboard and mouse activation.
-- Added the Pub search example, a live pub.dev browser demonstrating an
-  injected async data source behind an application-owned `PubCatalog` seam,
-  explicit loading/empty/error/ready states, stale-response suppression, paging
-  and sort controls, and a four-tab package detail view. Its tests inject a
-  fake catalog, so every async path stays deterministic without network access.
-- A `Focus` whose element is deactivated now releases its `FocusNode`
-  immediately instead of holding it until unmount. Reconciliation defers
-  unmounting to `BuildOwner.finalizeTree`, so relocating a supplied node within
-  a single build previously threw `FocusNode ... is already attached to a live
-  Focus widget`. This also lets the deferred autofocus microtask's
-  `isAttached` guard bail correctly for a node detached mid-relocation.
-- `Select`'s scroll indicator now describes the rows layout actually granted
-  rather than the constructor `height` hint, so a list constrained shorter than
-  its hint shows its up/down arrows, positions the down arrow on the last
-  painted row, and draws no arrow at all when no option row was painted.
-
 ## 0.0.1-alpha.0
 
 - First public alpha of Noir's Flutter-like reactive widget framework for
