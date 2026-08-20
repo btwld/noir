@@ -411,6 +411,9 @@ class FocusManager {
     }
     final carriesFocus = node._hasFocus || node._descendantsHaveFocus;
     final oldParent = node._parent;
+    if (identical(_elementToNode[expectedElement], node)) {
+      _elementToNode[expectedElement] = null;
+    }
     _detachFromParent(node, preserveFocus: true);
     if (carriesFocus) {
       _updateAncestorChainForLoss(oldParent, node);

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;
+import 'package:noir/src/framework/element.dart' show Element;
 import 'package:test/test.dart';
 
 void main() {
@@ -55,18 +56,36 @@ void main() {
     addTearDown(element.unmount);
     element.mount(null, owner);
 
+    final manager = owner.focusManager;
+    final oldElement = _findFocusElement(element, manager, node);
+    expect(oldElement, isNotNull);
+
     node.requestFocus();
-    expect(owner.focusManager.primaryFocus, same(node));
+    expect(manager.primaryFocus, same(node));
     expect(firstScope.focusedChild, same(node));
 
     state.relocate();
     owner.buildScope();
 
+    final newElement = _findFocusElement(element, manager, node);
+    expect(newElement, isNotNull);
+    expect(newElement, isNot(same(oldElement)));
+    expect(manager.nodeForElement(oldElement!), isNull);
+    expect(manager.nodeForElement(newElement!), same(node));
     expect(node.isAttached, isTrue);
-    expect(owner.focusManager.primaryFocus, same(node));
+    expect(manager.primaryFocus, same(node));
     expect(node.hasFocus, isTrue);
     expect(firstScope.focusedChild, isNull);
     expect(secondScope.focusedChild, same(node));
+
+    owner.finalizeTree();
+    expect(manager.nodeForElement(oldElement), isNull);
+    expect(manager.nodeForElement(newElement), same(node));
+    expect(node.isAttached, isTrue);
+
+    element.unmount();
+    expect(manager.nodeForElement(newElement), isNull);
+    expect(node.isAttached, isFalse);
   });
 
   test('one FocusNode cannot migrate between live focus managers', () {
@@ -299,6 +318,17 @@ void main() {
     expect(changes, equals(['h', 'hi', 'h']));
     app.dispose();
   });
+}
+
+Element? _findFocusElement(Element root, FocusManager manager, FocusNode node) {
+  if (identical(manager.nodeForElement(root), node)) {
+    return root;
+  }
+  Element? result;
+  root.visitChildren((child) {
+    result ??= _findFocusElement(child, manager, node);
+  });
+  return result;
 }
 
 /// Moves one supplied-node [Focus] to a different position, under a different
