@@ -130,7 +130,6 @@ test('focused suggestions advertise choosing instead of opening', () async {
       onQuit: () {},
       initialQuery: '',
       autoSearch: false,
-      connection: PubSearchConnection.offline,
     ),
     width: 80,
     height: 24,
@@ -382,7 +381,10 @@ Expected: all tests pass.
 
 **Interfaces:**
 - Consumes: the deterministic `_DriveCatalog`, `NoirDriver.captureCells`, production ANSI parser input, click coordinates resolved from rendered labels, and the authorized repository checks.
-- Produces: paired 80×24/120×32 screenshots for eight states, exact mouse/cursor evidence, an independent review verdict, and full green verification.
+- Produces: paired 80×24/120×32 screenshots for autocomplete loading,
+  suggestions, both open pickers, sort and filter refresh loading, empty/error,
+  detail loading, and all four detail tabs, plus exact mouse/cursor evidence,
+  an independent review verdict, and full green verification.
 
 - [ ] **Step 1: Re-capture every approved visual state**
 
@@ -392,8 +394,11 @@ Run:
 dart run --verbosity=error .context/capture_pub_search.dart
 ```
 
-Expected screenshots for both sizes: idle, suggestions, query-focused results,
-list-focused results, overview, versions, dependencies, and health.
+Expected screenshots for both sizes: idle, autocomplete loading and
+suggestions, query-focused and list-focused results, open sort and filter
+pickers, sort and filter refresh loading, empty/error, detail loading, and
+overview, versions, dependencies, and health. The live pass uses the actual
+online executable rather than deterministic capture data.
 
 - [ ] **Step 2: Review every 80×24/120×32 pair**
 

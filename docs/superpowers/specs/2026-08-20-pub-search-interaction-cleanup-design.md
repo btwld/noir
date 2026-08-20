@@ -56,7 +56,9 @@ authoritative terminal evidence.
 - A one-row, non-focusable tab strip above the detail panel.
 - Single-click activation for package rows and tabs.
 - Arrow and digit shortcuts for tabs and ordinary focus traversal for search.
-- The status row, loading/error/empty states, and existing catalog behavior.
+- The status row, loading/error/empty states, and executable's live-only
+  `PubApiCatalog` data source. Deterministic catalogs remain test and capture
+  infrastructure only.
 
 ## Interaction and Copy Design
 
@@ -66,8 +68,17 @@ The scaffold hint follows the focus owner and the state that is actually
 actionable:
 
 - Idle query: `Enter search   Esc quit`
-- Query with a result surface: `Enter search   Tab results   Esc quit`
-- Focused results: `↑↓ select  Enter/click open  / search  s/f  <page>  Esc quit`
+- Query with a result surface: `Enter search  Tab sort  Esc quit`
+- Focused results: `↑↓ select  Enter/click open  s/f pick  / query  Esc`
+
+After an eligible edit, completion waits 300 ms, then makes fresh hosted name
+and topic requests. The spinner appears only while that request is active;
+there is no app-owned completed or in-flight completion cache. Query, sort,
+and filter are individual focus owners: traversal is query → sort → filter →
+results when results exist, and query → sort → filter for an empty result.
+Sort and filter are launchers, not cycling controls. Enter, Space, a click, or
+the result-list `s`/`f` shortcut opens an in-panel `Select`; arrows only move
+its temporary highlight, while Enter/click applies and Tab/Escape cancels.
 
 Pagination remains visible in the status row. `<page>` is omitted when neither
 direction is available, becomes `n next` or `p prev` when only one direction is
@@ -111,14 +122,14 @@ Search retains one page header, one query panel, one compact status row, and
 one expanding results panel:
 
 ```text
-  PUB / FIND  OFFLINE DATA
+  PUB / FIND
   <contextual commands>
 
   ┌─ SEARCH ─────────────────────────────────────────────────────────────────┐
   │query                                                                     │
   └──────────────────────────────────────────────────────────────────────────┘
 
-  SORT  TOP   FILTER  ANY                                              PAGE  1
+  SORT [TOP ▾]   FILTER [ANY ▾]                                       PAGE  1
 
   ┌─ RESULTS ────────────────────────────────────────────────────────────────┐
   │3 PACKAGES                                                                │
@@ -135,6 +146,9 @@ content viewport.
 
 - Loading keeps its spinner and preserves the previous result list when one
   exists.
+- Search loading shows its one spinner in Results; an open chooser shows its
+  one `Updating results…` indicator above the picker. Completion loading is
+  local to the query field, and detail loading is local to the detail surface.
 - Empty results return focus to the query and do not advertise result actions.
 - Search and package errors retain their retry paths and semantic danger color.
 - Escape returns detail to results and exits from search through `TuiApp.exit`.
@@ -157,17 +171,18 @@ Add focused application regressions that prove:
    behavior remain unchanged.
 
 Regenerate affected visual goldens, then use Noir Driver to capture idle,
-suggestions, query-focused results, list-focused results, and all four detail
-tabs at 80×24 and 120×32. Review each pair for borders, selection, tab fill,
-cursor state, copy fit, wrapping, scrollbar placement, and bottom-row
-preservation. Obtain an independent behavior/diff review before the full
-authorized verification suite.
+autocomplete loading and suggestions, both open pickers, sort and filter
+refresh loading, empty and error states, detail loading, and all four detail
+tabs at 80×24 and 120×32. Review each pair for borders, selection, spinner
+placement, tab fill, cursor state, copy fit, wrapping, scrollbar placement,
+and bottom-row preservation. Obtain an independent behavior/diff review before
+the full authorized verification suite.
 
 ## Non-goals
 
 - No split-view redesign or responsive breakpoint.
 - No new framework widget, hover system, or pointer-cursor API.
-- No catalog, API, model, sorting, filtering, or pagination redesign.
+- No public catalog, API, model, sorting, filtering, or pagination redesign.
 - No extra border, modal, command palette, animation, or second help row.
 - No compatibility shim for obsolete example APIs.
 

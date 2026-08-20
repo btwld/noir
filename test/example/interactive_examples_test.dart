@@ -86,15 +86,23 @@ void main() {
     expect(lockfile, isNot(contains('github.com/leoafarias/pub_api_client')));
   });
 
-  test('pub search exposes only the live pub.dev presentation', () {
+  test('pub search executable is live-only with fresh completion', () {
     final entrypoint = io.File('example/pub_search.dart').readAsStringSync();
     final app = io.File('example/pub_search/app.dart').readAsStringSync();
+    final catalog = io.File(
+      'example/pub_search/catalog.dart',
+    ).readAsStringSync();
 
     expect(entrypoint, contains('PubApiCatalog()'));
     expect(entrypoint, contains('enableMouse: true'));
-    expect(app, contains("Badge(label: 'LIVE PUB.DEV'"));
+    expect(entrypoint, isNot(contains('PubSearchConnection')));
     expect(app, isNot(contains('PubSearchConnection')));
+    expect(app, isNot(contains('LIVE PUB.DEV')));
     expect(app, isNot(contains('OFFLINE DATA')));
+    expect(catalog, isNot(contains('_packageNamesRequest')));
+    expect(catalog, isNot(contains('_topicCountsRequest')));
+    expect(catalog, isNot(contains('_packageNames =')));
+    expect(catalog, isNot(contains('_topicCounts =')));
   });
 
   test('layout examples exit through the tree exactly once', () async {
