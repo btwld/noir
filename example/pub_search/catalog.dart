@@ -60,10 +60,6 @@ final class PubApiCatalog implements PubCatalog {
 
   final PubClient _client;
   var _closed = false;
-  List<String>? _packageNames;
-  Map<String, int>? _topicCounts;
-  Future<List<String>>? _packageNamesRequest;
-  Future<Map<String, int>>? _topicCountsRequest;
 
   @override
   Future<PackageSearchPage> search(
@@ -108,8 +104,8 @@ final class PubApiCatalog implements PubCatalog {
     // Attach recovery to both requests before awaiting either one. A partial
     // endpoint failure should not discard useful suggestions from the other
     // hosted list, while two failures still become one safe boundary error.
-    final packageNamesRequest = _optional(_loadPackageNames());
-    final topicCountsRequest = _optional(_loadTopicCounts());
+    final packageNamesRequest = _optional(_client.packageNameCompletion());
+    final topicCountsRequest = _optional(_client.topicNameCompletion());
     final packageNames = await packageNamesRequest;
     final topicCounts = await topicCountsRequest;
     if (packageNames == null && topicCounts == null) {
@@ -124,34 +120,6 @@ final class PubApiCatalog implements PubCatalog {
         .take(4)
         .map((entry) => PubSuggestion.topic(entry.key, entry.value));
     return [...packages, ...topics];
-  }
-
-  Future<List<String>> _loadPackageNames() {
-    final cached = _packageNames;
-    if (cached != null) return Future.value(cached);
-    return _packageNamesRequest ??= _fetchPackageNames();
-  }
-
-  Future<List<String>> _fetchPackageNames() async {
-    try {
-      return _packageNames = await _client.packageNameCompletion();
-    } finally {
-      _packageNamesRequest = null;
-    }
-  }
-
-  Future<Map<String, int>> _loadTopicCounts() {
-    final cached = _topicCounts;
-    if (cached != null) return Future.value(cached);
-    return _topicCountsRequest ??= _fetchTopicCounts();
-  }
-
-  Future<Map<String, int>> _fetchTopicCounts() async {
-    try {
-      return _topicCounts = await _client.topicNameCompletion();
-    } finally {
-      _topicCountsRequest = null;
-    }
   }
 
   @override

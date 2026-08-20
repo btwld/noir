@@ -291,28 +291,31 @@ void main() {
       catalog.close();
     });
 
-    test('shares in-flight completion dataset requests', () async {
-      final names = Completer<List<String>>();
-      final topics = Completer<Map<String, int>>();
-      final client = _FakePubClient()
-        ..completionNamesRequest = names
-        ..topicCountsRequest = topics;
-      final catalog = PubApiCatalog(client: client);
+    test(
+      'starts fresh completion requests for overlapping invocations',
+      () async {
+        final names = Completer<List<String>>();
+        final topics = Completer<Map<String, int>>();
+        final client = _FakePubClient()
+          ..completionNamesRequest = names
+          ..topicCountsRequest = topics;
+        final catalog = PubApiCatalog(client: client);
 
-      final first = catalog.complete('noi');
-      final second = catalog.complete('noir');
+        final first = catalog.complete('noi');
+        final second = catalog.complete('noir');
 
-      expect(client.packageCompletionCalls, 1);
-      expect(client.topicCompletionCalls, 1);
+        expect(client.packageCompletionCalls, 2);
+        expect(client.topicCompletionCalls, 2);
 
-      names.complete(['noir', 'noir_router']);
-      topics.complete({'terminal': 12});
-      await Future.wait([first, second]);
+        names.complete(['noir', 'noir_router']);
+        topics.complete({'terminal': 12});
+        await Future.wait([first, second]);
 
-      expect(client.packageCompletionCalls, 1);
-      expect(client.topicCompletionCalls, 1);
-      catalog.close();
-    });
+        expect(client.packageCompletionCalls, 2);
+        expect(client.topicCompletionCalls, 2);
+        catalog.close();
+      },
+    );
 
     test(
       'contains concurrent completion failures behind one safe error',
@@ -353,11 +356,7 @@ void main() {
       client.topicCountsError = null;
       final retried = await catalog.complete('term');
       expect(retried.map((item) => item.name), ['terminal']);
-      expect(
-        client.packageCompletionCalls,
-        1,
-        reason: 'the successful package-name dataset stays cached',
-      );
+      expect(client.packageCompletionCalls, 2);
       expect(client.topicCompletionCalls, 2);
       catalog.close();
     });
