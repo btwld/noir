@@ -42,7 +42,8 @@ abstract interface class PubCatalog {
     String? topic,
   });
 
-  /// Prefix-matches cached completion names and topics. Not a per-key search.
+  /// Prefix-matches fresh hosted package names and topics for each eligible
+  /// lookup.
   Future<List<PubSuggestion>> complete(String prefix);
 
   /// Loads all useful public detail responses for [name].

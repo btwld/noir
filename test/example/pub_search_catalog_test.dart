@@ -291,6 +291,18 @@ void main() {
       catalog.close();
     });
 
+    test('starts fresh completion requests for sequential successes', () async {
+      final client = _FakePubClient();
+      final catalog = PubApiCatalog(client: client);
+
+      await catalog.complete('noi');
+      await catalog.complete('term');
+
+      expect(client.packageCompletionCalls, 2);
+      expect(client.topicCompletionCalls, 2);
+      catalog.close();
+    });
+
     test(
       'starts fresh completion requests for overlapping invocations',
       () async {
