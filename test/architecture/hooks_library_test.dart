@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
@@ -153,13 +154,17 @@ void main() {
   });
 
   test('the hooks skill is exposed to local agent skill discovery', () {
-    for (final path in <String>[
+    for (final linkPath in <String>[
       '.agents/skills/noir-hooks',
       '.claude/skills/noir-hooks',
     ]) {
-      final link = Link(path);
-      expect(link.existsSync(), isTrue, reason: path);
-      expect(link.targetSync(), '../../skills/noir-hooks', reason: path);
+      final link = Link(linkPath);
+      expect(link.existsSync(), isTrue, reason: linkPath);
+      expect(
+        link.targetSync(),
+        path.join('..', '..', 'skills', 'noir-hooks'),
+        reason: linkPath,
+      );
     }
   });
 }
