@@ -23,19 +23,25 @@ final class TerminalCellMetrics {
   /// Terminal viewport height in cells.
   final int rows;
 
-  /// Measured terminal viewport width in pixels, when available.
+  /// Measured terminal viewport width in pixels, when positive and available.
   final int? pixelWidth;
 
-  /// Measured terminal viewport height in pixels, when available.
+  /// Measured terminal viewport height in pixels, when positive and available.
   final int? pixelHeight;
 
   /// Measured pixels per cell column, when resolution is usable.
-  double? get pixelsPerCellX =>
-      pixelWidth == null || columns <= 0 ? null : pixelWidth! / columns;
+  double? get pixelsPerCellX {
+    final width = pixelWidth;
+    if (width == null || width <= 0 || columns <= 0) return null;
+    return width / columns;
+  }
 
   /// Measured pixels per cell row, when resolution is usable.
-  double? get pixelsPerCellY =>
-      pixelHeight == null || rows <= 0 ? null : pixelHeight! / rows;
+  double? get pixelsPerCellY {
+    final height = pixelHeight;
+    if (height == null || height <= 0 || rows <= 0) return null;
+    return height / rows;
+  }
 
   /// Nominal terminal cell width-to-height ratio used without measurement.
   double get nominalCellAspectRatio => 0.5;

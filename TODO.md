@@ -14,7 +14,7 @@ are complete; `0.0.1-alpha.2` is not published.
       forms, ownership/cancellation, fit modes, display-list/native drawing,
       pixel-resolution reporting, deterministic drive capture, and public
       guidance are implemented. On the combined parity tree, format,
-      fatal-info analysis, 173 architecture tests, the 1673-test serial suite,
+      fatal-info analysis, 173 architecture tests, the 1685-test serial suite,
       native verify-only, and archive validation pass. The clean committed-tree
       publish dry-run validates the intended 15 MB archive with zero warnings.
 - [x] **ASCII font licensing disposition**: the third-party font tables,
@@ -25,9 +25,9 @@ are complete; `0.0.1-alpha.2` is not published.
       `AsciiFont`, `Slider`, `TextTable`, semantic hyperlinks, OSC52 clipboard,
       grapheme-safe document selection, `CodeView`, unified/split `DiffView`,
       GitHub-flavoured `MarkdownView`, and the Patch Manager presentation
-      migration are implemented. The 235 focused parity and boundary checks,
+      migration are implemented. The 247 focused parity and boundary checks,
       all 163 Patch Manager regressions, all 173 architecture tests, and the
-      1673-test full serial suite pass. Both FFI generators are byte-idempotent;
+      1685-test full serial suite pass. Both FFI generators are byte-idempotent;
       the authored ASCII glyph source, ABI, all six bundled binaries, package
       contents, and diff whitespace validate.
 - [ ] **Parity external gates**: obtain explicit authorization before direct

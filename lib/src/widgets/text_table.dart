@@ -456,7 +456,12 @@ final class RenderTextTable extends RenderBox {
     if (_cells.isEmpty) return 0;
     final columnStarts = _columnStarts();
     final rowStarts = _rowStarts();
-    final column = _partAt(position.dx, columnStarts, _columnWidths);
+    final column = _partAt(
+      position.dx,
+      columnStarts,
+      _columnWidths,
+      sizeAdjustment: _cellPaddingX * 2,
+    );
     final row = _partAt(position.dy, rowStarts, _rowHeights);
     final cell = _cells[row * _columnWidths.length + column];
     final lineIndex = (position.dy - rowStarts[row] - _cellPaddingY).clamp(
@@ -735,9 +740,14 @@ final class RenderTextTable extends RenderBox {
   }
 }
 
-int _partAt(int position, List<int> starts, List<int> sizes) {
+int _partAt(
+  int position,
+  List<int> starts,
+  List<int> sizes, {
+  int sizeAdjustment = 0,
+}) {
   for (var index = 0; index < starts.length; index++) {
-    if (position < starts[index] + sizes[index]) return index;
+    if (position < starts[index] + sizes[index] + sizeAdjustment) return index;
   }
   return starts.length - 1;
 }

@@ -183,6 +183,73 @@ void main() {
     }
   });
 
+  test('pointer mapping clamps scroll after source content shrinks', () async {
+    SelectedText? selected;
+    final key = GlobalKey<_ShrinkingCodeHarnessState>();
+    final driver = KeyDriver(
+      _ShrinkingCodeHarness(
+        key: key,
+        onSelectionChanged: (value) => selected = value,
+      ),
+      width: 20,
+      height: 3,
+    );
+    addTearDown(driver.dispose);
+    await driver.ready();
+    await driver.sendLogicalKey(LogicalKeyboardKey.end);
+
+    key.currentState!.shrink();
+    driver.app.debugFlushFrame();
+    await driver.sendMouse(
+      MouseEvent(
+        type: MouseEventType.down,
+        x: 0,
+        y: 0,
+        button: MouseButton.left,
+      ),
+    );
+    await driver.sendMouse(
+      MouseEvent(
+        type: MouseEventType.move,
+        x: 1,
+        y: 0,
+        button: MouseButton.left,
+      ),
+    );
+    await driver.sendMouse(
+      MouseEvent(type: MouseEventType.up, x: 1, y: 0, button: MouseButton.left),
+    );
+
+    expect(selected?.text, 'f');
+  });
+
+  test('content shrink reconciles stored scroll before regrowth', () async {
+    final visibleLines = <int>[];
+    final key = GlobalKey<_ShrinkingCodeHarnessState>();
+    final driver = KeyDriver(
+      _ShrinkingCodeHarness(
+        key: key,
+        onSelectionChanged: (_) {},
+        onVisibleLineChanged: visibleLines.add,
+      ),
+      width: 20,
+      height: 3,
+    );
+    addTearDown(driver.dispose);
+    await driver.ready();
+    await driver.sendLogicalKey(LogicalKeyboardKey.end);
+    expect(visibleLines.last, 197);
+
+    key.currentState!.shrink();
+    driver.app.debugFlushFrame();
+    expect(visibleLines.last, 0);
+
+    key.currentState!.grow();
+    driver.app.debugFlushFrame();
+    await driver.sendLogicalKey(LogicalKeyboardKey.arrowDown);
+    expect(visibleLines.last, 1);
+  });
+
   test('stale asynchronous highlight results are discarded', () async {
     final highlighter = _DeferredHighlighter();
     final errors = <Object>[];
@@ -310,5 +377,41 @@ final class _CodeHarnessState extends State<_CodeHarness> {
     code: code,
     highlighter: widget.highlighter,
     onHighlightError: (error, stackTrace) => widget.errors.add(error),
+  );
+}
+
+final class _ShrinkingCodeHarness extends StatefulWidget {
+  const _ShrinkingCodeHarness({
+    required this.onSelectionChanged,
+    this.onVisibleLineChanged,
+    super.key,
+  });
+
+  final void Function(SelectedText? value) onSelectionChanged;
+  final void Function(int line)? onVisibleLineChanged;
+
+  @override
+  State<_ShrinkingCodeHarness> createState() => _ShrinkingCodeHarnessState();
+}
+
+final class _ShrinkingCodeHarnessState extends State<_ShrinkingCodeHarness> {
+  String code = List<String>.generate(200, (index) => 'line $index').join('\n');
+
+  void shrink() => setState(() => code = 'first\nsecond\nthird');
+
+  void grow() => setState(
+    () => code = List<String>.generate(
+      200,
+      (index) => 'regrown $index',
+    ).join('\n'),
+  );
+
+  @override
+  Widget build(BuildContext context) => CodeView(
+    code: code,
+    autofocus: true,
+    showLineNumbers: false,
+    onSelectionChanged: widget.onSelectionChanged,
+    onVisibleLineChanged: widget.onVisibleLineChanged,
   );
 }

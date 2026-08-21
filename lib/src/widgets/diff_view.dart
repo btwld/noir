@@ -139,7 +139,8 @@ final class UnifiedDiffParser {
   /// Creates the dependency-free parser.
   const UnifiedDiffParser();
 
-  /// Parses [patch], tolerating Git metadata outside hunks.
+  /// Parses [patch], tolerating Git metadata outside hunks and blank context
+  /// lines whose normally required prefix was removed in transit.
   DiffDocument parse(String patch) {
     final files = <DiffFile>[];
     String? oldPath;
@@ -218,11 +219,12 @@ final class UnifiedDiffParser {
             ),
           );
           oldConsumed++;
-        } else if (value.startsWith(' ')) {
+        } else if (value.startsWith(' ') ||
+            (value.isEmpty && index < lines.length - 1)) {
           hunkLines.add(
             DiffLine(
               kind: DiffLineKind.context,
-              text: value.substring(1),
+              text: value.isEmpty ? '' : value.substring(1),
               oldLineNumber: oldLine++,
               newLineNumber: newLine++,
             ),

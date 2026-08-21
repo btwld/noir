@@ -59,6 +59,30 @@ void main() {
     expect(child.size, const Size(8, 1));
   });
 
+  test('positioned-only Stack derives its unbounded axis extent', () {
+    final child = _FixedBox(7, 1);
+    final stack = RenderStack()
+      ..add(child, data: const StackChildData(left: 2, top: 1));
+
+    stack.layout(const BoxConstraints(maxWidth: 20));
+
+    expect(stack.size, const Size(20, 2));
+    expect(child.size, const Size(7, 1));
+    expect(Offset(child.x, child.y), const Offset(2, 1));
+  });
+
+  test('Stack center alignment matches whole-cell Align rounding', () {
+    final child = _FixedBox(1, 1);
+    final stack = RenderStack(
+      alignment: Alignment.center,
+      children: <RenderBox>[child],
+    );
+
+    stack.layout(const BoxConstraints.tight(width: 2, height: 4));
+
+    expect(Offset(child.x, child.y), const Offset(1, 2));
+  });
+
   test('horizontal Wrap creates runs and applies spacing', () {
     final children = <RenderBox>[
       _FixedBox(3, 1),

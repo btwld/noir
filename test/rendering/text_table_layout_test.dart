@@ -233,6 +233,29 @@ void main() {
     }
   });
 
+  test('horizontal padding remains part of each hit-test cell', () {
+    final tester = WidgetTester(maxWidth: 20, maxHeight: 2);
+    try {
+      tester.pumpWidget(
+        const TextTable(
+          content: <List<InlineSpan>>[
+            <InlineSpan>[TextSpan(text: 'Name'), TextSpan(text: 'State')],
+          ],
+          columnWidthMode: TextTableColumnWidthMode.content,
+          showBorders: false,
+          cellPaddingX: 1,
+        ),
+      );
+      final table = tester.renderObject<RenderTextTable>(RenderTextTable)!;
+
+      expect(table.sourceOffsetAt(const Offset(3, 0)), 2);
+      expect(table.sourceOffsetAt(const Offset(4, 0)), 3);
+      expect(table.sourceOffsetAt(const Offset(6, 0)), 5);
+    } finally {
+      tester.dispose();
+    }
+  });
+
   test(
     'standalone table selects by pointer and copies row-major text',
     () async {

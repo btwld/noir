@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:markdown/markdown.dart' as md;
 import 'package:meta/meta.dart';
 
@@ -359,19 +361,50 @@ final class _MarkdownViewState extends State<MarkdownView>
     MarkdownThemeData theme,
     md.Element list, {
     required bool ordered,
+  }) => _textBlock(_listSpan(theme, list, ordered: ordered, depth: 0));
+
+  InlineSpan _listSpan(
+    MarkdownThemeData theme,
+    md.Element list, {
+    required bool ordered,
+    required int depth,
   }) {
     final items = list.children?.whereType<md.Element>().toList() ?? const [];
     final children = <InlineSpan>[];
+    final orderedStart = ordered
+        ? int.tryParse(list.attributes['start'] ?? '') ?? 1
+        : 1;
     for (var index = 0; index < items.length; index++) {
       final item = items[index];
       final checked = _taskState(item);
-      final prefix = _listPrefix(index, ordered: ordered, checked: checked);
+      final prefix = _listPrefix(
+        index,
+        ordered: ordered,
+        orderedStart: orderedStart,
+        checked: checked,
+      );
       if (index > 0) children.add(const TextSpan(text: '\n'));
-      children
-        ..add(TextSpan(text: prefix, style: theme.strong))
-        ..add(_inline(theme, item, theme.paragraph));
+      children.add(
+        TextSpan(text: '${''.padLeft(depth * 2)}$prefix', style: theme.strong),
+      );
+      for (final child in item.children ?? const <md.Node>[]) {
+        if (child is md.Element && (child.tag == 'ul' || child.tag == 'ol')) {
+          children
+            ..add(const TextSpan(text: '\n'))
+            ..add(
+              _listSpan(
+                theme,
+                child,
+                ordered: child.tag == 'ol',
+                depth: depth + 1,
+              ),
+            );
+        } else {
+          children.add(_inline(theme, child, theme.paragraph));
+        }
+      }
     }
-    return _textBlock(TextSpan(style: theme.paragraph, children: children));
+    return TextSpan(style: theme.paragraph, children: children);
   }
 
   _MarkdownBlock _tableBlock(MarkdownThemeData theme, md.Element table) {
@@ -432,13 +465,13 @@ final class _MarkdownViewState extends State<MarkdownView>
     if (node.tag == 'br') return const TextSpan(text: '\n');
     if (node.tag == 'input') return const TextSpan(text: '');
     final style = switch (node.tag) {
-      'em' => theme.emphasis,
-      'strong' => theme.strong,
+      'em' => _mergeInlineStyle(inherited, theme.emphasis),
+      'strong' => _mergeInlineStyle(inherited, theme.strong),
       'del' => inherited.copyWith(
-        attributes: inherited.attributes | Attr.strike,
+        attributes: inherited.computedAttributes | Attr.strike,
       ),
-      'code' => theme.inlineCode,
-      'a' => theme.link,
+      'code' => _mergeInlineStyle(inherited, theme.inlineCode),
+      'a' => _mergeInlineStyle(inherited, theme.link),
       _ => inherited,
     };
     final uri = node.tag == 'a'
@@ -455,6 +488,12 @@ final class _MarkdownViewState extends State<MarkdownView>
   }
 }
 
+TextStyle _mergeInlineStyle(TextStyle inherited, TextStyle overlay) =>
+    overlay.copyWith(
+      backgroundColor: overlay.backgroundColor ?? inherited.backgroundColor,
+      attributes: inherited.computedAttributes | overlay.attributes,
+    );
+
 final class _MarkdownBlock {
   const _MarkdownBlock({required this.widget, required this.plainText});
 
@@ -462,14 +501,19 @@ final class _MarkdownBlock {
   final String plainText;
 }
 
-String _listPrefix(int index, {required bool ordered, required bool? checked}) {
+String _listPrefix(
+  int index, {
+  required bool ordered,
+  required int orderedStart,
+  required bool? checked,
+}) {
   if (checked != null) return checked ? '[x] ' : '[ ] ';
-  return ordered ? '${index + 1}. ' : '• ';
+  return ordered ? '${orderedStart + index}. ' : '• ';
 }
 
 List<md.Node> _parseMarkdown(String source) => md.Document(
   extensionSet: md.ExtensionSet.gitHubFlavored,
-).parseLines(source.split('\n'));
+).parseLines(const LineSplitter().convert(source));
 
 bool? _taskState(md.Element item) {
   md.Element? input;
@@ -480,6 +524,7 @@ bool? _taskState(md.Element item) {
       return;
     }
     if (node is md.Element) {
+      if (node.tag == 'ul' || node.tag == 'ol') return;
       for (final child in node.children ?? const <md.Node>[]) {
         find(child);
       }

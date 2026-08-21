@@ -9,6 +9,10 @@ import '../rendering/object.dart';
 import '../rendering/stack.dart';
 
 /// Overlays children in document order.
+///
+/// With only positioned children, bounded axes fill their available extent and
+/// unbounded axes derive a finite extent from child sizes and edge offsets.
+/// Negative offsets may still overflow that extent and are clipped by default.
 class Stack extends MultiChildRenderObjectWidget {
   /// Creates a stack with hard-edge clipping by default.
   const Stack({

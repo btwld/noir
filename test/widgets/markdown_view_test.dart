@@ -3,6 +3,7 @@ import 'package:noir/noir.dart';
 import 'package:noir/src/app/driver.dart';
 import 'package:test/test.dart';
 
+import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
 
 const _markdown = '''
@@ -76,6 +77,79 @@ void main() {
         .cast<String>()
         .join('\n');
     expect(tree, isNot(contains('Image')));
+  });
+
+  test('CRLF input renders identically to LF input', () {
+    const lf = '# Heading\n\nBody\n\n- a\n- b';
+    final lfHost = DriverHost.create(width: 30, height: 7);
+    final crlfHost = DriverHost.create(width: 30, height: 7);
+    addTearDown(lfHost.dispose);
+    addTearDown(crlfHost.dispose);
+    lfHost.binding
+      ..runApp(const MarkdownView(markdown: lf))
+      ..debugFlushFrame();
+    crlfHost.binding
+      ..runApp(MarkdownView(markdown: lf.replaceAll('\n', '\r\n')))
+      ..debugFlushFrame();
+
+    expect(crlfHost.capture()['lines'], lfHost.capture()['lines']);
+  });
+
+  test('nested lists render one indented marker per item', () {
+    final capture = BufferCapture(width: 40, height: 4);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      const MarkdownView(markdown: '- Item 1\n  - Nested A\n  - Nested B'),
+    );
+
+    expect(frame.toLines().take(3), <String>[
+      '• Item 1',
+      '  • Nested A',
+      '  • Nested B',
+    ]);
+  });
+
+  test('nested list metadata stays local to the owning list', () {
+    final capture = BufferCapture(width: 40, height: 4);
+    addTearDown(capture.dispose);
+
+    final tasks = capture.capture(
+      const MarkdownView(markdown: '- parent\n  - [x] child'),
+    );
+    expect(tasks.toLines().take(2), <String>['• parent', '  [x] child']);
+
+    final ordered = capture.capture(
+      const MarkdownView(markdown: '- parent\n  3. third\n  4. fourth'),
+    );
+    expect(ordered.toLines().take(3), <String>[
+      '• parent',
+      '  3. third',
+      '  4. fourth',
+    ]);
+  });
+
+  test('nested inline styles preserve outer terminal attributes', () {
+    final capture = BufferCapture(width: 30, height: 3);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      const MarkdownView(
+        markdown: '**bold _ital_ tail**\n\n~~strike **both**~~',
+      ),
+    );
+    final italicPosition = frame.findText('ital').single;
+    final italic = frame.getCell(italicPosition.x, italicPosition.y);
+    final boldStrikePosition = frame.findText('both').single;
+    final boldStrike = frame.getCell(
+      boldStrikePosition.x,
+      boldStrikePosition.y,
+    );
+
+    expect(italic.hasAttribute(Attr.bold), isTrue);
+    expect(italic.hasAttribute(Attr.italic), isTrue);
+    expect(boldStrike.hasAttribute(Attr.bold), isTrue);
+    expect(boldStrike.hasAttribute(Attr.strike), isTrue);
   });
 
   test('block renderer receives AST nodes and may delegate or replace', () {

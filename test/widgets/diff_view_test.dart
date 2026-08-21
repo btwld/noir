@@ -63,6 +63,39 @@ diff --git "a/lib/path with space-\303\244.dart" "b/lib/path with space-\303\244
     expect(document.files.single.newPath, 'lib/path with space-ä.dart');
   });
 
+  test('UnifiedDiffParser retains trimmed blank context coordinates', () {
+    final document = const UnifiedDiffParser().parse(
+      '--- a.txt\n'
+      '+++ a.txt\n'
+      '@@ -1,3 +1,3 @@\n'
+      ' one\n'
+      '\n'
+      ' three',
+    );
+
+    final lines = document.files.single.hunks.single.lines;
+    expect(lines, hasLength(3));
+    expect(lines[1].kind, DiffLineKind.context);
+    expect(lines[1].text, isEmpty);
+    expect(lines[1].oldLineNumber, 2);
+    expect(lines[1].newLineNumber, 2);
+    expect(lines[2].oldLineNumber, 3);
+    expect(lines[2].newLineNumber, 3);
+  });
+
+  test('UnifiedDiffParser does not fabricate context from final newline', () {
+    final document = const UnifiedDiffParser().parse(
+      '--- a.txt\n'
+      '+++ a.txt\n'
+      '@@ -1,2 +1,2 @@\n'
+      ' one\n',
+    );
+
+    final lines = document.files.single.hunks.single.lines;
+    expect(lines, hasLength(1));
+    expect(lines.single.text, 'one');
+  });
+
   test('DiffView paints unified gutters and change styles', () {
     final capture = BufferCapture(width: 40, height: 4);
     try {

@@ -69,6 +69,36 @@ void main() {
     expect(canvas.pixelHeight, 32);
     image.dispose();
   });
+
+  test('non-positive measured pixels fall back to nominal geometry', () {
+    const metrics = TerminalCellMetrics(
+      columns: 4,
+      rows: 2,
+      pixelWidth: 0,
+      pixelHeight: -1,
+    );
+    expect(metrics.pixelsPerCellX, isNull);
+    expect(metrics.pixelsPerCellY, isNull);
+
+    for (final fit in <ImageFit>[ImageFit.fit, ImageFit.cover]) {
+      final image = _image(width: 8, height: 4);
+      final render = RenderImage(image: image, fit: fit)
+        ..layout(const BoxConstraints.tight(width: 4, height: 2));
+      final canvas = _RecordingCanvas();
+
+      expect(
+        () => render.paint(
+          PaintingContext(canvas, cellMetrics: metrics),
+          Offset.zero,
+        ),
+        returnsNormally,
+        reason: '$fit',
+      );
+      expect(canvas.pixelWidth, 0, reason: '$fit');
+      expect(canvas.pixelHeight, 0, reason: '$fit');
+      image.dispose();
+    }
+  });
 }
 
 TerminalImage _image({required int width, required int height}) =>

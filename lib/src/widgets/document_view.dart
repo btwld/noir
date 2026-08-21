@@ -412,12 +412,17 @@ final class _DocumentMetrics {
   int sourceOffsetAt(Offset position, int scrollX, int scrollY) {
     final current = layout;
     if (current == null || current.lines.isEmpty) return 0;
-    final lineIndex = (position.dy + scrollY).clamp(
+    final effectiveScrollX = scrollX.clamp(0, maxScrollX);
+    final effectiveScrollY = scrollY.clamp(0, maxScrollY);
+    final lineIndex = (position.dy + effectiveScrollY).clamp(
       0,
       current.lines.length - 1,
     );
     final line = current.lines[lineIndex];
-    final targetCell = math.max(0, position.dx - gutterWidth + scrollX);
+    final targetCell = math.max(
+      0,
+      position.dx - gutterWidth + effectiveScrollX,
+    );
     var cell = 0;
     for (final run in line.runs) {
       var sourceOffset = run.sourceStart;
@@ -554,6 +559,16 @@ final class _DocumentViewState extends State<DocumentView>
     });
     if (visibleLineChanged) widget.onVisibleLineChanged?.call(nextY);
     return true;
+  }
+
+  void _reconcileScrollAfterLayout(int x, int y) {
+    if (!mounted || (x == _scrollX && y == _scrollY)) return;
+    final visibleLineChanged = y != _scrollY;
+    setState(() {
+      _scrollX = x;
+      _scrollY = y;
+    });
+    if (visibleLineChanged) widget.onVisibleLineChanged?.call(y);
   }
 
   KeyEventResult _scrollResult({int? x, int? y}) =>
@@ -841,6 +856,7 @@ final class _DocumentViewState extends State<DocumentView>
               scrollX: _scrollX,
               scrollY: _scrollY,
               metrics: _metrics,
+              onScrollClamped: _reconcileScrollAfterLayout,
               backgroundColor: theme.surface,
             ),
           ),
@@ -900,6 +916,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     required this.scrollX,
     required this.scrollY,
     required this.metrics,
+    required this.onScrollClamped,
     required this.backgroundColor,
   });
 
@@ -912,6 +929,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
   final int scrollX;
   final int scrollY;
   final _DocumentMetrics metrics;
+  final void Function(int x, int y) onScrollClamped;
   final Color backgroundColor;
 
   @override
@@ -925,6 +943,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     scrollX: scrollX,
     scrollY: scrollY,
     metrics: metrics,
+    onScrollClamped: onScrollClamped,
     backgroundColor: backgroundColor,
   );
 
@@ -945,6 +964,7 @@ final class _RenderDocument extends RenderBox {
     required int scrollX,
     required int scrollY,
     required _DocumentMetrics metrics,
+    required void Function(int x, int y) onScrollClamped,
     required Color backgroundColor,
   }) : _text = snapshotInlineSpan(text),
        _plainText = plainText,
@@ -955,6 +975,7 @@ final class _RenderDocument extends RenderBox {
        _scrollX = scrollX,
        _scrollY = scrollY,
        _metrics = metrics,
+       _onScrollClamped = onScrollClamped,
        _backgroundColor = backgroundColor;
 
   InlineSpan _text;
@@ -966,6 +987,7 @@ final class _RenderDocument extends RenderBox {
   int _scrollX;
   int _scrollY;
   _DocumentMetrics _metrics;
+  void Function(int x, int y) _onScrollClamped;
   Color _backgroundColor;
   late TextLayout _layout;
 
@@ -979,6 +1001,7 @@ final class _RenderDocument extends RenderBox {
     _scrollX = widget.scrollX;
     _scrollY = widget.scrollY;
     _metrics = widget.metrics;
+    _onScrollClamped = widget.onScrollClamped;
     _backgroundColor = widget.backgroundColor;
     markNeedsLayout();
   }
@@ -1007,6 +1030,11 @@ final class _RenderDocument extends RenderBox {
       ..viewportHeight = size.height
       ..maxScrollX = math.max(0, _layout.maxLineWidth - (size.width - gutter))
       ..maxScrollY = math.max(0, _layout.lineCount - size.height);
+    final effectiveScrollX = _scrollX.clamp(0, _metrics.maxScrollX);
+    final effectiveScrollY = _scrollY.clamp(0, _metrics.maxScrollY);
+    if (effectiveScrollX != _scrollX || effectiveScrollY != _scrollY) {
+      _onScrollClamped(effectiveScrollX, effectiveScrollY);
+    }
   }
 
   @override

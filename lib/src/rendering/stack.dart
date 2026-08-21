@@ -167,6 +167,28 @@ final class RenderStack extends RenderBox {
       if (child.size.height > naturalHeight) naturalHeight = child.size.height;
     }
 
+    if (!hasNonPositionedChild &&
+        (constraints.maxWidth == null || constraints.maxHeight == null)) {
+      for (final child in boxes) {
+        final data = _childData[child] ?? const StackChildData();
+        child.layout(
+          _positionedConstraints(
+            data,
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+          ),
+        );
+        naturalWidth = math.max(
+          naturalWidth,
+          _positionedExtent(child.size.width, data.left, data.right),
+        );
+        naturalHeight = math.max(
+          naturalHeight,
+          _positionedExtent(child.size.height, data.top, data.bottom),
+        );
+      }
+    }
+
     final fillAvailable = _fit == StackFit.expand || !hasNonPositionedChild;
     size = Size(
       constraints.constrainWidth(
@@ -191,27 +213,8 @@ final class RenderStack extends RenderBox {
         continue;
       }
 
-      final availableWidth = math.max(
-        0,
-        size.width - (data.left ?? 0) - (data.right ?? 0),
-      );
-      final availableHeight = math.max(
-        0,
-        size.height - (data.top ?? 0) - (data.bottom ?? 0),
-      );
-      final forcedWidth =
-          data.width ??
-          (data.left != null && data.right != null ? availableWidth : null);
-      final forcedHeight =
-          data.height ??
-          (data.top != null && data.bottom != null ? availableHeight : null);
       child.layout(
-        BoxConstraints(
-          minWidth: forcedWidth ?? 0,
-          maxWidth: forcedWidth ?? availableWidth,
-          minHeight: forcedHeight ?? 0,
-          maxHeight: forcedHeight ?? availableHeight,
-        ),
+        _positionedConstraints(data, width: size.width, height: size.height),
       );
       final aligned = _alignedOffset(
         _alignment,
@@ -250,9 +253,37 @@ final class RenderStack extends RenderBox {
 }
 
 Offset _alignedOffset(Alignment alignment, Offset slack) => Offset(
-  ((alignment.x + 1) * slack.dx / 2).floor(),
-  ((alignment.y + 1) * slack.dy / 2).floor(),
+  ((alignment.x + 1) * slack.dx / 2).round(),
+  ((alignment.y + 1) * slack.dy / 2).round(),
 );
+
+BoxConstraints _positionedConstraints(
+  StackChildData data, {
+  required int? width,
+  required int? height,
+}) {
+  final availableWidth = width == null
+      ? null
+      : math.max(0, width - (data.left ?? 0) - (data.right ?? 0));
+  final availableHeight = height == null
+      ? null
+      : math.max(0, height - (data.top ?? 0) - (data.bottom ?? 0));
+  final forcedWidth =
+      data.width ??
+      (data.left != null && data.right != null ? availableWidth : null);
+  final forcedHeight =
+      data.height ??
+      (data.top != null && data.bottom != null ? availableHeight : null);
+  return BoxConstraints(
+    minWidth: forcedWidth ?? 0,
+    maxWidth: forcedWidth ?? availableWidth,
+    minHeight: forcedHeight ?? 0,
+    maxHeight: forcedHeight ?? availableHeight,
+  );
+}
+
+int _positionedExtent(int childExtent, int? leading, int? trailing) =>
+    math.max(0, (leading ?? 0) + childExtent + (trailing ?? 0));
 
 void _validateData(StackChildData data) {
   if ((data.width ?? 0) < 0 || (data.height ?? 0) < 0) {
