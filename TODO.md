@@ -14,7 +14,7 @@ are complete; `0.0.1-alpha.2` is not published.
       forms, ownership/cancellation, fit modes, display-list/native drawing,
       pixel-resolution reporting, deterministic drive capture, and public
       guidance are implemented. On the combined parity tree, format,
-      fatal-info analysis, 165 architecture tests, the 1603-test serial suite,
+      fatal-info analysis, 173 architecture tests, the 1673-test serial suite,
       native verify-only, and archive validation pass. The clean committed-tree
       publish dry-run validates the intended 15 MB archive with zero warnings.
 - [x] **ASCII font licensing disposition**: the third-party font tables,
@@ -26,8 +26,8 @@ are complete; `0.0.1-alpha.2` is not published.
       grapheme-safe document selection, `CodeView`, unified/split `DiffView`,
       GitHub-flavoured `MarkdownView`, and the Patch Manager presentation
       migration are implemented. The 235 focused parity and boundary checks,
-      all 163 Patch Manager regressions, all 165 architecture tests, and the
-      1603-test full serial suite pass. Both FFI generators are byte-idempotent;
+      all 163 Patch Manager regressions, all 173 architecture tests, and the
+      1673-test full serial suite pass. Both FFI generators are byte-idempotent;
       the authored ASCII glyph source, ABI, all six bundled binaries, package
       contents, and diff whitespace validate.
 - [ ] **Parity external gates**: obtain explicit authorization before direct
@@ -89,6 +89,14 @@ are complete; `0.0.1-alpha.2` is not published.
       candidate and clean clone. Documentation had zero warnings and errors,
       and both clean-tree publish dry-runs validated the intended 15 MB archive
       with zero warnings.
+- [x] On the combined alpha.2 hooks-and-parity tree, 96 focused hook API,
+      ownership, example, and downstream-consumer checks pass. The opt-in
+      `package:noir/hooks.dart` surface, guide, skill, example, and complete
+      regression suite from `main` remain present alongside the parity work.
+- [x] The pre-parity alpha.2 hook tree passed its authorized manual
+      real-terminal hot-reload check. Because the combined parity candidate
+      also changes terminal binding/session behavior, its exact-tree repeat
+      remains an open gate above rather than reusing that earlier result.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and
@@ -217,5 +225,5 @@ authorization.
   offers a supported way to request the package's native deployment floor.
 - Execute downstream smoke tests on the three shipped OS/architecture
   combinations not exercised by the ordinary host-runner matrix.
-- Add a lower-bound lane that runs analysis and focused native-asset build-hook
-  tests after `dart pub downgrade` when practical.
+- Add a lower-bound lane that runs analysis plus focused widget-hook and
+  native-asset build-hook tests after `dart pub downgrade` when practical.

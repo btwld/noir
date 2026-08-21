@@ -20,13 +20,15 @@ Core 1.0 covers:
 - Explicitly owned terminal images and idiomatic Dart reference components
   that preserve the framework's retained render pipeline.
 - Inherited dependencies, animation, and application lifecycle.
-- The documented high-level, low-level, and guarded raw FFI package surfaces.
+- The documented high-level, opt-in hooks, low-level, and guarded raw FFI
+  package surfaces.
 - Bundled native loading for the supported desktop targets.
 
-Capability parity does not mean adopting OpenTUI React components, hooks, or
-its internal renderable hierarchy. Full-root layout and paint recording on
-dirty frames and grapheme-run encoding during display-list composition are
-accepted initial costs, not performance guarantees.
+Capability parity does not mean adopting OpenTUI React's component or hook
+implementation, or its internal renderable hierarchy. Noir's Dart-native
+opt-in hooks remain a separate supported surface. Full-root layout and paint
+recording on dirty frames and grapheme-run encoding during display-list
+composition are accepted initial costs, not performance guarantees.
 Optimization work begins only after retained, reproducible measurement breaks
 an explicit workload budget.
 
