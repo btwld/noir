@@ -725,7 +725,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     final theme = Theme.of(context);
     final topic = _visibleTopic;
     return DemoScaffold(
-      title: 'PUB / FIND',
+      title: 'PUB / SEARCH',
       hint: _searchHint,
       child: Expanded(
         child: Column(

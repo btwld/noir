@@ -1127,7 +1127,7 @@ void main() {
     try {
       await _settle(app);
       final frame = _render(app);
-      expect(frame, contains('PUB / FIND'));
+      expect(frame, contains('PUB / SEARCH'));
       expect(frame, isNot(contains('LIVE PUB.DEV')));
       expect(frame, isNot(contains('OFFLINE DATA')));
       expect(frame, contains('Press Enter to search pub.dev.'));
