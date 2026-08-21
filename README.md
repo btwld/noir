@@ -11,10 +11,14 @@ stable 1.0.
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
   and `setState`.
 - Compose layouts with `Row`, `Column`, `Container`, `Padding`, `SizedBox`,
-  `Align`, `Flexible`, and `Expanded`.
+  `Align`, `Flexible`, `Expanded`, `Stack`, `Positioned`, and `Wrap`.
+- Decode and display PNG, JPEG, WebP, GIF, or raw RGBA images with terminal
+  protocol negotiation and deterministic block-cell fallback.
 - Handle text editing, selection, scrolling, keyboard focus, mouse input, and
   application-wide shortcuts.
-- Opt into reusable widget lifecycle hooks with `package:noir/hooks.dart`.
+- Present tabs, sliders, ASCII-art headings, rich static tables, source code,
+  unified or split diffs, and GitHub-flavoured Markdown with native terminal
+  links and explicit OSC52 selection copy.
 - Drop to supported renderer, buffer, or raw FFI APIs when an application
   needs more control.
 
@@ -24,8 +28,7 @@ Install the latest prerelease from pub.dev:
 
     dart pub add noir
 
-The source tree can be ahead of the latest published prerelease. When
-evaluating an unreleased API, use a path dependency:
+When developing against a local checkout, use a path dependency:
 
     dependencies:
       noir:
@@ -180,16 +183,23 @@ See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
 for the complete styled version with a solid action button.
 
-## Widget Lifecycle Hooks
+## Component Catalog
 
-Hooks ship in the main `noir` package but remain outside the default
-`noir.dart` namespace. Import `package:noir/hooks.dart` together with
-`package:noir/noir.dart`.
+| Area | Public widgets and types |
+| --- | --- |
+| Layout | `Container`, `Row`, `Column`, `Flexible`, `Expanded`, `Stack`, `Positioned`, `Wrap`, `Align`, `Padding`, `SizedBox` |
+| Text and media | `Text`, `RichText`, linked `TextSpan`, `AsciiFont`, `Image`, `TerminalImage` |
+| Input | `TextInput`, `TextArea`, `Select`, `TabSelect`, `Slider`, `Checkbox`, `Switch`, `Button` |
+| Scrolling and data | `ScrollBox`, `ListView`, virtualized interactive `DataTable`, static rich `TextTable` |
+| Documents | `CodeView`, `DiffView`, `UnifiedDiffParser`, `MarkdownView`, `SelectedText` |
+| Feedback and chrome | `Divider`, `ProgressBar`, `Spinner`, `Badge`, `Theme` |
 
-The opt-in library includes state, effects, memoization, listenables,
-asynchronous snapshots, animation, focus, editing, scroll, and viewport hooks.
-Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
-[interactive hooks counter example](example/hooks_counter.dart).
+`TextTable` complements rather than replaces `DataTable`: use `TextTable` for
+a finite rich-text grid with wrapping and row-major text selection, and
+`DataTable` for a windowed interactive data source with row selection and
+sorting.
+Likewise, `TabSelect` is the horizontal tab control; the existing `Select`
+remains the vertical list-of-options control.
 
 ## Application Lifecycle and API Tiers
 
@@ -239,10 +249,9 @@ it for you, so a development driver can invoke it over the VM service
 extension `ext.noir.reassemble`; `registerHotReloadExtension(app)` stays
 exported for custom hosts that mount their own app.
 
-Noir has four supported import surfaces:
+Noir has three supported import tiers:
 
 - `package:noir/noir.dart` — ordinary application and widget authoring.
-- `package:noir/hooks.dart` — opt-in widget lifecycle hooks.
 - `package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer
   access, and supported custom rendering.
 - `package:noir/noir_ffi.dart` — ABI-unstable raw FFI access.
@@ -256,12 +265,14 @@ backend remain framework-owned; they are not supported package surfaces.
 - [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
   stateful body, and solid action button controlled by Up/Down,
   `+`/`-`, Enter/Space, or click.
-- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — polished opt-in
-  `HookWidget` and `useState` example with a focused `Button` for Enter, Space,
-  and mouse input.
 - [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
 - [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
   flex combinations.
+- [Image](https://github.com/leoafarias/noir/blob/main/example/image_demo.dart) — embedded RGBA fill rendering and
+  terminal protocol fallback.
+- [Parity components](https://github.com/leoafarias/noir/blob/main/example/parity_components_demo.dart) — overlays, wrapping,
+  tabs, a slider, ASCII-art text, a static rich table, and selectable code,
+  diff, and Markdown views in one interactive app.
 - [Inherited state](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart) — inherited dependencies
   and visible rebuild propagation when `t` switches palettes.
 - [Framework primitives](https://github.com/leoafarias/noir/blob/main/example/framework_primitives.dart) —
@@ -360,6 +371,12 @@ corrupt package.
 
 ## Known Limitations
 
+- Kitty, Sixel, and OSC52 acceptance depends on the terminal or multiplexer.
+  Automated coverage verifies protocol selection, deterministic block fallback,
+  clipping, sizing, and OSC52 argument/status behavior, but this candidate has
+  not yet run the separately authorized direct-terminal, tmux, or Screen matrix.
+  Automatic image mode uses blocks under tmux; unavailable Sixel (including a
+  missing pixel-resolution measurement) falls back to blocks.
 - Dart 3.10 supplies a macOS deployment target of 12 to native-asset hooks,
   while the bundled OpenTUI libraries require macOS 13. Because
   `dart build cli` does not expose a deployment-target override, Noir documents

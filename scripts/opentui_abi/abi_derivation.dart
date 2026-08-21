@@ -76,6 +76,8 @@ const zigToCTypes = <String, String>{
   '*usize': 'size_t*',
   '?*NativeHandle': 'OpenTuiHandle*',
   '*const CursorStyleOptions': 'const CursorStyleOptions*',
+  '*const ExternalImageDrawOptions': 'const ImageDrawOptions*',
+  '?*native_image.Info': 'NativeImageInfo*',
   // An opaque stream handle Noir never dereferences.
   '?*native_span_feed.Stream': 'void*',
 };

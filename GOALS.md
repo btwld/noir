@@ -17,13 +17,16 @@ Core 1.0 covers:
 
 - Widget, Element, State, and RenderObject lifecycle and reconciliation.
 - Integer-cell layout, display-list painting, text, focus, and input.
+- Explicitly owned terminal images and idiomatic Dart reference components
+  that preserve the framework's retained render pipeline.
 - Inherited dependencies, animation, and application lifecycle.
 - The documented high-level, low-level, and guarded raw FFI package surfaces.
 - Bundled native loading for the supported desktop targets.
 
-Full OpenTUI-React component or hook parity is post-1.0. Full-root layout and
-paint recording on dirty frames and grapheme-run encoding during display-list
-composition are accepted initial costs, not performance guarantees.
+Capability parity does not mean adopting OpenTUI React components, hooks, or
+its internal renderable hierarchy. Full-root layout and paint recording on
+dirty frames and grapheme-run encoding during display-list composition are
+accepted initial costs, not performance guarantees.
 Optimization work begins only after retained, reproducible measurement breaks
 an explicit workload budget.
 
@@ -92,7 +95,9 @@ shrink-wrapped:
 | `Container` / `DecoratedBox` / `Padding` | Integer insets. Border + padding max, they do not stack. |
 | `Row` / `Column` | `spacing` is whole cells between children only. Start on the main axis. |
 | `Expanded` / `Flexible` / `SizedBox` / `Align` / `ConstrainedBox` | Cell extents. Do not vertically center card copy. |
+| `Stack` / `Positioned` / `Wrap` | Whole-cell overlays and wrapping runs. Clip stack overflow by default. |
 | `Text` / `RichText` | Grapheme- and cell-aware. Clamp overflow in tables and one-line fields. |
+| `AsciiFont` | Natural multi-row glyph box with seven generated treatments of Noir's built-in alphabet. |
 | `Theme` / `ThemeData` | Flat tokens. `dark` is the unthemed look. |
 | `Divider` | One-cell band of `ThemeData.border`. Specimen, not a page rule. |
 | `Badge` | One row. Horizontal pad 1. |
@@ -103,8 +108,12 @@ shrink-wrapped:
 | `TextInput` | One row. No chrome pad. |
 | `TextArea` | `height` is visible rows. |
 | `Select` | `height` is visible options. Highlight mutes when unfocused. |
+| `TabSelect` | Fixed-width horizontal tabs with an optional underline and description row. |
+| `Slider` | One-cell track on its cross axis; value is caller-controlled. |
 | `ListView` | Same highlight rules. `selectedIndex == null` is plain scroll. |
 | `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |
+| `TextTable` | Finite rich grid. `DataTable` remains the windowed interactive table. |
+| `CodeView` / `DiffView` / `MarkdownView` | Bounded selectable viewports; copy only on explicit Ctrl+C. |
 | `ScrollBox` | One overflowing child. Scrollbar in the last column. |
 | `Focus` / `FocusScope` | Focused lists use `selectedBackground`. Accent border marks keyboard ownership. |
 | `PointerListener` | `MouseEvent.localPosition` only. |
@@ -131,6 +140,7 @@ match stay. Example chrome stays example-local.
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
+| Phase-2 parity components | `parity_components_demo` demonstrates every new non-image component. |
 | `Theme` | `theme_demo` specimens in a `DemoPanel`. |
 | `Focus` / `PointerListener` | `focus_form`. |
 | `framework_primitives` | Scaffold only. |

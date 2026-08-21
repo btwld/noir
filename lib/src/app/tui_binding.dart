@@ -267,7 +267,19 @@ final class TuiBinding {
     final painted = _owner.pipelineOwner.flushPaint(_renderView, (root) {
       buf.clear(Color.black);
       final canvas = createTuiCanvas();
-      root.paint(PaintingContext(canvas), Offset.zero);
+      final resolution = _session.pixelResolution;
+      root.paint(
+        PaintingContext(
+          canvas,
+          cellMetrics: TerminalCellMetrics(
+            columns: buf.width,
+            rows: buf.height,
+            pixelWidth: resolution?.width,
+            pixelHeight: resolution?.height,
+          ),
+        ),
+        Offset.zero,
+      );
       commitTuiCanvas(buf, canvas);
     });
 

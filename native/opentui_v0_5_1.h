@@ -17,6 +17,31 @@ typedef struct CursorStyleOptions {
   uint8_t cursor;
 } CursorStyleOptions;
 
+typedef struct NativeImageInfo {
+  uint32_t width;
+  uint32_t height;
+  uint32_t sourceWidth;
+  uint32_t sourceHeight;
+  uint32_t format;
+  uint32_t colorStatus;
+  uint32_t orientation;
+  uint32_t hasAlpha;
+} NativeImageInfo;
+
+typedef struct ImageDrawOptions {
+  int32_t x;
+  int32_t y;
+  uint32_t width;
+  uint32_t height;
+  uint32_t pixelWidth;
+  uint32_t pixelHeight;
+  uint32_t sourceX;
+  uint32_t sourceY;
+  uint32_t sourceWidth;
+  uint32_t sourceHeight;
+  uint32_t protocol;
+} ImageDrawOptions;
+
 OpenTuiHandle createRenderer(uint32_t width, uint32_t height,
                              uint8_t bufferedDestinationKind,
                              uint8_t remoteModeValue, void *feedPtr);
@@ -27,6 +52,9 @@ OpenTuiHandle getCurrentBuffer(OpenTuiHandle renderer);
 void resizeRenderer(OpenTuiHandle renderer, uint32_t width, uint32_t height);
 void setBackgroundColor(OpenTuiHandle renderer, const uint16_t *color);
 void clearTerminal(OpenTuiHandle renderer);
+bool copyToClipboardOSC52(OpenTuiHandle renderer, uint8_t target,
+                          const uint8_t *text, uint32_t textLen);
+bool clearClipboardOSC52(OpenTuiHandle renderer, uint8_t target);
 
 uint32_t getBufferWidth(OpenTuiHandle buffer);
 uint32_t getBufferHeight(OpenTuiHandle buffer);
@@ -71,6 +99,8 @@ void bufferClearScissorRects(OpenTuiHandle buffer);
 void bufferPushOpacity(OpenTuiHandle buffer, float opacity);
 void bufferPopOpacity(OpenTuiHandle buffer);
 void bufferClearOpacity(OpenTuiHandle buffer);
+uint8_t bufferDrawImage(OpenTuiHandle buffer, OpenTuiHandle image,
+                        const ImageDrawOptions *options);
 
 void setCursorPosition(OpenTuiHandle renderer, int32_t x, int32_t y,
                        bool visible);
@@ -83,10 +113,24 @@ void enableKittyKeyboard(OpenTuiHandle renderer, uint8_t flags);
 void disableKittyKeyboard(OpenTuiHandle renderer);
 
 void setupTerminal(OpenTuiHandle renderer, bool useAlternateScreen);
+void queryPixelResolution(OpenTuiHandle renderer);
 void addToHitGrid(OpenTuiHandle renderer, int32_t x, int32_t y,
                   uint32_t width, uint32_t height, uint32_t id);
 uint32_t checkHit(OpenTuiHandle renderer, uint32_t x, uint32_t y);
 void processCapabilityResponse(OpenTuiHandle renderer,
                                const uint8_t *response, uint32_t responseLen);
+
+uint32_t imageDecode(const uint8_t *data, uint32_t dataLen,
+                     OpenTuiHandle *outHandle);
+uint32_t imageCreateFromRgba(const uint8_t *pixels, uint64_t pixelsLen,
+                            uint32_t width, uint32_t height, uint32_t stride,
+                            OpenTuiHandle *outHandle);
+void imageDestroy(OpenTuiHandle image);
+uint32_t imageGetInfo(OpenTuiHandle image, NativeImageInfo *outInfo);
+
+uint32_t linkAlloc(const uint8_t *url, uint32_t urlLen);
+uint32_t linkGetUrl(uint32_t id, uint8_t *out, uint32_t maxLen);
+uint32_t attributesWithLink(uint32_t baseAttributes, uint32_t linkId);
+uint32_t attributesGetLinkId(uint32_t attributes);
 
 #endif  // NOIR_OPENTUI_V0_5_1_H_

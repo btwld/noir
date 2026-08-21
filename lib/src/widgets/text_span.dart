@@ -9,18 +9,33 @@ abstract class InlineSpan {
 
   /// Appends plain text to [buffer].
   void computePlainText(StringBuffer buffer);
+
+  /// Returns all plain text in this span tree.
+  String toPlainText() {
+    final buffer = StringBuffer();
+    computePlainText(buffer);
+    return buffer.toString();
+  }
 }
 
 /// A text span with optional children.
 final class TextSpan extends InlineSpan {
   /// Creates a text span.
-  const TextSpan({this.text, this.style, this.children = const <InlineSpan>[]});
+  const TextSpan({
+    this.text,
+    this.style,
+    this.uri,
+    this.children = const <InlineSpan>[],
+  });
 
   /// Text content for this span.
   final String? text;
 
   /// Style for this span and unstyled descendants.
   final TextStyle? style;
+
+  /// Semantic hyperlink inherited by unlinked descendants.
+  final Uri? uri;
 
   /// Child spans.
   final List<InlineSpan> children;
@@ -35,16 +50,6 @@ final class TextSpan extends InlineSpan {
       child.computePlainText(buffer);
     }
   }
-
-  /// Returns all text in this span tree.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `TextSpan.toPlainText`.
-  String toPlainText() {
-    final buffer = StringBuffer();
-    computePlainText(buffer);
-    return buffer.toString();
-  }
 }
 
 /// Creates an owned recursive snapshot for a long-lived rendering boundary.
@@ -54,12 +59,11 @@ InlineSpan snapshotInlineSpan(InlineSpan span) {
     return TextSpan(
       text: span.text,
       style: span.style,
+      uri: span.uri,
       children: List<InlineSpan>.unmodifiable(
         span.children.map(snapshotInlineSpan),
       ),
     );
   }
-  final buffer = StringBuffer();
-  span.computePlainText(buffer);
-  return TextSpan(text: buffer.toString());
+  return TextSpan(text: span.toPlainText());
 }

@@ -6,6 +6,52 @@ import '../core/input.dart';
 import '../painting/tui_canvas.dart';
 import '../render/geometry.dart';
 
+/// Terminal geometry available during a render-tree paint walk.
+@immutable
+final class TerminalCellMetrics {
+  /// Creates cell metrics for a terminal viewport.
+  const TerminalCellMetrics({
+    required this.columns,
+    required this.rows,
+    this.pixelWidth,
+    this.pixelHeight,
+  });
+
+  /// Terminal viewport width in cells.
+  final int columns;
+
+  /// Terminal viewport height in cells.
+  final int rows;
+
+  /// Measured terminal viewport width in pixels, when available.
+  final int? pixelWidth;
+
+  /// Measured terminal viewport height in pixels, when available.
+  final int? pixelHeight;
+
+  /// Measured pixels per cell column, when resolution is usable.
+  double? get pixelsPerCellX =>
+      pixelWidth == null || columns <= 0 ? null : pixelWidth! / columns;
+
+  /// Measured pixels per cell row, when resolution is usable.
+  double? get pixelsPerCellY =>
+      pixelHeight == null || rows <= 0 ? null : pixelHeight! / rows;
+
+  /// Nominal terminal cell width-to-height ratio used without measurement.
+  double get nominalCellAspectRatio => 0.5;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TerminalCellMetrics &&
+      other.columns == columns &&
+      other.rows == rows &&
+      other.pixelWidth == pixelWidth &&
+      other.pixelHeight == pixelHeight;
+
+  @override
+  int get hashCode => Object.hash(columns, rows, pixelWidth, pixelHeight);
+}
+
 /// Callback invoked when the render pipeline needs another visual update.
 typedef PipelineVisualUpdateCallback = void Function();
 
@@ -41,10 +87,16 @@ abstract interface class HitTestTarget {
 /// Context passed through the render-tree paint walk.
 final class PaintingContext {
   /// Creates a painting context backed by [canvas].
-  const PaintingContext(this.canvas);
+  const PaintingContext(
+    this.canvas, {
+    this.cellMetrics = const TerminalCellMetrics(columns: 0, rows: 0),
+  });
 
   /// Canvas that records paint commands for the current frame.
   final TuiCanvas canvas;
+
+  /// Terminal cell and optional physical-pixel metrics for this frame.
+  final TerminalCellMetrics cellMetrics;
 
   /// Paint [child] at [offset].
   void paintChild(RenderObject child, Offset offset) {

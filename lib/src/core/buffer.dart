@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:characters/characters.dart';
@@ -8,6 +9,7 @@ import '../ffi/bindings.dart';
 import '../ffi/types.dart';
 import 'color.dart';
 import 'grapheme_metrics.dart';
+import 'terminal_image.dart';
 import 'terminal_style.dart';
 
 const _rgbaChannelsPerCell = 4;
@@ -58,8 +60,14 @@ class _BufferValidity {
 Buffer createBufferFromNative(
   OptimizedBufferHandle pointer,
   OpenTuiBindings bindings,
-  bool Function() ownerIsDisposed,
-) => Buffer._(pointer, bindings, ownerIsDisposed);
+  bool Function() ownerIsDisposed, {
+  bool materializeImagesAsBlocks = false,
+}) => Buffer._(
+  pointer,
+  bindings,
+  ownerIsDisposed,
+  materializeImagesAsBlocks: materializeImagesAsBlocks,
+);
 
 /// Resolves native grapheme-table cells for framework capture tests.
 @internal
@@ -148,19 +156,26 @@ String debugResolveBufferCell(Buffer buffer, int cellIndex) {
 /// buffer.fillRect(10, 8, 20, 1, Color.green);
 /// ```
 class Buffer {
-  Buffer._(this._ptr, this._bindings, this._ownerIsDisposed)
-    : _validity = _BufferValidity();
+  Buffer._(
+    this._ptr,
+    this._bindings,
+    this._ownerIsDisposed, {
+    bool materializeImagesAsBlocks = false,
+  }) : _materializeImagesAsBlocks = materializeImagesAsBlocks,
+       _validity = _BufferValidity();
 
   Buffer._withValidity(
     this._ptr,
     this._bindings,
     this._ownerIsDisposed,
-    this._validity,
-  );
+    this._validity, {
+    required bool materializeImagesAsBlocks,
+  }) : _materializeImagesAsBlocks = materializeImagesAsBlocks;
   final OpenTuiBindings _bindings;
   final OptimizedBufferHandle _ptr;
   final bool Function() _ownerIsDisposed;
   final _BufferValidity _validity;
+  final bool _materializeImagesAsBlocks;
 
   /// Returns a [Buffer] view that silently drops draw calls outside the
   /// rectangle `(clipX, clipY, clipWidth, clipHeight)`. The view shares the
@@ -177,6 +192,7 @@ class Buffer {
     _bindings,
     _ownerIsDisposed,
     _validity,
+    materializeImagesAsBlocks: _materializeImagesAsBlocks,
     clipX: clipX,
     clipY: clipY,
     clipWidth: clipWidth,
@@ -211,6 +227,37 @@ class Buffer {
 
   /// Whether this buffer has been invalidated.
   bool get isInvalidated => !_validity.isValid || _ownerIsDisposed();
+
+  /// Packs a semantic [uri] into [attributes] for a visible text run.
+  @internal
+  int attributesWithLink(int attributes, Uri uri) {
+    _checkValid();
+    final linkId = _bindings.linkAlloc(uri);
+    return linkId == 0
+        ? attributes
+        : _bindings.attributesWithLink(attributes, linkId);
+  }
+
+  /// Resolves the semantic URL encoded in a cell attribute word.
+  @internal
+  String? linkForAttributes(int attributes) {
+    _checkValid();
+    final linkId = _bindings.attributesGetLinkId(attributes);
+    return _bindings.linkGetUrl(linkId);
+  }
+
+  /// Whether a complete text cluster would be painted at this location.
+  ///
+  /// The compositor checks this before allocating hyperlink attributes.
+  /// OpenTUI link slots begin without cell references, so allocating for a
+  /// cluster that clipping later drops would leave the slot unreclaimable.
+  @internal
+  bool acceptsTextCluster(int x, int y, int clusterWidth) =>
+      clusterWidth > 0 &&
+      x >= 0 &&
+      x + clusterWidth <= width &&
+      y >= 0 &&
+      y < height;
 
   /// Width of the buffer in terminal columns.
   int get width {
@@ -446,6 +493,134 @@ class Buffer {
     );
   }
 
+  /// Draws [image] into a terminal-cell rectangle.
+  ///
+  /// Pixel dimensions of zero let OpenTUI use its fallback cell aspect. The
+  /// optional clip is pushed onto the native scissor stack so OpenTUI adjusts
+  /// both the destination and proportional source crop as one operation.
+  bool drawImage(
+    TerminalImage image, {
+    required int x,
+    required int y,
+    required int width,
+    required int height,
+    int pixelWidth = 0,
+    int pixelHeight = 0,
+    int sourceX = 0,
+    int sourceY = 0,
+    int? sourceWidth,
+    int? sourceHeight,
+    ImageProtocol protocol = ImageProtocol.auto,
+    int? clipX,
+    int? clipY,
+    int? clipWidth,
+    int? clipHeight,
+  }) {
+    _checkValid();
+    final info = image.info;
+    final resolvedSourceWidth = sourceWidth ?? info.pixelWidth;
+    final resolvedSourceHeight = sourceHeight ?? info.pixelHeight;
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    for (final (name, value) in <(String, int)>[
+      ('width', width),
+      ('height', height),
+      ('pixelWidth', pixelWidth),
+      ('pixelHeight', pixelHeight),
+      ('sourceX', sourceX),
+      ('sourceY', sourceY),
+      ('sourceWidth', resolvedSourceWidth),
+      ('sourceHeight', resolvedSourceHeight),
+    ]) {
+      final maximum = switch (name) {
+        'width' || 'height' || 'pixelWidth' || 'pixelHeight' => 0x7FFFFFFF,
+        _ => 0xFFFFFFFF,
+      };
+      _checkUnsignedAbi(value, maximum, name);
+    }
+    if (width <= 0 || height <= 0) {
+      throw ArgumentError('image width and height must be positive');
+    }
+    if (x + width > 0x7FFFFFFF || y + height > 0x7FFFFFFF) {
+      throw RangeError('image destination exceeds signed 32-bit bounds');
+    }
+    if (resolvedSourceWidth <= 0 || resolvedSourceHeight <= 0) {
+      throw ArgumentError('image source width and height must be positive');
+    }
+    final hasClip =
+        clipX != null ||
+        clipY != null ||
+        clipWidth != null ||
+        clipHeight != null;
+    if (hasClip &&
+        (clipX == null ||
+            clipY == null ||
+            clipWidth == null ||
+            clipHeight == null)) {
+      throw ArgumentError(
+        'clipX, clipY, clipWidth, and clipHeight must be supplied together',
+      );
+    }
+    if (hasClip) {
+      _checkSigned32Abi(clipX!, 'clipX');
+      _checkSigned32Abi(clipY!, 'clipY');
+      _checkUnsignedAbi(clipWidth!, 0xFFFFFFFF, 'clipWidth');
+      _checkUnsignedAbi(clipHeight!, 0xFFFFFFFF, 'clipHeight');
+    }
+    if (_materializeImagesAsBlocks) {
+      final left = hasClip ? math.max(x, clipX!) : x;
+      final top = hasClip ? math.max(y, clipY!) : y;
+      final right = hasClip
+          ? math.min(x + width, clipX! + clipWidth!)
+          : x + width;
+      final bottom = hasClip
+          ? math.min(y + height, clipY! + clipHeight!)
+          : y + height;
+      for (
+        var row = math.max(0, top);
+        row < math.min(this.height, bottom);
+        row++
+      ) {
+        for (
+          var column = math.max(0, left);
+          column < math.min(this.width, right);
+          column++
+        ) {
+          setCell(column, row, '▀', Color.white, Color.black, 0);
+        }
+      }
+      return true;
+    }
+    if (hasClip) {
+      _bindings.bufferPushScissorRect(
+        _ptr,
+        clipX!,
+        clipY!,
+        clipWidth!,
+        clipHeight!,
+      );
+    }
+    try {
+      return _bindings.bufferDrawImage(
+        _ptr,
+        image.handle,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        pixelWidth: pixelWidth,
+        pixelHeight: pixelHeight,
+        sourceX: sourceX,
+        sourceY: sourceY,
+        sourceWidth: resolvedSourceWidth,
+        sourceHeight: resolvedSourceHeight,
+        protocol: protocol.index,
+      );
+    } finally {
+      if (hasClip) _bindings.bufferPopScissorRect(_ptr);
+    }
+  }
+
   /// Resizes the buffer to [newWidth] by [newHeight] terminal cells.
   ///
   /// [newWidth] and [newHeight] must fit unsigned 32-bit values; violations
@@ -666,6 +841,7 @@ class _ClippedBufferView extends Buffer {
     super.bindings,
     super.ownerIsDisposed,
     super.validity, {
+    required super.materializeImagesAsBlocks,
     required this.clipX,
     required this.clipY,
     required this.clipWidth,
@@ -682,6 +858,12 @@ class _ClippedBufferView extends Buffer {
       x < clipX + clipWidth &&
       y >= clipY &&
       y < clipY + clipHeight;
+
+  @override
+  bool acceptsTextCluster(int x, int y, int clusterWidth) =>
+      super.acceptsTextCluster(x, y, clusterWidth) &&
+      _inClip(x, y) &&
+      _inClip(x + clusterWidth - 1, y);
 
   @override
   void setCell(int x, int y, String char, Color fg, Color bg, int attributes) {

@@ -31,8 +31,6 @@ methods remain the primary resource owner.
 - `package:noir/noir_low_level.dart`: supported advanced hosting and custom
   render-object protocols.
 - `package:noir/noir_ffi.dart`: guarded but ABI-unstable raw bindings.
-- `package:noir/hooks.dart`: opt-in widget lifecycle hooks built only on
-  Noir's high-level public surface.
 
 Generated bindings, library discovery, concrete Element implementations, and
 recording/compositing internals remain framework-owned.

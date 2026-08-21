@@ -112,7 +112,39 @@ void main() {
           <int>[for (var x = 0; x < 20; x++) expected.getCell(x, y).attributes],
           reason: 'row $y attributes',
         );
+        expect(rows[y]['links'], <String?>[
+          for (var x = 0; x < 20; x++) null,
+        ], reason: 'row $y links');
       }
+    });
+
+    test('cell capture resolves semantic links without exposing IDs', () {
+      final host = DriverHost.create(width: 8, height: 1);
+      addTearDown(host.dispose);
+      host.binding
+        ..runApp(
+          RichText(
+            text: TextSpan(
+              text: 'Noir',
+              uri: Uri.parse('https://example.test/noir'),
+            ),
+          ),
+        )
+        ..debugFlushFrame();
+
+      final capture = host.capture(format: DriverCaptureFormat.cells);
+      final rows = (capture['rows']! as List<Object?>)
+          .cast<Map<String, Object?>>();
+      expect(rows.single['links'], <String?>[
+        'https://example.test/noir',
+        'https://example.test/noir',
+        'https://example.test/noir',
+        'https://example.test/noir',
+        null,
+        null,
+        null,
+        null,
+      ]);
     });
 
     test('sendBytes drives an arrow key through the ANSI parser', () async {

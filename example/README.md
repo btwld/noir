@@ -17,9 +17,10 @@ dart run example/main.dart
 | `dart run example/main.dart` | Canonical entry point — minimal Flutter-like terminal app. |
 | `dart run example/hello.dart` | Minimal renderer + widget pipeline smoke test. |
 | `dart run example/counter.dart` | Flutter-inspired full-screen `setState` counter with a flat app bar, centered body, solid 7×3 action button, and Up/Down, `+`/`-`, Enter/Space, and click controls. |
-| `dart run example/hooks_counter.dart` | Polished opt-in `HookWidget` + `useState` counter with a focused `Button` for Enter, Space, and mouse input. |
 | `dart run example/layout_basics.dart` | Basic `Container`, `Row`, `Column`, spacing, and flex usage. |
 | `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
+| `dart run example/image_demo.dart` | Embedded RGBA image sizing and deterministic drive-mode block fallback without network state. |
+| `dart run example/parity_components_demo.dart` | `Stack`, `Positioned`, `Wrap`, `TabSelect`, `AsciiFont`, `Slider`, `TextTable`, `CodeView`, `DiffView`, and `MarkdownView` in one interactive app. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
@@ -55,8 +56,8 @@ dart run example/main.dart
   `exit`. Mouse reporting is requested with `runTuiApp(..., enableMouse:
   true)`.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
-  The layout, Select, ScrollBox, ListView, DataTable, components, theme, and
-  framework-primitives examples also accept `q`. Chat and TextArea accept
+  The layout, parity-components, Select, ScrollBox, ListView, DataTable,
+  components, theme, and framework-primitives examples also accept `q`. Chat and TextArea accept
   `Esc`. The widget tour accepts both: `Esc` always, and `q` only while the
   TextArea is not focused. The inherited example uses `t` to switch palettes.
 - Quit wrappers around a real control use `Focus(canRequestFocus: false)` so

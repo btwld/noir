@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 import '../core/buffer.dart';
 import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
+import '../core/terminal_image.dart';
 import '../core/terminal_style.dart';
 import '../render/geometry.dart';
 import '../rendering/text_highlight.dart';
@@ -59,6 +60,19 @@ abstract interface class TuiCanvas {
     Offset offset, {
     Rect? sourceRect,
     TextHighlight? selection,
+  });
+
+  /// Draw [image] into [destination] terminal cells.
+  ///
+  /// [pixelWidth] and [pixelHeight] describe the destination's real pixel
+  /// extent when measured; zero delegates to OpenTUI's nominal fallback.
+  void drawImage(
+    TerminalImage image,
+    Rect destination, {
+    int pixelWidth = 0,
+    int pixelHeight = 0,
+    Rect? sourceRect,
+    ImageProtocol protocol = ImageProtocol.auto,
   });
 }
 
@@ -192,6 +206,29 @@ final class _TuiCanvasRecorder implements TuiCanvas {
         offset,
         sourceRect: sourceRect,
         selection: selection,
+        clip: _clip,
+      ),
+    );
+  }
+
+  @override
+  void drawImage(
+    TerminalImage image,
+    Rect destination, {
+    int pixelWidth = 0,
+    int pixelHeight = 0,
+    Rect? sourceRect,
+    ImageProtocol protocol = ImageProtocol.auto,
+  }) {
+    _ensureOpen();
+    _commands.add(
+      _DrawImageCommand(
+        image,
+        destination,
+        pixelWidth: pixelWidth,
+        pixelHeight: pixelHeight,
+        sourceRect: sourceRect,
+        protocol: protocol,
         clip: _clip,
       ),
     );
@@ -347,6 +384,26 @@ final class _DrawTextLayoutCommand extends _TuiDrawCommand {
   final TextHighlight? selection;
 }
 
+/// Draw-image command. Holding [image] keeps the native owner alive to commit.
+final class _DrawImageCommand extends _TuiDrawCommand {
+  const _DrawImageCommand(
+    this.image,
+    this.destination, {
+    required this.pixelWidth,
+    required this.pixelHeight,
+    required this.sourceRect,
+    required this.protocol,
+    super.clip,
+  });
+
+  final TerminalImage image;
+  final Rect destination;
+  final int pixelWidth;
+  final int pixelHeight;
+  final Rect? sourceRect;
+  final ImageProtocol protocol;
+}
+
 final class _TextPaintRun {
   _TextPaintRun({
     required this.x,
@@ -421,6 +478,27 @@ final class _DisplayListEncoder {
           } else {
             _drawTextLayoutRuns(target, command, null);
           }
+        case _DrawImageCommand():
+          final source = command.sourceRect;
+          final clip = command.clip;
+          buffer.drawImage(
+            command.image,
+            x: command.destination.left,
+            y: command.destination.top,
+            width: command.destination.width,
+            height: command.destination.height,
+            pixelWidth: command.pixelWidth,
+            pixelHeight: command.pixelHeight,
+            sourceX: source?.left ?? 0,
+            sourceY: source?.top ?? 0,
+            sourceWidth: source?.width,
+            sourceHeight: source?.height,
+            protocol: command.protocol,
+            clipX: clip?.left,
+            clipY: clip?.top,
+            clipWidth: clip?.width,
+            clipHeight: clip?.height,
+          );
       }
     }
   }
@@ -447,6 +525,7 @@ final class _DisplayListEncoder {
         continue;
       }
       final line = layout.lines[lineIndex];
+      final destinationY = command.offset.dy + lineIndex - source.top;
       var cell = 0;
       _TextPaintRun? pending;
 
@@ -458,7 +537,7 @@ final class _DisplayListEncoder {
         target.drawText(
           run.text.toString(),
           run.x,
-          command.offset.dy + lineIndex - source.top,
+          destinationY,
           run.foreground,
           bg: run.background,
           attributes: run.attributes,
@@ -468,6 +547,9 @@ final class _DisplayListEncoder {
 
       for (final run in line.runs) {
         var sourceOffset = run.sourceStart;
+        final baseAttributes = run.style.computedAttributes;
+        final uri = run.uri;
+        int? linkedAttributes;
         for (final cluster in run.text.characters) {
           final width = terminalCellWidth(cluster);
           final nextCell = cell + width;
@@ -486,7 +568,14 @@ final class _DisplayListEncoder {
               sourceOffset,
               sourceEnd,
             );
-            final attributes = run.style.computedAttributes;
+            final attributes =
+                uri == null ||
+                    !target.acceptsTextCluster(x, destinationY, width)
+                ? baseAttributes
+                : linkedAttributes ??= target.attributesWithLink(
+                    baseAttributes,
+                    uri,
+                  );
             final current = pending;
             if (current != null &&
                 current.endX == x &&

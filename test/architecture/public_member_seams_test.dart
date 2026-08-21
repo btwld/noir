@@ -118,7 +118,7 @@ void main() {
   });
 
   test(
-    'only the exact built-in high render widgets declare lifecycle hooks',
+    'only the exact built-in high render widgets declare render factories',
     () async {
       final actualOwners = <_Owner>{};
       for (final file in _dartFilesUnder('lib/src/widgets')) {
@@ -806,6 +806,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
     'beginRebuild',
     'endRebuild',
     'pipelineOwner',
+    'copyToClipboard',
     'scheduleBuild',
     'clearDirty',
     'registerGlobalKey',
@@ -828,7 +829,13 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   (path: 'lib/src/framework/focus_manager.dart', name: 'FocusManager'): {
     'nodeForElement',
   },
-  _bufferOwner: {'invalidate', 'handle'},
+  _bufferOwner: {
+    'invalidate',
+    'attributesWithLink',
+    'linkForAttributes',
+    'acceptsTextCluster',
+    'handle',
+  },
   _rendererOwner: {'debugCurrentBuffer', 'handle', 'bindings'},
 };
 
@@ -858,10 +865,13 @@ const Set<_Owner> _createElementOwners = <_Owner>{
   ),
   (path: 'lib/src/widgets/inherited.dart', name: 'InheritedWidget'),
   (path: 'lib/src/widgets/row_column.dart', name: 'Flex'),
+  (path: 'lib/src/widgets/stack.dart', name: 'Stack'),
+  (path: 'lib/src/widgets/stack.dart', name: 'Positioned'),
 };
 
 const Set<_Owner> _builtInRenderWidgetOwners = <_Owner>{
   (path: 'lib/src/widgets/align.dart', name: 'Align'),
+  (path: 'lib/src/widgets/ascii_font.dart', name: 'AsciiFont'),
   (path: 'lib/src/widgets/constrained_box.dart', name: 'ConstrainedBox'),
   (path: 'lib/src/widgets/decorated_box.dart', name: 'DecoratedBox'),
   (path: 'lib/src/widgets/padding.dart', name: 'Padding'),
@@ -869,6 +879,8 @@ const Set<_Owner> _builtInRenderWidgetOwners = <_Owner>{
   (path: 'lib/src/widgets/rich_text.dart', name: 'RichText'),
   (path: 'lib/src/widgets/text.dart', name: 'Text'),
   (path: 'lib/src/widgets/row_column.dart', name: 'Flex'),
+  (path: 'lib/src/widgets/stack.dart', name: 'Stack'),
+  (path: 'lib/src/widgets/wrap.dart', name: 'Wrap'),
 };
 
 const Set<_Owner> _privateBridgeOwners = <_Owner>{
@@ -891,6 +903,7 @@ const Set<String> _canvasMethods = <String>{
   'drawBox',
   'setCell',
   'drawTextLayout',
+  'drawImage',
 };
 
 const Set<String> _tuiAppMembers = <String>{

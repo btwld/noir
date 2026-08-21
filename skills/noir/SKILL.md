@@ -6,9 +6,8 @@ description: >-
   Noir app and example code involving widget layout, text and styling, themes,
   state, animation, focus, keyboard or mouse input, scrolling, forms, lists,
   tables, lifecycle, hot reload, drive mode, and application-facing tests.
-  Trigger on package:noir imports, including package:noir/hooks.dart, or Dart
-  TUI work in a Noir project. Do not use for Noir framework internals or the
-  TypeScript/React/Solid OpenTUI APIs.
+  Trigger on package:noir imports or Dart TUI work in a Noir project. Do not
+  use for Noir framework internals or the TypeScript/React/Solid OpenTUI APIs.
 ---
 
 # Noir — Flutter-like TUI framework for Dart
@@ -25,15 +24,11 @@ Import the complete application-authoring surface from one library:
 import 'package:noir/noir.dart';
 ```
 
-Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it
-together with `package:noir/noir.dart` when using `HookWidget` or `use...`
-functions.
-
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
 implementations and the recorder/display-list/compositor backend stay
 framework-owned. Raw FFI lives in `package:noir/noir_ffi.dart`; ordinary apps
-almost never need the low-level or FFI import.
+almost never need either companion import.
 
 ## Workflow
 
@@ -59,7 +54,6 @@ almost never need the low-level or FFI import.
 | Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
 | Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
 | Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
-| Opt-in widget lifecycle hooks and effect rules | `../noir-hooks/SKILL.md`, then `../../doc/hooks.md` |
 | Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
 | Consumer-facing test strategy and supported seams | `references/testing.md` |
 
@@ -130,11 +124,11 @@ class HelloApp extends StatelessWidget {
 Add `noir` to `pubspec.yaml` (`dart pub add noir`), then `dart run` the file.
 Inside this repo, `example/` has a runnable reference for every major feature
 (`hello.dart`, `counter.dart`, `layout_basics.dart`, `layout_demo.dart`,
-`focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
+`image_demo.dart`, `parity_components_demo.dart`, `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
 `textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
 `data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
-`inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
-`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
+`inherited_example.dart`, `framework_primitives.dart`, `chat_demo.dart`,
+`widgets_tour.dart`) — read one before inventing a pattern.
 
 ## Mental model
 
@@ -155,15 +149,15 @@ Inside this repo, `example/` has a runnable reference for every major feature
 | `double` logical pixels | `int` character cells | Terminals are a cell grid |
 | `Color(0xFFRRGGBB)` | `Color.rgb(r, g, b)` with 0–1 channels | Maps to terminal color |
 | `MaterialApp`/`Scaffold` | `runTuiApp(widget)` | No design system; just a root |
-| `Image`, `Canvas` paths | text, box-drawing glyphs, cell colors | Terminal can't draw arbitrary pixels |
+| Pixel images | `Image` / `TerminalImage` with negotiated Kitty, Sixel, or block fallback | Protocol support and pixel resolution vary by terminal |
 | Gestures (`GestureDetector`) | `PointerListener` + mouse events | Terminal mouse reporting |
 | `MediaQuery` | `TerminalCapabilities` / resize callbacks | Terminal size & color support |
 
 Noir provides familiar layout building blocks including `Row`, `Column`,
 `Container`, `Padding`, `SizedBox`, `Align`, `Expanded`, `Flexible`,
-`ConstrainedBox`, `DecoratedBox`, `Text`, `RichText`, and layering through
-`Container.foregroundDecoration`. There is no `Stack`, `Wrap`, or
-`GestureDetector` — check the catalog below before reaching for a Flutter name.
+`ConstrainedBox`, `DecoratedBox`, `Stack`, `Positioned`, `Wrap`, `Text`, and
+`RichText`. There is no `GestureDetector`; terminal pointer input is exposed
+through `PointerListener` and cell-local `MouseEvent.localPosition`.
 
 ## Widget catalog (cheat sheet)
 
@@ -175,9 +169,13 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Fixed gap or size | `SizedBox` | `references/widgets.md` |
 | Inset a child | `Padding` | `references/widgets.md` |
 | Position a child in a box | `Align` | `references/widgets.md` |
+| Overlay or absolutely position children | `Stack`, `Positioned` | `references/widgets.md` |
+| Flow children into runs | `Wrap` | `references/widgets.md` |
 | Constrain min/max | `ConstrainedBox` | `references/widgets.md` |
 | Plain or styled text | `Text`, `TextStyle`, `TextStyles` | `references/widgets.md` |
 | Mixed-style text runs | `RichText`, `TextSpan` | `references/widgets.md` |
+| Multi-row terminal font | `AsciiFont` | `references/widgets.md` |
+| Encoded, file, network, or RGBA image | `Image`, `TerminalImage` | `references/widgets.md` |
 | Border / background paint | `BoxDecoration`, `Border`, `DecoratedBox` | `references/widgets.md` |
 | App-wide color tokens | `Theme`, `ThemeData` | `references/widgets.md` |
 | Horizontal / vertical rule | `Divider` | `references/widgets.md` |
@@ -187,8 +185,12 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Single-line text field | `TextInput` | `references/inputs-and-focus.md` |
 | Multi-line editor | `TextArea` | `references/inputs-and-focus.md` |
 | Closed set of named options | `Select<T>` | `references/inputs-and-focus.md` |
+| Horizontal tabs | `TabSelect<T>` | `references/widgets.md` |
+| Controlled numeric track | `Slider` | `references/widgets.md` |
 | Windowed builder list | `ListView` | `references/inputs-and-focus.md` |
 | Aligned columns + windowed body | `DataTable`, `DataColumn` | `references/inputs-and-focus.md` |
+| Static rich-text grid | `TextTable` | `references/widgets.md` |
+| Selectable code, diff, or Markdown | `CodeView`, `DiffView`, `MarkdownView` | `references/widgets.md` |
 | Two-state mark | `Checkbox` | `references/inputs-and-focus.md` |
 | Two-state on/off | `Switch` | `references/inputs-and-focus.md` |
 | Push action | `Button` | `references/inputs-and-focus.md` |
@@ -197,7 +199,6 @@ Noir provides familiar layout building blocks including `Row`, `Column`,
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
-| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `../../doc/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
@@ -305,6 +306,11 @@ driving a live app; automated assertions belong in ordinary tests
   widget tree with `isHeadless == true` and no owned terminal renderer, so
   mouse and Kitty keyboard mode controls are unavailable. It is a lifecycle
   seam, not a visual snapshot facility.
+- **Image ownership depends on the constructor.** `Image(image: decoded)`
+  borrows the `TerminalImage`; the caller disposes it. `Image.memory`,
+  `Image.rgba`, `Image.file`, and `Image.network` own and dispose decoded
+  results. Drive mode validates layout and deterministic block fallback, but
+  cannot prove that a real terminal renders Kitty or Sixel escape output.
 - **Shutdown can disturb the scrollback.** On the observed macOS/iTerm path the
   pinned native layer can return to main-screen row 1/column 1 instead of the
   launch cursor and overwrite prior shell rows. This is a known limitation, not

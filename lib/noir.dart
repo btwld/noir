@@ -61,6 +61,16 @@ export 'src/core/input.dart'
         MouseScrollDirection,
         PasteEvent,
         PasteEventHandler;
+export 'src/core/terminal_image.dart'
+    show
+        ImageColorStatus,
+        ImageFit,
+        ImageFormat,
+        ImageProtocol,
+        TerminalImage,
+        TerminalImageErrorCode,
+        TerminalImageException,
+        TerminalImageInfo;
 // Terminal semantic values shared with the FFI tier.
 export 'src/core/terminal_style.dart'
     show Attr, BorderSides, BoxOptions, TextAlign;
@@ -69,6 +79,7 @@ export 'src/foundation/change_notifier.dart' show ChangeNotifier;
 export 'src/foundation/disposable.dart' show Disposable;
 export 'src/foundation/listenable.dart'
     show Listenable, ValueListenable, VoidCallback;
+export 'src/foundation/selected_text.dart' show SelectedText;
 export 'src/foundation/text_editing_controller.dart' show TextEditingController;
 export 'src/foundation/text_editing_value.dart' show TextEditingValue;
 export 'src/foundation/text_index_map.dart' show TextIndexMap;
@@ -110,22 +121,54 @@ export 'src/render/geometry.dart'
         Rect,
         Size;
 // Text-rendering helpers users see
+export 'src/rendering/stack.dart' show StackFit;
 export 'src/rendering/text_highlight.dart' show TextHighlight;
+export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
 // Widgets
 export 'src/widgets/actions.dart'
     show Action, ActionCallback, Actions, CallbackAction;
 export 'src/widgets/align.dart' show Align;
+export 'src/widgets/ascii_font.dart' show AsciiFont, AsciiFontFamily;
 export 'src/widgets/badge.dart' show Badge, BadgeVariant;
 export 'src/widgets/button.dart' show Button;
 export 'src/widgets/checkbox.dart' show Checkbox;
+export 'src/widgets/code_view.dart'
+    show
+        CodeHighlighter,
+        CodeView,
+        HighlightErrorCallback,
+        PlainTextCodeHighlighter,
+        StyledTextRange;
 export 'src/widgets/constrained_box.dart' show ConstrainedBox;
 export 'src/widgets/container.dart' show Container;
 export 'src/widgets/data_table.dart'
     show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
 export 'src/widgets/decorated_box.dart' show DecoratedBox, DecorationPosition;
+export 'src/widgets/diff_view.dart'
+    show
+        DiffDocument,
+        DiffFile,
+        DiffHunk,
+        DiffHunkCallback,
+        DiffLine,
+        DiffLineCallback,
+        DiffLineKind,
+        DiffRowBuilder,
+        DiffView,
+        DiffViewController,
+        DiffViewMode,
+        UnifiedDiffParser;
 export 'src/widgets/divider.dart' show Divider;
+export 'src/widgets/document_view.dart' show SelectionCopyCallback;
 export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
 export 'src/widgets/focus.dart' show Focus, FocusScope;
+export 'src/widgets/image.dart'
+    show
+        Image,
+        ImageErrorBuilder,
+        ImageLoadErrorCode,
+        ImageLoadException,
+        ImageLoadingBuilder;
 export 'src/widgets/input.dart' show TextInput, ValueChanged;
 export 'src/widgets/intents.dart'
     show
@@ -162,6 +205,8 @@ export 'src/widgets/intents.dart'
         ScrollUpIntent,
         SubmitTextIntent;
 export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
+export 'src/widgets/markdown_view.dart'
+    show MarkdownBlockRenderer, MarkdownThemeData, MarkdownView;
 export 'src/widgets/padding.dart' show Padding;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/progress_bar.dart' show ProgressBar;
@@ -174,8 +219,11 @@ export 'src/widgets/select.dart'
 export 'src/widgets/shortcuts.dart'
     show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
 export 'src/widgets/sized_box.dart' show SizedBox;
+export 'src/widgets/slider.dart' show Slider;
 export 'src/widgets/spinner.dart' show Spinner, SpinnerFrames;
+export 'src/widgets/stack.dart' show Positioned, Stack;
 export 'src/widgets/switch.dart' show Switch;
+export 'src/widgets/tab_select.dart' show TabSelect;
 export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
@@ -190,5 +238,12 @@ export 'src/widgets/text_style.dart'
         TextEffect,
         TextStyle,
         TextStyles;
+export 'src/widgets/text_table.dart'
+    show
+        TextTable,
+        TextTableColumnFitter,
+        TextTableColumnWidthMode,
+        TextTableWrapMode;
 export 'src/widgets/theme.dart' show Theme, ThemeData;
 export 'src/widgets/viewport.dart' show ViewportController;
+export 'src/widgets/wrap.dart' show Wrap;

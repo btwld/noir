@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:meta/meta.dart';
 
 import '../animation/ticker.dart';
+import '../core/clipboard.dart';
 import '../core/cursor.dart';
 import '../core/input.dart';
 import '../core/renderer.dart';
@@ -110,6 +111,7 @@ class BuildOwner {
 
   bool _disposing = false;
   bool _disposed = false;
+  Renderer? _renderer;
 
   late final PipelineOwner _pipelineOwner;
 
@@ -125,13 +127,20 @@ class BuildOwner {
 
   /// Attaches [renderer] as the output target for this owner.
   void setRenderer(Renderer renderer) {
+    _renderer = renderer;
     cursorController.attachRenderer(renderer);
   }
 
   /// Detaches the current renderer and cursor controller.
   void clearRenderer() {
+    _renderer = null;
     cursorController.detachRenderer();
   }
+
+  /// Copies [text] through the renderer attached to this widget tree.
+  @internal
+  bool copyToClipboard(String text) =>
+      _renderer?.copyToClipboard(text) ?? false;
 
   /// The scheduler driving animation ticker callbacks.
   TickerScheduler get tickerScheduler => _tickerScheduler;

@@ -19,7 +19,6 @@ void main() {
   final contributorGuide = _read('AGENTS.md');
   final appSource = _read('lib/src/app/app.dart');
   final highLevelBarrel = _read('lib/noir.dart');
-  final hooksBarrel = _read('lib/hooks.dart');
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
   final ffiBarrel = _read('lib/noir_ffi.dart');
   final chatDemo = _read('example/chat_demo.dart');
@@ -41,7 +40,6 @@ void main() {
         'pubspec.yaml',
         'bin/ffi.dart',
         'bin/high_level.dart',
-        'bin/hooks.dart',
         'bin/low_level_multi_child.dart',
         'bin/low_level_single_child.dart',
         'bin/render.dart',
@@ -60,7 +58,6 @@ void main() {
 
     final expectedImports = <String, Set<String>>{
       'high_level.dart': {'package:noir/noir.dart'},
-      'hooks.dart': {'package:noir/hooks.dart', 'package:noir/noir.dart'},
       'low_level_multi_child.dart': {
         'package:noir/noir.dart',
         'package:noir/noir_low_level.dart',
@@ -140,7 +137,6 @@ void main() {
     expect(changelog, contains('First public alpha'));
     expect(changelog, isNot(contains('Initial public release')));
     expect(changelog.toLowerCase(), isNot(contains('muse')));
-    expect(changelog.toLowerCase(), isNot(contains('pixel')));
   });
 
   test('live release records derive the package version in one place', () {
@@ -188,6 +184,54 @@ void main() {
         ? false
         : 'OpenTUI submodule is not materialized in this checkout.',
   );
+
+  test('legacy ASCII font payload is absent from package sources and docs', () {
+    const forbiddenSource =
+        'c'
+        'fonts';
+    expect(File('scripts/generate_ascii_font_data.dart').existsSync(), isFalse);
+    expect(Directory('third_party/$forbiddenSource').existsSync(), isFalse);
+
+    final packageTextFiles = <File>[
+      for (final root in <String>[
+        'bin',
+        'example',
+        'hook',
+        'lib',
+        'scripts',
+        'skills',
+        'test',
+      ])
+        ...Directory(root)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where(
+              (file) => const <String>{
+                '.dart',
+                '.json',
+                '.md',
+                '.yaml',
+                '.yml',
+              }.any(file.path.endsWith),
+            ),
+      for (final path in <String>[
+        'AGENTS.md',
+        'README.md',
+        'GOALS.md',
+        'TODO.md',
+        'CHANGELOG.md',
+        'THIRD_PARTY_NOTICES.md',
+        'pubspec.yaml',
+      ])
+        File(path),
+    ];
+    final staleReferences = <String>[
+      for (final file in packageTextFiles)
+        if (file.readAsStringSync().toLowerCase().contains(forbiddenSource))
+          file.path,
+    ];
+    expect(staleReferences, isEmpty);
+  });
 
   test('README gives truthful prerelease install and runnable samples', () {
     final installStart = readme.indexOf('## Install');
@@ -359,9 +403,8 @@ void main() {
     expect(chatDemo, isNot(contains('..stop();')));
   });
 
-  test('shipped guidance describes the four supported import surfaces', () {
+  test('shipped guidance describes the final three API tiers', () {
     expect(highLevelBarrel, contains("export 'src/app/app.dart' show TuiApp"));
-    expect(hooksBarrel, contains("export 'src/hooks/framework.dart'"));
     expect(
       highLevelBarrel,
       contains('show Attr, BorderSides, BoxOptions, TextAlign'),
@@ -377,7 +420,6 @@ void main() {
     final skillFlat = _normalized(skill);
     for (final evidence in <String>[
       '`package:noir/noir.dart` — ordinary application and widget authoring',
-      '`package:noir/hooks.dart` — opt-in widget lifecycle hooks',
       '`package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer access, and supported custom rendering',
       '`package:noir/noir_ffi.dart` — ABI-unstable raw FFI access',
       'Concrete Element implementations and the recorder/display-list/compositor backend remain framework-owned',
@@ -385,7 +427,6 @@ void main() {
       expect(readmeFlat, contains(evidence), reason: evidence);
     }
     for (final evidence in <String>[
-      'Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`',
       'advanced hosting, renderer/buffer access, and supported custom render-object protocols',
       'Concrete Element implementations and the recorder/display-list/compositor backend stay framework-owned',
     ]) {
@@ -482,7 +523,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir-hooks/SKILL.md skills/noir-hooks/agents/openai.yaml'
+        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
@@ -782,7 +823,6 @@ void main() {
       imports,
       unorderedEquals(<String>{
         'package:noir/noir.dart',
-        'package:noir/hooks.dart',
         'package:noir/noir_low_level.dart',
         'package:noir/noir_ffi.dart',
       }),
