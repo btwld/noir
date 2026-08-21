@@ -185,6 +185,23 @@ See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
 for the complete styled version with a solid action button.
 
+## Hot Reload During Development
+
+Run a Noir entry point through the packaged development command, then save a
+`.dart` file under `lib/` or beside the entry point to reload it:
+
+```sh
+dart run noir:run example/counter.dart
+```
+
+The runner keeps the app attached to the current terminal, asks the Dart VM to
+swap the edited sources, and invokes Noir's `ext.noir.reassemble` extension to
+rebuild, lay out, and repaint the retained widget tree. A compile error leaves
+the last good app running; fix the source and save again to retry. Runner
+diagnostics are written to `.dart_tool/noir/run.log` so they do not overwrite
+the alternate-screen UI. Replace `example/counter.dart` with your package's
+entry point; arguments after it are forwarded to the app unchanged.
+
 ## Widget Lifecycle Hooks
 
 Hooks ship in the main `noir` package but remain outside the default

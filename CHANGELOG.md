@@ -2,6 +2,11 @@
 
 ## 0.0.1-alpha.2
 
+- Added the packaged `dart run noir:run` development command. It launches a
+  Noir entry point with inherited terminal I/O, watches Dart sources, performs
+  VM source reload plus Noir reassembly, preserves the last good app after a
+  rejected edit, forwards arguments and exit status, and keeps diagnostics in
+  `.dart_tool/noir/run.log`.
 - Added the opt-in `package:noir/hooks.dart` library with `HookWidget`, state
   and effect primitives, listenable and async observation, and Noir controller
   and animation hooks. Keyed effects defer old cleanup until later hook slots

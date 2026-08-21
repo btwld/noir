@@ -47,8 +47,9 @@ are complete; `0.0.1-alpha.2` is not published.
       archive contents, repeated from the clean clone.
 - [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
       headless, so this is the only path that exercises a real TTY:
-      `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
-      `build()` body, and confirm the repaint without a restart.
+      `dart run noir:run example/counter.dart`, edit a `build()` body, and
+      confirm the repaint without a restart. Runner diagnostics are recorded
+      in `.dart_tool/noir/run.log`.
 - [ ] **Publish `0.0.1-alpha.2` to pub.dev** as a separate deliberate action
       after the candidate checks above are complete.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
@@ -60,6 +61,10 @@ are complete; `0.0.1-alpha.2` is not published.
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled
       library as cache inputs, with a focused regression test.
+- [x] The packaged `dart run noir:run` command owns the VM-service hot-reload
+      loop for repository examples and downstream packages, with headless
+      process coverage for argument forwarding, reload, rejection recovery,
+      diagnostics, and exit-code propagation.
 - [x] The published alpha.1 baseline is live as `noir 0.0.1-alpha.1`. At the
       recorded publication check, the public package API reported it as latest
       with archive SHA-256
@@ -213,11 +218,12 @@ authorization.
   `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
   capture parsing are proven by `test/driver_client_test.dart`. The CLI command
   grammar itself is only exercised by running it.
-- `scripts/hot_reload_driver.dart` has no automated coverage. The reassemble
-  seam it drives is proven by `test/hot_reload_e2e_test.dart`, which performs a
-  real `reloadSources` against a spawned headless app and asserts that the
-  source swap alone changes no rendered output while the extension call does.
-  The driver itself is only exercised by the manual check listed above.
+- The packaged hot-reload runner is covered downstream by
+  `test/bin/run_test.dart`, including a real source swap, Noir reassembly,
+  compile-error recovery, diagnostics, argument forwarding, and process exit.
+  `test/hot_reload_e2e_test.dart` separately proves the underlying VM-service
+  contract. Neither headless test validates alternate-screen rendering or
+  real-terminal input; that remains the manual check listed above.
 
 ## Non-blocking follow-ups
 
