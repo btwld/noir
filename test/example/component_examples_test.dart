@@ -4,11 +4,12 @@ import 'package:test/test.dart';
 import '../../example/components_demo.dart';
 import '../../example/data_table_demo.dart';
 import '../../example/listview_demo.dart';
+import '../../example/parity_components_demo.dart';
 import '../../example/theme_demo.dart';
 import '../helpers/tui_test_app.dart';
 
-/// Behavior coverage for the four demos that shipped without any, added with
-/// the migration to the tree-scoped exit.
+/// Behavior coverage for catalog demos added with the tree-scoped exit and
+/// component-parity work.
 void main() {
   test('components demo toggles a control and ends through the tree', () async {
     final app = createTuiTestApp(
@@ -131,6 +132,18 @@ void main() {
         isNot(Color.white),
         reason: 'the scaffold title reads the swapped text token',
       );
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('parity components demo renders its document viewport', () async {
+    final app = createTuiTestApp(const ParityComponentsDemoApp());
+    try {
+      await _settle(app);
+      final rendered = app.captureFrame().toText();
+      expect(rendered, contains('ASCII'));
+      expect(rendered, contains('void main'));
     } finally {
       app.dispose();
     }

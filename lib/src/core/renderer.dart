@@ -14,11 +14,12 @@ import 'color.dart';
 Renderer createRendererForTesting(
   OpenTuiBindings bindings,
   RendererHandle handle,
-) => Renderer._(bindings, handle);
+) => Renderer._(bindings, handle, testing: true);
 
 /// Manages frame buffers, terminal rendering, and output flushing.
 class Renderer {
-  Renderer._(this._bindings, this._handle) {
+  Renderer._(this._bindings, this._handle, {required bool testing})
+    : _testing = testing {
     _finalizer.attach(this, _handle, detach: _finalizerKey);
   }
 
@@ -33,7 +34,7 @@ class Renderer {
     validateRendererDimensions(width, height);
     final bindings = OpenTuiBindings();
     final handle = bindings.createRenderer(width, height, testing: testing);
-    return Renderer._(bindings, handle);
+    return Renderer._(bindings, handle, testing: testing);
   }
 
   /// Finalizer for best-effort cleanup if dispose() is not called.
@@ -47,6 +48,7 @@ class Renderer {
 
   final OpenTuiBindings _bindings;
   final RendererHandle _handle;
+  final bool _testing;
   Buffer? _nextBuffer;
   Buffer? _currentBuffer;
   bool _disposed = false;
@@ -61,6 +63,12 @@ class Renderer {
   void setupTerminal({bool useAlternateScreen = true}) {
     _checkNotDisposed();
     _bindings.setupTerminal(_handle, useAlternateScreen);
+  }
+
+  /// Requests a `CSI 4;height;width t` terminal pixel-resolution report.
+  void queryPixelResolution() {
+    _checkNotDisposed();
+    _bindings.queryPixelResolution(_handle);
   }
 
   /// Resize the renderer (and its underlying buffer) to new dimensions.
@@ -83,7 +91,12 @@ class Renderer {
     if (_nextBuffer == null) {
       final native = _bindings.getNextBuffer(_handle);
       _clearNativeDrawStacks(native);
-      _nextBuffer = createBufferFromNative(native, _bindings, () => _disposed);
+      _nextBuffer = createBufferFromNative(
+        native,
+        _bindings,
+        () => _disposed,
+        materializeImagesAsBlocks: _testing,
+      );
     }
     return _nextBuffer!;
   }
@@ -118,6 +131,7 @@ class Renderer {
       _bindings.getCurrentBuffer(_handle),
       _bindings,
       () => _disposed,
+      materializeImagesAsBlocks: _testing,
     );
     return _currentBuffer!;
   }

@@ -75,6 +75,7 @@ final class TextLayoutRun {
     required this.style,
     required this.sourceStart,
     required this.sourceEnd,
+    this.uri,
   });
 
   /// Run text.
@@ -88,6 +89,9 @@ final class TextLayoutRun {
 
   /// Source UTF-16 end offset.
   final int sourceEnd;
+
+  /// Semantic hyperlink for this laid-out run.
+  final Uri? uri;
 }
 
 /// Lays out inline spans against terminal box constraints.
@@ -103,7 +107,7 @@ final class TextLayoutEngine {
   }) {
     final runs = <_SourceRun>[];
     final textBuffer = StringBuffer();
-    _flatten(root, style, textBuffer, runs);
+    _flatten(root, style, null, textBuffer, runs);
     final text = textBuffer.toString();
     final effectiveStyle = root is TextSpan ? root.style ?? style : style;
     final indexMap = TextIndexMap(text);
@@ -123,19 +127,21 @@ final class TextLayoutEngine {
   void _flatten(
     InlineSpan span,
     TextStyle inheritedStyle,
+    Uri? inheritedUri,
     StringBuffer textBuffer,
     List<_SourceRun> runs,
   ) {
     if (span is TextSpan) {
       final style = span.style ?? inheritedStyle;
+      final uri = span.uri ?? inheritedUri;
       final value = span.text;
       if (value != null && value.isNotEmpty) {
         final start = textBuffer.length;
         textBuffer.write(value);
-        runs.add(_SourceRun(value, style, start, textBuffer.length));
+        runs.add(_SourceRun(value, style, uri, start, textBuffer.length));
       }
       for (final child in span.children) {
-        _flatten(child, style, textBuffer, runs);
+        _flatten(child, style, uri, textBuffer, runs);
       }
       return;
     }
@@ -148,7 +154,9 @@ final class TextLayoutEngine {
     }
     final start = textBuffer.length;
     textBuffer.write(value);
-    runs.add(_SourceRun(value, inheritedStyle, start, textBuffer.length));
+    runs.add(
+      _SourceRun(value, inheritedStyle, inheritedUri, start, textBuffer.length),
+    );
   }
 
   _LayoutResult _layoutRuns(List<_SourceRun> sourceRuns, int? maxWidth) {
@@ -206,6 +214,7 @@ final class TextLayoutEngine {
         final token = _ClusterToken(
           text: cluster,
           style: run.style,
+          uri: run.uri,
           sourceStart: sourceOffset,
           sourceEnd: sourceOffset + cluster.length,
           width: terminalCellWidth(cluster),
@@ -238,6 +247,7 @@ final class TextLayoutEngine {
     for (final token in tokens) {
       if (current != null &&
           current.style == token.style &&
+          current.uri == token.uri &&
           current.sourceEnd == token.sourceStart) {
         current
           ..buffer.write(token.text)
@@ -249,6 +259,7 @@ final class TextLayoutEngine {
       }
       current = _MutableRun(
         style: token.style,
+        uri: token.uri,
         sourceStart: token.sourceStart,
         sourceEnd: token.sourceEnd,
       )..buffer.write(token.text);
@@ -260,10 +271,17 @@ final class TextLayoutEngine {
 }
 
 final class _SourceRun {
-  const _SourceRun(this.text, this.style, this.sourceStart, this.sourceEnd);
+  const _SourceRun(
+    this.text,
+    this.style,
+    this.uri,
+    this.sourceStart,
+    this.sourceEnd,
+  );
 
   final String text;
   final TextStyle style;
+  final Uri? uri;
   final int sourceStart;
   final int sourceEnd;
 }
@@ -272,6 +290,7 @@ final class _ClusterToken {
   const _ClusterToken({
     required this.text,
     required this.style,
+    required this.uri,
     required this.sourceStart,
     required this.sourceEnd,
     required this.width,
@@ -279,6 +298,7 @@ final class _ClusterToken {
 
   final String text;
   final TextStyle style;
+  final Uri? uri;
   final int sourceStart;
   final int sourceEnd;
   final int width;
@@ -296,18 +316,21 @@ final class _LineBuild {
 final class _MutableRun {
   _MutableRun({
     required this.style,
+    required this.uri,
     required this.sourceStart,
     required this.sourceEnd,
   });
 
   final StringBuffer buffer = StringBuffer();
   final TextStyle style;
+  final Uri? uri;
   final int sourceStart;
   int sourceEnd;
 
   TextLayoutRun toImmutable() => TextLayoutRun(
     text: buffer.toString(),
     style: style,
+    uri: uri,
     sourceStart: sourceStart,
     sourceEnd: sourceEnd,
   );

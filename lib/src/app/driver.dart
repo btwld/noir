@@ -218,6 +218,10 @@ final class DriverHost {
         'attrs': <int>[
           for (var x = 0; x < buffer.width; x++) direct.getAttributes(x, y),
         ],
+        'links': <String?>[
+          for (var x = 0; x < buffer.width; x++)
+            buffer.linkForAttributes(direct.getAttributes(x, y)),
+        ],
       });
     }
 

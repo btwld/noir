@@ -5,14 +5,45 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 
 ## Contents
 
-- [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
+- [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
 - [Theme](#theme): `Theme`, `ThemeData`
 - [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
-- [Painting](#painting): `Color`, `BoxDecoration`, `Border`
-- [Text](#text): `Text`, `TextStyle`, `TextStyles`, `RichText` / `TextSpan`
+- [Painting](#painting): `Color`, `BoxDecoration`, `Border`, `Image`, `TerminalImage`
+- [Text](#text): `Text`, `TextStyle`, `TextStyles`, `RichText` / `TextSpan`, `AsciiFont`
+- [Parity components](#parity-components): `TabSelect`, `Slider`, `TextTable`, `CodeView`, `DiffView`, `MarkdownView`
 
 ---
+
+## Images
+
+`Image` loads and displays terminal graphics while `TerminalImage` owns one
+already-decoded native image:
+
+```dart
+Image.memory(bytes, width: 24, height: 10, fit: ImageFit.fit)
+Image.file('preview.webp', fit: ImageFit.cover)
+Image.network(Uri.https('example.com', '/photo.jpg'), headers: {'authorization': token})
+Image.rgba(pixels, pixelWidth: 2, pixelHeight: 2, rowStride: 8)
+```
+
+`Image(image: decoded)` borrows the supplied `TerminalImage`; dispose it in the
+layer that created it. Every named source constructor owns and disposes its
+decoded result. Mutable bytes and network headers are snapshotted. Rebuilding
+with an equal source does not reload, replacing a source suppresses stale
+callbacks and disposes late results, and a previous successful image remains
+visible while its replacement loads or fails.
+
+Explicit cell `width` / `height` and tight parent constraints win. Otherwise
+natural sizing uses measured terminal pixels per cell, or a nominal one-by-two
+cell pixel ratio. `ImageFit.fit` centers the complete image,
+`ImageFit.cover` center-crops, and `ImageFit.fill` stretches. Protocol choices
+are `auto`, `kitty`, `sixel`, and `blocks`; automatic selection and unavailable
+Sixel fallbacks are owned by OpenTUI. File, network, and encoded-memory inputs
+are limited to 64 MiB. Network sources accept HTTP(S) only.
+
+`loadingBuilder` and `errorBuilder` appear only before any source succeeds;
+`onLoad` and `onError` observe only the current source.
 
 ## Layout
 
@@ -463,7 +494,7 @@ Compose runs with different styles. A `TextSpan`'s `style` applies to its text
 and cascades to unstyled children.
 
 ```dart
-const TextSpan({ String? text, TextStyle? style, List<InlineSpan> children = const [] })
+const TextSpan({ String? text, TextStyle? style, Uri? uri, List<InlineSpan> children = const [] })
 
 RichText(
   text: TextSpan(
@@ -477,3 +508,176 @@ RichText(
 ```
 
 You can also use `Text.rich(span)` for the same effect with `Text`'s ergonomics.
+
+## Parity components
+
+### Stack, Positioned, and Wrap
+
+`Stack` overlays children in document order. Non-positioned children are laid
+out loose by default; `StackFit.expand` gives them the stack's complete
+constraints. `Positioned` sets absolute whole-cell offsets or an explicit
+extent. Supplying both opposing offsets expands that axis. Stack overflow is
+hard-edge clipped unless `clip: false` is deliberate.
+
+```dart
+Stack(
+  fit: StackFit.expand,
+  alignment: Alignment.center,
+  children: const [
+    Text('background'),
+    Positioned(right: 1, top: 0, child: Badge(label: 'NEW')),
+  ],
+)
+
+Wrap(
+  direction: Axis.horizontal,
+  spacing: 1,
+  runSpacing: 1,
+  alignment: WrapAlignment.start,
+  runAlignment: WrapAlignment.start,
+  crossAxisAlignment: WrapCrossAlignment.start,
+  children: tags,
+)
+```
+
+`Wrap` supports horizontal and vertical runs. Its `spacing`, `runSpacing`,
+main-run alignment, run alignment, and cross alignment are all cell-based.
+
+### TabSelect and Slider
+
+`TabSelect<T>` reuses `SelectOption<T>` but presents a horizontal fixed-width
+tab strip. Left/Right and `[`/`]` move, Enter confirms, and a left click both
+selects and confirms. It owns focus only when no `focusNode` is supplied.
+
+```dart
+TabSelect<String>(
+  options: const [
+    SelectOption(name: 'Files', description: 'Changed paths', value: 'files'),
+    SelectOption(name: 'Diff', description: 'Current patch', value: 'diff'),
+  ],
+  selectedIndex: selected,
+  tabWidth: 14,
+  showScrollArrows: true,
+  showDescription: true,
+  showUnderline: true,
+  wrapSelection: false,
+  onChanged: (index, option) => setState(() => selected = index),
+  onSelect: (index, option) => open(option.value),
+)
+```
+
+This does not replace `Select<T>`: `Select` remains the vertical,
+viewport-based option list. `TabSelect` is the horizontal navigation surface.
+
+`Slider` is controlled: it proposes a value through `onChanged`, and the
+caller rebuilds with that value. A null callback disables pointer and keyboard
+input. It supports either `Axis`, pointer drag, arrows, PageUp/PageDown,
+Home/End, `step`, and a viewport-sized thumb.
+
+```dart
+Slider(
+  value: progress,
+  min: 0,
+  max: 100,
+  viewportSize: 20,
+  step: 5,
+  axis: Axis.horizontal,
+  onChanged: (value) => setState(() => progress = value),
+)
+```
+
+### AsciiFont and TextTable
+
+`AsciiFont` renders natural-sized multi-row glyphs from Noir's original 5x7
+printable-ASCII alphabet. The `tiny`, `block`, `shade`, `slick`, `huge`,
+`grid`, and `pallet` families are seven generated visual treatments of that
+one alphabet. Lowercase input uses the corresponding uppercase glyph. `color`
+supplies a solid fallback; `colors` supplies the ordered palette used by
+multi-color families. `backgroundColor` fills the natural glyph box, and
+`selection` maps UTF-16 source ranges to complete glyph boxes.
+
+```dart
+const AsciiFont(
+  'NOIR',
+  family: AsciiFontFamily.pallet,
+  colors: [Color.cyan, Color.blue],
+)
+```
+
+`TextTable` is a finite `List<List<InlineSpan?>>` grid. Choose word,
+character, or no wrapping; content-sized or full width; proportional or
+balanced column fitting; and cell padding, border, or borderless column gaps.
+Its `selection` is indexed over row-major plain text separated by tabs and
+newlines. By default the table owns pointer drag, all four Shift+arrow
+directions, Ctrl+A, Escape, and explicit Ctrl+C copy. Use `focusNode`,
+`autofocus`, selection colors, `onSelectionChanged`, and `onCopy` with the
+same ownership rules as document widgets. The optional `selection` remains a
+controlled paint override for applications that coordinate a larger region.
+
+```dart
+const TextTable(
+  content: [
+    [TextSpan(text: 'Name'), TextSpan(text: 'Status')],
+    [TextSpan(text: 'Noir'), TextSpan(text: 'ready')],
+  ],
+  wrapMode: TextTableWrapMode.word,
+  columnWidthMode: TextTableColumnWidthMode.full,
+  columnFitter: TextTableColumnFitter.proportional,
+  cellPadding: 1,
+)
+```
+
+`TextTable` does not replace `DataTable`. Keep `DataTable` for a virtualized,
+interactive row source with selection and sorting; use `TextTable` for a
+static rich-text grid.
+
+### CodeView, DiffView, and MarkdownView
+
+All three document widgets provide scrolling, optional wrapping, grapheme-safe
+pointer/Shift+arrow selection, Ctrl+A, Escape, and explicit Ctrl+C copy.
+`onSelectionChanged` receives immutable `SelectedText`; `onCopy` reports the
+OSC52 result without clearing the selection. Ctrl+C is consumed only while a
+non-empty selection exists, leaving Noir's ordinary interrupt fallback intact
+otherwise. Foreground and background selection colors are configurable on all
+three document widgets and flow through their shared document viewports.
+
+`CodeView` accepts a `CodeHighlighter`. Its `highlight` method returns
+synchronous or asynchronous non-overlapping UTF-16 `StyledTextRange`s. Invalid
+ranges and thrown/failed futures call `onHighlightError`, fall back to plain
+text, and stale async generations are ignored. Noir ships only
+`PlainTextCodeHighlighter`; language engines remain application dependencies.
+
+```dart
+CodeView(
+  code: source,
+  language: 'dart',
+  highlighter: highlighter,
+  wrap: false,
+  showLineNumbers: true,
+  selectable: true,
+)
+```
+
+Parse standard or Git unified patches with `UnifiedDiffParser`, then render a
+`DiffDocument` through `DiffView`. It supports `DiffViewMode.unified` and
+`split`, one synchronized viewport, optional highlighting and gutters,
+`DiffViewController.jumpToHunk`, semantic hunk/line callbacks, and a
+`rowBuilder` that can wrap or replace each default row. A replacement row owns
+its own selection presentation, while the surrounding `DiffView` retains the
+complete semantic selection and copy stream. Wrapping the default row keeps
+both document-wide selection behavior and Noir's built-in visual highlight.
+
+`MarkdownView` reparses changed source with `package:markdown`'s
+GitHub-flavoured extension set. It renders headings, paragraphs, emphasis,
+strikeout, links, lists/tasks, quotes, rules, fenced `CodeView`s, and
+`TextTable`s. Markdown images become linked alt text and never fetch by
+default. `blockRenderer` receives the actual `package:markdown` AST node as an
+`Object` plus a `buildDefault` callback; import `package:markdown/markdown.dart`
+and type-check/cast when inspecting it. A replacement changes presentation,
+while whole-document selection and copy retain the parsed block's default
+semantic text because an arbitrary replacement widget cannot expose plain
+text. A custom renderer may explicitly return `Image.network` when network
+loading is intended.
+
+`TextSpan(uri: ...)` emits a native terminal hyperlink only for visible,
+non-empty runs. URLs longer than OpenTUI's 512-byte UTF-8 limit are rejected.

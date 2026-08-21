@@ -100,9 +100,9 @@ mute to `surfaceVariant` when they do not own the keyboard. Do not
 reimplement that with extra boxes.
 
 Hand-roll a bordered region with `Container` + `BoxDecoration` +
-`Theme.of(context).border`. There is no public `Panel`. There is no
-`Stack`, `Wrap`, modal overlay, or command-palette widget — do not invent
-them.
+`Theme.of(context).border`. There is no public `Panel`, modal, or
+command-palette widget. Use `Stack`/`Positioned` for deliberate overlays and
+`Wrap` for cell-based runs; keep application-specific chrome local.
 
 ## Type and copy
 
@@ -125,8 +125,8 @@ Do not:
 - Default to a lazygit clone when the job is a form, a chat, or a table.
 - Bind a bare letter at `app.onKey` (it steals typing). Tab already moves
   focus.
-- Assume Nerd Fonts or image protocols. Stick to box-drawing, blocks, and
-  the shipped `Spinner` / `ProgressBar` / `Badge`.
+- Assume Nerd Fonts. For images, keep `ImageProtocol.auto` unless the
+  application has a measured reason to force Kitty, Sixel, or block fallback.
 - Animate selection or panel resize. Motion is for determinate progress
   and explicit `AnimationController` work.
 

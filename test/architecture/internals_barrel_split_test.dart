@@ -209,6 +209,7 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
   'src/app/tui_binding.dart': {'TuiBinding'},
   'src/core/buffer.dart': {'Buffer', 'DirectBufferAccess'},
   'src/core/capabilities.dart': {'CapabilitiesDetection'},
+  'src/core/clipboard.dart': {'ClipboardSupport', 'TerminalClipboardTarget'},
   'src/core/cursor.dart': {'CursorController', 'CursorManagement'},
   'src/core/input.dart': {
     'InputManager',
@@ -234,6 +235,7 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
   'src/rendering/decorated_box.dart': {'RenderDecoratedBox'},
   'src/render/geometry.dart': {'Axis'},
   'src/rendering/flex.dart': {'RenderFlex'},
+  'src/rendering/image.dart': {'RenderImage'},
   'src/rendering/object.dart': {
     'HitTestEntry',
     'HitTestResult',
@@ -241,14 +243,19 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
     'PaintingContext',
     'RenderObject',
     'RenderObjectWithSingleChild',
+    'TerminalCellMetrics',
   },
   'src/rendering/padding.dart': {'RenderPadding'},
   'src/rendering/paragraph.dart': {'RenderParagraph'},
   'src/rendering/positioned_box.dart': {'RenderPositionedBox'},
   'src/rendering/proxy_box.dart': {'RenderProxyBox'},
+  'src/rendering/stack.dart': {'RenderStack', 'StackChildData'},
+  'src/rendering/wrap.dart': {'RenderWrap'},
+  'src/widgets/ascii_font.dart': {'RenderAsciiFont'},
   'src/widgets/scroll_box.dart': {'RenderScrollBox'},
   'src/widgets/text_area.dart': {'RenderTextArea'},
   'src/widgets/text_layout.dart': {'TextLayoutEngine'},
+  'src/widgets/text_table.dart': {'RenderTextTable'},
 };
 
 const Map<String, Set<String>> _ffiAllowlist = <String, Set<String>>{
@@ -269,6 +276,7 @@ const Map<String, Set<String>> _ffiAllowlist = <String, Set<String>>{
     'OpenTuiHandle',
     'OptimizedBufferHandle',
     'RendererHandle',
+    'TerminalImageHandle',
   },
 };
 

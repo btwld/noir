@@ -50,6 +50,24 @@ external void setBackgroundColor(int renderer, ffi.Pointer<ffi.Uint16> color);
 @ffi.Native<ffi.Void Function(OpenTuiHandle)>()
 external void clearTerminal(int renderer);
 
+@ffi.Native<
+  ffi.Bool Function(
+    OpenTuiHandle,
+    ffi.Uint8,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
+  )
+>()
+external bool copyToClipboardOSC52(
+  int renderer,
+  int target,
+  ffi.Pointer<ffi.Uint8> text,
+  int textLen,
+);
+
+@ffi.Native<ffi.Bool Function(OpenTuiHandle, ffi.Uint8)>()
+external bool clearClipboardOSC52(int renderer, int target);
+
 @ffi.Native<ffi.Uint32 Function(OpenTuiHandle)>()
 external int getBufferWidth(int buffer);
 
@@ -242,6 +260,19 @@ external void bufferPopOpacity(int buffer);
 @ffi.Native<ffi.Void Function(OpenTuiHandle)>()
 external void bufferClearOpacity(int buffer);
 
+@ffi.Native<
+  ffi.Uint8 Function(
+    OpenTuiHandle,
+    OpenTuiHandle,
+    ffi.Pointer<ImageDrawOptions>,
+  )
+>()
+external int bufferDrawImage(
+  int buffer,
+  int image,
+  ffi.Pointer<ImageDrawOptions> options,
+);
+
 @ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Int32, ffi.Int32, ffi.Bool)>()
 external void setCursorPosition(int renderer, int x, int y, bool visible);
 
@@ -265,6 +296,9 @@ external void disableKittyKeyboard(int renderer);
 
 @ffi.Native<ffi.Void Function(OpenTuiHandle, ffi.Bool)>()
 external void setupTerminal(int renderer, bool useAlternateScreen);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void queryPixelResolution(int renderer);
 
 @ffi.Native<
   ffi.Void Function(
@@ -297,6 +331,58 @@ external void processCapabilityResponse(
   int responseLen,
 );
 
+@ffi.Native<
+  ffi.Uint32 Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
+    ffi.Pointer<OpenTuiHandle>,
+  )
+>()
+external int imageDecode(
+  ffi.Pointer<ffi.Uint8> data,
+  int dataLen,
+  ffi.Pointer<OpenTuiHandle> outHandle,
+);
+
+@ffi.Native<
+  ffi.Uint32 Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint64,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Pointer<OpenTuiHandle>,
+  )
+>()
+external int imageCreateFromRgba(
+  ffi.Pointer<ffi.Uint8> pixels,
+  int pixelsLen,
+  int width,
+  int height,
+  int stride,
+  ffi.Pointer<OpenTuiHandle> outHandle,
+);
+
+@ffi.Native<ffi.Void Function(OpenTuiHandle)>()
+external void imageDestroy(int image);
+
+@ffi.Native<ffi.Uint32 Function(OpenTuiHandle, ffi.Pointer<NativeImageInfo>)>()
+external int imageGetInfo(int image, ffi.Pointer<NativeImageInfo> outInfo);
+
+@ffi.Native<ffi.Uint32 Function(ffi.Pointer<ffi.Uint8>, ffi.Uint32)>()
+external int linkAlloc(ffi.Pointer<ffi.Uint8> url, int urlLen);
+
+@ffi.Native<
+  ffi.Uint32 Function(ffi.Uint32, ffi.Pointer<ffi.Uint8>, ffi.Uint32)
+>()
+external int linkGetUrl(int id, ffi.Pointer<ffi.Uint8> out, int maxLen);
+
+@ffi.Native<ffi.Uint32 Function(ffi.Uint32, ffi.Uint32)>()
+external int attributesWithLink(int baseAttributes, int linkId);
+
+@ffi.Native<ffi.Uint32 Function(ffi.Uint32)>()
+external int attributesGetLinkId(int attributes);
+
 /// mbstate_t is an opaque object to keep conversion state, during multibyte
 /// stream conversions.  The content must not be referenced by user programs.
 final class __mbstate_t extends ffi.Union {
@@ -319,6 +405,67 @@ final class CursorStyleOptions extends ffi.Struct {
 
   @ffi.Uint8()
   external int cursor;
+}
+
+final class NativeImageInfo extends ffi.Struct {
+  @ffi.Uint32()
+  external int width;
+
+  @ffi.Uint32()
+  external int height;
+
+  @ffi.Uint32()
+  external int sourceWidth;
+
+  @ffi.Uint32()
+  external int sourceHeight;
+
+  @ffi.Uint32()
+  external int format;
+
+  @ffi.Uint32()
+  external int colorStatus;
+
+  @ffi.Uint32()
+  external int orientation;
+
+  @ffi.Uint32()
+  external int hasAlpha;
+}
+
+final class ImageDrawOptions extends ffi.Struct {
+  @ffi.Int32()
+  external int x;
+
+  @ffi.Int32()
+  external int y;
+
+  @ffi.Uint32()
+  external int width;
+
+  @ffi.Uint32()
+  external int height;
+
+  @ffi.Uint32()
+  external int pixelWidth;
+
+  @ffi.Uint32()
+  external int pixelHeight;
+
+  @ffi.Uint32()
+  external int sourceX;
+
+  @ffi.Uint32()
+  external int sourceY;
+
+  @ffi.Uint32()
+  external int sourceWidth;
+
+  @ffi.Uint32()
+  external int sourceHeight;
+
+  @ffi.Uint32()
+  external int protocol;
 }
 
 /// Noir-owned declaration of the canonical OpenTUI v0.5.1 exports selected by

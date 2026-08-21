@@ -134,6 +134,40 @@ class OpenTuiBindings {
   late final _clearTerminal = _clearTerminalPtr
       .asFunction<void Function(int)>();
 
+  bool copyToClipboardOSC52(
+    int renderer,
+    int target,
+    ffi.Pointer<ffi.Uint8> text,
+    int textLen,
+  ) {
+    return _copyToClipboardOSC52(renderer, target, text, textLen);
+  }
+
+  late final _copyToClipboardOSC52Ptr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Bool Function(
+            OpenTuiHandle,
+            ffi.Uint8,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
+          )
+        >
+      >('copyToClipboardOSC52');
+  late final _copyToClipboardOSC52 = _copyToClipboardOSC52Ptr
+      .asFunction<bool Function(int, int, ffi.Pointer<ffi.Uint8>, int)>();
+
+  bool clearClipboardOSC52(int renderer, int target) {
+    return _clearClipboardOSC52(renderer, target);
+  }
+
+  late final _clearClipboardOSC52Ptr =
+      _lookup<ffi.NativeFunction<ffi.Bool Function(OpenTuiHandle, ffi.Uint8)>>(
+        'clearClipboardOSC52',
+      );
+  late final _clearClipboardOSC52 = _clearClipboardOSC52Ptr
+      .asFunction<bool Function(int, int)>();
+
   int getBufferWidth(int buffer) {
     return _getBufferWidth(buffer);
   }
@@ -571,6 +605,27 @@ class OpenTuiBindings {
   late final _bufferClearOpacity = _bufferClearOpacityPtr
       .asFunction<void Function(int)>();
 
+  int bufferDrawImage(
+    int buffer,
+    int image,
+    ffi.Pointer<ImageDrawOptions> options,
+  ) {
+    return _bufferDrawImage(buffer, image, options);
+  }
+
+  late final _bufferDrawImagePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint8 Function(
+            OpenTuiHandle,
+            OpenTuiHandle,
+            ffi.Pointer<ImageDrawOptions>,
+          )
+        >
+      >('bufferDrawImage');
+  late final _bufferDrawImage = _bufferDrawImagePtr
+      .asFunction<int Function(int, int, ffi.Pointer<ImageDrawOptions>)>();
+
   void setCursorPosition(int renderer, int x, int y, bool visible) {
     return _setCursorPosition(renderer, x, y, visible);
   }
@@ -654,6 +709,17 @@ class OpenTuiBindings {
   late final _setupTerminal = _setupTerminalPtr
       .asFunction<void Function(int, bool)>();
 
+  void queryPixelResolution(int renderer) {
+    return _queryPixelResolution(renderer);
+  }
+
+  late final _queryPixelResolutionPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'queryPixelResolution',
+      );
+  late final _queryPixelResolution = _queryPixelResolutionPtr
+      .asFunction<void Function(int)>();
+
   void addToHitGrid(int renderer, int x, int y, int width, int height, int id) {
     return _addToHitGrid(renderer, x, y, width, height, id);
   }
@@ -702,6 +768,143 @@ class OpenTuiBindings {
       >('processCapabilityResponse');
   late final _processCapabilityResponse = _processCapabilityResponsePtr
       .asFunction<void Function(int, ffi.Pointer<ffi.Uint8>, int)>();
+
+  int imageDecode(
+    ffi.Pointer<ffi.Uint8> data,
+    int dataLen,
+    ffi.Pointer<OpenTuiHandle> outHandle,
+  ) {
+    return _imageDecode(data, dataLen, outHandle);
+  }
+
+  late final _imageDecodePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
+            ffi.Pointer<OpenTuiHandle>,
+          )
+        >
+      >('imageDecode');
+  late final _imageDecode = _imageDecodePtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Uint8>, int, ffi.Pointer<OpenTuiHandle>)
+      >();
+
+  int imageCreateFromRgba(
+    ffi.Pointer<ffi.Uint8> pixels,
+    int pixelsLen,
+    int width,
+    int height,
+    int stride,
+    ffi.Pointer<OpenTuiHandle> outHandle,
+  ) {
+    return _imageCreateFromRgba(
+      pixels,
+      pixelsLen,
+      width,
+      height,
+      stride,
+      outHandle,
+    );
+  }
+
+  late final _imageCreateFromRgbaPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint64,
+            ffi.Uint32,
+            ffi.Uint32,
+            ffi.Uint32,
+            ffi.Pointer<OpenTuiHandle>,
+          )
+        >
+      >('imageCreateFromRgba');
+  late final _imageCreateFromRgba = _imageCreateFromRgbaPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          int,
+          int,
+          int,
+          int,
+          ffi.Pointer<OpenTuiHandle>,
+        )
+      >();
+
+  void imageDestroy(int image) {
+    return _imageDestroy(image);
+  }
+
+  late final _imageDestroyPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(OpenTuiHandle)>>(
+        'imageDestroy',
+      );
+  late final _imageDestroy = _imageDestroyPtr.asFunction<void Function(int)>();
+
+  int imageGetInfo(int image, ffi.Pointer<NativeImageInfo> outInfo) {
+    return _imageGetInfo(image, outInfo);
+  }
+
+  late final _imageGetInfoPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(OpenTuiHandle, ffi.Pointer<NativeImageInfo>)
+        >
+      >('imageGetInfo');
+  late final _imageGetInfo = _imageGetInfoPtr
+      .asFunction<int Function(int, ffi.Pointer<NativeImageInfo>)>();
+
+  int linkAlloc(ffi.Pointer<ffi.Uint8> url, int urlLen) {
+    return _linkAlloc(url, urlLen);
+  }
+
+  late final _linkAllocPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(ffi.Pointer<ffi.Uint8>, ffi.Uint32)
+        >
+      >('linkAlloc');
+  late final _linkAlloc = _linkAllocPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Uint8>, int)>();
+
+  int linkGetUrl(int id, ffi.Pointer<ffi.Uint8> out, int maxLen) {
+    return _linkGetUrl(id, out, maxLen);
+  }
+
+  late final _linkGetUrlPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Uint32 Function(ffi.Uint32, ffi.Pointer<ffi.Uint8>, ffi.Uint32)
+        >
+      >('linkGetUrl');
+  late final _linkGetUrl = _linkGetUrlPtr
+      .asFunction<int Function(int, ffi.Pointer<ffi.Uint8>, int)>();
+
+  int attributesWithLink(int baseAttributes, int linkId) {
+    return _attributesWithLink(baseAttributes, linkId);
+  }
+
+  late final _attributesWithLinkPtr =
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(ffi.Uint32, ffi.Uint32)>>(
+        'attributesWithLink',
+      );
+  late final _attributesWithLink = _attributesWithLinkPtr
+      .asFunction<int Function(int, int)>();
+
+  int attributesGetLinkId(int attributes) {
+    return _attributesGetLinkId(attributes);
+  }
+
+  late final _attributesGetLinkIdPtr =
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(ffi.Uint32)>>(
+        'attributesGetLinkId',
+      );
+  late final _attributesGetLinkId = _attributesGetLinkIdPtr
+      .asFunction<int Function(int)>();
 }
 
 /// mbstate_t is an opaque object to keep conversion state, during multibyte
@@ -726,6 +929,67 @@ final class CursorStyleOptions extends ffi.Struct {
 
   @ffi.Uint8()
   external int cursor;
+}
+
+final class NativeImageInfo extends ffi.Struct {
+  @ffi.Uint32()
+  external int width;
+
+  @ffi.Uint32()
+  external int height;
+
+  @ffi.Uint32()
+  external int sourceWidth;
+
+  @ffi.Uint32()
+  external int sourceHeight;
+
+  @ffi.Uint32()
+  external int format;
+
+  @ffi.Uint32()
+  external int colorStatus;
+
+  @ffi.Uint32()
+  external int orientation;
+
+  @ffi.Uint32()
+  external int hasAlpha;
+}
+
+final class ImageDrawOptions extends ffi.Struct {
+  @ffi.Int32()
+  external int x;
+
+  @ffi.Int32()
+  external int y;
+
+  @ffi.Uint32()
+  external int width;
+
+  @ffi.Uint32()
+  external int height;
+
+  @ffi.Uint32()
+  external int pixelWidth;
+
+  @ffi.Uint32()
+  external int pixelHeight;
+
+  @ffi.Uint32()
+  external int sourceX;
+
+  @ffi.Uint32()
+  external int sourceY;
+
+  @ffi.Uint32()
+  external int sourceWidth;
+
+  @ffi.Uint32()
+  external int sourceHeight;
+
+  @ffi.Uint32()
+  external int protocol;
 }
 
 /// Noir-owned declaration of the canonical OpenTUI v0.5.1 exports selected by

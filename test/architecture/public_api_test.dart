@@ -59,6 +59,16 @@ void main() {
         'PasteEvent',
         'PasteEventHandler',
       },
+      'src/core/terminal_image.dart': {
+        'ImageColorStatus',
+        'ImageFormat',
+        'ImageProtocol',
+        'ImageFit',
+        'TerminalImage',
+        'TerminalImageErrorCode',
+        'TerminalImageException',
+        'TerminalImageInfo',
+      },
       'src/foundation/change_notifier.dart': {'ChangeNotifier'},
       'src/foundation/disposable.dart': {'Disposable'},
       'src/foundation/listenable.dart': {
@@ -66,6 +76,7 @@ void main() {
         'ValueListenable',
         'VoidCallback',
       },
+      'src/foundation/selected_text.dart': {'SelectedText'},
       'src/foundation/text_editing_controller.dart': {'TextEditingController'},
       'src/foundation/text_editing_value.dart': {'TextEditingValue'},
       'src/foundation/text_index_map.dart': {'TextIndexMap'},
@@ -118,9 +129,17 @@ void main() {
         'CallbackAction',
       },
       'src/widgets/align.dart': {'Align'},
+      'src/widgets/ascii_font.dart': {'AsciiFont', 'AsciiFontFamily'},
       'src/widgets/badge.dart': {'Badge', 'BadgeVariant'},
       'src/widgets/button.dart': {'Button'},
       'src/widgets/checkbox.dart': {'Checkbox'},
+      'src/widgets/code_view.dart': {
+        'CodeHighlighter',
+        'CodeView',
+        'HighlightErrorCallback',
+        'PlainTextCodeHighlighter',
+        'StyledTextRange',
+      },
       'src/widgets/constrained_box.dart': {'ConstrainedBox'},
       'src/widgets/container.dart': {'Container'},
       'src/widgets/data_table.dart': {
@@ -130,9 +149,31 @@ void main() {
         'DataTableSort',
       },
       'src/widgets/decorated_box.dart': {'DecoratedBox', 'DecorationPosition'},
+      'src/widgets/diff_view.dart': {
+        'DiffDocument',
+        'DiffFile',
+        'DiffHunk',
+        'DiffHunkCallback',
+        'DiffLine',
+        'DiffLineCallback',
+        'DiffLineKind',
+        'DiffRowBuilder',
+        'DiffView',
+        'DiffViewController',
+        'DiffViewMode',
+        'UnifiedDiffParser',
+      },
       'src/widgets/divider.dart': {'Divider'},
+      'src/widgets/document_view.dart': {'SelectionCopyCallback'},
       'src/widgets/flexible.dart': {'Expanded', 'FlexFit', 'Flexible'},
       'src/widgets/focus.dart': {'Focus', 'FocusScope'},
+      'src/widgets/image.dart': {
+        'Image',
+        'ImageErrorBuilder',
+        'ImageLoadErrorCode',
+        'ImageLoadException',
+        'ImageLoadingBuilder',
+      },
       'src/widgets/input.dart': {'TextInput', 'ValueChanged'},
       'src/widgets/intents.dart': {
         'ActivateIntent',
@@ -169,6 +210,11 @@ void main() {
         'SubmitTextIntent',
       },
       'src/widgets/list_view.dart': {'ListView', 'ListViewItemBuilder'},
+      'src/widgets/markdown_view.dart': {
+        'MarkdownBlockRenderer',
+        'MarkdownThemeData',
+        'MarkdownView',
+      },
       'src/widgets/padding.dart': {'Padding'},
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/progress_bar.dart': {'ProgressBar'},
@@ -194,6 +240,7 @@ void main() {
         'Shortcuts',
         'SingleActivator',
       },
+      'src/widgets/slider.dart': {'Slider'},
       'src/widgets/sized_box.dart': {'SizedBox'},
       'src/widgets/spinner.dart': {'Spinner', 'SpinnerFrames'},
       'src/widgets/switch.dart': {'Switch'},
@@ -217,6 +264,17 @@ void main() {
       },
       'src/widgets/theme.dart': {'Theme', 'ThemeData'},
       'src/widgets/viewport.dart': {'ViewportController'},
+      'src/rendering/stack.dart': {'StackFit'},
+      'src/rendering/wrap.dart': {'WrapAlignment', 'WrapCrossAlignment'},
+      'src/widgets/stack.dart': {'Positioned', 'Stack'},
+      'src/widgets/tab_select.dart': {'TabSelect'},
+      'src/widgets/text_table.dart': {
+        'TextTable',
+        'TextTableColumnFitter',
+        'TextTableColumnWidthMode',
+        'TextTableWrapMode',
+      },
+      'src/widgets/wrap.dart': {'Wrap'},
     };
 
     const forbiddenSymbols = <String>{
@@ -309,8 +367,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(186),
-      reason: 'The high-level surface is locked at exactly 186 symbols.',
+      hasLength(235),
+      reason: 'The high-level surface is locked at exactly 235 symbols.',
     );
   });
 

@@ -2,6 +2,7 @@
 
 import 'dart:convert' as convert;
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
@@ -187,6 +188,74 @@ class OpenTuiBindings {
     _guard('Failed to clear terminal', () {
       _native.clearTerminal(renderer.value);
     });
+  }
+
+  /// Copies UTF-8 [text] through OpenTUI's OSC 52 terminal writer.
+  bool copyToClipboardOSC52(RendererHandle renderer, int target, String text) {
+    _checkUnsignedAbi(target, 0xFF, 'target');
+    return _guardAlloc('Failed to copy to clipboard', (allocator) {
+      final (pointer, length) = _utf8(allocator, text);
+      return _native.copyToClipboardOSC52(
+        renderer.value,
+        target,
+        pointer,
+        length,
+      );
+    });
+  }
+
+  /// Clears one OSC 52 clipboard [target].
+  bool clearClipboardOSC52(RendererHandle renderer, int target) {
+    _checkUnsignedAbi(target, 0xFF, 'target');
+    return _guard(
+      'Failed to clear clipboard',
+      () => _native.clearClipboardOSC52(renderer.value, target),
+    );
+  }
+
+  /// Allocates a native hyperlink ID for a UTF-8 URL of at most 512 bytes.
+  int linkAlloc(Uri uri) {
+    final bytes = convert.utf8.encode(uri.toString());
+    if (bytes.length > 512) {
+      throw ArgumentError.value(uri, 'uri', 'must encode to at most 512 bytes');
+    }
+    if (bytes.isEmpty) return 0;
+    return _guardAlloc(
+      'Failed to allocate hyperlink',
+      (allocator) =>
+          _native.linkAlloc(_copyBytes(allocator, bytes), bytes.length),
+    );
+  }
+
+  /// Resolves a native hyperlink ID to its semantic URL.
+  String? linkGetUrl(int id) {
+    _checkUnsignedAbi(id, 0xFFFFFFFF, 'id');
+    if (id == 0) return null;
+    return _guardAlloc('Failed to resolve hyperlink', (allocator) {
+      final out = allocator<Uint8>(512);
+      final length = _native.linkGetUrl(id, out, 512);
+      if (length == 0) return null;
+      return convert.utf8.decode(out.asTypedList(length));
+    });
+  }
+
+  /// Packs [linkId] into a native text attribute word.
+  int attributesWithLink(int baseAttributes, int linkId) {
+    _checkUnsignedAbi(baseAttributes, 0xFFFFFFFF, 'baseAttributes');
+    _checkUnsignedAbi(linkId, 0xFFFFFFFF, 'linkId');
+    return _guard(
+      'Failed to encode hyperlink attributes',
+      () => _native.attributesWithLink(baseAttributes, linkId),
+    );
+  }
+
+  /// Extracts the native hyperlink ID from [attributes].
+  int attributesGetLinkId(int attributes) {
+    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
+    return _guard(
+      'Failed to decode hyperlink attributes',
+      () => _native.attributesGetLinkId(attributes),
+    );
   }
 
   /// Returns [buffer]'s width in cells.
@@ -541,6 +610,128 @@ class OpenTuiBindings {
     _guard('Failed to clear opacity', () {
       _native.bufferClearOpacity(buffer.value);
     });
+  }
+
+  /// Decodes encoded image bytes into a native image handle.
+  ({int status, TerminalImageHandle? handle}) imageDecode(Uint8List data) {
+    _checkUnsignedAbi(data.length, 0xFFFFFFFF, 'dataLength');
+    return _guardAlloc('Failed to decode image', (allocator) {
+      final bytes = _copyBytes(allocator, data);
+      final output = allocator<Uint32>()..value = 0;
+      final status = _native.imageDecode(bytes, data.length, output);
+      final value = output.value;
+      return (
+        status: status,
+        handle: value == 0 ? null : TerminalImageHandle.fromNative(value),
+      );
+    });
+  }
+
+  /// Creates a native image by copying an RGBA pixel buffer.
+  ({int status, TerminalImageHandle? handle}) imageCreateFromRgba(
+    Uint8List pixels, {
+    required int width,
+    required int height,
+    required int stride,
+  }) {
+    for (final (name, value) in <(String, int)>[
+      ('width', width),
+      ('height', height),
+      ('stride', stride),
+    ]) {
+      _checkUnsignedAbi(value, 0xFFFFFFFF, name);
+    }
+    return _guardAlloc('Failed to create RGBA image', (allocator) {
+      final bytes = _copyBytes(allocator, pixels);
+      final output = allocator<Uint32>()..value = 0;
+      final status = _native.imageCreateFromRgba(
+        bytes,
+        pixels.length,
+        width,
+        height,
+        stride,
+        output,
+      );
+      final value = output.value;
+      return (
+        status: status,
+        handle: value == 0 ? null : TerminalImageHandle.fromNative(value),
+      );
+    });
+  }
+
+  /// Returns the eight canonical `NativeImageInfo` fields and native status.
+  ({int status, List<int> fields}) imageGetInfo(TerminalImageHandle image) =>
+      _guardAlloc('Failed to get image info', (allocator) {
+        final output = allocator<Uint32>(8);
+        final status = _native.imageGetInfo(image.value, output);
+        return (status: status, fields: List<int>.of(output.asTypedList(8)));
+      });
+
+  /// Destroys [image].
+  void imageDestroy(TerminalImageHandle image) {
+    _guard('Failed to destroy image', () => _native.imageDestroy(image.value));
+  }
+
+  /// Records a native image placement in [buffer].
+  bool bufferDrawImage(
+    OptimizedBufferHandle buffer,
+    TerminalImageHandle image, {
+    required int x,
+    required int y,
+    required int width,
+    required int height,
+    required int pixelWidth,
+    required int pixelHeight,
+    required int sourceX,
+    required int sourceY,
+    required int sourceWidth,
+    required int sourceHeight,
+    required int protocol,
+  }) {
+    _checkSigned32Abi(x, 'x');
+    _checkSigned32Abi(y, 'y');
+    for (final (name, value) in <(String, int)>[
+      ('width', width),
+      ('height', height),
+      ('pixelWidth', pixelWidth),
+      ('pixelHeight', pixelHeight),
+      ('sourceX', sourceX),
+      ('sourceY', sourceY),
+      ('sourceWidth', sourceWidth),
+      ('sourceHeight', sourceHeight),
+      ('protocol', protocol),
+    ]) {
+      _checkUnsignedAbi(value, 0xFFFFFFFF, name);
+    }
+    return _guard(
+      'Failed to draw image',
+      () =>
+          _native.bufferDrawImage(
+            buffer.value,
+            image.value,
+            x,
+            y,
+            width,
+            height,
+            pixelWidth,
+            pixelHeight,
+            sourceX,
+            sourceY,
+            sourceWidth,
+            sourceHeight,
+            protocol,
+          ) !=
+          0,
+    );
+  }
+
+  /// Asks the terminal to report pixel resolution.
+  void queryPixelResolution(RendererHandle renderer) {
+    _guard(
+      'Failed to query pixel resolution',
+      () => _native.queryPixelResolution(renderer.value),
+    );
   }
 
   /// Sets cursor position and visibility.

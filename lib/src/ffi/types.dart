@@ -42,3 +42,10 @@ final class OptimizedBufferHandle extends OpenTuiHandle {
   OptimizedBufferHandle.fromNative(int value)
     : super._(OpenTuiHandle.checked(value, 'bufferHandle'));
 }
+
+/// Native decoded-image handle.
+final class TerminalImageHandle extends OpenTuiHandle {
+  /// Creates an image handle from its canonical native value.
+  TerminalImageHandle.fromNative(int value)
+    : super._(OpenTuiHandle.checked(value, 'imageHandle'));
+}

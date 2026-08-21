@@ -305,4 +305,14 @@ final class _CountingCanvas implements TuiCanvas {
     Rect? sourceRect,
     TextHighlight? selection,
   }) => calls++;
+
+  @override
+  void drawImage(
+    TerminalImage image,
+    Rect destination, {
+    int pixelWidth = 0,
+    int pixelHeight = 0,
+    Rect? sourceRect,
+    ImageProtocol protocol = ImageProtocol.auto,
+  }) => calls++;
 }

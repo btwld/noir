@@ -2,6 +2,7 @@ import '../render/geometry.dart';
 import '../widgets/flexible.dart';
 import '../widgets/row_column.dart';
 import 'box.dart';
+import 'integer_allocation.dart';
 import 'object.dart';
 
 /// Data for each child in a flex layout.
@@ -229,7 +230,7 @@ class RenderFlex extends RenderBox {
           .toList(growable: false);
       final quotas = weights.isEmpty
           ? const <int>[]
-          : _allocateExactCells(total, weights);
+          : allocateExactCells(total, weights);
 
       for (
         var quotaIndex = 0;
@@ -366,25 +367,25 @@ class RenderFlex extends RenderBox {
       case MainAxisAlignment.end:
         leading = free;
       case MainAxisAlignment.center:
-        leading = _allocateExactCells(free, const [1, 1])[0];
+        leading = allocateExactCells(free, const [1, 1])[0];
       case MainAxisAlignment.spaceBetween:
         if (childCount > 1) {
           extraInternal.setAll(
             0,
-            _allocateExactCells(free, List<int>.filled(childCount - 1, 1)),
+            allocateExactCells(free, List<int>.filled(childCount - 1, 1)),
           );
         }
       case MainAxisAlignment.spaceAround:
         if (childCount == 1) {
-          leading = _allocateExactCells(free, const [1, 1])[0];
+          leading = allocateExactCells(free, const [1, 1])[0];
         } else {
           final weights = <int>[1, ...List<int>.filled(childCount - 1, 2), 1];
-          final slots = _allocateExactCells(free, weights);
+          final slots = allocateExactCells(free, weights);
           leading = slots.first;
           extraInternal.setAll(0, slots.sublist(1, childCount));
         }
       case MainAxisAlignment.spaceEvenly:
-        final slots = _allocateExactCells(
+        final slots = allocateExactCells(
           free,
           List<int>.filled(childCount + 1, 1),
         );
@@ -413,7 +414,7 @@ class RenderFlex extends RenderBox {
       final cross = switch (_crossAxisAlignment) {
         CrossAxisAlignment.start || CrossAxisAlignment.stretch => 0,
         CrossAxisAlignment.end => crossSlack,
-        CrossAxisAlignment.center => _allocateExactCells(crossSlack, const [
+        CrossAxisAlignment.center => allocateExactCells(crossSlack, const [
           1,
           1,
         ])[0],
@@ -459,67 +460,6 @@ void _validateFlex(int? value) {
   if (value != null && value < 0) {
     throw ArgumentError.value(value, 'flex', 'must be null or non-negative');
   }
-}
-
-List<int> _allocateExactCells(int total, List<int> weights) {
-  if (total < 0) {
-    throw ArgumentError.value(total, 'total', 'must be non-negative');
-  }
-  if (weights.isEmpty) {
-    if (total == 0) return const <int>[];
-    throw ArgumentError.value(weights, 'weights', 'must not be empty');
-  }
-  if (weights.any((weight) => weight <= 0)) {
-    throw ArgumentError.value(weights, 'weights', 'must all be positive');
-  }
-
-  final bigTotal = BigInt.from(total);
-  var weightSum = BigInt.zero;
-  final bigWeights = <BigInt>[];
-  for (final weight in weights) {
-    final bigWeight = BigInt.from(weight);
-    bigWeights.add(bigWeight);
-    weightSum += bigWeight;
-  }
-
-  var baseSum = BigInt.zero;
-  final quotas = <BigInt>[];
-  final ranked = <_Residue>[];
-  for (var index = 0; index < bigWeights.length; index++) {
-    final numerator = bigTotal * bigWeights[index];
-    final base = numerator ~/ weightSum;
-    quotas.add(base);
-    baseSum += base;
-    ranked.add(_Residue(index, numerator % weightSum));
-  }
-  final left = bigTotal - baseSum;
-  if (left.isNegative || left >= BigInt.from(weights.length)) {
-    throw _arithmeticError('largest-remainder cell count');
-  }
-  ranked.sort((a, b) {
-    final residueOrder = b.value.compareTo(a.value);
-    return residueOrder != 0 ? residueOrder : a.index.compareTo(b.index);
-  });
-  final leftCount = left.toInt();
-  for (var index = 0; index < leftCount; index++) {
-    quotas[ranked[index].index] += BigInt.one;
-  }
-
-  return quotas
-      .map((quota) {
-        if (quota.isNegative || quota > bigTotal) {
-          throw _arithmeticError('allocated flex quota');
-        }
-        return quota.toInt();
-      })
-      .toList(growable: false);
-}
-
-final class _Residue {
-  const _Residue(this.index, this.value);
-
-  final int index;
-  final BigInt value;
 }
 
 final BigInt _maxNativeInt = (BigInt.one << 63) - BigInt.one;

@@ -423,6 +423,56 @@ void main() {
     expect(lowerPriorityEvents.map((event) => event.raw), ['\x1b[?1c']);
   });
 
+  test(
+    'pixel resolution reports update session state and repaint on change',
+    () {
+      final renderer = Renderer.create(6, 2, testing: true);
+      final dispatcher = _dispatcher();
+      var scheduledFrames = 0;
+      final session = TerminalSession(
+        width: 6,
+        height: 2,
+        headless: false,
+        inputDispatcher: dispatcher,
+        renderer: renderer,
+        scheduleFrame: () => scheduledFrames++,
+        platform: _FakeTerminalPlatform(stdoutHasTerminal: true),
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      );
+      addTearDown(() {
+        session.close();
+        renderer.dispose();
+      });
+
+      void report(String payload) {
+        dispatcher.dispatchCapabilityResponse(
+          TerminalCapabilityEvent(
+            kind: TerminalCapabilityKind.pixelResolutionReport,
+            payload: payload,
+            raw: '\x1b[${payload}t',
+          ),
+        );
+      }
+
+      report('4;720;1280');
+      expect(session.pixelResolution, const TerminalPixelResolution(1280, 720));
+      expect(scheduledFrames, 1);
+
+      report('4;720;1280');
+      report('4;0;1280');
+      report('4;bad;1280');
+      expect(session.pixelResolution, const TerminalPixelResolution(1280, 720));
+      expect(scheduledFrames, 1);
+
+      report('4;1080;1920');
+      expect(
+        session.pixelResolution,
+        const TerminalPixelResolution(1920, 1080),
+      );
+      expect(scheduledFrames, 2);
+    },
+  );
+
   test('interactive stdout rejects inactive stdin before setup', () {
     final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
     final driver = _FakeTerminalInputDriver(acquired: false);

@@ -24,6 +24,28 @@ enum TerminalSignal {
   resize,
 }
 
+/// Measured terminal viewport size in physical pixels.
+@immutable
+final class TerminalPixelResolution {
+  /// Creates a positive physical-pixel measurement.
+  const TerminalPixelResolution(this.width, this.height);
+
+  /// Pixel width of the terminal viewport.
+  final int width;
+
+  /// Pixel height of the terminal viewport.
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TerminalPixelResolution &&
+      other.width == width &&
+      other.height == height;
+
+  @override
+  int get hashCode => Object.hash(width, height);
+}
+
 /// Minimal input driver interface used by [TerminalSession].
 @visibleForTesting
 abstract interface class TerminalInputDriver {
@@ -106,6 +128,9 @@ class TerminalSession {
       if (_useTerminalSession) {
         final sessionRenderer = _renderer!;
         _capabilitySubscription = inputDispatcher.onCapabilityResponse((event) {
+          if (event.kind == TerminalCapabilityKind.pixelResolutionReport) {
+            _applyPixelResolutionReport(event.payload);
+          }
           event.consume();
           processRendererCapabilityResponse(sessionRenderer, event.raw);
         }, priority: _capabilityRoutingPriority);
@@ -122,6 +147,7 @@ class TerminalSession {
       if (_useTerminalSession) {
         _terminalSetupAttempted = true;
         _renderer!.setupTerminal();
+        _renderer!.queryPixelResolution();
       }
       _installSignalHandlers();
       _installResizeHandler();
@@ -161,12 +187,16 @@ class TerminalSession {
   bool _handlingExitSignal = false;
   int _width;
   int _height;
+  TerminalPixelResolution? _pixelResolution;
 
   /// The current session width.
   int get width => _width;
 
   /// The current session height.
   int get height => _height;
+
+  /// Last valid terminal pixel-resolution report, if measured.
+  TerminalPixelResolution? get pixelResolution => _pixelResolution;
 
   /// Whether this session is headless.
   bool get isHeadless => _isHeadless;
@@ -224,7 +254,20 @@ class TerminalSession {
     _renderer?.resize(width, height);
     _width = width;
     _height = height;
+    if (_useTerminalSession) _renderer?.queryPixelResolution();
     return true;
+  }
+
+  void _applyPixelResolutionReport(String payload) {
+    final fields = payload.split(';');
+    if (fields.length != 3 || fields.first != '4') return;
+    final height = int.tryParse(fields[1]);
+    final width = int.tryParse(fields[2]);
+    if (width == null || height == null || width <= 0 || height <= 0) return;
+    final resolution = TerminalPixelResolution(width, height);
+    if (resolution == _pixelResolution) return;
+    _pixelResolution = resolution;
+    _scheduleFrame();
   }
 
   /// Closes terminal resources owned by this session.

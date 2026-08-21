@@ -16,6 +16,7 @@ import '../../render/geometry.dart';
 import '../../rendering/object.dart';
 import '../../rendering/proxy_box.dart';
 import '../../widgets/container.dart';
+import '../../widgets/diff_view.dart' as noir_diff;
 import '../../widgets/flexible.dart';
 import '../../widgets/focus.dart';
 import '../../widgets/row_column.dart';
@@ -186,7 +187,9 @@ class _PatchManagerViewState extends State<PatchManagerView> {
   final _diffFocus = FocusNode();
   late final List<FocusNode> _focusRing;
   late ScrollController _diffScroll;
+  final _diffViewController = noir_diff.DiffViewController();
   String? _diffScrollTarget;
+  int _diffAnchorGeneration = 0;
   late String _status;
   bool _busy = false;
   bool _refreshRequired = false;
@@ -211,6 +214,7 @@ class _PatchManagerViewState extends State<PatchManagerView> {
       initialOffset: _selectedSectionScrollOffset().toDouble(),
     );
     _diffScrollTarget = _selectedSectionKey();
+    _scheduleDiffAnchor();
   }
 
   @override
@@ -235,6 +239,7 @@ class _PatchManagerViewState extends State<PatchManagerView> {
         ..dispose();
     }
     _diffScroll.dispose();
+    _diffViewController.dispose();
     super.dispose();
   }
 
@@ -332,6 +337,30 @@ class _PatchManagerViewState extends State<PatchManagerView> {
     _diffScroll.dispose();
     _diffScroll = ScrollController(
       initialOffset: _selectedSectionScrollOffset().toDouble(),
+    );
+    _scheduleDiffAnchor();
+  }
+
+  void _scheduleDiffAnchor() {
+    final generation = ++_diffAnchorGeneration;
+    final target = _diffScrollTarget;
+    unawaited(
+      Future<void>.delayed(Duration.zero, () {
+        if (!mounted ||
+            generation != _diffAnchorGeneration ||
+            target != _diffScrollTarget ||
+            !_controller.hasFiles) {
+          return;
+        }
+        final file = _controller.currentFile;
+        if (file.canStageContent) {
+          _diffViewController.jumpToHunk(_controller.selectedHunkIndex);
+          // Patch Manager rows are variable-height cards. DiffView establishes
+          // the semantic hunk anchor; this correction retains the selected
+          // line/card offset used by the review workflow.
+          _diffScroll.jumpTo(_selectedSectionScrollOffset().toDouble());
+        }
+      }),
     );
   }
 
@@ -666,6 +695,7 @@ class _PatchManagerViewState extends State<PatchManagerView> {
               controller: _controller,
               focusNode: _diffFocus,
               scrollController: _diffScroll,
+              diffViewController: _diffViewController,
               stagingEnabled: !_refreshRequired,
               onSkipHunk: _skipHunk,
               onStageHunk: _stageHunk,

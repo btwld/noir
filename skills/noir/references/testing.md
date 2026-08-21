@@ -67,6 +67,25 @@ automated assertions in ordinary tests against the state owners and seams
 described above: the same frames are reachable in-process, faster, and without
 a VM-service dependency.
 
+For `Image`, drive mode deterministically materializes placements as block
+cells, so captures can verify layout, replacement, and resize behavior. It is
+headless and cannot establish whether a real terminal accepts Kitty or Sixel
+escape output; those protocol checks require separately authorized live
+terminal validation.
+
+Driver cell captures include an additive `links` array parallel to every
+captured row. Each entry is either the semantic URL painted in that cell or
+null; native link IDs are deliberately hidden because they are allocation
+details. Clients that only read `text`, colors, attributes, or cursor fields
+remain compatible.
+
+Document selection and OSC52 copying can be tested without a real terminal by
+injecting parsed pointer/key events and a fake `Renderer` implementing
+`ClipboardSupport`. Assert grapheme-safe UTF-16 `SelectedText`, callback order,
+copy success/failure, and that empty-selection Ctrl+C remains unhandled. A
+headless or drive assertion cannot prove that a user's terminal, tmux, or
+Screen accepts OSC52; those are separately authorized live checks.
+
 ## Framework contributor tests
 
 The development repository has additional layout, buffer, input-driver,

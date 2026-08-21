@@ -843,6 +843,8 @@ int _parseCsi(
       TerminalCapabilityKind.cursorPositionReport,
     (0x75, '', final params) when _kittyKeyboardStatus.hasMatch(params) =>
       TerminalCapabilityKind.kittyKeyboardStatus,
+    (0x74, '', final params) when _pixelResolutionReport.hasMatch(params) =>
+      TerminalCapabilityKind.pixelResolutionReport,
     _ => null,
   };
   if (reportKind != null) {
@@ -910,6 +912,7 @@ int _parseCsi(
 final RegExp _privateModeReport = RegExp(r'^\?[0-9]+;[0-9]+$');
 final RegExp _cursorPositionReport = RegExp(r'^[0-9]+;[0-9]+$');
 final RegExp _kittyKeyboardStatus = RegExp(r'^\?[0-9]+$');
+final RegExp _pixelResolutionReport = RegExp(r'^4;[0-9]+;[0-9]+$');
 
 _CsiKeyMetadata? _csiKeyMetadata(String params) {
   final parts = params.split(';');

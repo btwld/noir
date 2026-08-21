@@ -38,6 +38,8 @@ dependencies:
       final entryPoint = File('${consumer.path}/bin/app.dart')
         ..parent.createSync(recursive: true);
       await entryPoint.writeAsString(r'''
+import 'dart:typed_data';
+
 import 'package:noir/noir.dart';
 
 void main() {
@@ -52,6 +54,10 @@ class Probe extends StatefulWidget {
 }
 
 class _ProbeState extends State<Probe> {
+  static final Uint8List _pixels = Uint8List.fromList(<int>[
+    255, 0, 0, 255,
+    0, 255, 0, 255,
+  ]);
   int _count = 0;
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
@@ -66,7 +72,20 @@ class _ProbeState extends State<Probe> {
   Widget build(BuildContext context) => Focus(
     autofocus: true,
     onKeyEvent: _handleKey,
-    child: Text('COUNT $_count'),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('COUNT $_count'),
+        Image.rgba(
+          _pixels,
+          pixelWidth: 2,
+          pixelHeight: 1,
+          rowStride: 8,
+          width: 4,
+          height: 2,
+        ),
+      ],
+    ),
   );
 }
 ''');
@@ -132,6 +151,7 @@ class _ProbeState extends State<Probe> {
       final before = await _call(service, isolateId, 'capture');
       final beforeLines = (before['lines']! as List<Object?>).cast<String>();
       expect(beforeLines, contains('COUNT 0'), reason: '$diagnostics');
+      expect(beforeLines, contains('▀▀▀▀'), reason: '$diagnostics');
 
       await _call(
         service,
@@ -149,6 +169,23 @@ class _ProbeState extends State<Probe> {
         reason: 'the injected arrow key must repaint the app\n$diagnostics',
       );
       expect(afterLines, contains('COUNT 1'), reason: '$diagnostics');
+      expect(afterLines, contains('▀▀▀▀'), reason: '$diagnostics');
+
+      final resized = await _call(
+        service,
+        isolateId,
+        'resize',
+        args: <String, Object?>{'width': 12, 'height': 4},
+      );
+      expect(resized['width'], 12);
+      expect(resized['height'], 4);
+      await _call(service, isolateId, 'waitStable');
+      final resizedCapture = await _call(service, isolateId, 'capture');
+      expect(resizedCapture['width'], 12);
+      expect(
+        (resizedCapture['lines']! as List<Object?>).cast<String>(),
+        contains('▀▀▀▀'),
+      );
 
       final quit = await _call(service, isolateId, 'quit');
       expect(quit['quitting'], isTrue);
