@@ -15,8 +15,8 @@ are complete; `0.0.1-alpha.2` is not published.
       pixel-resolution reporting, deterministic drive capture, and public
       guidance are implemented. On the combined parity tree, format,
       fatal-info analysis, 165 architecture tests, the 1603-test serial suite,
-      native verify-only, and archive validation pass. The publish dry-run
-      reports only the expected dirty-worktree warning.
+      native verify-only, and archive validation pass. The clean committed-tree
+      publish dry-run validates the intended 15 MB archive with zero warnings.
 - [x] **ASCII font licensing disposition**: the third-party font tables,
       generated copy, generator, and GPL notice were removed. `AsciiFont` now
       derives all seven visual families from Noir's original 5x7 printable-
