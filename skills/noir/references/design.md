@@ -100,9 +100,11 @@ mute to `surfaceVariant` when they do not own the keyboard. Do not
 reimplement that with extra boxes.
 
 Hand-roll a bordered region with `Container` + `BoxDecoration` +
-`Theme.of(context).border`. There is no public `Panel`. There is no
-`Stack`, `Wrap`, modal overlay, or command-palette widget — do not invent
-them.
+`Theme.of(context).border`. Put the region's name on `Border.title`
+(`title: ' Name '`) so it sits in the top edge, not on an inner row.
+There is no public `Panel`. In-repo examples share
+`example/src/demo_scaffold.dart` for that card. There is no `Stack`,
+`Wrap`, modal overlay, or command-palette widget — do not invent them.
 
 ## Type and copy
 

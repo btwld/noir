@@ -516,6 +516,48 @@ void main() {
     },
   );
 
+  test(
+    'widget tour panels have no empty row above the bottom border',
+    () async {
+      final app = createTuiTestApp(const WidgetsTourApp());
+      try {
+        await _settleAutofocus(app);
+        final frame = app.captureFrame();
+
+        final select = frame
+            .findText('Select')
+            .firstWhere(
+              (pos) => pos.x >= 3 && frame.getChar(pos.x - 3, pos.y) == '┌',
+            );
+        final lastSelectRow = frame.findText('Blue').single;
+        expect(
+          lastSelectRow.y,
+          select.y + 5,
+          reason: 'Select height 5 starts on the first inner row',
+        );
+        expect(
+          frame.getChar(select.x - 3, lastSelectRow.y + 1),
+          '└',
+          reason:
+              'Select panel must not leave a blank row under the last option',
+        );
+
+        final area = frame
+            .findText('TextArea')
+            .firstWhere(
+              (pos) => pos.x >= 3 && frame.getChar(pos.x - 3, pos.y) == '┌',
+            );
+        expect(
+          frame.getChar(area.x - 3, area.y + 4),
+          '└',
+          reason: 'TextArea height 3 starts on the first inner row',
+        );
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
   test('widget tour Shift+Tab wraps to the TextArea', () async {
     final app = createTuiTestApp(const WidgetsTourApp());
 
