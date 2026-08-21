@@ -12,9 +12,9 @@
 - Added the Pub search example, a live pub.dev browser demonstrating an
   injected async data source behind an application-owned `PubCatalog` seam,
   explicit loading/empty/error/ready states, stale-response suppression, paging,
-  sort and filter pickers, and a four-tab package detail view. Its tests inject
-  a fake catalog, so every async path stays deterministic without network
-  access.
+  centered sort and filter overlays above retained results, and a four-tab
+  package detail view built with `TabSelect`. Its tests inject a fake catalog,
+  so every async path stays deterministic without network access.
 - A focused supplied `FocusNode` now remains attached and focused when its
   `Focus` widget relocates within one build. The transfer is limited to an
   inactive element owned by the same focus manager; active duplicates and
@@ -25,9 +25,10 @@
   painted row, and draws no arrow at all when no option row was painted.
 - Added whole-cell `Stack`/`Positioned` overlay layout and horizontal or
   vertical `Wrap` runs with spacing and alignment.
-- Added horizontal `TabSelect`, controlled horizontal/vertical `Slider`, and
-  `AsciiFont` with seven Noir-designed treatments of an original printable-
-  ASCII alphabet.
+- Added horizontal `TabSelect` with fixed or label-sized cells, optional
+  pointer-focus preservation, and selected-label terminal attributes;
+  controlled horizontal/vertical `Slider`; and `AsciiFont` with seven
+  Noir-designed treatments of an original printable-ASCII alphabet.
 - Added static rich-text `TextTable` with wrapping, proportional or balanced
   column fitting, padding, gaps, borders, pointer/keyboard grid selection, and
   explicit copy. The existing virtualized interactive `DataTable` remains a

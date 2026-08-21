@@ -19,6 +19,13 @@ enum PackageDetailTab {
   health,
 }
 
+const _detailTabs = <SelectOption<PackageDetailTab>>[
+  SelectOption(name: '1 OVERVIEW', value: PackageDetailTab.overview),
+  SelectOption(name: '2 VERSIONS', value: PackageDetailTab.versions),
+  SelectOption(name: '3 DEPENDENCIES', value: PackageDetailTab.dependencies),
+  SelectOption(name: '4 HEALTH', value: PackageDetailTab.health),
+];
+
 /// Spaced package detail surface used by the pub search example.
 class PubPackageDetail extends StatelessWidget {
   /// Creates a detail surface with application-owned scroll/focus state.
@@ -82,12 +89,21 @@ class PubPackageDetail extends StatelessWidget {
             ),
             _headlineMetrics(package, theme),
             const SizedBox(height: 1),
-            Row(
-              spacing: 1,
-              children: [
-                for (final tab in PackageDetailTab.values)
-                  _tabLabel(tab, theme),
-              ],
+            TabSelect<PackageDetailTab>(
+              options: _detailTabs,
+              selectedIndex: activeTab.index,
+              tabWidth: null,
+              showDescription: false,
+              showUnderline: false,
+              requestFocusOnPointer: false,
+              color: theme.textMuted,
+              selectedBackgroundColor: theme.accent,
+              selectedTextColor: theme.accentForeground,
+              selectedTextAttributes: Attr.bold,
+              onChanged: (index, option) {
+                final tab = option.value;
+                if (tab != null) onTabSelected(tab);
+              },
             ),
             Expanded(
               child: DemoPanel(
@@ -106,27 +122,6 @@ class PubPackageDetail extends StatelessWidget {
               style: TextStyle(color: theme.textMuted),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tabLabel(PackageDetailTab tab, ThemeData theme) {
-    final active = tab == activeTab;
-    return PointerListener(
-      onPointerDown: (event) {
-        if (event.button == MouseButton.left) onTabSelected(tab);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 1),
-        color: active ? theme.accent : null,
-        child: Text(
-          '${tab.index + 1} ${tab.name.toUpperCase()}',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: active ? theme.accentForeground : theme.textMuted,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          ),
         ),
       ),
     );

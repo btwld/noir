@@ -22,7 +22,7 @@ import 'theme.dart';
 
 /// A horizontal, focusable selector over typed [SelectOption] values.
 class TabSelect<T> extends StatefulWidget {
-  /// Configures fixed-cell tabs with optional underline and description rows.
+  /// Configures horizontal tabs with optional underline and description rows.
   const TabSelect({
     required this.options,
     super.key,
@@ -36,12 +36,14 @@ class TabSelect<T> extends StatefulWidget {
     this.backgroundColor,
     this.selectedBackgroundColor,
     this.selectedTextColor,
+    this.selectedTextAttributes = 0,
     this.descriptionColor,
     this.focusNode,
     this.autofocus = false,
+    this.requestFocusOnPointer = true,
     this.onChanged,
     this.onSelect,
-  }) : assert(tabWidth > 0);
+  }) : assert(tabWidth == null || tabWidth > 0);
 
   /// Tabs in document order.
   final List<SelectOption<T>> options;
@@ -50,7 +52,10 @@ class TabSelect<T> extends StatefulWidget {
   final int selectedIndex;
 
   /// Width reserved for each visible tab in cells.
-  final int tabWidth;
+  ///
+  /// When null, each tab uses its label's terminal-cell width plus two cells
+  /// of horizontal padding.
+  final int? tabWidth;
 
   /// Whether overflow arrows are painted at the row edges.
   final bool showScrollArrows;
@@ -76,6 +81,9 @@ class TabSelect<T> extends StatefulWidget {
   /// Selected tab and underline foreground.
   final Color? selectedTextColor;
 
+  /// Terminal attributes applied to the selected tab label.
+  final int selectedTextAttributes;
+
   /// Selected description foreground.
   final Color? descriptionColor;
 
@@ -84,6 +92,12 @@ class TabSelect<T> extends StatefulWidget {
 
   /// Whether focus is requested after mounting.
   final bool autofocus;
+
+  /// Whether a primary-button pointer press requests focus.
+  ///
+  /// Disable this for a navigation strip that should leave an adjacent
+  /// content view focused after pointer selection.
+  final bool requestFocusOnPointer;
 
   /// Called when navigation changes the selected index.
   final SelectChanged<T>? onChanged;
@@ -97,7 +111,19 @@ class TabSelect<T> extends StatefulWidget {
 
 final class _TabSelectMetrics {
   int scrollOffset = 0;
-  int visibleTabs = 1;
+  List<int> visibleWidths = const <int>[];
+
+  int get visibleTabs => visibleWidths.length;
+
+  int? indexAt(int x) {
+    if (x < 0) return null;
+    var left = 0;
+    for (var visible = 0; visible < visibleWidths.length; visible++) {
+      left += visibleWidths[visible];
+      if (x < left) return scrollOffset + visible;
+    }
+    return null;
+  }
 }
 
 final class _MoveTabIntent extends Intent {
@@ -175,10 +201,11 @@ final class _TabSelectState<T> extends State<TabSelect<T>>
 
   void _handlePointer(MouseEvent event) {
     if (event.button != MouseButton.left || event.localPosition.dy != 0) return;
-    if (!focusNode.hasFocus) focusNode.requestFocus();
-    final visible = event.localPosition.dx ~/ widget.tabWidth;
-    if (visible < 0 || visible >= _metrics.visibleTabs) return;
-    final index = _metrics.scrollOffset + visible;
+    if (widget.requestFocusOnPointer && !focusNode.hasFocus) {
+      focusNode.requestFocus();
+    }
+    final index = _metrics.indexAt(event.localPosition.dx);
+    if (index == null) return;
     if (index < 0 || index >= widget.options.length) return;
     if (index != _selected) {
       setState(() => _selected = index);
@@ -217,6 +244,7 @@ final class _TabSelectState<T> extends State<TabSelect<T>>
                   widget.selectedBackgroundColor ?? palette.selectedBackground,
               selectedTextColor:
                   widget.selectedTextColor ?? palette.selectedForeground,
+              selectedTextAttributes: widget.selectedTextAttributes,
               descriptionColor: widget.descriptionColor ?? palette.textMuted,
               metrics: _metrics,
             ),
@@ -239,13 +267,14 @@ final class _TabSelectLeaf<T> extends RenderObjectWidget {
     required this.backgroundColor,
     required this.selectedBackgroundColor,
     required this.selectedTextColor,
+    required this.selectedTextAttributes,
     required this.descriptionColor,
     required this.metrics,
   });
 
   final List<SelectOption<T>> options;
   final int selectedIndex;
-  final int tabWidth;
+  final int? tabWidth;
   final bool showScrollArrows;
   final bool showDescription;
   final bool showUnderline;
@@ -253,6 +282,7 @@ final class _TabSelectLeaf<T> extends RenderObjectWidget {
   final Color? backgroundColor;
   final Color selectedBackgroundColor;
   final Color selectedTextColor;
+  final int selectedTextAttributes;
   final Color descriptionColor;
   final _TabSelectMetrics metrics;
 
@@ -269,6 +299,7 @@ final class _TabSelectLeaf<T> extends RenderObjectWidget {
     backgroundColor: backgroundColor,
     selectedBackgroundColor: selectedBackgroundColor,
     selectedTextColor: selectedTextColor,
+    selectedTextAttributes: selectedTextAttributes,
     descriptionColor: descriptionColor,
     metrics: metrics,
   );
@@ -284,7 +315,7 @@ final class _RenderTabSelect<T> extends RenderBox {
   _RenderTabSelect({
     required List<SelectOption<T>> options,
     required int selectedIndex,
-    required int tabWidth,
+    required int? tabWidth,
     required bool showScrollArrows,
     required bool showDescription,
     required bool showUnderline,
@@ -292,6 +323,7 @@ final class _RenderTabSelect<T> extends RenderBox {
     required Color? backgroundColor,
     required Color selectedBackgroundColor,
     required Color selectedTextColor,
+    required int selectedTextAttributes,
     required Color descriptionColor,
     required _TabSelectMetrics metrics,
   }) : _options = options,
@@ -304,12 +336,13 @@ final class _RenderTabSelect<T> extends RenderBox {
        _backgroundColor = backgroundColor,
        _selectedBackgroundColor = selectedBackgroundColor,
        _selectedTextColor = selectedTextColor,
+       _selectedTextAttributes = selectedTextAttributes,
        _descriptionColor = descriptionColor,
        _metrics = metrics;
 
   List<SelectOption<T>> _options;
   int _selectedIndex;
-  int _tabWidth;
+  int? _tabWidth;
   bool _showScrollArrows;
   bool _showDescription;
   bool _showUnderline;
@@ -317,6 +350,7 @@ final class _RenderTabSelect<T> extends RenderBox {
   Color? _backgroundColor;
   Color _selectedBackgroundColor;
   Color _selectedTextColor;
+  int _selectedTextAttributes;
   Color _descriptionColor;
   _TabSelectMetrics _metrics;
 
@@ -331,6 +365,7 @@ final class _RenderTabSelect<T> extends RenderBox {
     _backgroundColor = widget.backgroundColor;
     _selectedBackgroundColor = widget.selectedBackgroundColor;
     _selectedTextColor = widget.selectedTextColor;
+    _selectedTextAttributes = widget.selectedTextAttributes;
     _descriptionColor = widget.descriptionColor;
     _metrics = widget.metrics;
     markNeedsLayout();
@@ -338,20 +373,78 @@ final class _RenderTabSelect<T> extends RenderBox {
 
   @override
   void performBoxLayout(BoxConstraints constraints) {
-    final naturalWidth = math.max(_tabWidth, _tabWidth * _options.length);
+    final widths = <int>[
+      for (final option in _options)
+        _tabWidth ?? terminalStringWidth(option.name) + 2,
+    ];
+    final tabWidth = _tabWidth;
+    final naturalWidth = tabWidth == null
+        ? math.max(1, widths.fold<int>(0, (total, width) => total + width))
+        : math.max(tabWidth, tabWidth * _options.length);
     final rows = 1 + (_showUnderline ? 1 : 0) + (_showDescription ? 1 : 0);
     size = Size(
       constraints.constrainWidth(constraints.maxWidth ?? naturalWidth),
       constraints.constrainHeight(rows),
     );
-    final visible = math.max(1, size.width ~/ _tabWidth);
-    final half = visible ~/ 2;
+    if (tabWidth != null) {
+      _layoutFixedTabs(tabWidth);
+    } else {
+      _layoutContentSizedTabs(widths);
+    }
+  }
+
+  void _layoutFixedTabs(int tabWidth) {
+    final capacity = math.max(1, size.width ~/ tabWidth);
+    final half = capacity ~/ 2;
+    final scrollOffset = math.max(
+      0,
+      math.min(_selectedIndex - half, math.max(0, _options.length - capacity)),
+    );
+    final visibleWidths = <int>[];
+    final count = math.min(capacity, _options.length - scrollOffset);
+    for (var visible = 0; visible < count; visible++) {
+      final width = math.min(tabWidth, size.width - visible * tabWidth);
+      if (width <= 0) break;
+      visibleWidths.add(width);
+    }
     _metrics
-      ..visibleTabs = visible
-      ..scrollOffset = math.max(
-        0,
-        math.min(_selectedIndex - half, math.max(0, _options.length - visible)),
-      );
+      ..scrollOffset = scrollOffset
+      ..visibleWidths = visibleWidths;
+  }
+
+  void _layoutContentSizedTabs(List<int> widths) {
+    if (widths.isEmpty || size.width <= 0) {
+      _metrics
+        ..scrollOffset = 0
+        ..visibleWidths = const <int>[];
+      return;
+    }
+
+    final selected = _selectedIndex.clamp(0, widths.length - 1);
+    var scrollOffset = 0;
+    var selectedRangeWidth = 0;
+    for (var index = 0; index <= selected; index++) {
+      selectedRangeWidth += widths[index];
+    }
+    while (scrollOffset < selected && selectedRangeWidth > size.width) {
+      selectedRangeWidth -= widths[scrollOffset];
+      scrollOffset++;
+    }
+
+    final visibleWidths = <int>[];
+    var remaining = size.width;
+    for (var index = scrollOffset; index < widths.length; index++) {
+      final width = widths[index];
+      if (width > remaining) {
+        if (index == selected && remaining > 0) visibleWidths.add(remaining);
+        break;
+      }
+      visibleWidths.add(width);
+      remaining -= width;
+    }
+    _metrics
+      ..scrollOffset = scrollOffset
+      ..visibleWidths = visibleWidths;
   }
 
   @override
@@ -360,15 +453,10 @@ final class _RenderTabSelect<T> extends RenderBox {
     if (_backgroundColor case final background?) {
       context.canvas.fillRect(origin & size, background);
     }
-    final visible = math.min(
-      _metrics.visibleTabs,
-      _options.length - _metrics.scrollOffset,
-    );
-    for (var index = 0; index < visible; index++) {
+    var left = 0;
+    for (var index = 0; index < _metrics.visibleTabs; index++) {
       final actual = _metrics.scrollOffset + index;
-      final left = index * _tabWidth;
-      final width = math.min(_tabWidth, size.width - left);
-      if (width <= 0) break;
+      final width = _metrics.visibleWidths[index];
       final selected = actual == _selectedIndex;
       if (selected) {
         context.canvas.fillRect(
@@ -381,6 +469,7 @@ final class _RenderTabSelect<T> extends RenderBox {
         label,
         Offset(origin.dx + left + 1, origin.dy),
         selected ? _selectedTextColor : _color,
+        attributes: selected ? _selectedTextAttributes : 0,
       );
       if (selected && _showUnderline && size.height > 1) {
         context.canvas.drawText(
@@ -389,6 +478,7 @@ final class _RenderTabSelect<T> extends RenderBox {
           _selectedTextColor,
         );
       }
+      left += width;
     }
     if (_showDescription && _options.isNotEmpty) {
       final row = _showUnderline ? 2 : 1;
@@ -425,8 +515,8 @@ String _truncate(String value, int cells) {
   return '${sliceByCells(value, cells - 1)}…';
 }
 
-void _validateTabWidth(int value) {
-  if (value <= 0) {
+void _validateTabWidth(int? value) {
+  if (value != null && value <= 0) {
     throw ArgumentError.value(value, 'tabWidth', 'must be positive');
   }
 }

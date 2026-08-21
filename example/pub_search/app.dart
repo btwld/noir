@@ -757,16 +757,18 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 children: [
                   _chooserLauncher(
                     theme: theme,
-                    label: 'SORT',
+                    label: 'Sort',
                     value: _sort.name,
                     focusNode: _sortFocus,
+                    active: _chooser == _SearchChooser.sort,
                     onActivate: () => _openChooser(_SearchChooser.sort),
                   ),
                   _chooserLauncher(
                     theme: theme,
-                    label: 'FILTER',
+                    label: 'Filter',
                     value: _filter.name,
                     focusNode: _filterFocus,
+                    active: _chooser == _SearchChooser.filter,
                     onActivate: () => _openChooser(_SearchChooser.filter),
                   ),
                   if (topic != null)
@@ -796,7 +798,15 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 style: TextStyle(color: theme.textMuted),
               )
             else
-              Expanded(child: _buildResults(context)),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildResults(context),
+                    if (_chooser != null) _buildChooserOverlay(),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -808,28 +818,29 @@ class _PubSearchAppState extends State<PubSearchApp> {
     required String label,
     required String value,
     required FocusNode focusNode,
+    required bool active,
     required VoidCallback onActivate,
-  }) => Row(
-    children: [
-      Text(label, style: TextStyle(color: theme.textMuted)),
-      Button(
-        label: '[${value.toUpperCase()} ▾]',
-        focusNode: focusNode,
-        onPressed: onActivate,
-      ),
-    ],
-  );
+  }) {
+    final focused = focusNode.hasFocus;
+    final (color, textColor) = switch ((active, focused)) {
+      (true, _) => (theme.selectedBackground, theme.selectedForeground),
+      (false, true) => (theme.accent, theme.accentForeground),
+      (false, false) => (theme.surfaceVariant, theme.textMuted),
+    };
+    return Button(
+      label: '$label: ${value.toUpperCase()} ▾',
+      focusNode: focusNode,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      color: color,
+      textColor: textColor,
+      onPressed: onActivate,
+    );
+  }
 
   Widget _buildResults(BuildContext context) => DemoPanel(
-    title: switch (_chooser) {
-      _SearchChooser.sort => 'CHOOSE SORT',
-      _SearchChooser.filter => 'CHOOSE FILTER',
-      null => _showSuggestions ? 'SUGGESTIONS' : 'RESULTS',
-    },
-    focused: _chooser == null ? _resultsFocus.hasFocus : _chooserFocus.hasFocus,
-    child: _chooser != null
-        ? _buildChooser()
-        : _showSuggestions && _suggestions.isNotEmpty
+    title: _showSuggestions ? 'SUGGESTIONS' : 'RESULTS',
+    focused: _chooser == null && _resultsFocus.hasFocus,
+    child: _showSuggestions && _suggestions.isNotEmpty
         ? _buildSuggestionList()
         : switch (_searchState) {
             PubLoadState.idle => Text(
@@ -845,6 +856,32 @@ class _PubSearchAppState extends State<PubSearchApp> {
             PubLoadState.ready => _buildResultList(context),
           },
   );
+
+  Widget _buildChooserOverlay() {
+    final chooser = _chooser!;
+    final optionRows = switch (chooser) {
+      _SearchChooser.sort => _sortOptions.length,
+      _SearchChooser.filter => _filterOptions.length,
+    };
+    final loadingRows = _searchState == PubLoadState.loading ? 2 : 0;
+    return PointerListener(
+      onPointerDown: (_) {},
+      child: Align(
+        child: SizedBox(
+          width: 48,
+          height: optionRows + loadingRows + 2,
+          child: DemoPanel(
+            title: switch (chooser) {
+              _SearchChooser.sort => 'CHOOSE SORT',
+              _SearchChooser.filter => 'CHOOSE FILTER',
+            },
+            focused: _chooserFocus.hasFocus,
+            child: _buildChooser(),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildChooser() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -895,10 +932,11 @@ class _PubSearchAppState extends State<PubSearchApp> {
       spacing: 1,
       children: [Spinner(), Text('Searching pub.dev…')],
     );
+    final progressHeight = _chooser == null ? 1 : 0;
     if (previous == null || previous.packages.isEmpty) {
-      return const Column(
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [searching],
+        children: [SizedBox(height: progressHeight, child: searching)],
       );
     }
     // Keep the last Select mounted so result-scoped picker shortcuts and
@@ -907,8 +945,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        searching,
-        const SizedBox(height: 1),
+        SizedBox(height: progressHeight, child: searching),
+        SizedBox(height: progressHeight),
         Expanded(child: _buildResultList(context)),
       ],
     );

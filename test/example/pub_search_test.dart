@@ -213,6 +213,84 @@ void main() {
     }
   });
 
+  test(
+    'chooser launchers name their action and use two-cell padding',
+    () async {
+      final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        final frame = app.captureFrame();
+        final text = frame.toText();
+
+        expect(text, contains('Sort: TOP ▾'));
+        expect(text, contains('Filter: ANY ▾'));
+        expect(text, isNot(contains('SORT [TOP ▾]')));
+        for (final label in ['Sort: TOP ▾', 'Filter: ANY ▾']) {
+          final position = frame.findText(label).single;
+          final trailing = position.x + terminalStringWidth(label);
+          expect(
+            frame.getBackgroundColor(position.x - 2, position.y),
+            _painted(pubTheme.surfaceVariant),
+          );
+          expect(
+            frame.getBackgroundColor(trailing + 1, position.y),
+            _painted(pubTheme.surfaceVariant),
+          );
+        }
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'Tab gives chooser launchers distinct idle and focused styles',
+    () async {
+      final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        var sort = _tabStyle(app, 'Sort: TOP ▾');
+        var filter = _tabStyle(app, 'Filter: ANY ▾');
+        expect(sort.background, _painted(pubTheme.surfaceVariant));
+        expect(sort.foreground, _painted(pubTheme.textMuted));
+        expect(sort.bold, isFalse);
+        expect(filter.background, _painted(pubTheme.surfaceVariant));
+
+        app.mockInput.pressTab();
+        await _settle(app);
+        sort = _tabStyle(app, 'Sort: TOP ▾');
+        filter = _tabStyle(app, 'Filter: ANY ▾');
+        expect(sort.background, _painted(pubTheme.accent));
+        expect(sort.foreground, _painted(pubTheme.accentForeground));
+        expect(sort.bold, isTrue);
+        expect(filter.background, _painted(pubTheme.surfaceVariant));
+
+        app.mockInput.pressTab();
+        await _settle(app);
+        sort = _tabStyle(app, 'Sort: TOP ▾');
+        filter = _tabStyle(app, 'Filter: ANY ▾');
+        expect(sort.background, _painted(pubTheme.surfaceVariant));
+        expect(filter.background, _painted(pubTheme.accent));
+        expect(filter.foreground, _painted(pubTheme.accentForeground));
+        expect(filter.bold, isTrue);
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
   test('search help advertises only available page commands', () async {
     const cases = [
       (page: 1, hasNext: false, expected: null),
@@ -1129,7 +1207,7 @@ void main() {
 
       try {
         await _settle(app);
-        expect(_render(app), contains('FILTER [ANY ▾]'));
+        expect(_render(app), contains('Filter: ANY ▾'));
 
         app.mockInput
           ..pressTab()
@@ -1144,7 +1222,7 @@ void main() {
           ..pressEnter();
         await _settle(app);
 
-        expect(_render(app), contains('FILTER [DART ▾]'));
+        expect(_render(app), contains('Filter: DART ▾'));
         expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
         expect(_render(app), contains('filtered'));
       } finally {
@@ -1167,7 +1245,7 @@ void main() {
 
     try {
       await _settle(app);
-      final sort = app.captureFrame().findText('[TOP ▾]').single;
+      final sort = app.captureFrame().findText('Sort: TOP ▾').single;
       app.mockMouse.click(sort.x, sort.y);
       await _settle(app);
       expect(_render(app), contains('CHOOSE SORT'));
@@ -1178,12 +1256,65 @@ void main() {
 
       expect(catalog.searchCalls, hasLength(2));
       expect(catalog.searchCalls.last.sort, PackageSort.text);
-      expect(_render(app), contains('SORT [TEXT ▾]'));
+      expect(_render(app), contains('Sort: TEXT ▾'));
       expect(_render(app), contains('sorted'));
-      final style = _tabStyle(app, '[TEXT ▾]');
+      final style = _tabStyle(app, 'Sort: TEXT ▾');
       expect(style.background, _painted(pubTheme.accent));
       expect(style.foreground, _painted(pubTheme.accentForeground));
       expect(style.bold, isTrue);
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('sort picker overlays mounted results and marks its launcher', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['overlay_result']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final sort = app.captureFrame().findText('Sort: TOP ▾').single;
+      app.mockMouse.click(sort.x, sort.y);
+      await _settle(app);
+
+      final frame = app.captureFrame();
+      final results = frame.findText('RESULTS').single;
+      final chooser = frame.findText('CHOOSE SORT').single;
+      expect(frame.toText(), contains('overlay_result'));
+      expect(chooser.x, greaterThan(results.x));
+      expect(chooser.y, greaterThan(results.y));
+      final resultsLeft = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, results.y) == '┌') x,
+      ].single;
+      final resultsRight = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, results.y) == '┐') x,
+      ].single;
+      final chooserLeft = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, chooser.y) == '┌') x,
+      ].single;
+      final chooserRight = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, chooser.y) == '┐') x,
+      ].single;
+      expect(chooserLeft - resultsLeft, resultsRight - chooserRight);
+
+      final result = frame.findText('overlay_result').single;
+      app.mockMouse.click(result.x, result.y);
+      await _settle(app);
+      expect(catalog.detailCalls, isEmpty);
+      expect(_render(app), contains('CHOOSE SORT'));
+
+      final launcher = _tabStyle(app, 'Sort: TOP ▾');
+      expect(launcher.background, _painted(pubTheme.selectedBackground));
+      expect(launcher.foreground, _painted(pubTheme.selectedForeground));
     } finally {
       app.dispose();
     }
@@ -1205,10 +1336,13 @@ void main() {
 
       try {
         await _settle(app);
-        final filter = app.captureFrame().findText('[ANY ▾]').single;
+        final filter = app.captureFrame().findText('Filter: ANY ▾').single;
         app.mockMouse.click(filter.x, filter.y);
         await _settle(app);
         expect(_render(app), contains('CHOOSE FILTER'));
+        final active = _tabStyle(app, 'Filter: ANY ▾');
+        expect(active.background, _painted(pubTheme.selectedBackground));
+        expect(active.foreground, _painted(pubTheme.selectedForeground));
 
         final dart = app.captureFrame().findText('DART').single;
         app.mockMouse.click(dart.x, dart.y);
@@ -1216,9 +1350,9 @@ void main() {
 
         expect(catalog.searchCalls, hasLength(2));
         expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
-        expect(_render(app), contains('FILTER [DART ▾]'));
+        expect(_render(app), contains('Filter: DART ▾'));
         expect(_render(app), contains('filtered'));
-        final style = _tabStyle(app, '[DART ▾]');
+        final style = _tabStyle(app, 'Filter: DART ▾');
         expect(style.background, _painted(pubTheme.accent));
         expect(style.foreground, _painted(pubTheme.accentForeground));
         expect(style.bold, isTrue);
@@ -1245,8 +1379,8 @@ void main() {
 
       try {
         await _settle(app);
-        expect(_render(app), contains('SORT [TOP ▾]'));
-        expect(_render(app), contains('FILTER [ANY ▾]'));
+        expect(_render(app), contains('Sort: TOP ▾'));
+        expect(_render(app), contains('Filter: ANY ▾'));
 
         app.mockInput
           ..pressTab()
@@ -1259,7 +1393,7 @@ void main() {
 
         app.mockInput.pressArrow(ArrowDirection.down);
         await _settle(app);
-        expect(_render(app), contains('SORT [TOP ▾]'));
+        expect(_render(app), contains('Sort: TOP ▾'));
         expect(catalog.searchCalls, hasLength(1));
 
         app.mockInput.pressEnter();
@@ -1273,7 +1407,7 @@ void main() {
           filter: PackageSearchFilter.any,
           topic: null,
         ));
-        expect(_render(app), contains('SORT [TEXT ▾]'));
+        expect(_render(app), contains('Sort: TEXT ▾'));
         expect(_render(app), contains('noir'));
         expect(
           _render(app),
@@ -1377,7 +1511,7 @@ void main() {
         _render(app),
         contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
       );
-      expect(_tabStyle(app, '[TEXT ▾]').bold, isTrue);
+      expect(_tabStyle(app, 'Sort: TEXT ▾').bold, isTrue);
       expect(app.captureFrame().cursor.visible, isFalse);
     } finally {
       app.dispose();
@@ -1420,7 +1554,7 @@ void main() {
         _render(app),
         contains('Enter/Space/click choose filter  Tab results  Esc quit'),
       );
-      expect(_tabStyle(app, '[DART ▾]').bold, isTrue);
+      expect(_tabStyle(app, 'Filter: DART ▾').bold, isTrue);
       expect(app.captureFrame().cursor.visible, isFalse);
     } finally {
       app.dispose();
@@ -1461,7 +1595,7 @@ void main() {
       expect(catalog.searchCalls, hasLength(2));
       expect(catalog.searchCalls.last.filter, PackageSearchFilter.flutter);
       expect(catalog.searchCalls.last.sort, PackageSort.top);
-      expect(_render(app), contains('FILTER [FLUTTER ▾]'));
+      expect(_render(app), contains('Filter: FLUTTER ▾'));
       expect(
         _render(app),
         contains('Enter/Space/click choose filter  Tab results  Esc quit'),
@@ -1506,7 +1640,7 @@ void main() {
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(1));
-      expect(_render(app), contains('SORT [TOP ▾]'));
+      expect(_render(app), contains('Sort: TOP ▾'));
 
       app.mockInput.pressEnter();
       await _settle(app);
@@ -1584,8 +1718,8 @@ void main() {
 
     try {
       await _settle(app);
-      expect(_render(app), contains('SORT [TOP ▾]'));
-      expect(_render(app), contains('FILTER [ANY ▾]'));
+      expect(_render(app), contains('Sort: TOP ▾'));
+      expect(_render(app), contains('Filter: ANY ▾'));
 
       app.mockInput
         ..pressTab()
@@ -1598,7 +1732,7 @@ void main() {
       await _settle(app);
 
       expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
-      expect(_render(app), contains('FILTER [DART ▾]'));
+      expect(_render(app), contains('Filter: DART ▾'));
       expect(
         _render(app),
         contains('Enter/Space/click choose filter  Tab search  Esc quit'),
@@ -1685,7 +1819,7 @@ void main() {
         PackageSort.text,
         PackageSort.created,
       ]);
-      expect(_render(app), contains('SORT [CREATED ▾]'));
+      expect(_render(app), contains('Sort: CREATED ▾'));
 
       secondRefresh.complete(_pageValue(['latest_result']));
       await _settle(app);
@@ -2117,6 +2251,13 @@ void main() {
       await _settle(app);
 
       final frame = app.captureFrame();
+      final tabs = [
+        frame.findText('1 OVERVIEW').single,
+        frame.findText('2 VERSIONS').single,
+        frame.findText('3 DEPENDENCIES').single,
+        frame.findText('4 HEALTH').single,
+      ];
+      expect(tabs.map((tab) => tab.y).toSet(), hasLength(1));
       final start = frame.findText('←→/1–4/click tabs').single;
       final end = frame.findText('Esc').last;
       expect(end.y, start.y);
@@ -2212,8 +2353,8 @@ void main() {
         expect(_render(app), contains('No packages found'));
         expect(_render(app), contains('Enter search  Tab sort  Esc quit'));
         expect(_render(app), isNot(contains('Tab results')));
-        expect(_render(app), contains('SORT [TOP ▾]'));
-        expect(_render(app), contains('FILTER [ANY ▾]'));
+        expect(_render(app), contains('Sort: TOP ▾'));
+        expect(_render(app), contains('Filter: ANY ▾'));
       } finally {
         app.dispose();
       }
@@ -2246,7 +2387,7 @@ void main() {
       await _settle(app);
 
       expect(_render(app), contains('No packages found'));
-      expect(_render(app), contains('FILTER [DART ▾]'));
+      expect(_render(app), contains('Filter: DART ▾'));
       expect(
         _render(app),
         contains('Enter/Space/click choose filter  Tab search  Esc quit'),
@@ -2705,7 +2846,7 @@ void main() {
 
       expect(_render(app), contains('Searching pub.dev…'));
       expect(_render(app), contains('kept_package'));
-      expect(_render(app), contains('SORT [TEXT ▾]'));
+      expect(_render(app), contains('Sort: TEXT ▾'));
 
       app.mockInput.pressEnter();
       await _settle(app);
@@ -2718,7 +2859,7 @@ void main() {
         PackageSort.text,
         PackageSort.created,
       ]);
-      expect(_render(app), contains('SORT [CREATED ▾]'));
+      expect(_render(app), contains('Sort: CREATED ▾'));
       expect(_render(app), contains('kept_package'));
     } finally {
       app.dispose();
@@ -2761,7 +2902,7 @@ void main() {
 
       expect(_render(app), contains('kept_package'));
       expect(_render(app), isNot(contains('Searching pub.dev…')));
-      expect(_render(app), contains('SORT [TOP ▾]'));
+      expect(_render(app), contains('Sort: TOP ▾'));
     } finally {
       app.dispose();
     }

@@ -211,8 +211,9 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 a finite rich-text grid with wrapping and row-major text selection, and
 `DataTable` for a windowed interactive data source with row selection and
 sorting.
-Likewise, `TabSelect` is the horizontal tab control; the existing `Select`
-remains the vertical list-of-options control.
+Likewise, `TabSelect` is the horizontal tab control, with fixed-cell widths by
+default and label-sized tabs via `tabWidth: null`; the existing `Select` remains
+the vertical list-of-options control.
 
 ## Application Lifecycle and API Tiers
 
