@@ -118,8 +118,8 @@ void main() {
   test('native symbol inventory is exact and guarded', () {
     final bindings = _read('lib/src/ffi/bindings.dart');
     final nativeSymbols = _read('lib/src/ffi/native_symbols.dart');
-    expect(selectedOpenTuiV051Symbols, hasLength(39));
-    expect(selectedOpenTuiV051Symbols.toSet(), hasLength(39));
+    expect(selectedOpenTuiV051Symbols, hasLength(51));
+    expect(selectedOpenTuiV051Symbols.toSet(), hasLength(51));
     for (final symbol in selectedOpenTuiV051Symbols) {
       expect(nativeSymbols, contains('bundled.$symbol('), reason: symbol);
     }

@@ -3,6 +3,8 @@ import 'dart:ffi';
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/core/cursor.dart';
 import 'package:noir/src/ffi/bindings.dart';
+import 'package:noir/src/ffi/generated_bindings.dart' as lookup;
+import 'package:noir/src/ffi/native_asset_bindings.dart' as bundled;
 import 'package:noir/src/ffi/native_symbols.dart';
 import 'package:noir/src/ffi/types.dart';
 import 'package:test/test.dart';
@@ -12,10 +14,12 @@ void main() {
     expect(RendererHandle.fromNative(1).value, 1);
     expect(RendererHandle.fromNative(0xFFFFFFFF).value, 0xFFFFFFFF);
     expect(OptimizedBufferHandle.fromNative(7).value, 7);
+    expect(TerminalImageHandle.fromNative(8).value, 8);
 
     for (final invalid in <int>[-1, 0, 0x100000000]) {
       expect(() => RendererHandle.fromNative(invalid), throwsRangeError);
       expect(() => OptimizedBufferHandle.fromNative(invalid), throwsRangeError);
+      expect(() => TerminalImageHandle.fromNative(invalid), throwsRangeError);
     }
   });
 
@@ -47,6 +51,13 @@ void main() {
   test('canonical pointer storage types are represented exactly', () {
     expect(sizeOf<Uint16>(), 2);
     expect(sizeOf<Uint32>(), 4);
+  });
+
+  test('image ABI structs match in lookup and bundled bindings', () {
+    expect(sizeOf<lookup.NativeImageInfo>(), 32);
+    expect(sizeOf<bundled.NativeImageInfo>(), 32);
+    expect(sizeOf<lookup.ImageDrawOptions>(), 44);
+    expect(sizeOf<bundled.ImageDrawOptions>(), 44);
   });
 
   test('cursor styles and colors use canonical cursor options', () {

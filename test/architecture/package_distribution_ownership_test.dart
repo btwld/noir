@@ -140,7 +140,6 @@ void main() {
     expect(changelog, contains('First public alpha'));
     expect(changelog, isNot(contains('Initial public release')));
     expect(changelog.toLowerCase(), isNot(contains('muse')));
-    expect(changelog.toLowerCase(), isNot(contains('pixel')));
   });
 
   test('live release records derive the package version in one place', () {
@@ -188,6 +187,54 @@ void main() {
         ? false
         : 'OpenTUI submodule is not materialized in this checkout.',
   );
+
+  test('legacy ASCII font payload is absent from package sources and docs', () {
+    const forbiddenSource =
+        'c'
+        'fonts';
+    expect(File('scripts/generate_ascii_font_data.dart').existsSync(), isFalse);
+    expect(Directory('third_party/$forbiddenSource').existsSync(), isFalse);
+
+    final packageTextFiles = <File>[
+      for (final root in <String>[
+        'bin',
+        'example',
+        'hook',
+        'lib',
+        'scripts',
+        'skills',
+        'test',
+      ])
+        ...Directory(root)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where(
+              (file) => const <String>{
+                '.dart',
+                '.json',
+                '.md',
+                '.yaml',
+                '.yml',
+              }.any(file.path.endsWith),
+            ),
+      for (final path in <String>[
+        'AGENTS.md',
+        'README.md',
+        'GOALS.md',
+        'TODO.md',
+        'CHANGELOG.md',
+        'THIRD_PARTY_NOTICES.md',
+        'pubspec.yaml',
+      ])
+        File(path),
+    ];
+    final staleReferences = <String>[
+      for (final file in packageTextFiles)
+        if (file.readAsStringSync().toLowerCase().contains(forbiddenSource))
+          file.path,
+    ];
+    expect(staleReferences, isEmpty);
+  });
 
   test('README gives truthful prerelease install and runnable samples', () {
     final installStart = readme.indexOf('## Install');

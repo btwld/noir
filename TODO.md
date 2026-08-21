@@ -8,22 +8,49 @@ manual workflow dispatch, or public repository visibility until the applicable
 open items below are closed. The previous pub.dev publications recorded below
 are complete; `0.0.1-alpha.2` is not published.
 
+## Open — OpenTUI component parity program
+
+- [x] **Phase 1 Image automated gate**: `TerminalImage`, all five source
+      forms, ownership/cancellation, fit modes, display-list/native drawing,
+      pixel-resolution reporting, deterministic drive capture, and public
+      guidance are implemented. On the combined parity tree, format,
+      fatal-info analysis, 173 architecture tests, the 1685-test serial suite,
+      native verify-only, and archive validation pass. The clean committed-tree
+      publish dry-run validates the intended 15 MB archive with zero warnings.
+- [x] **ASCII font licensing disposition**: the third-party font tables,
+      generated copy, generator, and GPL notice were removed. `AsciiFont` now
+      derives all seven visual families from Noir's original 5x7 printable-
+      ASCII alphabet under the package's BSD-3-Clause license.
+- [x] **Phase 2 automated gate**: `Stack`/`Positioned`, `Wrap`, `TabSelect`,
+      `AsciiFont`, `Slider`, `TextTable`, semantic hyperlinks, OSC52 clipboard,
+      grapheme-safe document selection, `CodeView`, unified/split `DiffView`,
+      GitHub-flavoured `MarkdownView`, and the Patch Manager presentation
+      migration are implemented. The 247 focused parity and boundary checks,
+      all 163 Patch Manager regressions, all 173 architecture tests, and the
+      1685-test full serial suite pass. Both FFI generators are byte-idempotent;
+      the authored ASCII glyph source, ABI, all six bundled binaries, package
+      contents, and diff whitespace validate.
+- [ ] **Parity external gates**: obtain explicit authorization before direct
+      Kitty, Sixel, tmux, Screen, OSC52, resize/crop, or other real-terminal
+      checks, then record the results from the exact candidate tree.
+
 ## Open — remaining release operations
 
-- [x] **Independent behavior and full-diff review** of the current candidate,
-      with no unresolved finding.
-- [ ] **Recovery bundle and clean-clone verification** recorded: the committed
-      candidate and pinned OpenTUI gitlink were restored into a fresh checkout,
-      the verification commands below passed, and all six bundled binaries
-      verified against `native_manifest.json`.
-- [ ] **Clean-tree publish dry-run** completed with zero warnings and the
-      intended 15 MB archive contents, both in the workspace and clean clone.
-- [x] **Manual real-terminal check** of hot reload. Ordinary verification is
+- [x] **Independent behavior and full-diff review** of the alpha.2 parity
+      candidate accepted the exact implementation and evidence snapshot with
+      no unresolved blocker or material drift.
+- [ ] **Recovery bundle and clean-clone verification**: restore the committed
+      alpha.2 candidate and pinned OpenTUI gitlink into a fresh checkout, run
+      the verification commands below, and verify all six bundled binaries
+      against `native_manifest.json`.
+- [ ] **Clean-tree publish dry-run** with zero warnings and the intended
+      archive contents, repeated from the clean clone.
+- [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
       headless, so this is the only path that exercises a real TTY:
       `dart run scripts/hot_reload_driver.dart example/counter.dart`, edit a
       `build()` body, and confirm the repaint without a restart.
-- [ ] **Publish `0.0.1-alpha.2` to pub.dev** as a separate deliberate
-      action after the candidate checks above are complete.
+- [ ] **Publish `0.0.1-alpha.2` to pub.dev** as a separate deliberate action
+      after the candidate checks above are complete.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
       separate, deliberate decision. The repository is private today.
 
@@ -33,8 +60,9 @@ are complete; `0.0.1-alpha.2` is not published.
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled
       library as cache inputs, with a focused regression test.
-- [x] The latest manual pub.dev publication is live as `noir 0.0.1-alpha.1`.
-      The public package API reports it as latest with archive SHA-256
+- [x] The published alpha.1 baseline is live as `noir 0.0.1-alpha.1`. At the
+      recorded publication check, the public package API reported it as latest
+      with archive SHA-256
       `71f8c0f029ec11d6e891161f375aa41a9ca86cf325740e249466c817659a2338`.
       The downloaded archive matches that hash, declares the exact version,
       contains both hook cache-input declarations, and excludes the release
@@ -61,11 +89,14 @@ are complete; `0.0.1-alpha.2` is not published.
       candidate and clean clone. Documentation had zero warnings and errors,
       and both clean-tree publish dry-runs validated the intended 15 MB archive
       with zero warnings.
-- [x] On the alpha.2 hook review-closure tree, focused hook and Like Reactor
-      tests, formatting, strict analysis, architecture tests, the full ordinary
-      suite, all six bundled-binary checks, and diff checks passed. The
-      clean-workspace publish dry-run produced the intended 15 MB archive with
-      zero warnings; its clean-clone repeat remains in the open gates above.
+- [x] On the combined alpha.2 hooks-and-parity tree, 96 focused hook API,
+      ownership, example, and downstream-consumer checks pass. The opt-in
+      `package:noir/hooks.dart` surface, guide, skill, example, and complete
+      regression suite from `main` remain present alongside the parity work.
+- [x] The pre-parity alpha.2 hook tree passed its authorized manual
+      real-terminal hot-reload check. Because the combined parity candidate
+      also changes terminal binding/session behavior, its exact-tree repeat
+      remains an open gate above rather than reusing that earlier result.
 - [x] Authorized Conductor-terminal checks render every cataloged entrypoint.
       Post-change VS Code checks exercised Select keyboard selection, ScrollBox
       navigation, the inherited `t` toggle, a sustained pulse run, and
@@ -175,7 +206,7 @@ authorization.
   never proves real terminal escape rendering or raw-mode input. A continuously
   animating app never reports `stable: true`, an in-app `TuiApp.exit` ends the
   driven session (the host follows the binding down), and `reload` inherits
-  the `reassemble()` limits recorded below.
+  the `reassemble()` limits described above.
 - `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
   drives is proven by `test/app/driver_test.dart` and
   `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
@@ -194,5 +225,5 @@ authorization.
   offers a supported way to request the package's native deployment floor.
 - Execute downstream smoke tests on the three shipped OS/architecture
   combinations not exercised by the ordinary host-runner matrix.
-- Add a lower-bound lane that runs analysis and focused hook tests after
-  `dart pub downgrade` when practical.
+- Add a lower-bound lane that runs analysis plus focused widget-hook and
+  native-asset build-hook tests after `dart pub downgrade` when practical.

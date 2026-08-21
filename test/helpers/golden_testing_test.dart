@@ -11,6 +11,7 @@ void main() {
     final goldenDir = Directory('test/goldens');
     final generatedNames = <String>[
       'visual_default_visual_golden',
+      'visual_link_attribute_visual_golden',
       'visual_multi_visual_golden',
     ];
 
@@ -91,6 +92,32 @@ void main() {
         expect(
           _goldenFile(goldenDir, testName, 'cursor.txt').existsSync(),
           isTrue,
+        );
+      } finally {
+        tester.dispose();
+      }
+    });
+
+    test('visual goldens exclude native hyperlink allocation IDs', () async {
+      final tester = GoldenTester(width: 20, height: 4);
+      const testName = 'visual_link_attribute_visual_golden';
+
+      try {
+        await tester.expectGolden(
+          RichText(
+            text: TextSpan(
+              text: 'Link',
+              style: TextStyles.bold,
+              uri: Uri.parse('https://example.test/link'),
+            ),
+          ),
+          testName,
+          updateGoldens: true,
+        );
+
+        expect(
+          await _goldenFile(goldenDir, testName, 'styles.txt').readAsString(),
+          contains('|1 * 4'),
         );
       } finally {
         tester.dispose();

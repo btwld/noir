@@ -23,6 +23,27 @@
   rather than the constructor `height` hint, so a list constrained shorter than
   its hint shows its up/down arrows, positions the down arrow on the last
   painted row, and draws no arrow at all when no option row was painted.
+- Added whole-cell `Stack`/`Positioned` overlay layout and horizontal or
+  vertical `Wrap` runs with spacing and alignment.
+- Added horizontal `TabSelect`, controlled horizontal/vertical `Slider`, and
+  `AsciiFont` with seven Noir-designed treatments of an original printable-
+  ASCII alphabet.
+- Added static rich-text `TextTable` with wrapping, proportional or balanced
+  column fitting, padding, gaps, borders, pointer/keyboard grid selection, and
+  explicit copy. The existing virtualized interactive `DataTable` remains a
+  separate component.
+- Added selectable `CodeView`, unified/split `DiffView`, and GitHub-flavoured
+  `MarkdownView`, including async-safe highlighting, shared line gutters,
+  grapheme-safe keyboard/pointer selection, explicit OSC52 copy, semantic
+  terminal hyperlinks, and semantic URL arrays in driver cell captures.
+- Rebuilt Patch Manager's tracked-file diff presentation on `DiffView` while
+  retaining its staging parser, interactive cards, actions, focus, locks, and
+  scroll anchors.
+- Added `TerminalImage` and the stateful `Image` widget for PNG, JPEG, WebP,
+  first-frame GIF, and raw RGBA sources. Images support borrowed/owned
+  lifetimes, file and HTTP(S) loading, fit/cover/fill geometry, Kitty/Sixel/
+  block protocol selection, measured terminal pixel sizing, cancellation, and
+  retained-success replacement behavior.
 
 ## 0.0.1-alpha.1
 
@@ -59,6 +80,7 @@
   asset verification.
 - Added the Like Reactor example, demonstrating deterministic heart particles,
   animation-driven morphing, and overlapping keyboard and mouse activation.
+
 ## 0.0.1-alpha.0
 
 - First public alpha of Noir's Flutter-like reactive widget framework for

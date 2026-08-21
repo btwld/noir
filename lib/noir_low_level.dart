@@ -16,6 +16,7 @@ export 'src/app/tui_binding.dart' show TuiBinding;
 // Renderer and buffer primitives.
 export 'src/core/buffer.dart' show Buffer, DirectBufferAccess;
 export 'src/core/capabilities.dart' show CapabilitiesDetection;
+export 'src/core/clipboard.dart' show ClipboardSupport, TerminalClipboardTarget;
 // Cursor management (controller + extension on Renderer)
 export 'src/core/cursor.dart' show CursorController, CursorManagement;
 // Input extensions on Renderer
@@ -42,6 +43,7 @@ export 'src/rendering/box.dart' show RenderBox;
 export 'src/rendering/constrained_box.dart' show RenderConstrainedBox;
 export 'src/rendering/decorated_box.dart' show RenderDecoratedBox;
 export 'src/rendering/flex.dart' show RenderFlex;
+export 'src/rendering/image.dart' show RenderImage;
 export 'src/rendering/object.dart'
     show
         HitTestEntry,
@@ -49,12 +51,17 @@ export 'src/rendering/object.dart'
         HitTestTarget,
         PaintingContext,
         RenderObject,
-        RenderObjectWithSingleChild;
+        RenderObjectWithSingleChild,
+        TerminalCellMetrics;
 export 'src/rendering/padding.dart' show RenderPadding;
 export 'src/rendering/paragraph.dart' show RenderParagraph;
 export 'src/rendering/positioned_box.dart' show RenderPositionedBox;
 export 'src/rendering/proxy_box.dart' show RenderProxyBox;
+export 'src/rendering/stack.dart' show RenderStack, StackChildData;
+export 'src/rendering/wrap.dart' show RenderWrap;
+export 'src/widgets/ascii_font.dart' show RenderAsciiFont;
 // Render objects owned by widget files (re-exported as a convenience).
 export 'src/widgets/scroll_box.dart' show RenderScrollBox;
 export 'src/widgets/text_area.dart' show RenderTextArea;
 export 'src/widgets/text_layout.dart' show TextLayoutEngine;
+export 'src/widgets/text_table.dart' show RenderTextTable;

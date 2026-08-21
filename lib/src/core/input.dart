@@ -631,6 +631,9 @@ enum TerminalCapabilityKind {
   /// Kitty keyboard protocol status (`CSI ? ... u`).
   kittyKeyboardStatus,
 
+  /// Terminal pixel resolution (`CSI 4 ; height ; width t`).
+  pixelResolutionReport,
+
   /// Device control string (`ESC P ... ST`).
   deviceControlString,
 

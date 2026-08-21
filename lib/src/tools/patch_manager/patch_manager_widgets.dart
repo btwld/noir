@@ -10,6 +10,7 @@ import '../../framework/focus_manager.dart';
 import '../../framework/widget.dart';
 import '../../render/geometry.dart';
 import '../../widgets/container.dart';
+import '../../widgets/diff_view.dart' as noir_diff;
 import '../../widgets/flexible.dart';
 import '../../widgets/focus.dart';
 import '../../widgets/pointer_listener.dart';
@@ -411,6 +412,7 @@ class PatchDiffSurface extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.scrollController,
+    required this.diffViewController,
     required this.stagingEnabled,
     this.onSkipHunk,
     this.onStageHunk,
@@ -422,6 +424,7 @@ class PatchDiffSurface extends StatelessWidget {
   final PatchReviewController controller;
   final FocusNode focusNode;
   final ScrollController scrollController;
+  final noir_diff.DiffViewController diffViewController;
   final bool stagingEnabled;
   final void Function(DiffHunk hunk)? onSkipHunk;
   final void Function(DiffHunk hunk)? onStageHunk;
@@ -445,6 +448,7 @@ class PatchDiffSurface extends StatelessWidget {
             file.wholeFileStageUnit!,
           ).title.toLowerCase();
     final incompletePreviewLabel = _incompletePreviewHeaderLabel(file);
+    final diffAdapter = file.canStageContent ? _PatchDiffAdapter(file) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -494,56 +498,35 @@ class PatchDiffSurface extends StatelessWidget {
         PatchDiffFilterBar(controller: controller, file: file),
         const SizedBox(height: 1),
         Expanded(
-          child: ScrollBox(
-            focusNode: focusNode,
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: _diffWidgets(file),
-            ),
-          ),
+          child: diffAdapter == null
+              ? ScrollBox(
+                  focusNode: focusNode,
+                  controller: scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: _wholeFileWidgets(file),
+                  ),
+                )
+              : noir_diff.DiffView(
+                  document: diffAdapter.document,
+                  controller: diffViewController,
+                  scrollController: scrollController,
+                  focusNode: focusNode,
+                  selectable: false,
+                  showLineNumbers: false,
+                  rowBuilder: (_, _, hunk, line, _) => diffAdapter.buildRow(
+                    hunk: hunk,
+                    line: line,
+                    controller: controller,
+                    stagingEnabled: stagingEnabled,
+                    onSkipHunk: onSkipHunk,
+                    onStageHunk: onStageHunk,
+                    onRefresh: onRefresh,
+                  ),
+                ),
         ),
       ],
     );
-  }
-
-  List<Widget> _diffWidgets(DiffFile file) {
-    if (!file.canStageContent) {
-      return _wholeFileWidgets(file);
-    }
-    final widgets = <Widget>[];
-    for (var hunkIndex = 0; hunkIndex < file.hunks.length; hunkIndex++) {
-      final hunk = file.hunks[hunkIndex];
-      final selectedHunk = hunkIndex == controller.selectedHunkIndex;
-      widgets
-        ..add(PatchHunkBorderRow(selected: selectedHunk, top: true))
-        ..add(
-          PatchHunkCard(
-            controller: controller,
-            hunk: hunk,
-            selected: selectedHunk,
-            stagingEnabled: stagingEnabled,
-            onSkipHunk: onSkipHunk,
-            onStageHunk: onStageHunk,
-            onRefresh: onRefresh,
-          ),
-        );
-      for (var lineIndex = 0; lineIndex < hunk.lines.length; lineIndex++) {
-        widgets.add(
-          PatchDiffLine(
-            controller: controller,
-            hunk: hunk,
-            lineIndex: lineIndex,
-            framed: true,
-            selectedHunk: selectedHunk,
-          ),
-        );
-      }
-      widgets
-        ..add(PatchHunkBorderRow(selected: selectedHunk, top: false))
-        ..add(const SizedBox(height: 1));
-    }
-    return widgets;
   }
 
   List<Widget> _wholeFileWidgets(DiffFile file) {
@@ -585,6 +568,106 @@ class PatchDiffSurface extends StatelessWidget {
       }
     }
     return widgets;
+  }
+}
+
+final class _PatchDiffAdapter {
+  _PatchDiffAdapter(DiffFile file) {
+    final presentationHunks = <noir_diff.DiffHunk>[];
+    for (var hunkIndex = 0; hunkIndex < file.hunks.length; hunkIndex++) {
+      final hunk = file.hunks[hunkIndex];
+      final presentationLines = <noir_diff.DiffLine>[];
+      for (var lineIndex = 0; lineIndex < hunk.lines.length; lineIndex++) {
+        final line = hunk.lines[lineIndex];
+        final presentation = noir_diff.DiffLine(
+          kind: switch (line.type) {
+            DiffLineType.context => noir_diff.DiffLineKind.context,
+            DiffLineType.addition => noir_diff.DiffLineKind.addition,
+            DiffLineType.deletion => noir_diff.DiffLineKind.deletion,
+            DiffLineType.noNewlineMarker =>
+              noir_diff.DiffLineKind.noNewlineMarker,
+          },
+          text: line.text,
+          oldLineNumber: line.oldLineNumber,
+          newLineNumber: line.newLineNumber,
+        );
+        presentationLines.add(presentation);
+        _lines[presentation] = (hunk: hunk, lineIndex: lineIndex);
+      }
+      final presentation = noir_diff.DiffHunk(
+        oldStart: hunk.oldStart,
+        oldCount: hunk.oldCount,
+        newStart: hunk.newStart,
+        newCount: hunk.newCount,
+        header: hunk.sectionHeading,
+        lines: presentationLines,
+      );
+      presentationHunks.add(presentation);
+      _hunks[presentation] = (hunk: hunk, hunkIndex: hunkIndex);
+    }
+    document = noir_diff.DiffDocument(<noir_diff.DiffFile>[
+      noir_diff.DiffFile(
+        oldPath: file.oldPath == null
+            ? null
+            : GitPathPresentation.asciiSafe(file.oldPath!).full,
+        newPath: file.newPath == null
+            ? null
+            : GitPathPresentation.asciiSafe(file.newPath!).full,
+        hunks: presentationHunks,
+      ),
+    ]);
+  }
+
+  late final noir_diff.DiffDocument document;
+  final Map<noir_diff.DiffHunk, ({DiffHunk hunk, int hunkIndex})> _hunks = {};
+  final Map<noir_diff.DiffLine, ({DiffHunk hunk, int lineIndex})> _lines = {};
+
+  Widget buildRow({
+    required noir_diff.DiffHunk hunk,
+    required noir_diff.DiffLine? line,
+    required PatchReviewController controller,
+    required bool stagingEnabled,
+    required void Function(DiffHunk hunk)? onSkipHunk,
+    required void Function(DiffHunk hunk)? onStageHunk,
+    required VoidCallback? onRefresh,
+  }) {
+    final hunkRecord = _hunks[hunk]!;
+    final selectedHunk = hunkRecord.hunkIndex == controller.selectedHunkIndex;
+    if (line == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          PatchHunkBorderRow(selected: selectedHunk, top: true),
+          PatchHunkCard(
+            controller: controller,
+            hunk: hunkRecord.hunk,
+            selected: selectedHunk,
+            stagingEnabled: stagingEnabled,
+            onSkipHunk: onSkipHunk,
+            onStageHunk: onStageHunk,
+            onRefresh: onRefresh,
+          ),
+        ],
+      );
+    }
+    final lineRecord = _lines[line]!;
+    final last = lineRecord.lineIndex == lineRecord.hunk.lines.length - 1;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        PatchDiffLine(
+          controller: controller,
+          hunk: lineRecord.hunk,
+          lineIndex: lineRecord.lineIndex,
+          framed: true,
+          selectedHunk: selectedHunk,
+        ),
+        if (last) ...<Widget>[
+          PatchHunkBorderRow(selected: selectedHunk, top: false),
+          const SizedBox(height: 1),
+        ],
+      ],
+    );
   }
 }
 

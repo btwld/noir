@@ -76,6 +76,38 @@ void main() {
     },
   );
 
+  test('package facts expose HTTP URLs as semantic terminal links', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['noir']))
+      ..detailResults['noir'] = Future.value(examplePubPackage);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+
+      final frame = app.captureFrame();
+      final url = examplePubPackage.packageUrl;
+      final position = frame.findText(url).first;
+      final attributes = frame.getCell(position.x, position.y).attributes;
+      expect(
+        app.renderer.debugCurrentBuffer.linkForAttributes(attributes),
+        url,
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('ignores a stale search completion', () async {
     final oldSearch = Completer<PackageSearchPage>();
     final newSearch = Completer<PackageSearchPage>();

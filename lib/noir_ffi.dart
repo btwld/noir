@@ -15,4 +15,8 @@ export 'src/ffi/bindings.dart'
     show FFIException, OpenTuiBindings, OpenTuiRenderStatus;
 export 'src/ffi/library.dart' show OpenTuiLibraryLoadException;
 export 'src/ffi/types.dart'
-    show OpenTuiHandle, OptimizedBufferHandle, RendererHandle;
+    show
+        OpenTuiHandle,
+        OptimizedBufferHandle,
+        RendererHandle,
+        TerminalImageHandle;

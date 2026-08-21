@@ -19,6 +19,13 @@ abstract interface class OpenTuiNativeSymbols {
   void resizeRenderer(int renderer, int width, int height);
   void setBackgroundColor(int renderer, Pointer<Uint16> color);
   void clearTerminal(int renderer);
+  bool copyToClipboardOSC52(
+    int renderer,
+    int target,
+    Pointer<Uint8> text,
+    int textLen,
+  );
+  bool clearClipboardOSC52(int renderer, int target);
 
   int getBufferWidth(int buffer);
   int getBufferHeight(int buffer);
@@ -93,6 +100,21 @@ abstract interface class OpenTuiNativeSymbols {
   void bufferPushOpacity(int buffer, double opacity);
   void bufferPopOpacity(int buffer);
   void bufferClearOpacity(int buffer);
+  int bufferDrawImage(
+    int buffer,
+    int image,
+    int x,
+    int y,
+    int width,
+    int height,
+    int pixelWidth,
+    int pixelHeight,
+    int sourceX,
+    int sourceY,
+    int sourceWidth,
+    int sourceHeight,
+    int protocol,
+  );
 
   void setCursorPosition(int renderer, int x, int y, bool visible);
   void setCursorStyleOptions(
@@ -107,6 +129,7 @@ abstract interface class OpenTuiNativeSymbols {
   void enableKittyKeyboard(int renderer, int flags);
   void disableKittyKeyboard(int renderer);
   void setupTerminal(int renderer, bool useAlternateScreen);
+  void queryPixelResolution(int renderer);
   void addToHitGrid(int renderer, int x, int y, int width, int height, int id);
   int checkHit(int renderer, int x, int y);
   void processCapabilityResponse(
@@ -114,6 +137,21 @@ abstract interface class OpenTuiNativeSymbols {
     Pointer<Uint8> response,
     int responseLen,
   );
+  int imageDecode(Pointer<Uint8> data, int dataLen, Pointer<Uint32> outHandle);
+  int imageCreateFromRgba(
+    Pointer<Uint8> pixels,
+    int pixelsLen,
+    int width,
+    int height,
+    int stride,
+    Pointer<Uint32> outHandle,
+  );
+  void imageDestroy(int image);
+  int imageGetInfo(int image, Pointer<Uint32> outInfo);
+  int linkAlloc(Pointer<Uint8> url, int urlLen);
+  int linkGetUrl(int id, Pointer<Uint8> out, int maxLen);
+  int attributesWithLink(int baseAttributes, int linkId);
+  int attributesGetLinkId(int attributes);
 }
 
 final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
@@ -145,6 +183,16 @@ final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
       _bindings.setBackgroundColor(renderer, color);
   @override
   void clearTerminal(int renderer) => _bindings.clearTerminal(renderer);
+  @override
+  bool copyToClipboardOSC52(
+    int renderer,
+    int target,
+    Pointer<Uint8> text,
+    int textLen,
+  ) => _bindings.copyToClipboardOSC52(renderer, target, text, textLen);
+  @override
+  bool clearClipboardOSC52(int renderer, int target) =>
+      _bindings.clearClipboardOSC52(renderer, target);
   @override
   int getBufferWidth(int buffer) => _bindings.getBufferWidth(buffer);
   @override
@@ -288,6 +336,37 @@ final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   @override
   void bufferClearOpacity(int buffer) => _bindings.bufferClearOpacity(buffer);
   @override
+  int bufferDrawImage(
+    int buffer,
+    int image,
+    int x,
+    int y,
+    int width,
+    int height,
+    int pixelWidth,
+    int pixelHeight,
+    int sourceX,
+    int sourceY,
+    int sourceWidth,
+    int sourceHeight,
+    int protocol,
+  ) => using((arena) {
+    final options = arena<lookup.ImageDrawOptions>();
+    options.ref
+      ..x = x
+      ..y = y
+      ..width = width
+      ..height = height
+      ..pixelWidth = pixelWidth
+      ..pixelHeight = pixelHeight
+      ..sourceX = sourceX
+      ..sourceY = sourceY
+      ..sourceWidth = sourceWidth
+      ..sourceHeight = sourceHeight
+      ..protocol = protocol;
+    return _bindings.bufferDrawImage(buffer, image, options);
+  });
+  @override
   void setCursorPosition(int renderer, int x, int y, bool visible) =>
       _bindings.setCursorPosition(renderer, x, y, visible);
   @override
@@ -323,6 +402,9 @@ final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   void setupTerminal(int renderer, bool useAlternateScreen) =>
       _bindings.setupTerminal(renderer, useAlternateScreen);
   @override
+  void queryPixelResolution(int renderer) =>
+      _bindings.queryPixelResolution(renderer);
+  @override
   void addToHitGrid(
     int renderer,
     int x,
@@ -340,6 +422,59 @@ final class LookupOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
     Pointer<Uint8> response,
     int responseLen,
   ) => _bindings.processCapabilityResponse(renderer, response, responseLen);
+  @override
+  int imageDecode(
+    Pointer<Uint8> data,
+    int dataLen,
+    Pointer<Uint32> outHandle,
+  ) => _bindings.imageDecode(data, dataLen, outHandle);
+  @override
+  int imageCreateFromRgba(
+    Pointer<Uint8> pixels,
+    int pixelsLen,
+    int width,
+    int height,
+    int stride,
+    Pointer<Uint32> outHandle,
+  ) => _bindings.imageCreateFromRgba(
+    pixels,
+    pixelsLen,
+    width,
+    height,
+    stride,
+    outHandle,
+  );
+  @override
+  void imageDestroy(int image) => _bindings.imageDestroy(image);
+  @override
+  int imageGetInfo(int image, Pointer<Uint32> outInfo) => using((arena) {
+    final info = arena<lookup.NativeImageInfo>();
+    final status = _bindings.imageGetInfo(image, info);
+    final values = <int>[
+      info.ref.width,
+      info.ref.height,
+      info.ref.sourceWidth,
+      info.ref.sourceHeight,
+      info.ref.format,
+      info.ref.colorStatus,
+      info.ref.orientation,
+      info.ref.hasAlpha,
+    ];
+    outInfo.asTypedList(values.length).setAll(0, values);
+    return status;
+  });
+  @override
+  int linkAlloc(Pointer<Uint8> url, int urlLen) =>
+      _bindings.linkAlloc(url, urlLen);
+  @override
+  int linkGetUrl(int id, Pointer<Uint8> out, int maxLen) =>
+      _bindings.linkGetUrl(id, out, maxLen);
+  @override
+  int attributesWithLink(int baseAttributes, int linkId) =>
+      _bindings.attributesWithLink(baseAttributes, linkId);
+  @override
+  int attributesGetLinkId(int attributes) =>
+      _bindings.attributesGetLinkId(attributes);
 }
 
 final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
@@ -362,6 +497,16 @@ final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
       bundled.setBackgroundColor(renderer, color);
   @override
   void clearTerminal(int renderer) => bundled.clearTerminal(renderer);
+  @override
+  bool copyToClipboardOSC52(
+    int renderer,
+    int target,
+    Pointer<Uint8> text,
+    int textLen,
+  ) => bundled.copyToClipboardOSC52(renderer, target, text, textLen);
+  @override
+  bool clearClipboardOSC52(int renderer, int target) =>
+      bundled.clearClipboardOSC52(renderer, target);
   @override
   int getBufferWidth(int buffer) => bundled.getBufferWidth(buffer);
   @override
@@ -501,6 +646,37 @@ final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   @override
   void bufferClearOpacity(int buffer) => bundled.bufferClearOpacity(buffer);
   @override
+  int bufferDrawImage(
+    int buffer,
+    int image,
+    int x,
+    int y,
+    int width,
+    int height,
+    int pixelWidth,
+    int pixelHeight,
+    int sourceX,
+    int sourceY,
+    int sourceWidth,
+    int sourceHeight,
+    int protocol,
+  ) => using((arena) {
+    final options = arena<bundled.ImageDrawOptions>();
+    options.ref
+      ..x = x
+      ..y = y
+      ..width = width
+      ..height = height
+      ..pixelWidth = pixelWidth
+      ..pixelHeight = pixelHeight
+      ..sourceX = sourceX
+      ..sourceY = sourceY
+      ..sourceWidth = sourceWidth
+      ..sourceHeight = sourceHeight
+      ..protocol = protocol;
+    return bundled.bufferDrawImage(buffer, image, options);
+  });
+  @override
   void setCursorPosition(int renderer, int x, int y, bool visible) =>
       bundled.setCursorPosition(renderer, x, y, visible);
   @override
@@ -536,6 +712,9 @@ final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
   void setupTerminal(int renderer, bool useAlternateScreen) =>
       bundled.setupTerminal(renderer, useAlternateScreen);
   @override
+  void queryPixelResolution(int renderer) =>
+      bundled.queryPixelResolution(renderer);
+  @override
   void addToHitGrid(
     int renderer,
     int x,
@@ -552,4 +731,57 @@ final class BundledOpenTuiNativeSymbols implements OpenTuiNativeSymbols {
     Pointer<Uint8> response,
     int responseLen,
   ) => bundled.processCapabilityResponse(renderer, response, responseLen);
+  @override
+  int imageDecode(
+    Pointer<Uint8> data,
+    int dataLen,
+    Pointer<Uint32> outHandle,
+  ) => bundled.imageDecode(data, dataLen, outHandle);
+  @override
+  int imageCreateFromRgba(
+    Pointer<Uint8> pixels,
+    int pixelsLen,
+    int width,
+    int height,
+    int stride,
+    Pointer<Uint32> outHandle,
+  ) => bundled.imageCreateFromRgba(
+    pixels,
+    pixelsLen,
+    width,
+    height,
+    stride,
+    outHandle,
+  );
+  @override
+  void imageDestroy(int image) => bundled.imageDestroy(image);
+  @override
+  int imageGetInfo(int image, Pointer<Uint32> outInfo) => using((arena) {
+    final info = arena<bundled.NativeImageInfo>();
+    final status = bundled.imageGetInfo(image, info);
+    final values = <int>[
+      info.ref.width,
+      info.ref.height,
+      info.ref.sourceWidth,
+      info.ref.sourceHeight,
+      info.ref.format,
+      info.ref.colorStatus,
+      info.ref.orientation,
+      info.ref.hasAlpha,
+    ];
+    outInfo.asTypedList(values.length).setAll(0, values);
+    return status;
+  });
+  @override
+  int linkAlloc(Pointer<Uint8> url, int urlLen) =>
+      bundled.linkAlloc(url, urlLen);
+  @override
+  int linkGetUrl(int id, Pointer<Uint8> out, int maxLen) =>
+      bundled.linkGetUrl(id, out, maxLen);
+  @override
+  int attributesWithLink(int baseAttributes, int linkId) =>
+      bundled.attributesWithLink(baseAttributes, linkId);
+  @override
+  int attributesGetLinkId(int attributes) =>
+      bundled.attributesGetLinkId(attributes);
 }

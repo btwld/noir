@@ -102,9 +102,9 @@ reimplement that with extra boxes.
 Hand-roll a bordered region with `Container` + `BoxDecoration` +
 `Theme.of(context).border`. Put the region's name on `Border.title`
 (`title: ' Name '`) so it sits in the top edge, not on an inner row.
-There is no public `Panel`. In-repo examples share
-`example/src/demo_scaffold.dart` for that card. There is no `Stack`,
-`Wrap`, modal overlay, or command-palette widget — do not invent them.
+There is no public `Panel`, modal, or command-palette widget. In-repo examples
+share `example/src/demo_scaffold.dart` for application-specific chrome. Use
+`Stack`/`Positioned` for deliberate overlays and `Wrap` for cell-based runs.
 
 ## Type and copy
 
@@ -127,8 +127,8 @@ Do not:
 - Default to a lazygit clone when the job is a form, a chat, or a table.
 - Bind a bare letter at `app.onKey` (it steals typing). Tab already moves
   focus.
-- Assume Nerd Fonts or image protocols. Stick to box-drawing, blocks, and
-  the shipped `Spinner` / `ProgressBar` / `Badge`.
+- Assume Nerd Fonts. For images, keep `ImageProtocol.auto` unless the
+  application has a measured reason to force Kitty, Sixel, or block fallback.
 - Animate selection or panel resize. Motion is for determinate progress
   and explicit `AnimationController` work.
 

@@ -236,6 +236,16 @@ final class _CountingCanvas implements TuiCanvas {
     Rect? sourceRect,
     TextHighlight? selection,
   }) => _record();
+
+  @override
+  void drawImage(
+    TerminalImage image,
+    Rect destination, {
+    int pixelWidth = 0,
+    int pixelHeight = 0,
+    Rect? sourceRect,
+    ImageProtocol protocol = ImageProtocol.auto,
+  }) => _record();
 }
 
 final class _BadConstraints extends Constraints {

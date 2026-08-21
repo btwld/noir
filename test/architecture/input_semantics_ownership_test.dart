@@ -9,16 +9,15 @@ void main() {
       File('lib/src/widgets/input.dart'),
       File('lib/src/widgets/text_area.dart'),
       File('lib/src/widgets/scroll_box.dart'),
+      File('lib/src/widgets/document_view.dart'),
+      File('lib/src/widgets/slider.dart'),
+      File('lib/src/widgets/tab_select.dart'),
     ];
 
     for (final file in files) {
       final source = file.readAsStringSync();
       expect(source, isNot(contains('event.key')), reason: file.path);
-      expect(
-        source,
-        isNot(contains('switch (event.logicalKey)')),
-        reason: file.path,
-      );
+      expect(source, isNot(contains('event.logicalKey')), reason: file.path);
       expect(
         source,
         isNot(contains('onKeyEvent: _handleKeyEvent')),

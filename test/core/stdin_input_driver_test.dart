@@ -152,6 +152,44 @@ void main() {
   });
 
   group('parseAnsiInput — terminal capability responses', () {
+    test('pixel resolution report is captured exactly', () {
+      final event = _capabilityEventsFor('\x1b[4;720;1280t'.codeUnits).single;
+
+      expect(event.kind, TerminalCapabilityKind.pixelResolutionReport);
+      expect(event.payload, '4;720;1280');
+      expect(event.raw, '\x1b[4;720;1280t');
+    });
+
+    test('fragmented pixel resolution report is retained until complete', () {
+      final first = parseAnsiInput('\x1b[4;720;'.codeUnits);
+      expect(first.events, isEmpty);
+      expect(first.leftover, '\x1b[4;720;'.codeUnits);
+
+      final second = parseAnsiInput(<int>[
+        ...first.leftover,
+        ...'1280t'.codeUnits,
+      ]);
+      final event = second.events.whereType<CapabilityInput>().single.event;
+      expect(event.kind, TerminalCapabilityKind.pixelResolutionReport);
+      expect(event.payload, '4;720;1280');
+      expect(second.leftover, isEmpty);
+    });
+
+    test('malformed pixel resolution shapes are not capability events', () {
+      for (final sequence in <String>[
+        '\x1b[4;720t',
+        '\x1b[5;720;1280t',
+        '\x1b[4;-1;1280t',
+        '\x1b[4;720;1280R',
+      ]) {
+        expect(
+          _capabilityEventsFor(sequence.codeUnits),
+          isEmpty,
+          reason: sequence,
+        );
+      }
+    });
+
     List<ParsedInput> parse(List<int> bytes) => parseAnsiInput(bytes).events;
 
     test('DA1 CSI response (CSI ? … c) produces CapabilityInput', () {

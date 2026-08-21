@@ -401,10 +401,16 @@ Widget? _fact(ThemeData theme, String label, String? value) {
           text: '${label.padRight(16)} ',
           style: TextStyle(color: theme.textMuted),
         ),
-        TextSpan(text: value),
+        TextSpan(text: value, uri: _semanticHttpUri(value)),
       ],
     ),
   );
+}
+
+Uri? _semanticHttpUri(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.host.isEmpty) return null;
+  return uri.scheme == 'http' || uri.scheme == 'https' ? uri : null;
 }
 
 List<Widget> _mapFacts(ThemeData theme, Map<String, String> values) =>

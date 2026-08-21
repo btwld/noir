@@ -259,7 +259,7 @@ class GoldenTester {
         if (cell == null) return;
         final fg = cell.foreground;
         final bg = cell.background;
-        final attr = cell.attributes;
+        final attr = _visualAttributes(cell);
         out.write('$runStartX,$y:${fg.toHex()}|${bg.toHex()}|$attr');
         if (runLength > 1) {
           out.write(' * $runLength');
@@ -298,12 +298,17 @@ class GoldenTester {
       cell.background.g == 0 &&
       cell.background.b == 0 &&
       cell.background.a == 0 &&
-      cell.attributes == 0;
+      _visualAttributes(cell) == 0;
 
   bool _sameStyle(CapturedCell a, CapturedCell b) =>
       a.foreground == b.foreground &&
       a.background == b.background &&
-      a.attributes == b.attributes;
+      _visualAttributes(a) == _visualAttributes(b);
+
+  // OpenTUI stores native hyperlink allocation IDs in bits 8–31. Those IDs
+  // are non-visual and vary between runs; semantic URLs are asserted through
+  // buffer/driver tests instead of style goldens.
+  int _visualAttributes(CapturedCell cell) => cell.attributes & 0xff;
 
   /// Writes the style/cursor sidecars produced by the given serializers.
   /// Single- and multi-capture flows differ only in the serializer thunks.
