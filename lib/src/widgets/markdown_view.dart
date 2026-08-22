@@ -13,9 +13,11 @@ import '../framework/widget.dart';
 import 'code_view.dart';
 import 'divider.dart';
 import 'document_view.dart';
+import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
 import 'row_column.dart';
 import 'scroll_box.dart';
+import 'sized_box.dart';
 import 'text_span.dart';
 import 'text_style.dart';
 import 'text_table.dart';
@@ -98,7 +100,10 @@ final class MarkdownThemeData {
   final Color ruleColor;
 }
 
-/// Scrollable GitHub-flavoured Markdown document.
+/// GitHub-flavoured Markdown document.
+///
+/// The default is a focused selectable [ScrollBox]. Set [embedded] to size
+/// to the parsed blocks so a parent viewport can own scrolling.
 class MarkdownView extends StatefulWidget {
   /// Configures parsing, block customization, highlighting, and selection.
   const MarkdownView({
@@ -110,6 +115,7 @@ class MarkdownView extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.autofocus = false,
+    this.embedded = false,
     this.selectable = true,
     this.selectionForegroundColor,
     this.selectionBackgroundColor,
@@ -141,6 +147,14 @@ class MarkdownView extends StatefulWidget {
 
   /// Whether the outer document requests focus after mounting.
   final bool autofocus;
+
+  /// Whether this document sizes to its blocks and omits the inner [ScrollBox].
+  ///
+  /// Standalone documents keep a focused selectable viewport. Embedded
+  /// documents are for a parent that already owns scrolling, such as a
+  /// [ScrollBox] mixing chrome with markdown. [controller] is unused when
+  /// this is true.
+  final bool embedded;
 
   /// Whether textual blocks and fenced code allow selection.
   final bool selectable;
@@ -224,7 +238,12 @@ final class _MarkdownViewState extends State<MarkdownView>
     _documentText = blocks.map((block) => block.plainText).join('\n\n');
     final children = <Widget>[];
     var sourceBase = 0;
+    var previousIsHeading = false;
+    var isFirst = true;
     for (final block in blocks) {
+      if (!isFirst && !previousIsHeading) {
+        children.add(const SizedBox(height: 1));
+      }
       children.add(
         DocumentSelectionScope(
           documentText: _documentText,
@@ -240,7 +259,17 @@ final class _MarkdownViewState extends State<MarkdownView>
         ),
       );
       sourceBase += block.plainText.length + 2;
+      previousIsHeading = block.isHeading;
+      isFirst = false;
     }
+    final document = DocumentScrollScope(
+      handlesScrolling: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    );
     return DocumentSelectionControls(
       documentText: _documentText,
       selectable: widget.selectable,
@@ -248,20 +277,18 @@ final class _MarkdownViewState extends State<MarkdownView>
       onSelectionChanged: _setSelection,
       onCopy: widget.onCopy,
       focusNode: focusNode,
-      child: ScrollBox(
-        controller: widget.controller,
-        focusNode: focusNode,
-        autofocus: widget.autofocus,
-        child: DocumentScrollScope(
-          handlesScrolling: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 1,
-            children: children,
-          ),
-        ),
-      ),
+      child: widget.embedded
+          ? Focus(
+              focusNode: focusNode,
+              autofocus: widget.autofocus,
+              child: document,
+            )
+          : ScrollBox(
+              controller: widget.controller,
+              focusNode: focusNode,
+              autofocus: widget.autofocus,
+              child: document,
+            ),
     );
   }
 
@@ -277,6 +304,7 @@ final class _MarkdownViewState extends State<MarkdownView>
           widget.blockRenderer?.call(context, node, buildDefault) ??
           defaultBlock.widget,
       plainText: defaultBlock.plainText,
+      isHeading: defaultBlock.isHeading,
     );
   }
 
@@ -290,12 +318,12 @@ final class _MarkdownViewState extends State<MarkdownView>
       );
     }
     return switch (node.tag) {
-      'h1' => _textBlock(_inline(theme, node, theme.heading1)),
-      'h2' => _textBlock(_inline(theme, node, theme.heading2)),
+      'h1' => _textBlock(_inline(theme, node, theme.heading1), isHeading: true),
+      'h2' => _textBlock(_inline(theme, node, theme.heading2), isHeading: true),
       'h3' ||
       'h4' ||
       'h5' ||
-      'h6' => _textBlock(_inline(theme, node, theme.heading3)),
+      'h6' => _textBlock(_inline(theme, node, theme.heading3), isHeading: true),
       'p' => _textBlock(_inline(theme, node, theme.paragraph)),
       'blockquote' => _textBlock(
         TextSpan(
@@ -318,7 +346,7 @@ final class _MarkdownViewState extends State<MarkdownView>
     };
   }
 
-  _MarkdownBlock _textBlock(InlineSpan span) {
+  _MarkdownBlock _textBlock(InlineSpan span, {bool isHeading = false}) {
     final plainText = span.toPlainText();
     return _MarkdownBlock(
       widget: DocumentView(
@@ -331,6 +359,7 @@ final class _MarkdownViewState extends State<MarkdownView>
             Theme.of(context).selectedBackground,
       ),
       plainText: plainText,
+      isHeading: isHeading,
     );
   }
 
@@ -430,10 +459,11 @@ final class _MarkdownViewState extends State<MarkdownView>
     }
 
     visit(table);
-    final plainText = serializeTextTableContent(rows);
+    final content = _dropEmptyTableColumns(rows);
+    final plainText = serializeTextTableContent(content);
     return _MarkdownBlock(
       widget: TextTable(
-        content: rows,
+        content: content,
         borderColor: theme.ruleColor,
         columnWidthMode: TextTableColumnWidthMode.content,
         selectable: widget.selectable,
@@ -495,10 +525,40 @@ TextStyle _mergeInlineStyle(TextStyle inherited, TextStyle overlay) =>
     );
 
 final class _MarkdownBlock {
-  const _MarkdownBlock({required this.widget, required this.plainText});
+  const _MarkdownBlock({
+    required this.widget,
+    required this.plainText,
+    this.isHeading = false,
+  });
 
   final Widget widget;
   final String plainText;
+  final bool isHeading;
+}
+
+List<List<InlineSpan?>> _dropEmptyTableColumns(List<List<InlineSpan?>> rows) {
+  if (rows.length < 2) return rows;
+  var columns = 0;
+  for (final row in rows) {
+    if (row.length > columns) columns = row.length;
+  }
+  final keep = <int>[];
+  for (var column = 0; column < columns; column++) {
+    var empty = true;
+    for (var row = 1; row < rows.length; row++) {
+      final cell = column < rows[row].length ? rows[row][column] : null;
+      if ((cell?.toPlainText() ?? '').trim().isNotEmpty) {
+        empty = false;
+        break;
+      }
+    }
+    if (!empty) keep.add(column);
+  }
+  if (keep.isEmpty || keep.length == columns) return rows;
+  return [
+    for (final row in rows)
+      [for (final column in keep) column < row.length ? row[column] : null],
+  ];
 }
 
 String _listPrefix(
@@ -511,9 +571,39 @@ String _listPrefix(
   return ordered ? '${orderedStart + index}. ' : '• ';
 }
 
+/// Parses GitHub-flavoured markdown for TUI paint, not HTML output.
+///
+/// `package:markdown` defaults to `encodeHtml: true`, which leaves `&gt;` in
+/// table cells and inline code. This renderer copies `node.text` into widgets.
 List<md.Node> _parseMarkdown(String source) => md.Document(
   extensionSet: md.ExtensionSet.gitHubFlavored,
-).parseLines(const LineSplitter().convert(source));
+  encodeHtml: false,
+).parseLines(const LineSplitter().convert(_unwrapGithubDetails(source)));
+
+final _githubDetailsPattern = RegExp(
+  r'<details\b[^>]*>\s*(?:<summary\b[^>]*>(.*?)</summary>\s*)?(.*?)</details>',
+  caseSensitive: false,
+  dotAll: true,
+);
+
+final _htmlTagPattern = RegExp('<[^>]+>');
+
+/// Turns GitHub `<details>`/`<summary>` wrappers into markdown the GFM parser
+/// can see. `package:markdown`'s GitHub set leaves those tags as raw text.
+String _unwrapGithubDetails(String source) {
+  var current = source;
+  for (var i = 0; i < 8; i++) {
+    final next = current.replaceAllMapped(_githubDetailsPattern, (match) {
+      final summary = match.group(1)?.replaceAll(_htmlTagPattern, '').trim();
+      final body = (match.group(2) ?? '').trim();
+      if (summary == null || summary.isEmpty) return '\n\n$body\n\n';
+      return '\n\n**$summary**\n\n$body\n\n';
+    });
+    if (next == current) return current;
+    current = next;
+  }
+  return current;
+}
 
 bool? _taskState(md.Element item) {
   md.Element? input;

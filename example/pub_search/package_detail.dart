@@ -211,7 +211,7 @@ Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
   children: [
     ..._section(theme, 'PUBLISHED VERSIONS', [
       if (package.releases.isEmpty) const Text('Not provided'),
-      for (final release in package.releases) ...[
+      for (final release in package.releases)
         RichText(
           text: TextSpan(
             children: [
@@ -229,10 +229,6 @@ Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
             ],
           ),
         ),
-        _fact(theme, 'ARCHIVE', release.archiveUrl),
-        _fact(theme, 'SHA-256', release.archiveSha256),
-        const SizedBox(height: 1),
-      ],
     ]),
     ..._section(theme, 'LATEST ARCHIVE', [
       _fact(theme, 'URL', package.archiveUrl),
@@ -247,34 +243,41 @@ Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
   ],
 );
 
-Widget _buildDependencies(
-  PubPackageSnapshot package,
-  ThemeData theme,
-) => Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    ..._section(
-      theme,
-      'DIRECT DEPENDENCIES',
-      _dependencyFacts(theme, package.directDependencies),
-    ),
-    ..._section(
-      theme,
-      'DEV DEPENDENCIES',
-      _dependencyFacts(theme, package.devDependencies),
-    ),
-    ..._section(
-      theme,
-      'DEPENDENCY OVERRIDES',
-      _dependencyFacts(theme, package.dependencyOverrides),
-    ),
-    ..._section(theme, 'ALL ANALYZED DEPENDENCIES', [
-      Text(_joined(package.transitiveDependencies) ?? 'Not provided'),
-    ]),
-    // Executables, workspace members, and resolution are pubspec configuration
-    // rather than dependencies; Overview's PACKAGE CONFIG is their one home.
-  ],
-);
+Widget _buildDependencies(PubPackageSnapshot package, ThemeData theme) {
+  final nameWidth = _dependencyNameWidth([
+    ...package.directDependencies.keys,
+    ...package.devDependencies.keys,
+    ...package.dependencyOverrides.keys,
+  ]);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ..._section(
+        theme,
+        'DIRECT DEPENDENCIES',
+        _dependencyFacts(theme, package.directDependencies, nameWidth),
+      ),
+      ..._section(
+        theme,
+        'DEV DEPENDENCIES',
+        _dependencyFacts(theme, package.devDependencies, nameWidth),
+      ),
+      ..._section(
+        theme,
+        'DEPENDENCY OVERRIDES',
+        _dependencyFacts(theme, package.dependencyOverrides, nameWidth),
+      ),
+      ..._section(theme, 'ALL ANALYZED DEPENDENCIES', [
+        if (package.transitiveDependencies.isEmpty)
+          const Text('Not provided')
+        else
+          for (final name in package.transitiveDependencies) Text(name),
+      ]),
+      // Executables, workspace members, and resolution are pubspec configuration
+      // rather than dependencies; Overview's PACKAGE CONFIG is their one home.
+    ],
+  );
+}
 
 Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
   final recentWeekly = recentDownloadCounts(package.weeklyDownloads);
@@ -299,8 +302,6 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
               ),
           ],
         ),
-        _fact(theme, 'LIKES', _number(package.likeCount)),
-        _fact(theme, 'DOWNLOADS / 30D', _number(package.downloadCount30Days)),
       ]),
       ..._section(theme, 'WEEKLY DOWNLOADS', [
         Text(
@@ -316,8 +317,37 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
         ),
         _fact(theme, 'NEWEST WEEK', _date(package.weeklyDownloadsNewestDate)),
         ..._rangeFacts(theme, 'MAJOR', package.majorVersionDownloads),
-        ..._rangeFacts(theme, 'MINOR', package.minorVersionDownloads),
-        ..._rangeFacts(theme, 'PATCH', package.patchVersionDownloads),
+      ]),
+      ..._section(theme, 'REPORT SECTIONS', [
+        if (package.healthSections.isEmpty) const Text('Not provided'),
+        for (final (index, section) in package.healthSections.indexed) ...[
+          _reportSectionHeader(theme, section),
+          if (section.summary.trim().isNotEmpty) ...[
+            const SizedBox(height: 1),
+            _healthMarkdown(theme, section.summary),
+          ],
+          if (index < package.healthSections.length - 1)
+            const SizedBox(height: 1),
+        ],
+      ]),
+      ..._section(theme, 'SECURITY', [
+        _fact(theme, 'UPDATED', _dateTime(package.advisoriesUpdated)),
+        if (package.advisories.isEmpty) const Text('No advisories reported'),
+        for (final (index, advisory) in package.advisories.indexed) ...[
+          Text(
+            '${advisory.id} — ${advisory.summary ?? 'No summary'}',
+            style: TextStyle(color: theme.warning),
+          ),
+          if (advisory.details != null &&
+              advisory.details!.trim().isNotEmpty) ...[
+            const SizedBox(height: 1),
+            _healthMarkdown(theme, advisory.details!),
+          ],
+          if (advisory.affectedVersions.isNotEmpty) const SizedBox(height: 1),
+          _affectedVersions(theme, advisory.affectedVersions),
+          _fact(theme, 'URL', advisory.url),
+          if (index < package.advisories.length - 1) const SizedBox(height: 1),
+        ],
       ]),
       ..._section(theme, 'ANALYSIS', [
         _fact(theme, 'PANA', package.analysisStatus),
@@ -336,28 +366,6 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
         _fact(theme, 'SDK', package.analyzedSdkVersion),
         _fact(theme, 'FLUTTER', package.analyzedFlutterVersion),
       ]),
-      ..._section(theme, 'REPORT SECTIONS', [
-        if (package.healthSections.isEmpty) const Text('Not provided'),
-        for (final section in package.healthSections)
-          Text(
-            '${section.title} — ${section.status}  '
-            '${section.grantedPoints ?? '—'}/${section.maxPoints ?? '—'}  '
-            '${section.summary}',
-          ),
-      ]),
-      ..._section(theme, 'SECURITY', [
-        _fact(theme, 'UPDATED', _dateTime(package.advisoriesUpdated)),
-        if (package.advisories.isEmpty) const Text('No advisories reported'),
-        for (final advisory in package.advisories) ...[
-          Text(
-            '${advisory.id} — ${advisory.summary ?? 'No summary'}',
-            style: TextStyle(color: theme.warning),
-          ),
-          _fact(theme, 'DETAILS', advisory.details),
-          _fact(theme, 'AFFECTED', _joined(advisory.affectedVersions)),
-          _fact(theme, 'URL', advisory.url),
-        ],
-      ]),
       ..._section(theme, 'DIAGNOSTICS', [
         _fact(theme, 'URL PROBLEMS', _joined(package.urlProblems)),
         _fact(theme, 'SCREENSHOT CHECKS', _joined(package.analysisScreenshots)),
@@ -372,6 +380,54 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
       ]),
     ],
   );
+}
+
+Widget _reportSectionHeader(ThemeData theme, PackageHealthSection section) {
+  final points = '${section.grantedPoints ?? '—'}/${section.maxPoints ?? '—'}';
+  return RichText(
+    text: TextSpan(
+      children: [
+        TextSpan(
+          text: section.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        TextSpan(
+          text: '  ${section.status}  $points',
+          style: TextStyle(color: theme.textMuted),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Pana check titles are `h3`; paint them in accent so they read as scores,
+/// not as another chrome line under the section header.
+Widget _healthMarkdown(ThemeData theme, String markdown) {
+  final base = MarkdownThemeData.fromTheme(theme);
+  return MarkdownView(
+    markdown: markdown,
+    embedded: true,
+    theme: MarkdownThemeData(
+      paragraph: base.paragraph,
+      heading1: base.heading1,
+      heading2: base.heading2,
+      heading3: TextStyle(color: theme.accent, attributes: Attr.bold),
+      emphasis: base.emphasis,
+      strong: base.strong,
+      link: base.link,
+      quote: base.quote,
+      inlineCode: base.inlineCode,
+      ruleColor: base.ruleColor,
+    ),
+  );
+}
+
+Widget? _affectedVersions(ThemeData theme, List<String> versions) {
+  if (versions.isEmpty) return null;
+  if (versions.length <= 6) {
+    return _fact(theme, 'AFFECTED', _joined(versions));
+  }
+  return _fact(theme, 'AFFECTED', '${versions.length} versions');
 }
 
 List<Widget> _section(ThemeData theme, String title, List<Widget?> children) {
@@ -419,12 +475,35 @@ List<Widget> _mapFacts(ThemeData theme, Map<String, String> values) =>
 List<Widget> _dependencyFacts(
   ThemeData theme,
   Map<String, PackageDependencySummary> values,
-) => values.isEmpty
-    ? const [Text('None')]
-    : [
-        for (final entry in values.entries)
-          ?_fact(theme, entry.key, entry.value.displayValue),
-      ];
+  int nameWidth,
+) {
+  if (values.isEmpty) return const [Text('None')];
+  return [
+    for (final entry in values.entries)
+      RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: entry.key.padRight(nameWidth),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: '  ${entry.value.displayValue}',
+              style: TextStyle(color: theme.textMuted),
+            ),
+          ],
+        ),
+      ),
+  ];
+}
+
+int _dependencyNameWidth(Iterable<String> names) {
+  var width = 8;
+  for (final name in names) {
+    if (name.length > width) width = name.length;
+  }
+  return width > 32 ? 32 : width;
+}
 
 List<Widget> _rangeFacts(
   ThemeData theme,

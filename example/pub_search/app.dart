@@ -802,7 +802,12 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _buildResults(context),
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      right: 0,
+                      child: _buildResults(context),
+                    ),
                     if (_chooser != null) _buildChooserOverlay(),
                   ],
                 ),
@@ -935,6 +940,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     final progressHeight = _chooser == null ? 1 : 0;
     if (previous == null || previous.packages.isEmpty) {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [SizedBox(height: progressHeight, child: searching)],
       );
@@ -943,11 +949,12 @@ class _PubSearchAppState extends State<PubSearchApp> {
     // package activation remain available while paging is suppressed for the
     // pending request.
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: progressHeight, child: searching),
         SizedBox(height: progressHeight),
-        Expanded(child: _buildResultList(context)),
+        _buildResultList(context),
       ],
     );
   }
@@ -956,6 +963,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     final theme = Theme.of(context);
     final previous = _searchPage;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Search unavailable', style: TextStyle(color: theme.danger)),
@@ -969,48 +977,42 @@ class _PubSearchAppState extends State<PubSearchApp> {
         if (previous != null && previous.packages.isNotEmpty) ...[
           const SizedBox(height: 1),
           Text('LAST RESULTS', style: TextStyle(color: theme.textMuted)),
-          Expanded(child: _buildResultList(context)),
+          _buildResultList(context),
         ],
       ],
     );
   }
 
-  Widget _buildSuggestionList() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Expanded(
-        child: Select<PubSuggestion>(
-          focusNode: _resultsFocus,
-          height: 13,
-          showScrollIndicator: true,
-          options: [
-            for (final item in _suggestions)
-              SelectOption(
-                name: item.name,
-                description: item.kind == PubSuggestionKind.topic
-                    ? '${item.packageCount} pkgs'
-                    : null,
-                value: item,
-              ),
-          ],
-          onSelect: (index, option) {
-            final item = option.value;
-            if (item == null) return;
-            if (item.kind == PubSuggestionKind.topic) {
-              unawaited(_runSearch(topic: item.name));
-              return;
-            }
-            unawaited(_loadPackage(item.name));
-          },
+  Widget _buildSuggestionList() => Select<PubSuggestion>(
+    focusNode: _resultsFocus,
+    height: _suggestions.length,
+    showScrollIndicator: true,
+    options: [
+      for (final item in _suggestions)
+        SelectOption(
+          name: item.name,
+          description: item.kind == PubSuggestionKind.topic
+              ? '${item.packageCount} pkgs'
+              : null,
+          value: item,
         ),
-      ),
     ],
+    onSelect: (index, option) {
+      final item = option.value;
+      if (item == null) return;
+      if (item.kind == PubSuggestionKind.topic) {
+        unawaited(_runSearch(topic: item.name));
+        return;
+      }
+      unawaited(_loadPackage(item.name));
+    },
   );
 
   Widget _buildResultList(BuildContext context) {
     final theme = Theme.of(context);
     final page = _searchPage!;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
@@ -1021,26 +1023,24 @@ class _PubSearchAppState extends State<PubSearchApp> {
           style: TextStyle(color: theme.textMuted),
         ),
         const SizedBox(height: 1),
-        Expanded(
-          child: Select<String>(
-            focusNode: _resultsFocus,
-            autofocus: _autofocusResults,
-            selectedIndex: _selectedIndex,
-            height: 13,
-            showScrollIndicator: true,
-            options: [
-              for (final package in page.packages)
-                SelectOption(name: package, value: package),
-            ],
-            onChanged: (index, option) {
-              if (_selectedIndex == index) return;
-              setState(() => _selectedIndex = index);
-            },
-            onSelect: (index, option) {
-              final name = option.value;
-              if (name != null) unawaited(_loadPackage(name));
-            },
-          ),
+        Select<String>(
+          focusNode: _resultsFocus,
+          autofocus: _autofocusResults,
+          selectedIndex: _selectedIndex,
+          height: page.packages.length,
+          showScrollIndicator: true,
+          options: [
+            for (final package in page.packages)
+              SelectOption(name: package, value: package),
+          ],
+          onChanged: (index, option) {
+            if (_selectedIndex == index) return;
+            setState(() => _selectedIndex = index);
+          },
+          onSelect: (index, option) {
+            final name = option.value;
+            if (name != null) unawaited(_loadPackage(name));
+          },
         ),
       ],
     );

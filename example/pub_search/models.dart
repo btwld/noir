@@ -148,10 +148,11 @@ final class PackageAdvisorySummary {
   /// Advisory identifier.
   final String id;
 
-  /// Short advisory summary.
+  /// Short advisory title from OSV.
   final String? summary;
 
-  /// Longer advisory details.
+  /// Advisory body. Live pub.dev payloads are sometimes GitHub-flavoured
+  /// markdown and sometimes plain prose.
   final String? details;
 
   /// Pub.dev display URL.
@@ -178,7 +179,7 @@ final class PackageHealthSection {
   /// Analyzer status.
   final String status;
 
-  /// Analyzer explanation.
+  /// GitHub-flavoured markdown from pana's `ReportSection.summary`.
   final String summary;
 
   /// Points granted for this section.

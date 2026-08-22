@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:noir/noir.dart';
+import 'package:noir/src/app/driver.dart';
 import 'package:test/test.dart';
 
 import '../../example/pub_search/app.dart';
 import '../../example/pub_search/catalog.dart';
 import '../../example/pub_search/models.dart';
+import '../../example/pub_search/package_detail.dart';
 import '../../example/pub_search/theme.dart';
 import '../helpers/tui_test_app.dart';
 import 'pub_search_test_data.dart';
@@ -41,6 +43,29 @@ void main() {
       app.dispose();
     }
     expect(catalog.closed, isTrue);
+  });
+
+  test('search results panel shrinks to the returned package rows', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['alpha_pkg', 'beta_pkg', 'gamma_pkg']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final lines = _render(app).split('\n');
+      final lastPackage = lines.lastIndexWhere(
+        (line) => line.contains('gamma_pkg'),
+      );
+      final resultsBottom = lines.lastIndexWhere((line) => line.contains('└'));
+      expect(lastPackage, greaterThan(0));
+      expect(resultsBottom, lastPackage + 1);
+    } finally {
+      app.dispose();
+    }
   });
 
   test(
@@ -2003,6 +2028,27 @@ void main() {
     }
   });
 
+  test('taller terminals show more than thirteen search results', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(
+        _page(List.generate(18, (index) => 'package_$index')),
+      );
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final frame = _render(app);
+      expect(frame, contains('package_0'));
+      expect(frame, contains('package_14'));
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('keeps search help on one row at 80 columns', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
@@ -2230,6 +2276,293 @@ void main() {
       app.dispose();
     }
   });
+
+  test('health report bodies render GFM instead of raw markdown source', () {
+    final scrollController = ScrollController();
+    final scrollFocus = FocusNode(debugLabel: 'gfm health');
+    final host = DriverHost.create(width: 100, height: 32);
+    addTearDown(scrollController.dispose);
+    addTearDown(scrollFocus.dispose);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        Theme(
+          data: pubTheme,
+          child: PubPackageDetail(
+            package: gfmHealthPackage,
+            activeTab: PackageDetailTab.health,
+            onTabSelected: (_) {},
+            scrollController: scrollController,
+            scrollFocusNode: scrollFocus,
+          ),
+        ),
+      )
+      ..debugFlushFrame();
+
+    final text = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(text, contains('Follow Dart file conventions'));
+    expect(text, contains('10/10 points'));
+    expect(text, contains('pubspec.yaml'));
+    expect(text, contains('1 check passed'));
+    expect(text, contains('BSD-3-Clause'));
+    expect(text, isNot(contains('###')));
+    expect(text, isNot(contains('<details>')));
+    expect(text, isNot(contains('<summary>')));
+    expect(
+      text,
+      isNot(contains('Follow Dart file conventions — passed  30/30  ###')),
+    );
+    expect(
+      text,
+      contains(RegExp(r'Follow Dart file conventions\s+passed\s+30/30')),
+    );
+    final headerIndex = text
+        .split('\n')
+        .indexWhere((line) => line.contains('Follow Dart file conventions'));
+    expect(headerIndex, greaterThanOrEqualTo(0));
+    final lines = text.split('\n');
+    expect(lines[headerIndex + 1].replaceAll(RegExp(r'[│\s]'), ''), isEmpty);
+    expect(lines[headerIndex + 2], contains('[*] 10/10 points'));
+
+    scrollController.jumpTo(scrollController.maxScrollExtent);
+    host.binding.debugFlushFrame();
+    final scrolled = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(scrolled, contains('Impact'));
+    expect(scrolled, contains('Upgrade when a patched release is available.'));
+
+    final treeLines = (host.tree(maxDepth: 24)['lines']! as List<Object?>)
+        .cast<String>();
+    final tree = treeLines.join('\n');
+    expect(tree, contains('MarkdownView'));
+    expect(
+      treeLines.where((line) => line.trimLeft().startsWith('ScrollBox#')),
+      hasLength(1),
+    );
+  });
+
+  test('health first frame shows reports instead of patch sparklines', () {
+    final counts = List<int>.filled(52, 4);
+    final scrollController = ScrollController();
+    final scrollFocus = FocusNode(debugLabel: 'health first frame');
+    final host = DriverHost.create(width: 100, height: 32);
+    addTearDown(scrollController.dispose);
+    addTearDown(scrollFocus.dispose);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        Theme(
+          data: pubTheme,
+          child: PubPackageDetail(
+            package: PubPackageSnapshot(
+              name: 'busy_health',
+              version: '1.0.0',
+              description: 'Enough download ranges to bury report markdown.',
+              published: DateTime.utc(2026, 8, 16),
+              grantedPoints: 30,
+              maxPoints: 30,
+              likeCount: 8,
+              downloadCount30Days: 1000,
+              weeklyDownloads: counts,
+              weeklyDownloadsNewestDate: DateTime.utc(2026, 8, 15),
+              majorVersionDownloads: [
+                PackageVersionDownloads(
+                  versionRange: '>=1.0.0-0 <2.0.0',
+                  counts: counts,
+                ),
+              ],
+              minorVersionDownloads: [
+                for (var i = 0; i < 5; i++)
+                  PackageVersionDownloads(
+                    versionRange: '>=1.$i.0-0 <1.${i + 1}.0',
+                    counts: counts,
+                  ),
+              ],
+              patchVersionDownloads: [
+                for (var i = 0; i < 5; i++)
+                  PackageVersionDownloads(
+                    versionRange: '>=1.0.$i-0 <1.0.${i + 1}',
+                    counts: counts,
+                  ),
+              ],
+              healthSections: const [
+                PackageHealthSection(
+                  title: 'Follow Dart file conventions',
+                  status: 'passed',
+                  summary:
+                      '### [*] 10/10 points: Provide a valid `pubspec.yaml`\n',
+                  grantedPoints: 30,
+                  maxPoints: 30,
+                ),
+              ],
+            ),
+            activeTab: PackageDetailTab.health,
+            onTabSelected: (_) {},
+            scrollController: scrollController,
+            scrollFocusNode: scrollFocus,
+          ),
+        ),
+      )
+      ..debugFlushFrame();
+
+    final text = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(text, contains('PUB SCORE'));
+    expect(text, contains('WEEKLY DOWNLOADS'));
+    expect(text, contains('MAJOR'));
+    expect(text, contains('10/10 points'));
+    expect(text, contains('Follow Dart file conventions'));
+    expect(text, isNot(contains('MINOR')));
+    expect(text, isNot(contains('PATCH')));
+    expect(text, isNot(contains('DOWNLOADS / 30D')));
+  });
+
+  test('dependency names share one column on the dependencies tab', () {
+    final scrollController = ScrollController();
+    final scrollFocus = FocusNode(debugLabel: 'deps column');
+    final host = DriverHost.create(width: 100, height: 32);
+    addTearDown(scrollController.dispose);
+    addTearDown(scrollFocus.dispose);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        Theme(
+          data: pubTheme,
+          child: PubPackageDetail(
+            package: PubPackageSnapshot(
+              name: 'aligned_deps',
+              version: '1.0.0',
+              description: 'Long dependency names should share a column.',
+              published: DateTime.utc(2026, 8, 16),
+              directDependencies: const {
+                'async': PackageDependencySummary(
+                  source: PackageDependencySource.hosted,
+                  constraint: '^2.5.0',
+                ),
+              },
+              devDependencies: const {
+                'dart_flutter_team_lints': PackageDependencySummary(
+                  source: PackageDependencySource.hosted,
+                  constraint: '^3.0.0',
+                ),
+              },
+              transitiveDependencies: const ['async', 'collection', 'meta'],
+            ),
+            activeTab: PackageDetailTab.dependencies,
+            onTabSelected: (_) {},
+            scrollController: scrollController,
+            scrollFocusNode: scrollFocus,
+          ),
+        ),
+      )
+      ..debugFlushFrame();
+
+    final text = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(text, contains('DIRECT DEPENDENCIES'));
+    expect(text, contains('async'));
+    expect(text, contains('^2.5.0'));
+    expect(text, contains('dart_flutter_team_lints'));
+    expect(text, contains('^3.0.0'));
+    final lines = text.split('\n');
+    final asyncLine = lines.firstWhere(
+      (line) => line.contains('async') && line.contains('^2.5.0'),
+    );
+    final lintsLine = lines.firstWhere(
+      (line) => line.contains('dart_flutter_team_lints'),
+    );
+    expect(asyncLine.indexOf('^2.5.0'), lintsLine.indexOf('^3.0.0'));
+    expect(text, contains('collection'));
+    expect(text, isNot(contains('async, collection')));
+  });
+
+  test('long advisory version lists summarize instead of dumping', () {
+    final scrollController = ScrollController();
+    final scrollFocus = FocusNode(debugLabel: 'affected versions');
+    final host = DriverHost.create(width: 100, height: 24);
+    addTearDown(scrollController.dispose);
+    addTearDown(scrollFocus.dispose);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        Theme(
+          data: pubTheme,
+          child: PubPackageDetail(
+            package: PubPackageSnapshot(
+              name: 'many_versions',
+              version: '1.0.0',
+              description: 'Advisory with a long affected-version list.',
+              published: DateTime.utc(2026, 8, 16),
+              advisories: [
+                PackageAdvisorySummary(
+                  id: 'GHSA-long',
+                  summary: 'Header injection',
+                  details: 'Upgrade to a patched release.',
+                  url: 'https://github.com/advisories/GHSA-long',
+                  affectedVersions: [for (var i = 0; i < 12; i++) '0.$i.0'],
+                ),
+              ],
+            ),
+            activeTab: PackageDetailTab.health,
+            onTabSelected: (_) {},
+            scrollController: scrollController,
+            scrollFocusNode: scrollFocus,
+          ),
+        ),
+      )
+      ..debugFlushFrame();
+
+    scrollController.jumpTo(scrollController.maxScrollExtent);
+    host.binding.debugFlushFrame();
+    final text = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(text, contains('12 versions'));
+    expect(text, contains('https://github.com/advisories/GHSA-long'));
+    expect(text, isNot(contains('0.0.0, 0.1.0')));
+  });
+
+  test(
+    'health tab from search still scrolls after rendering report markdown',
+    () async {
+      final catalog = _FakePubCatalog()
+        ..searchResults.add(_page(['gfm_health']))
+        ..detailResults['gfm_health'] = Future.value(gfmHealthPackage);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        app.mockInput
+          ..pressTab()
+          ..pressTab()
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+        app.mockInput.typeText('4');
+        await _settle(app);
+
+        expect(_render(app), contains('4 HEALTH'));
+        expect(_render(app), contains('10/10 points'));
+        expect(_render(app), isNot(contains('<details>')));
+
+        final beforeScroll = _render(app);
+        app.mockInput.pressPageDown();
+        await _settle(app);
+        expect(_render(app), isNot(beforeScroll));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
 
   test('keeps detail controls on one row at 60 columns', () async {
     final catalog = _FakePubCatalog()

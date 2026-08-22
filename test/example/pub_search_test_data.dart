@@ -92,7 +92,7 @@ final examplePubPackage = PubPackageSnapshot(
     PackageAdvisorySummary(
       id: 'GHSA-test',
       summary: 'A sample advisory',
-      details: 'Upgrade when a patched release is available.',
+      details: '### Impact\n\nUpgrade when a patched release is available.',
       url: 'https://pub.dev/advisories/GHSA-test',
       affectedVersions: ['0.0.1-alpha.1'],
     ),
@@ -103,11 +103,11 @@ final examplePubPackage = PubPackageSnapshot(
   taskStatus: 'completed',
   healthSections: const [
     PackageHealthSection(
-      title: 'Documentation',
-      status: 'success',
-      summary: 'All checks passed.',
-      grantedPoints: 160,
-      maxPoints: 160,
+      title: 'Follow Dart file conventions',
+      status: 'passed',
+      summary: _panaConventionSummary,
+      grantedPoints: 30,
+      maxPoints: 30,
     ),
   ],
   archiveUrl: 'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
@@ -140,3 +140,40 @@ final _published = DateTime.utc(2026, 8, 16, 12);
 final _earlier = DateTime.utc(2026, 8, 9, 12);
 final _updated = DateTime.utc(2026, 8, 17);
 final _newestDownloads = DateTime.utc(2026, 8, 15);
+
+const _panaConventionSummary = '''
+### [*] 10/10 points: Provide a valid `pubspec.yaml`
+
+<details>
+<summary>
+1 check passed
+</summary>
+Detected license: `BSD-3-Clause`.
+</details>
+''';
+
+/// Slim health-only snapshot so GFM report bodies stay on the first Health frame.
+final gfmHealthPackage = PubPackageSnapshot(
+  name: 'gfm_health',
+  version: '1.0.0',
+  description: 'Package used to assert markdown report rendering.',
+  published: DateTime.utc(2026, 8, 16),
+  grantedPoints: 30,
+  maxPoints: 30,
+  healthSections: const [
+    PackageHealthSection(
+      title: 'Follow Dart file conventions',
+      status: 'passed',
+      summary: _panaConventionSummary,
+      grantedPoints: 30,
+      maxPoints: 30,
+    ),
+  ],
+  advisories: [
+    PackageAdvisorySummary(
+      id: 'GHSA-test',
+      summary: 'A sample advisory',
+      details: '### Impact\n\nUpgrade when a patched release is available.',
+    ),
+  ],
+);

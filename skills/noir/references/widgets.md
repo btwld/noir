@@ -670,8 +670,18 @@ both document-wide selection behavior and Noir's built-in visual highlight.
 `MarkdownView` reparses changed source with `package:markdown`'s
 GitHub-flavoured extension set. It renders headings, paragraphs, emphasis,
 strikeout, links, lists/tasks, quotes, rules, fenced `CodeView`s, and
-`TextTable`s. Markdown images become linked alt text and never fetch by
-default. `blockRenderer` receives the actual `package:markdown` AST node as an
+`TextTable`s. Consecutive heading blocks stay tight against the following
+block; a one-cell gap appears only after a non-heading block. Empty table
+columns (header plus all-empty body cells) are omitted, and content-mode
+tables paint to their grid width so a stretch parent cannot inflate the last
+column. GitHub `<details>`/`<summary>` wrappers are unwrapped into
+visible inner markdown before parsing, because that extension set leaves the
+tags as raw text. Parsing uses `encodeHtml: false` so table cells and inline
+code keep literal `>=` / `<` instead of `&gt;` / `&lt;`. Markdown images
+become linked alt text and never fetch by default. `embedded: true` sizes the
+document to its blocks and omits the inner
+`ScrollBox`, so a parent viewport can own scrolling. `blockRenderer` receives
+the actual `package:markdown` AST node as an
 `Object` plus a `buildDefault` callback; import `package:markdown/markdown.dart`
 and type-check/cast when inspecting it. A replacement changes presentation,
 while whole-document selection and copy retain the parsed block's default

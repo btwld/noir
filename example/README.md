@@ -53,9 +53,11 @@ Use arrows to preview a choice and Enter or a click to apply it, or Tab/Escape
 to cancel. `n`/`p` move between result pages. Confirming a topic suggestion
 applies that topic to the next search. In package detail, Left/Right, `1`–`4`,
 or a click on a section tab switch between Overview, Versions, Dependencies,
-and Health. Up/Down, PageUp/PageDown, Home/End, and the mouse wheel scroll the
-active section. `/` returns to the query; Escape returns to results and then
-exits.
+and Health. Report section summaries and advisory details render as GitHub-
+flavoured markdown inside the Health `ScrollBox`, with section chrome
+separated from the report body. Up/Down, PageUp/PageDown,
+Home/End, and the mouse wheel scroll the active section. `/` returns to the
+query; Escape returns to results and then exits.
 
 The executable always constructs the live `PubApiCatalog`; there is no offline
 data mode. The adapter is isolated behind `PubCatalog` so tests can inject a

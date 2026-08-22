@@ -496,6 +496,155 @@ void main() {
     );
     expect(selected?.text, 'H1\tH2\n');
   });
+
+  test('embedded MarkdownView omits its inner ScrollBox', () {
+    final host = DriverHost.create(width: 30, height: 5);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(const MarkdownView(markdown: '# title\n\nbody', embedded: true))
+      ..debugFlushFrame();
+
+    final tree = (host.tree(maxDepth: 12)['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(tree, contains('MarkdownView'));
+    expect(tree, contains('DocumentView'));
+    expect(tree, isNot(contains('ScrollBox')));
+    expect(_capturedText(host), contains('title'));
+    expect(_capturedText(host), contains('body'));
+  });
+
+  test(
+    'embedded MarkdownView lets an ancestor ScrollBox own keyboard scrolling',
+    () async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      final driver = KeyDriver(
+        ScrollBox(
+          controller: controller,
+          autofocus: true,
+          child: MarkdownView(
+            markdown: List<String>.generate(
+              12,
+              (index) => 'paragraph $index',
+            ).join('\n\n'),
+            embedded: true,
+          ),
+        ),
+        width: 24,
+        height: 4,
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+
+      expect(controller.offset, 0);
+      await driver.sendLogicalKey(LogicalKeyboardKey.arrowDown);
+      expect(controller.offset, 1);
+    },
+  );
+
+  test('GitHub details wrappers unwrap into visible inner markdown', () {
+    const source = '''
+### [*] 10/10 points: Provide a valid `pubspec.yaml`
+
+<details>
+<summary>
+1 check passed
+</summary>
+Detected license: `BSD-3-Clause`.
+</details>
+
+<details><summary>Transitive dependencies</summary>
+
+| Package | Latest |
+| --- | --- |
+| `meta` | 1.16.0 |
+</details>
+''';
+    final host = DriverHost.create(width: 50, height: 16);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(const MarkdownView(markdown: source))
+      ..debugFlushFrame();
+
+    final text = _capturedText(host);
+    expect(text, contains('10/10 points'));
+    expect(text, contains('pubspec.yaml'));
+    expect(text, contains('1 check passed'));
+    expect(text, contains('BSD-3-Clause'));
+    expect(text, contains('Transitive dependencies'));
+    expect(text, contains('meta'));
+    expect(text, contains('1.16.0'));
+    expect(text, isNot(contains('<details>')));
+    expect(text, isNot(contains('</details>')));
+    expect(text, isNot(contains('<summary>')));
+    expect(text, isNot(contains('###')));
+
+    final tree = (host.tree(maxDepth: 16)['lines']! as List<Object?>)
+        .cast<String>()
+        .join('\n');
+    expect(tree, contains('TextTable'));
+  });
+
+  test('consecutive headings stay tight and a body opens the next section', () {
+    final capture = BufferCapture(width: 40, height: 8);
+    addTearDown(capture.dispose);
+    final frame = capture.capture(
+      const MarkdownView(
+        markdown: '### Alpha\n### Beta\n\nbody copy\n\n### Gamma',
+        embedded: true,
+      ),
+    );
+
+    final alpha = frame.findText('Alpha').single;
+    final beta = frame.findText('Beta').single;
+    final body = frame.findText('body copy').single;
+    final gamma = frame.findText('Gamma').single;
+    expect(beta.y, alpha.y + 1);
+    expect(body.y, beta.y + 1);
+    expect(gamma.y, body.y + 2);
+  });
+
+  test('markdown tables drop columns whose body cells are empty', () {
+    const source = '''
+| Package | Constraint | Notes |
+| --- | --- | --- |
+| meta | ^1.3.0 | |
+| web | >=0.5.0 | |
+''';
+    final host = DriverHost.create(width: 56, height: 8);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(const MarkdownView(markdown: source, embedded: true))
+      ..debugFlushFrame();
+
+    final text = _capturedText(host);
+    expect(text, contains('Package'));
+    expect(text, contains('Constraint'));
+    expect(text, contains('meta'));
+    expect(text, contains('^1.3.0'));
+    expect(text, isNot(contains('Notes')));
+  });
+
+  test('GFM tables keep literal >= and < instead of HTML entities', () {
+    const source = '''
+|Package|Constraint|
+|:-|:-|
+|[`web`](https://pub.dev/packages/web)|`>=0.5.0 <2.0.0`|
+''';
+    final host = DriverHost.create(width: 56, height: 8);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(const MarkdownView(markdown: source))
+      ..debugFlushFrame();
+
+    final text = _capturedText(host);
+    expect(text, contains('>=0.5.0 <2.0.0'));
+    expect(text, contains('web'));
+    expect(text, isNot(contains('&gt;')));
+    expect(text, isNot(contains('&lt;')));
+    expect(text, isNot(contains('&amp;')));
+  });
 }
 
 String _capturedText(DriverHost host) =>

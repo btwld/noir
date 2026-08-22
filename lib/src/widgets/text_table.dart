@@ -446,6 +446,7 @@ final class RenderTextTable extends RenderBox {
   List<int> _columnWidths = const <int>[];
   List<int> _rowHeights = const <int>[];
   List<_TableCellLayout> _cells = const <_TableCellLayout>[];
+  int _gridWidth = 0;
 
   /// Last completed content widths, excluding padding and borders.
   @visibleForTesting
@@ -529,6 +530,7 @@ final class RenderTextTable extends RenderBox {
       _columnWidths = const <int>[];
       _rowHeights = const <int>[];
       _cells = const <_TableCellLayout>[];
+      _gridWidth = 0;
       size = Size(
         constraints.constrainWidth(0),
         constraints.constrainHeight(0),
@@ -601,6 +603,7 @@ final class RenderTextTable extends RenderBox {
 
     final width =
         structural + _columnWidths.fold<int>(0, (sum, value) => sum + value);
+    _gridWidth = width;
     final horizontalRules = _showBorders
         ? (_outerBorder ? 2 : 0) + (_content.length - 1)
         : 0;
@@ -680,7 +683,7 @@ final class RenderTextTable extends RenderBox {
     for (var column = 1; column < columnStarts.length; column++) {
       verticals.add(columnStarts[column] - 1);
     }
-    if (_outerBorder) verticals.add(size.width - 1);
+    if (_outerBorder) verticals.add(_gridWidth > 0 ? _gridWidth - 1 : 0);
 
     final horizontals = <int>[];
     if (_outerBorder) horizontals.add(0);
@@ -689,9 +692,10 @@ final class RenderTextTable extends RenderBox {
     }
     if (_outerBorder) horizontals.add(size.height - 1);
 
+    final ruleWidth = _gridWidth > 0 ? _gridWidth : size.width;
     for (final y in horizontals) {
       context.canvas.drawText(
-        List<String>.filled(size.width, '─').join(),
+        List<String>.filled(ruleWidth, '─').join(),
         Offset(origin.dx, origin.dy + y),
         _borderColor,
       );
