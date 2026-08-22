@@ -11,12 +11,14 @@ const _connectTimeout = Duration(seconds: 30);
 
 /// Runs [target] with development diagnostics kept outside its terminal UI.
 Future<int> runWithHotReload(File target, List<String> arguments) async {
-  final logFile = File('.dart_tool/noir/run.log').absolute;
+  final candidate = File('.dart_tool/noir/run.log').absolute;
+  late final File logFile;
   try {
-    logFile.parent.createSync(recursive: true);
-    logFile.writeAsStringSync('');
+    candidate.parent.createSync(recursive: true);
+    candidate.writeAsStringSync('');
+    logFile = File(candidate.resolveSymbolicLinksSync());
   } on FileSystemException catch (error) {
-    stderr.writeln('Could not create ${logFile.path}: $error');
+    stderr.writeln('Could not create ${candidate.path}: $error');
     return 73;
   }
 
@@ -188,22 +190,31 @@ List<Directory> _watchRoots(File target) {
   return roots.values.toList(growable: false);
 }
 
-Map<String, DateTime> _sourceStamps(List<Directory> roots) {
-  final stamps = <String, DateTime>{};
+typedef _SourceStamp = ({DateTime modified, int size});
+
+Map<String, _SourceStamp> _sourceStamps(List<Directory> roots) {
+  final stamps = <String, _SourceStamp>{};
   for (final root in roots) {
     if (!root.existsSync()) {
       continue;
     }
     for (final entity in root.listSync(recursive: true, followLinks: false)) {
       if (entity is File && entity.path.endsWith('.dart')) {
-        stamps[entity.absolute.path] = entity.statSync().modified;
+        final stat = entity.statSync();
+        stamps[entity.absolute.path] = (
+          modified: stat.modified,
+          size: stat.size,
+        );
       }
     }
   }
   return stamps;
 }
 
-bool _sameStamps(Map<String, DateTime> before, Map<String, DateTime> after) {
+bool _sameStamps(
+  Map<String, _SourceStamp> before,
+  Map<String, _SourceStamp> after,
+) {
   if (before.length != after.length) {
     return false;
   }

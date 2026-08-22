@@ -198,7 +198,11 @@ class Probe extends StatelessWidget {
         diagnostics: runner.output,
       );
 
+      final unchangedStamp = DateTime.fromMillisecondsSinceEpoch(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000 * 1000,
+      );
       await label.writeAsString('String frameLabel() => ;\n');
+      await label.setLastModified(unchangedStamp);
       await _waitUntil(
         () => log.readAsStringSync().contains('reload rejected'),
         what: 'the rejected reload diagnostic',
@@ -207,6 +211,7 @@ class Probe extends StatelessWidget {
       expect(runner.hasExited, isFalse, reason: runner.output.toString());
 
       await label.writeAsString("String frameLabel() => 'after';\n");
+      await label.setLastModified(unchangedStamp);
       await _waitUntil(
         () => runner.frames.contains('FRAME:after'),
         what: 'recovery after the rejected reload',
