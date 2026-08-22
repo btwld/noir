@@ -146,6 +146,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
   final _sortFocus = FocusNode(debugLabel: 'pub sort');
   final _filterFocus = FocusNode(debugLabel: 'pub filter');
   final _chooserFocus = FocusNode(debugLabel: 'pub chooser');
+  final _sortMenu = MenuController();
+  final _filterMenu = MenuController();
   final _detailStatusFocus = FocusNode(debugLabel: 'pub detail status');
   final _detailFocus = FocusNode(debugLabel: 'pub detail');
   final _detailScroll = ScrollController();
@@ -223,6 +225,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _filter = PackageSearchFilter.any;
     _chooser = null;
     _chooserHighlightedIndex = 0;
+    _sortMenu.close();
+    _filterMenu.close();
     _requestedCriteria = null;
     _searchPageCriteria = null;
     _suggestions = const [];
@@ -468,8 +472,40 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   void _openChooser(_SearchChooser chooser) {
     if (_chooser == chooser) return;
+    final previous = _chooser;
+    if (previous != null) {
+      _menuFor(previous).close();
+    }
+    _menuFor(chooser).open();
+  }
+
+  void _cancelChooser() {
+    final chooser = _chooser;
+    if (chooser == null) return;
+    _menuFor(chooser).close();
+  }
+
+  void _confirmSort(PackageSort sort) {
+    final changed = sort != _sort;
+    setState(() => _sort = sort);
+    _sortMenu.close();
+    if (changed) _refreshForChooser();
+  }
+
+  void _confirmFilter(PackageSearchFilter filter) {
+    final changed = filter != _filter;
+    setState(() => _filter = filter);
+    _filterMenu.close();
+    if (changed) _refreshForChooser();
+  }
+
+  void _handleChooserOpened(_SearchChooser chooser) {
     setState(() {
       _chooser = chooser;
+      // The overlay Select is the autofocus target while a chooser is open.
+      // Leave the results list mounted, but do not let its paging autofocus
+      // reclaim focus from the menu in the same frame.
+      _autofocusResults = false;
       _chooserHighlightedIndex = switch (chooser) {
         _SearchChooser.sort => _sort.index,
         _SearchChooser.filter => _filter.index,
@@ -477,33 +513,15 @@ class _PubSearchAppState extends State<PubSearchApp> {
     });
   }
 
-  void _cancelChooser() {
-    final chooser = _chooser;
-    if (chooser == null) return;
+  void _handleChooserClosed(_SearchChooser chooser) {
+    if (_chooser != chooser) return;
     setState(() => _chooser = null);
-    final launcher = _chooserLauncherFocus(chooser);
-    if (launcher.isAttached) launcher.requestFocus();
   }
 
-  void _confirmSort(PackageSort sort) {
-    final changed = sort != _sort;
-    setState(() {
-      _chooser = null;
-      _sort = sort;
-    });
-    _sortFocus.requestFocus();
-    if (changed) _refreshForChooser();
-  }
-
-  void _confirmFilter(PackageSearchFilter filter) {
-    final changed = filter != _filter;
-    setState(() {
-      _chooser = null;
-      _filter = filter;
-    });
-    _filterFocus.requestFocus();
-    if (changed) _refreshForChooser();
-  }
+  MenuController _menuFor(_SearchChooser chooser) => switch (chooser) {
+    _SearchChooser.sort => _sortMenu,
+    _SearchChooser.filter => _filterMenu,
+  };
 
   void _refreshForChooser() {
     unawaited(
@@ -514,11 +532,6 @@ class _PubSearchAppState extends State<PubSearchApp> {
       ),
     );
   }
-
-  FocusNode _chooserLauncherFocus(_SearchChooser chooser) => switch (chooser) {
-    _SearchChooser.sort => _sortFocus,
-    _SearchChooser.filter => _filterFocus,
-  };
 
   void _nextPage() {
     if (_searchState == PubLoadState.loading) return;
@@ -755,21 +768,23 @@ class _PubSearchAppState extends State<PubSearchApp> {
               Row(
                 spacing: 3,
                 children: [
-                  _chooserLauncher(
+                  _chooserAnchor(
                     theme: theme,
+                    chooser: _SearchChooser.sort,
+                    controller: _sortMenu,
+                    focusNode: _sortFocus,
                     label: 'Sort',
                     value: _sort.name,
-                    focusNode: _sortFocus,
-                    active: _chooser == _SearchChooser.sort,
-                    onActivate: () => _openChooser(_SearchChooser.sort),
+                    panel: _sortChooserPanel(),
                   ),
-                  _chooserLauncher(
+                  _chooserAnchor(
                     theme: theme,
+                    chooser: _SearchChooser.filter,
+                    controller: _filterMenu,
+                    focusNode: _filterFocus,
                     label: 'Filter',
                     value: _filter.name,
-                    focusNode: _filterFocus,
-                    active: _chooser == _SearchChooser.filter,
-                    onActivate: () => _openChooser(_SearchChooser.filter),
+                    panel: _filterChooserPanel(),
                   ),
                   if (topic != null)
                     Expanded(
@@ -798,20 +813,42 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 style: TextStyle(color: theme.textMuted),
               )
             else
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _buildResults(context),
-                    if (_chooser != null) _buildChooserOverlay(),
-                  ],
-                ),
-              ),
+              Expanded(child: _buildResults(context)),
           ],
         ),
       ),
     );
   }
+
+  Widget _chooserAnchor({
+    required ThemeData theme,
+    required _SearchChooser chooser,
+    required MenuController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String value,
+    required Widget panel,
+  }) => MenuAnchor(
+    controller: controller,
+    childFocusNode: focusNode,
+    onOpen: () => _handleChooserOpened(chooser),
+    onClose: () => _handleChooserClosed(chooser),
+    menuChildren: [panel],
+    builder: (context, menu, child) => _chooserLauncher(
+      theme: theme,
+      label: label,
+      value: value,
+      focusNode: focusNode,
+      active: _chooser == chooser,
+      onActivate: () {
+        if (menu.isOpen) {
+          menu.close();
+          return;
+        }
+        _openChooser(chooser);
+      },
+    ),
+  );
 
   Widget _chooserLauncher({
     required ThemeData theme,
@@ -857,74 +894,65 @@ class _PubSearchAppState extends State<PubSearchApp> {
           },
   );
 
-  Widget _buildChooserOverlay() {
-    final chooser = _chooser!;
-    final optionRows = switch (chooser) {
-      _SearchChooser.sort => _sortOptions.length,
-      _SearchChooser.filter => _filterOptions.length,
-    };
-    final loadingRows = _searchState == PubLoadState.loading ? 2 : 0;
-    return PointerListener(
-      onPointerDown: (_) {},
-      child: Align(
-        child: SizedBox(
-          width: 48,
-          height: optionRows + loadingRows + 2,
-          child: DemoPanel(
-            title: switch (chooser) {
-              _SearchChooser.sort => 'CHOOSE SORT',
-              _SearchChooser.filter => 'CHOOSE FILTER',
-            },
-            focused: _chooserFocus.hasFocus,
-            child: _buildChooser(),
+  Widget _sortChooserPanel() => _chooserPanel(
+    title: 'CHOOSE SORT',
+    child: Select<PackageSort>(
+      focusNode: _chooserFocus,
+      autofocus: true,
+      selectedIndex: _chooserHighlightedIndex,
+      options: _sortOptions,
+      onChanged: (index, option) {
+        if (index == _chooserHighlightedIndex) return;
+        setState(() => _chooserHighlightedIndex = index);
+      },
+      onSelect: (index, option) {
+        final value = option.value;
+        if (value != null) _confirmSort(value);
+      },
+    ),
+  );
+
+  Widget _filterChooserPanel() => _chooserPanel(
+    title: 'CHOOSE FILTER',
+    child: Select<PackageSearchFilter>(
+      focusNode: _chooserFocus,
+      autofocus: true,
+      selectedIndex: _chooserHighlightedIndex,
+      height: 4,
+      options: _filterOptions,
+      onChanged: (index, option) {
+        if (index == _chooserHighlightedIndex) return;
+        setState(() => _chooserHighlightedIndex = index);
+      },
+      onSelect: (index, option) {
+        final value = option.value;
+        if (value != null) _confirmFilter(value);
+      },
+    ),
+  );
+
+  Widget _chooserPanel({required String title, required Widget child}) =>
+      SizedBox(
+        width: 48,
+        child: DemoPanel(
+          title: title,
+          focused: _chooserFocus.hasFocus,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_searchState == PubLoadState.loading) ...[
+                const Row(
+                  spacing: 1,
+                  children: [Spinner(), Text('Updating results…')],
+                ),
+                const SizedBox(height: 1),
+              ],
+              child,
+            ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildChooser() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      if (_searchState == PubLoadState.loading) ...[
-        const Row(spacing: 1, children: [Spinner(), Text('Updating results…')]),
-        const SizedBox(height: 1),
-      ],
-      Expanded(
-        child: switch (_chooser!) {
-          _SearchChooser.sort => Select<PackageSort>(
-            focusNode: _chooserFocus,
-            autofocus: true,
-            selectedIndex: _chooserHighlightedIndex,
-            options: _sortOptions,
-            onChanged: (index, option) {
-              if (index == _chooserHighlightedIndex) return;
-              setState(() => _chooserHighlightedIndex = index);
-            },
-            onSelect: (index, option) {
-              final value = option.value;
-              if (value != null) _confirmSort(value);
-            },
-          ),
-          _SearchChooser.filter => Select<PackageSearchFilter>(
-            focusNode: _chooserFocus,
-            autofocus: true,
-            selectedIndex: _chooserHighlightedIndex,
-            height: 4,
-            options: _filterOptions,
-            onChanged: (index, option) {
-              if (index == _chooserHighlightedIndex) return;
-              setState(() => _chooserHighlightedIndex = index);
-            },
-            onSelect: (index, option) {
-              final value = option.value;
-              if (value != null) _confirmFilter(value);
-            },
-          ),
-        },
-      ),
-    ],
-  );
+      );
 
   Widget _buildSearchLoading(BuildContext context) {
     final previous = _searchPage;
@@ -1024,7 +1052,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         Expanded(
           child: Select<String>(
             focusNode: _resultsFocus,
-            autofocus: _autofocusResults,
+            autofocus: _autofocusResults && _chooser == null,
             selectedIndex: _selectedIndex,
             height: 13,
             showScrollIndicator: true,

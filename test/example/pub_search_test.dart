@@ -1267,9 +1267,82 @@ void main() {
     }
   });
 
-  test('sort picker overlays mounted results and marks its launcher', () async {
-    final catalog = _FakePubCatalog()
-      ..searchResults.add(_page(['overlay_result']));
+  test(
+    'sort picker overlays mounted results and closes on an outside click',
+    () async {
+      final catalog = _FakePubCatalog()
+        ..searchResults.add(_page(['overlay_result']));
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        final sort = app.captureFrame().findText('Sort: TOP ▾').single;
+        app.mockMouse.click(sort.x, sort.y);
+        await _settle(app);
+
+        final frame = app.captureFrame();
+        final chooser = frame.findText('CHOOSE SORT').single;
+        expect(frame.toText(), contains('PAGE'));
+        expect(chooser.y, greaterThan(sort.y));
+        expect(chooser.x, lessThan(sort.x + 8));
+        expect(chooser.x + 48, lessThanOrEqualTo(frame.width));
+
+        // The anchored menu covers the left of the results panel. Click a cell
+        // to the right of the menu: outside left-down closes, and the covered
+        // result must not receive the event.
+        app.mockMouse.click(frame.width - 3, chooser.y);
+        await _settle(app);
+        expect(catalog.detailCalls, isEmpty);
+        expect(catalog.searchCalls, hasLength(1));
+        expect(_render(app), isNot(contains('CHOOSE SORT')));
+        expect(_render(app), contains('overlay_result'));
+
+        final launcher = _tabStyle(app, 'Sort: TOP ▾');
+        expect(launcher.background, _painted(pubTheme.accent));
+        expect(launcher.foreground, _painted(pubTheme.accentForeground));
+        expect(launcher.bold, isTrue);
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('filter picker stays inside the right terminal edge', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 50,
+    );
+
+    try {
+      await _settle(app);
+      final filter = app.captureFrame().findText('Filter: ANY ▾').single;
+      app.mockMouse.click(filter.x, filter.y);
+      await _settle(app);
+
+      final frame = app.captureFrame();
+      final chooser = frame.findText('CHOOSE FILTER').single;
+      final chooserLeft = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, chooser.y) == '┌') x,
+      ].single;
+      final chooserRight = [
+        for (var x = 0; x < frame.width; x++)
+          if (frame.getChar(x, chooser.y) == '┐') x,
+      ].single;
+      expect(chooserLeft, greaterThanOrEqualTo(0));
+      expect(chooserRight, lessThan(frame.width));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('open sort picker follows a same-frame resize', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
       width: 100,
@@ -1281,40 +1354,16 @@ void main() {
       final sort = app.captureFrame().findText('Sort: TOP ▾').single;
       app.mockMouse.click(sort.x, sort.y);
       await _settle(app);
-
-      final frame = app.captureFrame();
-      final results = frame.findText('RESULTS').single;
-      final chooser = frame.findText('CHOOSE SORT').single;
-      expect(frame.toText(), contains('overlay_result'));
-      expect(chooser.x, greaterThan(results.x));
-      expect(chooser.y, greaterThan(results.y));
-      final resultsLeft = [
-        for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, results.y) == '┌') x,
-      ].single;
-      final resultsRight = [
-        for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, results.y) == '┐') x,
-      ].single;
-      final chooserLeft = [
-        for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, chooser.y) == '┌') x,
-      ].single;
-      final chooserRight = [
-        for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, chooser.y) == '┐') x,
-      ].single;
-      expect(chooserLeft - resultsLeft, resultsRight - chooserRight);
-
-      final result = frame.findText('overlay_result').single;
-      app.mockMouse.click(result.x, result.y);
-      await _settle(app);
-      expect(catalog.detailCalls, isEmpty);
       expect(_render(app), contains('CHOOSE SORT'));
 
-      final launcher = _tabStyle(app, 'Sort: TOP ▾');
-      expect(launcher.background, _painted(pubTheme.selectedBackground));
-      expect(launcher.foreground, _painted(pubTheme.selectedForeground));
+      app
+        ..resize(60, 18)
+        ..pumpFrame();
+      expect(_render(app), contains('CHOOSE SORT'));
+      final frame = app.captureFrame();
+      final chooser = frame.findText('CHOOSE SORT').single;
+      expect(chooser.y, lessThan(frame.height));
+      expect(chooser.x, lessThan(frame.width));
     } finally {
       app.dispose();
     }

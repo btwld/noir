@@ -799,6 +799,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   (path: 'lib/src/framework/focus_manager.dart', name: 'FocusNode'): {
     'attach',
     'detach',
+    'isAttachedTo',
   },
   _buildOwnerOwner: {
     'test',

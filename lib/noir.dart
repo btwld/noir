@@ -207,6 +207,10 @@ export 'src/widgets/intents.dart'
 export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
 export 'src/widgets/markdown_view.dart'
     show MarkdownBlockRenderer, MarkdownThemeData, MarkdownView;
+export 'src/widgets/menu_anchor.dart'
+    show MenuAnchor, MenuAnchorChildBuilder, MenuController;
+export 'src/widgets/overlay.dart'
+    show OverlayPortal, OverlayPortalController, WidgetBuilder;
 export 'src/widgets/padding.dart' show Padding;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/progress_bar.dart' show ProgressBar;

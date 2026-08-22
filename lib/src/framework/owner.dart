@@ -516,32 +516,74 @@ class BuildOwner {
   /// public app API.
   @internal
   void deactivateChild(Element child) {
-    // Sole owner of: preflight → render detach (old Element parent still
-    // readable) → Element publication → inactive membership. Callers must
-    // not drop render children before this entry point.
+    // Sole owner of: preflight → all render-edge detach (old Element parent
+    // still readable) → Element publication → inactive membership. Callers
+    // must not drop render children before this entry point.
     // 1) Preflight without publishing.
     final plan = _preflightDeactivate(child);
-    // 2) Detach render while old Element parent is still readable so single-
-    //    child setChild(null) / multi-child dropChild / Flex remove all route
-    //    through removeRenderObjectChild with a valid Element parent chain.
+    final externalEdges = <ExternalRenderEdge>[];
+    for (final node in plan.subtree) {
+      node.collectOwnedExternalRenderEdges(externalEdges);
+    }
+    _validateExternalRenderEdges(externalEdges);
+    // 2) Detach every render edge while old Element parent is still readable
+    //    so single-child setChild(null) / multi-child dropChild / Flex remove
+    //    all route through removeRenderObjectChild with a valid Element parent
+    //    chain. External portal edges are detached here too; recursive
+    //    deactivate/unmount remain idempotent safety nets.
     final renderElement = Element.findRenderObjectElement(child);
     final renderObject = renderElement?.renderObject;
     final oldRenderParent = renderObject?.parent;
     Object? deferredError;
     StackTrace? deferredStackTrace;
-    try {
-      renderElement?.detachRenderObject();
-    } on Object catch (error, stackTrace) {
-      if (oldRenderParent == null ||
-          renderObject == null ||
-          renderObject.parent != null ||
-          oldRenderParent.children.any(
-            (candidate) => identical(candidate, renderObject),
-          )) {
-        rethrow;
+
+    void detachEdge({
+      required RenderObject? childObject,
+      required RenderObject? expectedParent,
+      required void Function() detach,
+    }) {
+      if (childObject == null) {
+        return;
       }
-      deferredError = error;
-      deferredStackTrace = stackTrace;
+      try {
+        detach();
+      } on Object catch (error, stackTrace) {
+        if (expectedParent == null ||
+            childObject.parent != null ||
+            expectedParent.children.any(
+              (candidate) => identical(candidate, childObject),
+            )) {
+          rethrow;
+        }
+        deferredError ??= error;
+        deferredStackTrace ??= stackTrace;
+      }
+    }
+
+    detachEdge(
+      childObject: renderObject,
+      expectedParent: oldRenderParent,
+      detach: () => renderElement?.detachRenderObject(),
+    );
+    for (final edge in externalEdges) {
+      if (renderObject != null && identical(edge.child, renderObject)) {
+        continue;
+      }
+      detachEdge(
+        childObject: edge.child,
+        expectedParent: edge.expectedParent,
+        detach: edge.detach,
+      );
+    }
+    _confirmDetached(
+      childObject: renderObject,
+      expectedParent: oldRenderParent,
+    );
+    for (final edge in externalEdges) {
+      _confirmDetached(
+        childObject: edge.child,
+        expectedParent: edge.expectedParent,
+      );
     }
     // 3) Publish Element parent/depth/dirty only after render detach returns.
     _publishDeactivate(plan);
@@ -553,8 +595,52 @@ class BuildOwner {
       deferredStackTrace ??= stackTrace;
     }
     _inactiveElements.add(child);
-    if (deferredError != null) {
-      Error.throwWithStackTrace(deferredError, deferredStackTrace!);
+    final error = deferredError;
+    if (error != null) {
+      Error.throwWithStackTrace(error, deferredStackTrace!);
+    }
+  }
+
+  void _validateExternalRenderEdges(List<ExternalRenderEdge> edges) {
+    final seen = HashSet<RenderObject>.identity();
+    for (final edge in edges) {
+      if (!seen.add(edge.child)) {
+        throw StateError(
+          'Duplicate external render edge for ${edge.child.runtimeType}.',
+        );
+      }
+      if (!identical(edge.child.parent, edge.expectedParent)) {
+        throw StateError(
+          'External render edge is not attached to its expected parent.',
+        );
+      }
+      final childOwner = edge.child.pipelineOwner;
+      final parentOwner = edge.expectedParent.pipelineOwner;
+      if (childOwner != null &&
+          parentOwner != null &&
+          !identical(childOwner, parentOwner)) {
+        throw StateError(
+          'External render edge is owned by another PipelineOwner.',
+        );
+      }
+    }
+  }
+
+  void _confirmDetached({
+    required RenderObject? childObject,
+    required RenderObject? expectedParent,
+  }) {
+    if (childObject == null) {
+      return;
+    }
+    if (childObject.parent != null ||
+        (expectedParent != null &&
+            expectedParent.children.any(
+              (candidate) => identical(candidate, childObject),
+            ))) {
+      throw StateError(
+        'Render edge remained attached after deactivation detach.',
+      );
     }
   }
 

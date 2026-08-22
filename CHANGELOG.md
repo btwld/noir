@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.1-alpha.3
+
+- Added a package-owned root overlay with `OverlayPortal`,
+  `OverlayPortalController`, `MenuAnchor`, and `MenuController`. Overlay
+  children stay logical descendants of their portal while one external render
+  edge is hosted above the application. `MenuAnchor` places an unstyled menu in
+  integer cells, follows the launcher in the same frame after resize or
+  movement, and uses a modal outside pointer barrier: left-button down closes
+  the topmost menu, other outside pointer events are consumed without closing,
+  and `TuiApp.onMouse` may still observe the raw event at app priority. Hide
+  destroys overlay `State`; controller replacement does not transfer portal
+  visibility; menu controller replacement preserves open state. This is not
+  Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
+  nested overlay, transform, `LayerLink`, animation, or cascade API.
+- Pub Search Sort and Filter now open as launcher-relative root menus. An
+  outside left click no longer leaves the chooser open; it closes the menu,
+  does not load a covered result, and restores the launcher.
+
 ## 0.0.1-alpha.2
 
 - Added the packaged `dart run noir:run` development command. It launches a

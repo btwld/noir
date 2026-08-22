@@ -213,7 +213,10 @@ void main() {
     );
     _expectInOrder(deactivate, [
       '_preflightDeactivate(child)',
+      'collectOwnedExternalRenderEdges(externalEdges)',
+      '_validateExternalRenderEdges(externalEdges)',
       '.detachRenderObject()',
+      '_confirmDetached(',
       '_publishDeactivate(plan)',
       'child.deactivate()',
       'on Object catch (error, stackTrace)',
@@ -222,9 +225,15 @@ void main() {
       'Error.throwWithStackTrace(',
     ]);
     expect(deactivate, contains('oldRenderParent'));
-    expect(deactivate, contains('renderObject.parent != null'));
-    expect(deactivate, contains('oldRenderParent.children.any('));
-    expect(deactivate, contains('identical(candidate, renderObject)'));
+    expect(deactivate, contains('childObject.parent != null'));
+    expect(deactivate, contains('expectedParent.children.any('));
+    expect(deactivate, contains('identical(candidate, childObject)'));
+    expect(deactivate, contains('identical(edge.child, renderObject)'));
+    expect(
+      elementSource,
+      contains('void collectOwnedExternalRenderEdges(List<ExternalRenderEdge>'),
+    );
+    expect(elementSource, contains('class ExternalRenderEdge'));
 
     final flexRemove = _methodBody(flexSource, 'void remove(RenderBox child)');
     final drop = flexRemove.indexOf('dropChild(child)');
