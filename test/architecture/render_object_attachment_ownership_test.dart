@@ -216,7 +216,7 @@ void main() {
       'collectOwnedExternalRenderEdges(externalEdges)',
       '_validateExternalRenderEdges(externalEdges)',
       '.detachRenderObject()',
-      '_confirmDetached(',
+      '_isRenderEdgeDetached(',
       '_publishDeactivate(plan)',
       'child.deactivate()',
       'on Object catch (error, stackTrace)',
@@ -225,10 +225,11 @@ void main() {
       'Error.throwWithStackTrace(',
     ]);
     expect(deactivate, contains('oldRenderParent'));
-    expect(deactivate, contains('childObject.parent != null'));
-    expect(deactivate, contains('expectedParent.children.any('));
-    expect(deactivate, contains('identical(candidate, childObject)'));
     expect(deactivate, contains('identical(edge.child, renderObject)'));
+    final isDetached = _methodBody(ownerSource, 'bool _isRenderEdgeDetached(');
+    expect(isDetached, contains('childObject.parent == null'));
+    expect(isDetached, contains('!expectedParent.children.any('));
+    expect(isDetached, contains('identical(candidate, childObject)'));
     expect(
       elementSource,
       contains('void collectOwnedExternalRenderEdges(List<ExternalRenderEdge>'),

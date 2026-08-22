@@ -1,8 +1,10 @@
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../foundation/first_error.dart';
 import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
+import '../framework/element.dart';
 import '../framework/focus_manager.dart';
 import '../framework/key.dart';
 import '../framework/widget.dart';
@@ -65,12 +67,16 @@ final class MenuController {
   }
 
   void _attach(_MenuAnchorState state) {
+    _validateAttachment(state);
+    _client = state;
+  }
+
+  void _validateAttachment(_MenuAnchorState state) {
     if (_client != null && !identical(_client, state)) {
       throw StateError(
         'MenuController is already attached to another MenuAnchor.',
       );
     }
-    _client = state;
   }
 
   void _detach(_MenuAnchorState state) {
@@ -144,6 +150,26 @@ class MenuAnchor extends StatefulWidget {
 
   @override
   State<MenuAnchor> createState() => _MenuAnchorState();
+
+  @override
+  @internal
+  Element createElement() => _MenuAnchorElement(this);
+}
+
+class _MenuAnchorElement extends StatefulElement {
+  _MenuAnchorElement(MenuAnchor super.widget);
+
+  @override
+  void update(Widget newWidget) {
+    final previous = widget as MenuAnchor;
+    final next = newWidget as MenuAnchor;
+    final nextController = next.controller;
+    if (nextController != null &&
+        !identical(previous.controller, nextController)) {
+      nextController._validateAttachment(state as _MenuAnchorState);
+    }
+    super.update(newWidget);
+  }
 }
 
 class _MenuAnchorState extends State<MenuAnchor> {
@@ -169,9 +195,13 @@ class _MenuAnchorState extends State<MenuAnchor> {
     _restoreNode =
         widget.childFocusNode ?? context.owner.focusManager.primaryFocus;
     _isOpen = true;
-    widget.onOpen?.call();
-    _portalController.show();
-    setState(() {});
+    final failures = FirstErrorRecorder();
+    failures.attempt(() => widget.onOpen?.call());
+    if (_isOpen) {
+      failures.attempt(_portalController.show);
+      failures.attempt(() => setState(() {}));
+    }
+    failures.rethrowFirst();
   }
 
   void close() {
@@ -179,10 +209,14 @@ class _MenuAnchorState extends State<MenuAnchor> {
       return;
     }
     _isOpen = false;
-    widget.onClose?.call();
-    _portalController.hide();
-    _restoreFocus();
-    setState(() {});
+    final failures = FirstErrorRecorder();
+    failures.attempt(() => widget.onClose?.call());
+    if (!_isOpen) {
+      failures.attempt(_portalController.hide);
+      failures.attempt(_restoreFocus);
+      failures.attempt(() => setState(() {}));
+    }
+    failures.rethrowFirst();
   }
 
   void _restoreFocus() {

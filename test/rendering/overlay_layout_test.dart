@@ -1,5 +1,6 @@
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/rendering/object.dart' show PipelineOwner;
 import 'package:noir/src/rendering/overlay.dart';
 import 'package:test/test.dart';
 
@@ -150,6 +151,121 @@ void main() {
     expect(identical(entry.parent, overlay), isTrue);
   });
 
+  test('an entry cannot replace the base slot', () {
+    final overlay = RenderOverlay();
+    final base = _FixedBox(2, 2);
+    final entry = RenderOverlayEntry(child: _FixedBox(1, 1));
+    overlay
+      ..setBase(base)
+      ..adoptEntry(entry);
+
+    expect(() => overlay.setBase(entry), throwsStateError);
+    expect(overlay.base, same(base));
+    expect(overlay.entries, [same(entry)]);
+    expect(overlay.children, [same(base), same(entry)]);
+  });
+
+  test('failed base adoption preserves the current base', () {
+    final overlay = RenderOverlay();
+    final current = _FixedBox(2, 2);
+    final attached = _FixedBox(1, 1);
+    final owner = PipelineOwner();
+    attached.attach(owner);
+    overlay.setBase(current);
+
+    try {
+      expect(() => overlay.setBase(attached), throwsStateError);
+      expect(overlay.base, same(current));
+      expect(current.parent, same(overlay));
+      expect(overlay.children, [same(current)]);
+    } finally {
+      attached.detach();
+      owner.dispose();
+    }
+  });
+
+  test('a failing base attach rolls back to the current base', () {
+    final attachError = StateError('base attach failed');
+    final current = _FixedBox(2, 2);
+    final replacement = _ThrowAfterAttachBox(attachError);
+    final overlay = RenderOverlay()..setBase(current);
+    final owner = PipelineOwner();
+    overlay.attach(owner);
+
+    try {
+      expect(() => overlay.setBase(replacement), throwsA(same(attachError)));
+      expect(overlay.base, same(current));
+      expect(current.parent, same(overlay));
+      expect(current.pipelineOwner, same(owner));
+      expect(replacement.parent, isNull);
+      expect(replacement.pipelineOwner, isNull);
+      expect(overlay.children, [same(current)]);
+    } finally {
+      overlay.detach();
+      owner.dispose();
+    }
+  });
+
+  test('a failing entry attach leaves no unregistered render child', () {
+    final attachError = StateError('entry attach failed');
+    final entry = RenderOverlayEntry(child: _ThrowAfterAttachBox(attachError));
+    final overlay = RenderOverlay();
+    final owner = PipelineOwner();
+    overlay.attach(owner);
+
+    try {
+      expect(() => overlay.adoptEntry(entry), throwsA(same(attachError)));
+      expect(entry.parent, isNull);
+      expect(entry.pipelineOwner, isNull);
+      expect(overlay.entries, isEmpty);
+      expect(overlay.children, isEmpty);
+    } finally {
+      overlay.detach();
+      owner.dispose();
+    }
+  });
+
+  test('a committed drop clears entry metadata before rethrowing', () {
+    final detachError = StateError('entry child detach failed');
+    final entry = RenderOverlayEntry(child: _ThrowAfterDetachBox(detachError));
+    final overlay = RenderOverlay()..adoptEntry(entry);
+    final owner = PipelineOwner();
+    overlay.attach(owner);
+
+    try {
+      expect(() => overlay.dropEntry(entry), throwsA(same(detachError)));
+      expect(entry.parent, isNull);
+      expect(entry.pipelineOwner, isNull);
+      expect(overlay.entries, isEmpty);
+      expect(overlay.children, isEmpty);
+    } finally {
+      overlay.detach();
+      owner.dispose();
+    }
+  });
+
+  test('draining entries continues after a detach failure', () {
+    final detachError = StateError('first entry detach failed');
+    final first = RenderOverlayEntry(child: _ThrowAfterDetachBox(detachError));
+    final second = RenderOverlayEntry(child: _FixedBox(1, 1));
+    final overlay = RenderOverlay()
+      ..adoptEntry(first)
+      ..adoptEntry(second);
+    final owner = PipelineOwner();
+    overlay.attach(owner);
+
+    try {
+      expect(overlay.drainEntries, throwsA(same(detachError)));
+      expect(overlay.entries, isEmpty);
+      expect(first.parent, isNull);
+      expect(second.parent, isNull);
+      expect(second.pipelineOwner, isNull);
+    } finally {
+      overlay.detach();
+      owner.dispose();
+    }
+  });
+
   test('explicit root position ignores alignment offset', () {
     expect(
       resolveAnchoredMenuOrigin(
@@ -207,6 +323,30 @@ final class _FixedBox extends RenderBox {
       constraints.constrainWidth(naturalWidth),
       constraints.constrainHeight(naturalHeight),
     );
+  }
+}
+
+final class _ThrowAfterDetachBox extends RenderBox {
+  _ThrowAfterDetachBox(this.error);
+
+  final StateError error;
+
+  @override
+  void detach() {
+    super.detach();
+    throw error;
+  }
+}
+
+final class _ThrowAfterAttachBox extends RenderBox {
+  _ThrowAfterAttachBox(this.error);
+
+  final StateError error;
+
+  @override
+  void didAttach(PipelineOwner owner) {
+    super.didAttach(owner);
+    throw error;
   }
 }
 

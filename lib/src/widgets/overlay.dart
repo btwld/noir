@@ -66,14 +66,18 @@ final class OverlayPortalController {
   }
 
   void _attach(_OverlayPortalState state) {
+    _validateAttachment(state);
+    _client = state;
+    state._wantsShow = _pendingShow;
+    _pendingShow = false;
+  }
+
+  void _validateAttachment(_OverlayPortalState state) {
     if (_client != null && !identical(_client, state)) {
       throw StateError(
         'OverlayPortalController is already attached to another OverlayPortal.',
       );
     }
-    _client = state;
-    state._wantsShow = _pendingShow;
-    _pendingShow = false;
   }
 
   void _detach(_OverlayPortalState state) {
@@ -137,6 +141,24 @@ class OverlayPortal extends StatefulWidget {
 
   @override
   State<OverlayPortal> createState() => _OverlayPortalState();
+
+  @override
+  @internal
+  Element createElement() => _OverlayPortalElement(this);
+}
+
+class _OverlayPortalElement extends StatefulElement {
+  _OverlayPortalElement(OverlayPortal super.widget);
+
+  @override
+  void update(Widget newWidget) {
+    final previous = widget as OverlayPortal;
+    final next = newWidget as OverlayPortal;
+    if (!identical(previous.controller, next.controller)) {
+      next.controller._validateAttachment(state as _OverlayPortalState);
+    }
+    super.update(newWidget);
+  }
 }
 
 class _OverlayPortalState extends State<OverlayPortal> {

@@ -796,6 +796,12 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
     'createRenderObject',
     'updateRenderObject',
   },
+  (path: 'lib/src/widgets/menu_anchor.dart', name: 'MenuAnchor'): {
+    'createElement',
+  },
+  (path: 'lib/src/widgets/overlay.dart', name: 'OverlayPortal'): {
+    'createElement',
+  },
   (path: 'lib/src/framework/focus_manager.dart', name: 'FocusNode'): {
     'attach',
     'detach',
@@ -868,6 +874,8 @@ const Set<_Owner> _createElementOwners = <_Owner>{
   (path: 'lib/src/widgets/row_column.dart', name: 'Flex'),
   (path: 'lib/src/widgets/stack.dart', name: 'Stack'),
   (path: 'lib/src/widgets/stack.dart', name: 'Positioned'),
+  (path: 'lib/src/widgets/menu_anchor.dart', name: 'MenuAnchor'),
+  (path: 'lib/src/widgets/overlay.dart', name: 'OverlayPortal'),
 };
 
 const Set<_Owner> _builtInRenderWidgetOwners = <_Owner>{

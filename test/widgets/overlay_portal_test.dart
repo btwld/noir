@@ -244,6 +244,66 @@ void main() {
     }
   });
 
+  test('failed controller replacement preserves both live attachments', () {
+    final first = OverlayPortalController();
+    final occupied = OverlayPortalController();
+    final host = TestElementHost()
+      ..mount(
+        RootOverlay(
+          child: Column(
+            children: [
+              OverlayPortal(
+                controller: first,
+                overlayChildBuilder: (context) => const Text('first-overlay'),
+                child: const Text('first-child'),
+              ),
+              OverlayPortal(
+                controller: occupied,
+                overlayChildBuilder: (context) => const Text('second-overlay'),
+                child: const Text('second-child'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+    try {
+      expect(
+        () => host.update(
+          RootOverlay(
+            child: Column(
+              children: [
+                OverlayPortal(
+                  controller: occupied,
+                  overlayChildBuilder: (context) => const Text('invalid'),
+                  child: const Text('first-child'),
+                ),
+                OverlayPortal(
+                  controller: occupied,
+                  overlayChildBuilder: (context) =>
+                      const Text('second-overlay'),
+                  child: const Text('second-child'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        throwsStateError,
+      );
+
+      first.show();
+      occupied.show();
+      host.pumpFrame(
+        constraints: const BoxConstraints.tight(width: 30, height: 8),
+      );
+
+      expect(_findText(host.root!, 'first-overlay'), isTrue);
+      expect(_findText(host.root!, 'second-overlay'), isTrue);
+    } finally {
+      host.dispose();
+    }
+  });
+
   test('mounting OverlayPortal without the root overlay throws', () {
     final host = TestElementHost();
     Object? error;

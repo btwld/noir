@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../foundation/first_error.dart';
 import '../render/geometry.dart';
 import 'box.dart';
 import 'object.dart';
@@ -23,27 +24,56 @@ final class RenderOverlay extends RenderBox {
     if (identical(_base, next)) {
       return;
     }
+    final previous = _base;
+    if (previous != null && !_isDirectChild(previous)) {
+      throw StateError('Overlay base is not hosted by this overlay.');
+    }
     if (next != null) {
       _validateAdoption(next);
+      try {
+        adoptChild(next);
+        _moveBaseToFront(next);
+      } on Object catch (error, stackTrace) {
+        _rollbackAdoption(next);
+        Error.throwWithStackTrace(error, stackTrace);
+      }
     }
-    final previous = _base;
     if (previous != null) {
-      _dropIfOwned(previous);
+      try {
+        dropChild(previous);
+      } on Object catch (error, stackTrace) {
+        if (_isDirectChild(previous)) {
+          if (next != null) {
+            _rollbackAdoption(next);
+          }
+        } else {
+          _base = next;
+        }
+        Error.throwWithStackTrace(error, stackTrace);
+      }
     }
     _base = next;
-    if (next != null && !identical(next.parent, this)) {
-      adoptChild(next);
-      _moveBaseToFront(next);
-    }
   }
 
   /// Adopts [entry] as the topmost portal entry.
   void adoptEntry(RenderBox entry) {
-    if (identical(entry.parent, this) && _identityEntryIndex(entry) >= 0) {
-      return;
+    final index = _identityEntryIndex(entry);
+    if (index >= 0) {
+      if (identical(entry.parent, this)) {
+        return;
+      }
+      throw StateError(
+        'Overlay entry ${entry.runtimeType} is registered without being '
+        'hosted by this overlay.',
+      );
     }
     _validateAdoption(entry);
-    adoptChild(entry);
+    try {
+      adoptChild(entry);
+    } on Object catch (error, stackTrace) {
+      _rollbackAdoption(entry);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
     _entries.add(entry);
     markNeedsLayout();
   }
@@ -51,22 +81,32 @@ final class RenderOverlay extends RenderBox {
   /// Drops [entry] when it is still this overlay's child.
   void dropEntry(RenderBox entry) {
     final index = _identityEntryIndex(entry);
-    if (index < 0 && !identical(entry.parent, this)) {
-      return;
-    }
-    if (entry.parent != null && !identical(entry.parent, this)) {
+    if (index < 0) {
+      if (entry.parent == null) {
+        return;
+      }
       throw StateError(
-        'Cannot drop overlay entry ${entry.runtimeType} from a different '
-        'parent ${entry.parent.runtimeType}.',
+        'Overlay entry ${entry.runtimeType} is parented but not registered by '
+        'this overlay.',
       );
     }
-    if (identical(entry.parent, this)) {
+    if (!identical(entry.parent, this)) {
+      throw StateError(
+        'Cannot drop overlay entry ${entry.runtimeType} because its registered '
+        'parent is not this overlay.',
+      );
+    }
+    try {
       dropChild(entry);
+    } finally {
+      final detached =
+          entry.parent == null &&
+          !children.any((candidate) => identical(candidate, entry));
+      if (detached) {
+        _entries.removeWhere((candidate) => identical(candidate, entry));
+        markNeedsPaint();
+      }
     }
-    if (index >= 0) {
-      _entries.removeAt(index);
-    }
-    markNeedsPaint();
   }
 
   /// Moves an already-shown [entry] to the top of paint and hit-test order.
@@ -178,25 +218,33 @@ final class RenderOverlay extends RenderBox {
   }
 
   void _validateAdoption(RenderObject child) {
-    if (child.parent != null && !identical(child.parent, this)) {
+    if (child.parent != null) {
       throw StateError(
         'Cannot adopt ${child.runtimeType} already parented to '
         '${child.parent.runtimeType}.',
       );
     }
-    final owner = pipelineOwner;
-    if (owner != null &&
-        child.pipelineOwner != null &&
-        !identical(child.pipelineOwner, owner)) {
+    final childOwner = child.pipelineOwner;
+    if (childOwner != null && !identical(childOwner, pipelineOwner)) {
       throw StateError(
         'Cannot adopt a render object owned by another PipelineOwner.',
       );
     }
   }
 
-  void _dropIfOwned(RenderObject child) {
-    if (identical(child.parent, this)) {
+  bool _isDirectChild(RenderObject child) =>
+      identical(child.parent, this) &&
+      children.any((candidate) => identical(candidate, child));
+
+  void _rollbackAdoption(RenderObject child) {
+    if (!_isDirectChild(child)) {
+      return;
+    }
+    try {
       dropChild(child);
+    } on Object {
+      // The adoption failure remains primary. A committed drop still leaves
+      // the edge detached; a failed preflight leaves it visible to invariants.
     }
   }
 
@@ -210,9 +258,11 @@ final class RenderOverlay extends RenderBox {
   /// Drops residual entries during host teardown. Portal lifecycle remains
   /// the primary owner of shown edges.
   void drainEntries() {
+    final failures = FirstErrorRecorder();
     for (final entry in List<RenderBox>.from(_entries)) {
-      dropEntry(entry);
+      failures.attempt(() => dropEntry(entry));
     }
+    failures.rethrowFirst();
   }
 
   int _identityEntryIndex(RenderBox entry) {

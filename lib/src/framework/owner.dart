@@ -539,7 +539,6 @@ class BuildOwner {
 
     void detachEdge({
       required RenderObject? childObject,
-      required RenderObject? expectedParent,
       required void Function() detach,
     }) {
       if (childObject == null) {
@@ -548,13 +547,6 @@ class BuildOwner {
       try {
         detach();
       } on Object catch (error, stackTrace) {
-        if (expectedParent == null ||
-            childObject.parent != null ||
-            expectedParent.children.any(
-              (candidate) => identical(candidate, childObject),
-            )) {
-          rethrow;
-        }
         deferredError ??= error;
         deferredStackTrace ??= stackTrace;
       }
@@ -562,28 +554,34 @@ class BuildOwner {
 
     detachEdge(
       childObject: renderObject,
-      expectedParent: oldRenderParent,
       detach: () => renderElement?.detachRenderObject(),
     );
     for (final edge in externalEdges) {
       if (renderObject != null && identical(edge.child, renderObject)) {
         continue;
       }
-      detachEdge(
-        childObject: edge.child,
-        expectedParent: edge.expectedParent,
-        detach: edge.detach,
-      );
+      detachEdge(childObject: edge.child, detach: edge.detach);
     }
-    _confirmDetached(
+    var edgeRemainsAttached = !_isRenderEdgeDetached(
       childObject: renderObject,
       expectedParent: oldRenderParent,
     );
     for (final edge in externalEdges) {
-      _confirmDetached(
+      if (!_isRenderEdgeDetached(
         childObject: edge.child,
         expectedParent: edge.expectedParent,
-      );
+      )) {
+        edgeRemainsAttached = true;
+      }
+    }
+    if (edgeRemainsAttached) {
+      final error =
+          deferredError ??
+          StateError(
+            'Render edge remained attached after deactivation detach.',
+          );
+      final stackTrace = deferredStackTrace ?? StackTrace.current;
+      Error.throwWithStackTrace(error, stackTrace);
     }
     // 3) Publish Element parent/depth/dirty only after render detach returns.
     _publishDeactivate(plan);
@@ -626,22 +624,18 @@ class BuildOwner {
     }
   }
 
-  void _confirmDetached({
+  bool _isRenderEdgeDetached({
     required RenderObject? childObject,
     required RenderObject? expectedParent,
   }) {
     if (childObject == null) {
-      return;
+      return true;
     }
-    if (childObject.parent != null ||
-        (expectedParent != null &&
-            expectedParent.children.any(
+    return childObject.parent == null &&
+        (expectedParent == null ||
+            !expectedParent.children.any(
               (candidate) => identical(candidate, childObject),
-            ))) {
-      throw StateError(
-        'Render edge remained attached after deactivation detach.',
-      );
-    }
+            ));
   }
 
   /// Permanently unmounts every inactive element at the end of a build pass.

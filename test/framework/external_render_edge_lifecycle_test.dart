@@ -174,6 +174,41 @@ void main() {
     },
   );
 
+  test('a failed detach still attempts every later external edge', () {
+    final probe = _mountProbe(includeTrailingExternal: true);
+    try {
+      final dual = _findDual(probe.host.root!);
+      final overlay = dual.overlayRenderObject!;
+      final trailing = dual.trailingRenderObject!;
+      final detachError = StateError('detach failed before removal');
+      dual.detachBeforeDropError = detachError;
+
+      Object? caught;
+      try {
+        probe.host.update(
+          Column(
+            children: [
+              _ExternalHost(key: probe.hostKey),
+              const Text('gone'),
+            ],
+          ),
+        );
+      } on Object catch (error) {
+        caught = error;
+      }
+
+      expect(caught, same(detachError));
+      expect(overlay.parent, same(probe.externalHost));
+      expect(trailing.parent, isNull);
+      expect(trailing.pipelineOwner, isNull);
+      expect(dual.parent, isNotNull);
+    } finally {
+      final dual = _findDual(probe.host.root!);
+      dual.detachBeforeDropError = null;
+      probe.host.dispose();
+    }
+  });
+
   test('throwing State.deactivate still disposes overlay state once', () {
     final probe = _mountProbe(throwOnDeactivate: true);
     try {
@@ -209,7 +244,10 @@ void main() {
   });
 }
 
-_Probe _mountProbe({bool throwOnDeactivate = false}) {
+_Probe _mountProbe({
+  bool throwOnDeactivate = false,
+  bool includeTrailingExternal = false,
+}) {
   final hostKey = GlobalKey();
   final focusNode = FocusNode(debugLabel: 'overlay-focus');
   final host = TestElementHost()
@@ -222,6 +260,7 @@ _Probe _mountProbe({bool throwOnDeactivate = false}) {
             height: 2,
             child: _DualEdgeProbe(
               hostKey: hostKey,
+              includeTrailingExternal: includeTrailingExternal,
               ordinary: const SizedBox(
                 width: 2,
                 height: 1,
@@ -300,12 +339,14 @@ class _DualEdgeProbe extends Widget {
     required this.hostKey,
     required this.ordinary,
     required this.overlay,
+    this.includeTrailingExternal = false,
     this.throwAfterAttach = false,
   });
 
   final GlobalKey hostKey;
   final Widget ordinary;
   final Widget overlay;
+  final bool includeTrailingExternal;
   final bool throwAfterAttach;
 
   @override
@@ -324,10 +365,12 @@ class _DualEdgeProbeElement extends Element {
   Element? _ordinary;
   Element? _overlay;
   RenderObject? overlayRenderObject;
+  RenderObject? trailingRenderObject;
   bool detachParentWasReadable = false;
   int disposeCount = 0;
   var _inflatingOverlay = false;
   StateError? detachError;
+  StateError? detachBeforeDropError;
 
   @override
   void performRebuild() {
@@ -343,6 +386,11 @@ class _DualEdgeProbeElement extends Element {
       overlay: true,
       assign: (element) => _overlay = element,
     );
+    if (typedWidget.includeTrailingExternal && trailingRenderObject == null) {
+      final trailing = _HostBox();
+      _hostBox().adoptChild(trailing);
+      trailingRenderObject = trailing;
+    }
     if (typedWidget.throwAfterAttach) {
       throw StateError('mount failed');
     }
@@ -429,6 +477,10 @@ class _DualEdgeProbeElement extends Element {
         expectedParent: host,
         detach: () {
           detachParentWasReadable = parent != null;
+          final beforeDropError = detachBeforeDropError;
+          if (beforeDropError != null) {
+            throw beforeDropError;
+          }
           _dropExternal(child);
           final error = detachError;
           if (error != null) {
@@ -437,6 +489,17 @@ class _DualEdgeProbeElement extends Element {
         },
       ),
     );
+    final trailing = trailingRenderObject;
+    if (trailing != null && trailing.parent != null) {
+      final host = trailing.parent!;
+      edges.add(
+        ExternalRenderEdge(
+          child: trailing,
+          expectedParent: host,
+          detach: () => _dropTrailing(trailing),
+        ),
+      );
+    }
   }
 
   @override
@@ -450,6 +513,10 @@ class _DualEdgeProbeElement extends Element {
     final child = overlayRenderObject;
     if (child != null) {
       _dropExternal(child);
+    }
+    final trailing = trailingRenderObject;
+    if (trailing != null) {
+      _dropTrailing(trailing);
     }
     super.unmount();
   }
@@ -487,6 +554,16 @@ class _DualEdgeProbeElement extends Element {
     }
     if (identical(overlayRenderObject, child)) {
       overlayRenderObject = null;
+    }
+  }
+
+  void _dropTrailing(RenderObject child) {
+    final parent = child.parent;
+    if (parent != null) {
+      parent.dropChild(child);
+    }
+    if (identical(trailingRenderObject, child)) {
+      trailingRenderObject = null;
     }
   }
 }

@@ -73,6 +73,48 @@ void main() {
     }
   });
 
+  test('throwing transition callbacks do not interrupt menu state cleanup', () {
+    final openError = StateError('open callback failed');
+    final closeError = StateError('close callback failed');
+    final controller = MenuController();
+    final host = TestElementHost()
+      ..mount(
+        RootOverlay(
+          child: MenuAnchor(
+            controller: controller,
+            onOpen: () {
+              expect(controller.isOpen, isTrue);
+              throw openError;
+            },
+            onClose: () {
+              expect(controller.isOpen, isFalse);
+              throw closeError;
+            },
+            menuChildren: const [Text('item')],
+            child: const Text('Open'),
+          ),
+        ),
+      );
+
+    try {
+      expect(controller.open, throwsA(same(openError)));
+      host.pumpFrame(
+        constraints: const BoxConstraints.tight(width: 40, height: 12),
+      );
+      expect(controller.isOpen, isTrue);
+      expect(_findText(host.root!, 'item'), isTrue);
+
+      expect(controller.close, throwsA(same(closeError)));
+      host.pumpFrame(
+        constraints: const BoxConstraints.tight(width: 40, height: 12),
+      );
+      expect(controller.isOpen, isFalse);
+      expect(_findText(host.root!, 'item'), isFalse);
+    } finally {
+      host.dispose();
+    }
+  });
+
   test('controller replace preserves open state without callbacks', () {
     var opens = 0;
     var closes = 0;
@@ -230,6 +272,17 @@ void main() {
       expect(controller.isOpen, isTrue);
 
       await driver.sendLogicalKey(LogicalKeyboardKey.tab);
+      await driver.ready();
+      expect(controller.isOpen, isFalse);
+      expect(launcher.hasFocus, isTrue);
+      expect(after.hasFocus, isFalse);
+
+      controller.open();
+      await driver.ready();
+      await driver.sendLogicalKey(
+        LogicalKeyboardKey.tab,
+        modifiers: KeyModifiers.shift,
+      );
       await driver.ready();
       expect(controller.isOpen, isFalse);
       expect(launcher.hasFocus, isTrue);
@@ -429,6 +482,38 @@ void main() {
         await driver.sendMouse(
           MouseEvent(
             type: MouseEventType.down,
+            button: MouseButton.middle,
+            x: 20,
+            y: 10,
+          ),
+        );
+        expect(controller.isOpen, isTrue);
+
+        await driver.sendMouse(
+          MouseEvent(
+            type: MouseEventType.up,
+            button: MouseButton.left,
+            x: 20,
+            y: 10,
+          ),
+        );
+        expect(controller.isOpen, isTrue);
+
+        await driver.sendMouse(
+          MouseEvent(
+            type: MouseEventType.scroll,
+            button: MouseButton.middle,
+            x: 20,
+            y: 10,
+            scroll: MouseScroll(direction: MouseScrollDirection.down),
+          ),
+        );
+        expect(controller.isOpen, isTrue);
+        expect(underlying, 0);
+
+        await driver.sendMouse(
+          MouseEvent(
+            type: MouseEventType.down,
             button: MouseButton.left,
             x: 20,
             y: 10,
@@ -474,6 +559,67 @@ void main() {
     try {
       expect(error, isA<StateError>());
       expect('$error', contains('already attached'));
+    } finally {
+      host.dispose();
+    }
+  });
+
+  test('failed controller replacement preserves both live attachments', () {
+    final first = MenuController();
+    final occupied = MenuController();
+    final host = TestElementHost()
+      ..mount(
+        RootOverlay(
+          child: Column(
+            children: [
+              MenuAnchor(
+                controller: first,
+                menuChildren: const [Text('first-menu')],
+                child: const Text('first-child'),
+              ),
+              MenuAnchor(
+                controller: occupied,
+                menuChildren: const [Text('second-menu')],
+                child: const Text('second-child'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+    try {
+      expect(
+        () => host.update(
+          RootOverlay(
+            child: Column(
+              children: [
+                MenuAnchor(
+                  controller: occupied,
+                  menuChildren: const [Text('invalid')],
+                  child: const Text('first-child'),
+                ),
+                MenuAnchor(
+                  controller: occupied,
+                  menuChildren: const [Text('second-menu')],
+                  child: const Text('second-child'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        throwsStateError,
+      );
+
+      first.open();
+      occupied.open();
+      host.pumpFrame(
+        constraints: const BoxConstraints.tight(width: 30, height: 8),
+      );
+
+      expect(first.isOpen, isTrue);
+      expect(occupied.isOpen, isTrue);
+      expect(_findText(host.root!, 'first-menu'), isTrue);
+      expect(_findText(host.root!, 'second-menu'), isTrue);
     } finally {
       host.dispose();
     }
