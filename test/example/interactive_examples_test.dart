@@ -46,6 +46,54 @@ void main() {
     }
   });
 
+  test(
+    'interactive examples expose stable string keys on primary controls',
+    () {
+      const expected = <String, List<String>>{
+        'example/counter.dart': <String>["ValueKey<String>('increment')"],
+        'example/hooks_counter.dart': <String>["ValueKey<String>('add-one')"],
+        'example/select_demo.dart': <String>["ValueKey<String>('fruit')"],
+        'example/scrollbox_demo.dart': <String>["ValueKey<String>('content')"],
+        'example/components_demo.dart': <String>[
+          "ValueKey<String>('wrap')",
+          "ValueKey<String>('verbose')",
+          "ValueKey<String>('step')",
+          "ValueKey<String>('reset')",
+        ],
+        'example/data_table_demo.dart': <String>["ValueKey<String>('table')"],
+        'example/listview_demo.dart': <String>[
+          "ValueKey<String>('selectable-list')",
+          "ValueKey<String>('plain-list')",
+        ],
+        'example/textarea_demo.dart': <String>["ValueKey<String>('editor')"],
+        'example/focus_form.dart': <String>[
+          "ValueKey<String>('name')",
+          "ValueKey<String>('email')",
+        ],
+        'example/parity_components_demo.dart': <String>[
+          "ValueKey<String>('slider')",
+          "ValueKey<String>('tabs')",
+        ],
+        'example/framework_primitives.dart': <String>[
+          "ValueKey<String>('activate')",
+        ],
+        'example/chat_demo.dart': <String>["ValueKey<String>('composer')"],
+        'example/widgets_tour.dart': <String>[
+          "ValueKey<String>('fruit')",
+          "ValueKey<String>('content')",
+          "ValueKey<String>('editor')",
+        ],
+      };
+
+      for (final entry in expected.entries) {
+        final source = io.File(entry.key).readAsStringSync();
+        for (final key in entry.value) {
+          expect(source, contains(key), reason: '${entry.key}: $key');
+        }
+      }
+    },
+  );
+
   test('no example threads a quit callback or hard-exits', () {
     for (final file
         in io.Directory('example').listSync().whereType<io.File>().where(

@@ -66,6 +66,21 @@ final class HitTestResult {
   /// Hit-test path from topmost leaf target toward its ancestors.
   final List<HitTestEntry> path = <HitTestEntry>[];
 
+  final Set<RenderObject> _visitedRenderObjects = Set<RenderObject>.identity();
+
+  /// Render objects whose bounds were visited for the queried point.
+  ///
+  /// A caller that needs only the winning branch must compare these objects
+  /// with [path], because a pointer-transparent sibling can also be visited.
+  @internal
+  Iterable<RenderObject> get visitedRenderObjects => _visitedRenderObjects;
+
+  /// Records that [renderObject] contains the queried point.
+  @internal
+  void recordVisit(RenderObject renderObject) {
+    _visitedRenderObjects.add(renderObject);
+  }
+
   /// Add [entry] to the path.
   void add(HitTestEntry entry) {
     path.add(entry);

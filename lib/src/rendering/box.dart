@@ -88,6 +88,7 @@ abstract class RenderBox extends RenderObject {
       return false;
     }
 
+    result.recordVisit(this);
     final childHit = hitTestChildren(result, position);
     final selfHit = hitTestSelf(position);
     if (selfHit) {

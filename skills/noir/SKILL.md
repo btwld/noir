@@ -283,18 +283,37 @@ Inside this repo, the bundled driver CLI launches an app that way and reads
 commands from its own stdin — interactively, or piped for scripted checks:
 
 ```sh
-printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
+printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
   dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
 ```
 
 `capture --ansi` prints the frame in true color ("see the design");
 `--plain`/`--cells` give text or JSON. Other commands: `tree [depth]`,
-`key <name>`, `type <text>`, `click <x> <y>`,
+`find key|type|text <exact value>` / `find focused`, matching `wait` forms,
+`key <name>` (including `shift-tab`, `home`, `end`, and `delete`),
+`type <text>`, `click <x> <y>` or `click` with the same locator forms,
 `scroll <up|down|left|right> <x> <y>`, `resize <WxH>`, `reload` (hot reload +
 reassemble), and `watch on|off`. Set the CLI launch size with `--size 80x24`;
 the client passes that geometry to the app through `NOIR_DRIVE_SIZE`. Use
 `resize <WxH>` to change it during a session. Viewing an app at several sizes
 this way is how layout problems at small terminals get caught early.
+
+Locators are exact and case-sensitive. Prefer `ValueKey<String>` for controls;
+other key types are intentionally not serialized. Text locators use exact
+source content from `Text` and `RichText`, not painted cells. Type locators
+are `runtimeType` strings (`Select<String>`, not `Select`). Each operation
+resolves a fresh client-side snapshot, and strict actions fail on ambiguity.
+The line-oriented CLI trims outer command whitespace; use the Dart client for
+locator values that themselves begin or end with whitespace.
+Locator clicks use the current render-tree hit-test path, including custom
+`HitTestTarget`s, so scrolling, clipping, and overlays are accounted for;
+they fail instead of auto-scrolling when a match is offscreen, fully
+obscured, or has no pointer target. A click uses the match's own visible pointer route
+and does not borrow an ancestor or descendant `hitPoint`. Put
+`ValueKey<String>` on the control or its Stateless/Stateful wrapper, not on
+a layout box around it. `waitForText` polls painted capture rows; `byText`
+reads `Text`/`RichText` source. CLI tree defaults to depth 2; `find` and
+`click` always use the full tree.
 
 Outside the repo the extension surface still activates, but the CLI and the
 `NoirDriver` client are not part of the published package, and the surface is

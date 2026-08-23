@@ -127,6 +127,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
                 focused: _selectableFocus.hasFocus,
                 builds: _selectableBuilds,
                 list: ListView(
+                  key: const ValueKey<String>('selectable-list'),
                   focusNode: _selectableFocus,
                   autofocus: true,
                   itemCount: _rowCount,
@@ -142,6 +143,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
                 focused: _plainFocus.hasFocus,
                 builds: _plainBuilds,
                 list: ListView(
+                  key: const ValueKey<String>('plain-list'),
                   focusNode: _plainFocus,
                   itemCount: _rowCount,
                   showScrollIndicator: true,

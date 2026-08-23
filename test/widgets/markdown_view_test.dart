@@ -66,11 +66,9 @@ void main() {
     expect(text, contains('Noir'));
     expect(text, contains('remote alt'));
 
-    final tree = (host.tree(maxDepth: 18)['lines']! as List<Object?>)
-        .cast<String>()
-        .join('\n');
-    expect(tree, contains('CodeView'));
-    expect(tree, contains('TextTable'));
+    final types = _driverTreeTypes(host.tree(maxDepth: 18));
+    expect(types, contains('CodeView'));
+    expect(types, contains('TextTable'));
   });
 
   test('Markdown images render linked alt text without creating Image', () {
@@ -92,10 +90,8 @@ void main() {
       links.take(3),
       everyElement('https://images.example.test/image.png'),
     );
-    final tree = (host.tree(maxDepth: 12)['lines']! as List<Object?>)
-        .cast<String>()
-        .join('\n');
-    expect(tree, isNot(contains('Image')));
+    final types = _driverTreeTypes(host.tree(maxDepth: 12));
+    expect(types, isNot(contains('Image')));
   });
 
   test('CRLF input renders identically to LF input', () {
@@ -730,6 +726,20 @@ secret
     expect(text, isNot(contains('&lt;')));
     expect(text, isNot(contains('&amp;')));
   });
+}
+
+List<String> _driverTreeTypes(Map<String, Object?> tree) {
+  final types = <String>[];
+  void visit(Map<String, Object?> node) {
+    types.add(node['type']! as String);
+    for (final child in node['children']! as List<Object?>) {
+      visit(child! as Map<String, Object?>);
+    }
+  }
+
+  final root = tree['root'];
+  if (root != null) visit(root as Map<String, Object?>);
+  return types;
 }
 
 String _capturedText(DriverHost host) =>

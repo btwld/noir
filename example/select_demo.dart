@@ -74,6 +74,7 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
               title: 'Fruit',
               focused: _focusNode.hasFocus,
               child: Select<String>(
+                key: const ValueKey<String>('fruit'),
                 focusNode: _focusNode,
                 autofocus: true,
                 height: 6,

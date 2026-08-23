@@ -8,6 +8,7 @@ import '../core/cursor.dart';
 import '../core/input.dart';
 import '../core/renderer.dart';
 import '../foundation/first_error.dart';
+import '../render/geometry.dart';
 import '../rendering/object.dart';
 import 'element.dart';
 import 'focus_manager.dart';
@@ -85,6 +86,13 @@ class BuildOwner {
 
   /// Manages focus traversal and the primary focus node.
   late final FocusManager focusManager;
+
+  /// Resolves the current pointer hit path without dispatching an event.
+  ///
+  /// Development tooling uses the same query as real pointer routing so
+  /// scrolling, clipping, and paint-order occlusion remain authoritative.
+  @internal
+  HitTestResult? hitTestAt(Offset position) => _pointerRouter.hitTest(position);
 
   late final PointerRouter _pointerRouter;
   final TickerScheduler _tickerScheduler;
