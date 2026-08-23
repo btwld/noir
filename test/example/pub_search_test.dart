@@ -2374,20 +2374,6 @@ void main() {
                   counts: counts,
                 ),
               ],
-              minorVersionDownloads: [
-                for (var i = 0; i < 5; i++)
-                  PackageVersionDownloads(
-                    versionRange: '>=1.$i.0-0 <1.${i + 1}.0',
-                    counts: counts,
-                  ),
-              ],
-              patchVersionDownloads: [
-                for (var i = 0; i < 5; i++)
-                  PackageVersionDownloads(
-                    versionRange: '>=1.0.$i-0 <1.0.${i + 1}',
-                    counts: counts,
-                  ),
-              ],
               healthSections: const [
                 PackageHealthSection(
                   title: 'Follow Dart file conventions',
@@ -3392,6 +3378,25 @@ void main() {
       app.dispose();
     }
   });
+
+  test('complete failures stay silent and leave search results', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['kept_package']))
+      ..completionError = Exception('complete down');
+    final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
+
+    try {
+      await _settle(app);
+      expect(_render(app), contains('kept_package'));
+      app.mockInput.typeText('abc');
+      await _waitForCompletionDebounce(app);
+      expect(_render(app), contains('kept_package'));
+      expect(_render(app), isNot(contains('Search unavailable')));
+      expect(_render(app), isNot(contains('complete down')));
+    } finally {
+      app.dispose();
+    }
+  });
 }
 
 typedef _SearchCall = ({
@@ -3409,6 +3414,7 @@ final class _FakePubCatalog implements PubCatalog {
   final searchCalls = <_SearchCall>[];
   final completeCalls = <String>[];
   Future<List<PubSuggestion>>? completionResult;
+  Exception? completionError;
   final detailCalls = <String>[];
   bool closed = false;
 
@@ -3433,6 +3439,8 @@ final class _FakePubCatalog implements PubCatalog {
   @override
   Future<List<PubSuggestion>> complete(String prefix) async {
     completeCalls.add(prefix);
+    final error = completionError;
+    if (error != null) throw error;
     final completionResult = this.completionResult;
     if (completionResult != null) return completionResult;
     final needle = prefix.trim().toLowerCase();

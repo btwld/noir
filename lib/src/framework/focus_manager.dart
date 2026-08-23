@@ -349,6 +349,9 @@ class FocusManager {
     _keySubscription.cancel();
   }
 
+  Element? _elementIfAttachedHere(FocusNode node) =>
+      identical(node._manager, this) ? _nodeToElement[node] : null;
+
   void _attachNode(FocusNode node, Element element) {
     _validateNodeAttachment(node, element);
     if (identical(node._manager, this) &&
@@ -356,9 +359,7 @@ class FocusManager {
       return;
     }
 
-    final previousElement = identical(node._manager, this)
-        ? _nodeToElement[node]
-        : null;
+    final previousElement = _elementIfAttachedHere(node);
     if (previousElement != null) {
       // Reconciliation has already made the outgoing element inactive, so
       // transfer the existing attachment instead of clearing focus between
@@ -382,9 +383,7 @@ class FocusManager {
         identical(_nodeToElement[node], element)) {
       return;
     }
-    final previousElement = identical(node._manager, this)
-        ? _nodeToElement[node]
-        : null;
+    final previousElement = _elementIfAttachedHere(node);
     final canTransfer = previousElement != null && !previousElement.active;
     if (node._manager != null && !canTransfer) {
       throw StateError(

@@ -44,10 +44,13 @@ dart run example/main.dart
 The pub search example starts with a live search for `noir`. After three
 characters, the query waits 300 ms and performs a fresh pub.dev name and topic
 completion lookup; it does not retain completion results or in-flight lookups.
-Names and topics are suggested (topics include a package count). Press Enter
-to search or inspect the highlighted package. In a result or empty surface,
-Tab moves through the query, Sort, Filter, and then results when they exist.
-Enter, Space, or a click on `Sort: TOP ▾` or `Filter: ANY ▾` opens the
+The live catalog returns at most twelve package names and four topics; injected
+test catalogs may return more so the UI can exercise overflow. A completion
+failure stays silent so typeahead never replaces search results or the search
+error panel. Names and topics are suggested (topics include a package count).
+Press Enter to search or inspect the highlighted package. In a result or empty
+surface, Tab moves through the query, Sort, Filter, and then results when they
+exist. Enter, Space, or a click on `Sort: TOP ▾` or `Filter: ANY ▾` opens the
 corresponding in-panel picker; `s` and `f` do the same from the result list.
 Use arrows to preview a choice and Enter or a click to apply it, or Tab/Escape
 to cancel. `n`/`p` move between result pages. Confirming a topic suggestion

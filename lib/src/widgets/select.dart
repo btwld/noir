@@ -189,10 +189,10 @@ class _SelectState<T> extends State<Select<T>>
 
   int _paintedViewportRows() {
     final published = _layoutMetrics.lastCompletedRows;
-    final laidOutRows = published != null && published > 0
-        ? published
-        : widget.height;
-    return math.max(0, math.min(laidOutRows, widget.height));
+    if (published != null) {
+      return math.max(0, math.min(published, widget.height));
+    }
+    return math.max(0, widget.height);
   }
 
   void _move(int delta) {
@@ -214,8 +214,8 @@ class _SelectState<T> extends State<Select<T>>
   void _pageBy(int pages) {
     if (widget.options.isEmpty) return;
     final rows = _refreshViewportFromLayout();
-    final delta = pages * (rows > 0 ? rows : widget.height);
-    _setHighlighted(_highlighted + delta);
+    if (rows == 0) return;
+    _setHighlighted(_highlighted + pages * rows);
   }
 
   void _confirm() {

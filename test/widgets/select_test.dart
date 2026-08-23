@@ -239,6 +239,30 @@ void main() {
         capture.dispose();
       }
     });
+
+    test('PageDown is a no-op when layout published zero rows', () async {
+      final changes = <int>[];
+      final driver = KeyDriver(
+        SizedBox(
+          width: 12,
+          height: 0,
+          child: Select<int>(
+            autofocus: true,
+            height: 5,
+            options: List<SelectOption<int>>.generate(
+              8,
+              (i) => SelectOption(name: 'Item $i', value: i),
+            ),
+            onChanged: (i, _) => changes.add(i),
+          ),
+        ),
+        paintFrames: true,
+      );
+      await driver.ready();
+      await driver.sendLogicalKey(LogicalKeyboardKey.pageDown);
+      expect(changes, isEmpty);
+      driver.dispose();
+    });
   });
 
   group('Select theming', () {

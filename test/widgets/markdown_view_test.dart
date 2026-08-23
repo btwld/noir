@@ -30,6 +30,25 @@ void main() {}
 ''';
 
 void main() {
+  test('MarkdownThemeData.copyWith replaces only provided fields', () {
+    final base = MarkdownThemeData.fromTheme(ThemeData.dark);
+    final updated = base.copyWith(
+      heading3: const TextStyle(color: Color.red, attributes: Attr.bold),
+    );
+
+    expect(updated.heading3.color, Color.red);
+    expect(updated.heading3.attributes, Attr.bold);
+    expect(updated.paragraph, base.paragraph);
+    expect(updated.heading1, base.heading1);
+    expect(updated.heading2, base.heading2);
+    expect(updated.emphasis, base.emphasis);
+    expect(updated.strong, base.strong);
+    expect(updated.link, base.link);
+    expect(updated.quote, base.quote);
+    expect(updated.inlineCode, base.inlineCode);
+    expect(updated.ruleColor, base.ruleColor);
+  });
+
   test('MarkdownView covers GFM blocks through Noir components', () {
     final host = DriverHost.create(width: 70, height: 24);
     addTearDown(host.dispose);
@@ -543,6 +562,51 @@ void main() {
     },
   );
 
+  test(
+    'clicking embedded MarkdownView still leaves ancestor ScrollBox keyboard scrolling',
+    () async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      final driver = KeyDriver(
+        ScrollBox(
+          controller: controller,
+          autofocus: true,
+          child: MarkdownView(
+            markdown: List<String>.generate(
+              12,
+              (index) => 'paragraph $index',
+            ).join('\n\n'),
+            embedded: true,
+          ),
+        ),
+        width: 24,
+        height: 4,
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+
+      expect(controller.offset, 0);
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          x: 1,
+          y: 1,
+          button: MouseButton.left,
+        ),
+      );
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.up,
+          x: 1,
+          y: 1,
+          button: MouseButton.left,
+        ),
+      );
+      await driver.sendLogicalKey(LogicalKeyboardKey.arrowDown);
+      expect(controller.offset, 1);
+    },
+  );
+
   test('GitHub details wrappers unwrap into visible inner markdown', () {
     const source = '''
 ### [*] 10/10 points: Provide a valid `pubspec.yaml`
@@ -584,6 +648,27 @@ Detected license: `BSD-3-Clause`.
         .cast<String>()
         .join('\n');
     expect(tree, contains('TextTable'));
+  });
+
+  test('fenced details tags stay literal instead of unwrapping', () {
+    const source = '''
+```html
+<details>
+<summary>hidden</summary>
+secret
+</details>
+```
+''';
+    final host = DriverHost.create(width: 50, height: 12);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(const MarkdownView(markdown: source))
+      ..debugFlushFrame();
+
+    final text = _capturedText(host);
+    expect(text, contains('<details>'));
+    expect(text, contains('hidden'));
+    expect(text, isNot(contains('**hidden**')));
   });
 
   test('consecutive headings stay tight and a body opens the next section', () {

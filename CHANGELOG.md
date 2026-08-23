@@ -42,9 +42,10 @@
   `MarkdownView`, including async-safe highlighting, shared line gutters,
   grapheme-safe keyboard/pointer selection, explicit OSC52 copy, semantic
   terminal hyperlinks, and semantic URL arrays in driver cell captures.
-  `MarkdownView` unwraps GitHub `<details>` wrappers, leaves GFM text unescaped
-  so table cells keep `>=` / `<`, keeps consecutive headings tight, omits empty
-  table columns, paints content-mode tables to their grid width, and can embed
+  `MarkdownView` unwraps GitHub `<details>` wrappers outside fenced samples,
+  leaves GFM text unescaped so table cells keep `>=` / `<`, keeps headings
+  tight with the following block, omits empty table columns, paints
+  content-mode tables to their grid width, and can embed
   inside a parent `ScrollBox` without a nested viewport. The pub search Health
   tab renders pana report summaries and advisory bodies through that embedded
   document, and search results shrink to the returned package rows.

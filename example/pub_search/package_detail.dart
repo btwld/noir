@@ -217,7 +217,7 @@ Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
             children: [
               TextSpan(
                 text:
-                    '${release.version.padRight(18)} ${_date(release.published)}  ',
+                    '${_padCells(release.version, 18)} ${_date(release.published)}  ',
               ),
               TextSpan(
                 text: release.retracted ? 'RETRACTED' : 'active',
@@ -407,17 +407,8 @@ Widget _healthMarkdown(ThemeData theme, String markdown) {
   return MarkdownView(
     markdown: markdown,
     embedded: true,
-    theme: MarkdownThemeData(
-      paragraph: base.paragraph,
-      heading1: base.heading1,
-      heading2: base.heading2,
+    theme: base.copyWith(
       heading3: TextStyle(color: theme.accent, attributes: Attr.bold),
-      emphasis: base.emphasis,
-      strong: base.strong,
-      link: base.link,
-      quote: base.quote,
-      inlineCode: base.inlineCode,
-      ruleColor: base.ruleColor,
     ),
   );
 }
@@ -449,7 +440,7 @@ Widget? _fact(ThemeData theme, String label, String? value) {
     text: TextSpan(
       children: [
         TextSpan(
-          text: '${label.padRight(16)} ',
+          text: '${_padCells(label, 16)} ',
           style: TextStyle(color: theme.textMuted),
         ),
         TextSpan(text: value, uri: _semanticHttpUri(value)),
@@ -484,7 +475,7 @@ List<Widget> _dependencyFacts(
         text: TextSpan(
           children: [
             TextSpan(
-              text: entry.key.padRight(nameWidth),
+              text: _padCells(entry.key, nameWidth),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(
@@ -500,9 +491,16 @@ List<Widget> _dependencyFacts(
 int _dependencyNameWidth(Iterable<String> names) {
   var width = 8;
   for (final name in names) {
-    if (name.length > width) width = name.length;
+    final cells = terminalStringWidth(name);
+    if (cells > width) width = cells;
   }
   return width > 32 ? 32 : width;
+}
+
+String _padCells(String text, int width) {
+  final cells = terminalStringWidth(text);
+  if (cells >= width) return text;
+  return '$text${' ' * (width - cells)}';
 }
 
 List<Widget> _rangeFacts(

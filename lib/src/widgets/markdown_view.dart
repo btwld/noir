@@ -98,6 +98,31 @@ final class MarkdownThemeData {
 
   /// Horizontal-rule foreground.
   final Color ruleColor;
+
+  /// Copies this palette, replacing only the provided fields.
+  MarkdownThemeData copyWith({
+    TextStyle? paragraph,
+    TextStyle? heading1,
+    TextStyle? heading2,
+    TextStyle? heading3,
+    TextStyle? emphasis,
+    TextStyle? strong,
+    TextStyle? link,
+    TextStyle? quote,
+    TextStyle? inlineCode,
+    Color? ruleColor,
+  }) => MarkdownThemeData(
+    paragraph: paragraph ?? this.paragraph,
+    heading1: heading1 ?? this.heading1,
+    heading2: heading2 ?? this.heading2,
+    heading3: heading3 ?? this.heading3,
+    emphasis: emphasis ?? this.emphasis,
+    strong: strong ?? this.strong,
+    link: link ?? this.link,
+    quote: quote ?? this.quote,
+    inlineCode: inlineCode ?? this.inlineCode,
+    ruleColor: ruleColor ?? this.ruleColor,
+  );
 }
 
 /// GitHub-flavoured Markdown document.
@@ -239,9 +264,8 @@ final class _MarkdownViewState extends State<MarkdownView>
     final children = <Widget>[];
     var sourceBase = 0;
     var previousIsHeading = false;
-    var isFirst = true;
     for (final block in blocks) {
-      if (!isFirst && !previousIsHeading) {
+      if (children.isNotEmpty && !previousIsHeading) {
         children.add(const SizedBox(height: 1));
       }
       children.add(
@@ -260,7 +284,6 @@ final class _MarkdownViewState extends State<MarkdownView>
       );
       sourceBase += block.plainText.length + 2;
       previousIsHeading = block.isHeading;
-      isFirst = false;
     }
     final document = DocumentScrollScope(
       handlesScrolling: false,
@@ -281,6 +304,7 @@ final class _MarkdownViewState extends State<MarkdownView>
           ? Focus(
               focusNode: focusNode,
               autofocus: widget.autofocus,
+              canRequestFocus: !widget.embedded,
               child: document,
             )
           : ScrollBox(
@@ -590,7 +614,44 @@ final _htmlTagPattern = RegExp('<[^>]+>');
 
 /// Turns GitHub `<details>`/`<summary>` wrappers into markdown the GFM parser
 /// can see. `package:markdown`'s GitHub set leaves those tags as raw text.
+/// Fenced code is left untouched so samples that mention the tags stay literal.
 String _unwrapGithubDetails(String source) {
+  final lines = const LineSplitter().convert(source);
+  final output = StringBuffer();
+  final chunk = StringBuffer();
+  var inFence = false;
+
+  void flush({required bool raw}) {
+    final text = chunk.toString();
+    chunk.clear();
+    if (text.isEmpty) return;
+    output.write(raw ? text : _unwrapGithubDetailsChunk(text));
+  }
+
+  for (final line in lines) {
+    if (line.trimLeft().startsWith('```')) {
+      if (!inFence) {
+        flush(raw: false);
+        inFence = true;
+        chunk.writeln(line);
+      } else {
+        chunk.writeln(line);
+        flush(raw: true);
+        inFence = false;
+      }
+    } else {
+      chunk.writeln(line);
+    }
+  }
+  flush(raw: inFence);
+  var result = output.toString();
+  if (!source.endsWith('\n') && result.endsWith('\n')) {
+    result = result.substring(0, result.length - 1);
+  }
+  return result;
+}
+
+String _unwrapGithubDetailsChunk(String source) {
   var current = source;
   for (var i = 0; i < 8; i++) {
     final next = current.replaceAllMapped(_githubDetailsPattern, (match) {

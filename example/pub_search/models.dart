@@ -378,8 +378,6 @@ final class PubPackageSnapshot {
     this.analysisMaxPoints,
     List<int> weeklyDownloads = const [],
     List<PackageVersionDownloads> majorVersionDownloads = const [],
-    List<PackageVersionDownloads> minorVersionDownloads = const [],
-    List<PackageVersionDownloads> patchVersionDownloads = const [],
     this.weeklyDownloadsNewestDate,
   }) : environment = Map.unmodifiable(environment),
        fundingUrls = List.unmodifiable(fundingUrls),
@@ -400,9 +398,7 @@ final class PubPackageSnapshot {
        urlProblems = List.unmodifiable(urlProblems),
        analysisScreenshots = List.unmodifiable(analysisScreenshots),
        weeklyDownloads = List.unmodifiable(weeklyDownloads),
-       majorVersionDownloads = List.unmodifiable(majorVersionDownloads),
-       minorVersionDownloads = List.unmodifiable(minorVersionDownloads),
-       patchVersionDownloads = List.unmodifiable(patchVersionDownloads);
+       majorVersionDownloads = List.unmodifiable(majorVersionDownloads);
 
   /// Maps the public client responses into an application-owned snapshot.
   factory PubPackageSnapshot.fromApi({
@@ -582,12 +578,6 @@ final class PubPackageSnapshot {
       majorVersionDownloads: _versionDownloads(
         weekly?.majorRangeWeeklyDownloads,
       ),
-      minorVersionDownloads: _versionDownloads(
-        weekly?.minorRangeWeeklyDownloads,
-      ),
-      patchVersionDownloads: _versionDownloads(
-        weekly?.patchRangeWeeklyDownloads,
-      ),
       weeklyDownloadsNewestDate: weekly?.newestDate,
     );
   }
@@ -766,12 +756,6 @@ final class PubPackageSnapshot {
   /// Weekly downloads grouped by major-version ranges.
   final List<PackageVersionDownloads> majorVersionDownloads;
 
-  /// Weekly downloads grouped by minor-version ranges.
-  final List<PackageVersionDownloads> minorVersionDownloads;
-
-  /// Weekly downloads grouped by patch-version ranges.
-  final List<PackageVersionDownloads> patchVersionDownloads;
-
   /// Date of the newest weekly count.
   final DateTime? weeklyDownloadsNewestDate;
 }
@@ -861,7 +845,7 @@ List<String> _diagnosticSummaries(
 ) => (values ?? const <dynamic>[])
     .map((value) {
       if (value is String && value.isNotEmpty) return value;
-      if (value is! Map<Object?, Object?>) return null;
+      if (value is! Map) return null;
       final parts = <String>[];
       for (final key in allowedKeys) {
         final field = value[key];

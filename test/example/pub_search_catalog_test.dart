@@ -291,6 +291,26 @@ void main() {
       catalog.close();
     });
 
+    test('complete keeps twelve package names and four topics', () async {
+      final client = _FakePubClient()
+        ..completionNames = [for (var i = 0; i < 20; i++) 'noi$i']
+        ..topicCounts = {for (var i = 0; i < 10; i++) 'term$i': i + 1};
+      final catalog = PubApiCatalog(client: client);
+
+      final packages = await catalog.complete('noi');
+      expect(
+        packages.where((item) => item.kind == PubSuggestionKind.package),
+        hasLength(12),
+      );
+
+      final topics = await catalog.complete('term');
+      expect(
+        topics.where((item) => item.kind == PubSuggestionKind.topic),
+        hasLength(4),
+      );
+      catalog.close();
+    });
+
     test('starts fresh completion requests for sequential successes', () async {
       final client = _FakePubClient();
       final catalog = PubApiCatalog(client: client);

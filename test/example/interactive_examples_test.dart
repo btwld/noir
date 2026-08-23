@@ -22,6 +22,7 @@ void main() {
       'example/like_reactor.dart',
       'example/layout_demo.dart',
       'example/listview_demo.dart',
+      'example/pub_search.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
       'example/widgets_tour.dart',

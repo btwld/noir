@@ -42,8 +42,11 @@ abstract interface class PubCatalog {
     String? topic,
   });
 
-  /// Prefix-matches fresh hosted package names and topics for each eligible
-  /// lookup.
+  /// Prefix-matches hosted package names and topics for one lookup.
+  ///
+  /// Prefixes shorter than three characters yield no suggestions. The live
+  /// catalog caps the result at twelve package names and four topics; test
+  /// catalogs may return more so the UI can exercise overflow.
   Future<List<PubSuggestion>> complete(String prefix);
 
   /// Loads all useful public detail responses for [name].
@@ -112,6 +115,8 @@ final class PubApiCatalog implements PubCatalog {
     if (packageNames == null && topicCounts == null) {
       throw const PubCatalogException('Load name completion');
     }
+    // Twelve names and four topics is the live suggestion budget: enough to
+    // scan, not enough to dump the hosted completion lists into the overlay.
     final packages = (packageNames ?? const <String>[])
         .where((name) => name.toLowerCase().startsWith(needle))
         .take(12)
