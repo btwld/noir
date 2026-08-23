@@ -152,11 +152,12 @@ void main() {
               .listSync(recursive: true)
               .whereType<File>()
               .where((file) => file.path.endsWith('.dart'))) {
-        if (allowed.contains(file.path)) continue;
+        final path = file.path.replaceAll(Platform.pathSeparator, '/');
+        if (allowed.contains(path)) continue;
         expect(
           file.readAsStringSync(),
           isNot(contains('package:vm_service')),
-          reason: file.path,
+          reason: path,
         );
       }
     }
