@@ -10,6 +10,9 @@ import 'package:vm_service/utils.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
+import '../scripts/driver/ansi_keys.dart';
+import '../scripts/driver/noir_driver.dart';
+
 void main() {
   test(
     'NOIR_DRIVE drives an unmodified consumer app over the VM service',
@@ -76,6 +79,11 @@ class _ProbeState extends State<Probe> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('COUNT $_count'),
+        Button(
+          key: const ValueKey<String>('increment'),
+          label: 'ADD',
+          onPressed: () => setState(() => _count++),
+        ),
         Image.rgba(
           _pixels,
           pixelWidth: 2,
@@ -113,7 +121,7 @@ class _ProbeState extends State<Probe> {
         workingDirectory: consumer.path,
         environment: <String, String>{
           'NOIR_DRIVE': '1',
-          'NOIR_DRIVE_SIZE': '24x3',
+          'NOIR_DRIVE_SIZE': '24x4',
         },
       );
       var exited = false;
@@ -145,7 +153,7 @@ class _ProbeState extends State<Probe> {
       final info = await _waitForDriver(service, isolateId);
       expect(info['driveMode'], isTrue, reason: '$diagnostics');
       expect(info['width'], 24);
-      expect(info['height'], 3);
+      expect(info['height'], 4);
 
       await _call(service, isolateId, 'waitStable');
       final before = await _call(service, isolateId, 'capture');
@@ -171,14 +179,37 @@ class _ProbeState extends State<Probe> {
       expect(afterLines, contains('COUNT 1'), reason: '$diagnostics');
       expect(afterLines, contains('▀▀▀▀'), reason: '$diagnostics');
 
+      await clickDriverLocator(
+        const DriverLocator.byKey('increment'),
+        fetchTree: () async =>
+            DriverTree.fromJson(await _call(service, isolateId, 'tree')),
+        click: (point) => _call(
+          service,
+          isolateId,
+          'sendBytes',
+          args: <String, Object?>{
+            'bytes': base64Encode(encodeClick(point.x, point.y)),
+          },
+        ),
+      );
+      await _call(service, isolateId, 'waitStable');
+      final clicked = await _call(service, isolateId, 'capture');
+      final clickedLines = (clicked['lines']! as List<Object?>).cast<String>();
+      expect(
+        clickedLines,
+        isNot(afterLines),
+        reason: 'the locator click must repaint the app\n$diagnostics',
+      );
+      expect(clickedLines, contains('COUNT 2'), reason: '$diagnostics');
+
       final resized = await _call(
         service,
         isolateId,
         'resize',
-        args: <String, Object?>{'width': 12, 'height': 4},
+        args: <String, Object?>{'width': 12, 'height': 5},
       );
       expect(resized['width'], 12);
-      expect(resized['height'], 4);
+      expect(resized['height'], 5);
       await _call(service, isolateId, 'waitStable');
       final resizedCapture = await _call(service, isolateId, 'capture');
       expect(resizedCapture['width'], 12);

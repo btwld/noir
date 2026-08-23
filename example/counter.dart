@@ -106,7 +106,10 @@ class _CounterAppState extends State<CounterApp> {
                   ),
                 ),
                 const SizedBox(width: 1),
-                _IncrementButton(onPressed: _incrementCounter),
+                _IncrementButton(
+                  key: const ValueKey<String>('increment'),
+                  onPressed: _incrementCounter,
+                ),
               ],
             ),
           ),
@@ -117,7 +120,7 @@ class _CounterAppState extends State<CounterApp> {
 }
 
 class _IncrementButton extends StatelessWidget {
-  const _IncrementButton({required this.onPressed});
+  const _IncrementButton({required this.onPressed, super.key});
 
   final VoidCallback onPressed;
 

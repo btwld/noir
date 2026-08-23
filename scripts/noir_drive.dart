@@ -12,9 +12,11 @@
 //
 //     capture [--ansi|--plain|--cells]   # --ansi paints the frame in color
 //     tree [depth]
-//     key <up|down|left|right|enter|tab|space|esc|backspace|pgup|pgdn|ctrl-<a-z>>
+//     find key|type|text <exact value> | find focused
+//     wait key|type|text <exact value> | wait focused
+//     key <up|down|left|right|enter|tab|shift-tab|space|esc|backspace|home|end|delete|pgup|pgdn|ctrl-<a-z>>
 //     type <text...>
-//     click <x> <y>
+//     click <x> <y> | click key|type|text <exact value> | click focused
 //     scroll <up|down|left|right> <x> <y>
 //     resize <WxH>
 //     reload                             # swap edited sources, then rebuild
@@ -45,8 +47,9 @@ const _usage =
     '[--size WxH] [--json] [-- app arguments...]';
 
 const _commands =
-    'capture [--ansi|--plain|--cells] | tree [depth] | key <name> | '
-    'type <text> | click <x> <y> | scroll <up|down|left|right> <x> <y> | '
+    'capture [--ansi|--plain|--cells] | tree [depth] | find <locator> | '
+    'wait <locator> | key <name> | type <text> | '
+    'click <x> <y>|<locator> | scroll <up|down|left|right> <x> <y> | '
     'resize <WxH> | reload | watch on|off | quit';
 
 Future<void> main(List<String> arguments) async {
@@ -129,6 +132,10 @@ class _Session {
           await _capture(rest.trim());
         case 'tree':
           await _tree(rest.trim());
+        case 'find':
+          await _find(rest.trim(), wait: false);
+        case 'wait':
+          await _find(rest.trim(), wait: true);
         case 'key':
           await _driver.sendKey(rest.trim());
           await _afterAction();
@@ -186,23 +193,71 @@ class _Session {
       _fail('tree depth must be a non-negative integer.');
       return;
     }
-    final lines = await _driver.tree(maxDepth: maxDepth);
+    final tree = await _driver.tree(maxDepth: maxDepth);
     if (_json) {
-      stdout.writeln(jsonEncode(<String, Object?>{'lines': lines}));
+      stdout.writeln(jsonEncode(tree.toJson()));
       return;
     }
-    for (final line in lines) {
-      stdout.writeln(line);
+    final root = tree.root;
+    if (root != null) {
+      _printNode(root);
+    }
+  }
+
+  Future<void> _find(String arguments, {required bool wait}) async {
+    final locator = _parseLocator(arguments, wait ? 'wait' : 'find');
+    if (locator == null) return;
+    final node = wait
+        ? await _driver.waitFor(locator)
+        : await _driver.find(locator);
+    if (_json) {
+      stdout.writeln(jsonEncode(node.toJson()));
+    } else {
+      stdout.writeln(node);
     }
   }
 
   Future<void> _click(String arguments) async {
-    final point = _parsePoint(_split(arguments), 'click <x> <y>');
-    if (point == null) {
+    final parts = _split(arguments);
+    final locatorClick = parts.isNotEmpty && _locatorKinds.contains(parts[0]);
+    if (locatorClick) {
+      final locator = _parseLocator(arguments, 'click');
+      if (locator == null) return;
+      await _driver.clickLocator(locator);
+      await _afterAction();
       return;
     }
+    final point = _parsePoint(parts, 'click <x> <y>');
+    if (point == null) return;
     await _driver.click(point.x, point.y);
     await _afterAction();
+  }
+
+  DriverLocator? _parseLocator(String arguments, String command) {
+    final separator = arguments.indexOf(' ');
+    final kind = separator < 0 ? arguments : arguments.substring(0, separator);
+    final value = separator < 0 ? '' : arguments.substring(separator + 1);
+    if (kind == 'focused' && value.isEmpty) {
+      return const DriverLocator.focused();
+    }
+    if (value.isNotEmpty) {
+      final locator = switch (kind) {
+        'key' => DriverLocator.byKey(value),
+        'type' => DriverLocator.byType(value),
+        'text' => DriverLocator.byText(value),
+        _ => null,
+      };
+      if (locator != null) return locator;
+    }
+    _fail('$command takes key|type|text <exact value> or focused.');
+    return null;
+  }
+
+  void _printNode(DriverNode node, [int depth = 0]) {
+    stdout.writeln('${'  ' * depth}$node');
+    for (final child in node.children) {
+      _printNode(child, depth + 1);
+    }
   }
 
   Future<void> _scroll(String arguments) async {
@@ -421,6 +476,8 @@ final RegExp _sizePattern = RegExp(r'^(\d+)x(\d+)$');
 List<String> _split(String value) => value.isEmpty
     ? const <String>[]
     : value.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+
+const Set<String> _locatorKinds = <String>{'key', 'type', 'text', 'focused'};
 
 DriverScrollDirection? _parseScrollDirection(String name) =>
     switch (name.toLowerCase()) {

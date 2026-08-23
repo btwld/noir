@@ -7,11 +7,13 @@
 ///
 /// ```dart
 /// final driver = await NoirDriver.launch('example/counter.dart');
-/// await driver.waitForText('Noir Counter');
-/// await driver.sendKey('up');
+/// await driver.clickLocator(const DriverLocator.byKey('increment'));
 /// print((await driver.capture()).lines.join('\n'));
 /// await driver.quit();
 /// ```
+///
+/// [waitForText] polls painted capture rows for a substring. Locator
+/// [DriverLocator.byText] matches `Text` / `RichText` source, not those cells.
 ///
 /// This lives under `scripts/` because `vm_service` is a dev dependency:
 /// `lib/` and `bin/` cannot import it without promoting it to a runtime
@@ -27,6 +29,9 @@ import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
 import 'ansi_keys.dart';
+import 'driver_tree.dart';
+
+export 'driver_tree.dart';
 
 /// Polls [frames] until it is greater than [before], or [cap] expires.
 ///
@@ -166,14 +171,36 @@ class NoirDriver {
     await _call('capture', args: <String, Object?>{'format': 'cells'}),
   );
 
-  /// Describes the mounted element tree down to [maxDepth].
-  Future<List<String>> tree({int maxDepth = 2}) async {
+  /// Fetches a structured element snapshot, unbounded when depth is omitted.
+  Future<DriverTree> tree({int? maxDepth}) async {
     final json = await _call(
       'tree',
-      args: <String, Object?>{'maxDepth': '$maxDepth'},
+      args: maxDepth == null
+          ? null
+          : <String, Object?>{'maxDepth': '$maxDepth'},
     );
-    return (json['lines']! as List<Object?>).cast<String>();
+    return DriverTree.fromJson(json);
   }
+
+  /// Fetches a fresh tree and returns every exact [locator] match.
+  Future<List<DriverNode>> findAll(DriverLocator locator) async =>
+      (await tree()).findAll(locator);
+
+  /// Fetches a fresh tree and requires exactly one [locator] match.
+  Future<DriverNode> find(DriverLocator locator) async =>
+      (await tree()).find(locator);
+
+  /// Polls fresh trees until [locator] resolves to exactly one node.
+  Future<DriverNode> waitFor(
+    DriverLocator locator, {
+    Duration timeout = const Duration(seconds: 5),
+  }) => waitForDriverLocator(locator, fetchTree: tree, timeout: timeout);
+
+  /// Polls fresh trees until [locator] has no matches.
+  Future<void> waitForAbsent(
+    DriverLocator locator, {
+    Duration timeout = const Duration(seconds: 5),
+  }) => waitForAbsentDriverLocator(locator, fetchTree: tree, timeout: timeout);
 
   /// Waits for the app to stop scheduling frames.
   ///
@@ -190,11 +217,12 @@ class NoirDriver {
     return json['stable'] == true;
   }
 
-  /// Polls captures until one contains [text], then returns that frame.
+  /// Polls painted capture rows until one contains [text], then returns that frame.
   ///
-  /// Polling is client-side on purpose: the app side stays a small set of
-  /// stateless queries, so a driver can define any wait it needs without
-  /// growing the extension surface.
+  /// This is a painted-frame substring wait, not a [DriverLocator.byText]
+  /// lookup. Polling is client-side on purpose: the app side stays a small
+  /// set of stateless queries, so a driver can define any wait it needs
+  /// without growing the extension surface.
   Future<DriverFrame> waitForText(
     String text, {
     Duration timeout = const Duration(seconds: 5),
@@ -226,6 +254,16 @@ class NoirDriver {
     int y, {
     DriverMouseButton button = DriverMouseButton.left,
   }) => _sendBytes(encodeClick(x, y, button: button));
+
+  /// Re-resolves [locator], then clicks its current visible hit-tested point.
+  Future<void> clickLocator(
+    DriverLocator locator, {
+    DriverMouseButton button = DriverMouseButton.left,
+  }) => clickDriverLocator(
+    locator,
+    fetchTree: tree,
+    click: (point) => click(point.x, point.y, button: button),
+  );
 
   /// Sends one wheel notch in [direction] at the zero-based cell (x, y).
   Future<void> scroll(int x, int y, DriverScrollDirection direction) =>
