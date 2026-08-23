@@ -54,6 +54,7 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
                 width: 40,
                 height: 8,
                 child: ScrollBox(
+                  key: const ValueKey<String>('content'),
                   controller: _scrollController,
                   autofocus: true,
                   onScroll: (offset) => setState(() {}),

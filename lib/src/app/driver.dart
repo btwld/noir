@@ -26,6 +26,7 @@
 library;
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io' as io;
@@ -38,6 +39,13 @@ import '../core/renderer.dart';
 import '../core/stdin_input_driver.dart';
 import '../foundation/first_error.dart';
 import '../framework/diagnostics.dart';
+import '../framework/element.dart';
+import '../framework/key.dart';
+import '../framework/widget.dart';
+import '../render/geometry.dart';
+import '../rendering/object.dart';
+import '../widgets/rich_text.dart';
+import '../widgets/text.dart';
 import 'app.dart';
 import 'hot_reload.dart';
 import 'tui_binding.dart';
@@ -236,29 +244,152 @@ final class DriverHost {
     };
   }
 
-  /// Describes the mounted element tree down to [maxDepth].
-  Map<String, Object?> tree({int maxDepth = 2}) {
+  /// Snapshots the mounted element tree down to optional [maxDepth].
+  ///
+  /// Omitting [maxDepth] traverses the whole tree. Focus-descendant flags are
+  /// always derived from the complete mounted tree, even when output is
+  /// truncated. Each hitPoint is the element's own visible pointer route.
+  /// That is a production path target or a visited descendant of one, never
+  /// borrowed from an ancestor or descendant. Component widgets may share a
+  /// descendant render object through [Element.findRenderObject]; a layout
+  /// render object does not inherit a child's hits.
+  Map<String, Object?> tree({int? maxDepth}) {
     _checkNotDisposed();
-    return <String, Object?>{
-      'type': 'Success',
-      'maxDepth': maxDepth,
-      'lines': WidgetInspectorService.instance.describeTree(maxDepth: maxDepth),
-    };
+    if (maxDepth != null && maxDepth < 0) {
+      throw ArgumentError.value(maxDepth, 'maxDepth', 'must be non-negative');
+    }
+    final root = WidgetInspectorService.instance.rootElement;
+    if (root == null) {
+      return <String, Object?>{'type': 'Success', 'root': null};
+    }
+
+    final focusManager = _binding.buildOwner.focusManager;
+    final focusedSubtrees = HashMap<Element, bool>.identity();
+    bool collectFocus(Element element) {
+      var containsFocus =
+          focusManager.nodeForElement(element)?.hasPrimaryFocus ?? false;
+      for (final child in element.children) {
+        containsFocus = collectFocus(child) || containsFocus;
+      }
+      focusedSubtrees[element] = containsFocus;
+      return containsFocus;
+    }
+
+    collectFocus(root);
+    final hitPoints = _visibleHitPoints();
+    Map<String, Object?> snapshot(Element element, int depth) {
+      final widget = element.widget;
+      final key = widget.key;
+      final renderObject = element.findRenderObject();
+      final point = renderObject == null ? null : hitPoints[renderObject];
+      final focusNode = focusManager.nodeForElement(element);
+      final includeChildren = maxDepth == null || depth < maxDepth;
+      final stringKey =
+          key is ValueKey<String> && key.runtimeType == _stringValueKeyType
+          ? key.value
+          : null;
+      return <String, Object?>{
+        'type': '${widget.runtimeType}',
+        'key': stringKey,
+        'text': _driverTextForWidget(widget),
+        'focused': focusNode?.hasPrimaryFocus ?? false,
+        'hasFocusedDescendant': element.children.any(
+          (child) => focusedSubtrees[child] ?? false,
+        ),
+        'hitPoint': point == null
+            ? null
+            : <String, Object?>{'x': point.dx, 'y': point.dy},
+        'children': <Map<String, Object?>>[
+          if (includeChildren)
+            for (final child in element.children) snapshot(child, depth + 1),
+        ],
+      };
+    }
+
+    return <String, Object?>{'type': 'Success', 'root': snapshot(root, 0)};
+  }
+
+  Map<RenderObject, Offset> _visibleHitPoints() {
+    final buffer = _renderer.debugCurrentBuffer;
+    final visibleCells = HashMap<RenderObject, List<Offset>>.identity();
+    for (var y = 0; y < buffer.height; y++) {
+      for (var x = 0; x < buffer.width; x++) {
+        final result = _binding.buildOwner.hitTestAt(Offset(x, y));
+        if (result == null) continue;
+        final cell = Offset(x, y);
+        final targets = <RenderObject>[
+          for (final entry in result.path)
+            if (entry.target case final RenderObject target) target,
+        ];
+        // Path targets receive events even when they never called
+        // recordVisit — custom RenderObject HitTestTargets do that.
+        // Visited descendants of those targets share the cell. Ancestors
+        // and unvisited nodes do not.
+        for (final target in targets) {
+          visibleCells.putIfAbsent(target, () => <Offset>[]).add(cell);
+        }
+        for (final renderObject in result.visitedRenderObjects) {
+          if (targets.any((target) => identical(target, renderObject))) {
+            continue;
+          }
+          if (!_hasHitTargetAncestor(renderObject, targets)) continue;
+          visibleCells.putIfAbsent(renderObject, () => <Offset>[]).add(cell);
+        }
+      }
+    }
+
+    final points = HashMap<RenderObject, Offset>.identity();
+    for (final entry in visibleCells.entries) {
+      final cells = entry.value;
+      var minX = cells.first.dx;
+      var maxX = minX;
+      var minY = cells.first.dy;
+      var maxY = minY;
+      for (final cell in cells.skip(1)) {
+        if (cell.dx < minX) minX = cell.dx;
+        if (cell.dx > maxX) maxX = cell.dx;
+        if (cell.dy < minY) minY = cell.dy;
+        if (cell.dy > maxY) maxY = cell.dy;
+      }
+      final centerX = (minX + maxX) / 2;
+      final centerY = (minY + maxY) / 2;
+      var best = cells.first;
+      var bestDistance = _distanceSquared(best, centerX, centerY);
+      for (final cell in cells.skip(1)) {
+        final distance = _distanceSquared(cell, centerX, centerY);
+        // Cells were collected top-to-bottom, then left-to-right, so keeping
+        // the first equal-distance candidate implements the stable tie break.
+        if (distance < bestDistance) {
+          best = cell;
+          bestDistance = distance;
+        }
+      }
+      points[entry.key] = best;
+    }
+    return points;
   }
 
   /// Feeds base64-encoded [bytes] through the production ANSI parser.
   ///
   /// Keys and mouse reports are encoded to escape sequences by the driver
   /// client, so the app side stays byte-only and every injected event travels
-  /// the parser path a real terminal would use.
+  /// the parser path a real terminal would use. The response's `frames` value
+  /// is captured after dispatch so clients can wait past unrelated animation
+  /// frames that painted before this input reached the app.
   Map<String, Object?> sendBytes(String bytes) {
     _checkNotDisposed();
     final decoded = base64Decode(bytes);
     _inputDriver.debugFeedBytes(decoded);
-    return <String, Object?>{'type': 'Success', 'bytes': decoded.length};
+    return <String, Object?>{
+      'type': 'Success',
+      'bytes': decoded.length,
+      'frames': _binding.debugFrameCount,
+    };
   }
 
   /// Resizes the emulated terminal and reports the applied dimensions.
+  ///
+  /// The response's `frames` value is the post-resize repaint baseline.
   Map<String, Object?> resize(int width, int height) {
     _checkNotDisposed();
     if (width <= 0 || height <= 0) {
@@ -274,6 +405,7 @@ final class DriverHost {
       'type': 'Success',
       'width': buffer.width,
       'height': buffer.height,
+      'frames': _binding.debugFrameCount,
     };
   }
 
@@ -377,6 +509,10 @@ const String _driveModeSizeKey = 'NOIR_DRIVE_SIZE';
 const int _defaultDriveWidth = 80;
 const int _defaultDriveHeight = 24;
 
+final Type _stringValueKeyType = (const ValueKey<String>(
+  '_driver_type_sentinel',
+)).runtimeType;
+
 const String _infoMethod = 'ext.noir.driver.info';
 const String _captureMethod = 'ext.noir.driver.capture';
 const String _treeMethod = 'ext.noir.driver.tree';
@@ -386,6 +522,31 @@ const String _waitStableMethod = 'ext.noir.driver.waitStable';
 const String _quitMethod = 'ext.noir.driver.quit';
 
 final RegExp _driveSizePattern = RegExp(r'^(\d+)x(\d+)$');
+
+String? _driverTextForWidget(Widget widget) => switch (widget) {
+  Text(:final data, :final textSpan) => data ?? textSpan!.toPlainText(),
+  RichText(:final text) => text.toPlainText(),
+  _ => null,
+};
+
+bool _hasHitTargetAncestor(
+  RenderObject candidate,
+  Iterable<RenderObject> hitTargets,
+) {
+  for (final target in hitTargets) {
+    if (_isRenderAncestor(target, candidate)) return true;
+  }
+  return false;
+}
+
+bool _isRenderAncestor(RenderObject ancestor, RenderObject node) {
+  RenderObject? current = node;
+  while (current != null) {
+    if (identical(current, ancestor)) return true;
+    current = current.parent;
+  }
+  return false;
+}
 
 /// The host the registered handlers target. Last started host wins.
 DriverHost? _activeHost;
@@ -431,8 +592,9 @@ Future<developer.ServiceExtensionResponse> _handleTree(
   String method,
   Map<String, String> parameters,
 ) async {
-  final maxDepth = _parseCount(parameters['maxDepth'], 2);
-  if (maxDepth == null) {
+  final rawMaxDepth = parameters['maxDepth'];
+  final maxDepth = rawMaxDepth == null ? null : int.tryParse(rawMaxDepth);
+  if (rawMaxDepth != null && (maxDepth == null || maxDepth < 0)) {
     return _invalidParams('maxDepth must be a non-negative integer.');
   }
   return _run((host) => host.tree(maxDepth: maxDepth));
@@ -502,6 +664,12 @@ int? _parseCount(String? raw, int fallback) {
   }
   final value = int.tryParse(raw);
   return value == null || value < 0 ? null : value;
+}
+
+double _distanceSquared(Offset point, double x, double y) {
+  final dx = point.dx - x;
+  final dy = point.dy - y;
+  return dx * dx + dy * dy;
 }
 
 developer.ServiceExtensionResponse _invalidParams(String message) =>

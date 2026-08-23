@@ -83,12 +83,14 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
                   spacing: 2,
                   children: [
                     Checkbox(
+                      key: const ValueKey<String>('wrap'),
                       autofocus: true,
                       value: _wrap,
                       label: 'soft wrap',
                       onChanged: (next) => setState(() => _wrap = next),
                     ),
                     Switch(
+                      key: const ValueKey<String>('verbose'),
                       value: _verbose,
                       label: 'verbose',
                       onChanged: (next) => setState(() => _verbose = next),
@@ -100,12 +102,14 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
                   spacing: 1,
                   children: [
                     Button(
+                      key: const ValueKey<String>('step'),
                       label: 'Step',
                       onPressed: _steps == _totalSteps
                           ? null
                           : () => setState(() => _steps++),
                     ),
                     Button(
+                      key: const ValueKey<String>('reset'),
                       label: 'Reset',
                       onPressed: _steps == 0
                           ? null

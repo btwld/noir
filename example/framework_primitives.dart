@@ -125,6 +125,7 @@ class _ActivationSurfaceState extends State<_ActivationSurface> {
 
   @override
   Widget build(BuildContext context) => PointerListener(
+    key: const ValueKey<String>('activate'),
     onPointerDown: _handlePointerDown,
     child: Container(
       width: 18,

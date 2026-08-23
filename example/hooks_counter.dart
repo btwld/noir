@@ -41,6 +41,7 @@ class HooksCounterApp extends HookWidget {
                 ),
               ),
               Button(
+                key: const ValueKey<String>('add-one'),
                 autofocus: true,
                 label: '+ Add one',
                 // Input-driven state belongs in the input callback.

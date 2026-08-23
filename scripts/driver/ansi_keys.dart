@@ -100,6 +100,7 @@ const Map<String, String> _namedKeys = <String, String>{
   'left': '\x1b[D',
   'enter': '\r',
   'tab': '\t',
+  'shift-tab': '\x1b[Z',
   // `type` cannot send a lone space: the CLI trims each command line, so a
   // trailing-space payload never survives. Space is an activation gesture for
   // Checkbox, Switch, and Button, so it needs a name of its own.
@@ -109,6 +110,9 @@ const Map<String, String> _namedKeys = <String, String>{
   'esc': '\x1b',
   // Terminals send DEL for Backspace; the parser accepts BS and DEL alike.
   'backspace': '\x7f',
+  'home': '\x1b[H',
+  'end': '\x1b[F',
+  'delete': '\x1b[3~',
   'pgup': '\x1b[5~',
   'pgdn': '\x1b[6~',
 };

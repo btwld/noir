@@ -86,6 +86,7 @@ diff --git a/lib/status.dart b/lib/status.dart
               const Text('Viewport'),
               Expanded(
                 child: Slider(
+                  key: const ValueKey<String>('slider'),
                   value: _progress,
                   viewportSize: 18,
                   step: 2,
@@ -107,6 +108,7 @@ diff --git a/lib/status.dart b/lib/status.dart
             columnWidthMode: TextTableColumnWidthMode.content,
           ),
           TabSelect<int>(
+            key: const ValueKey<String>('tabs'),
             options: _tabs,
             selectedIndex: _tab,
             tabWidth: 13,

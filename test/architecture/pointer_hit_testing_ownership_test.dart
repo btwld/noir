@@ -17,6 +17,24 @@ void main() {
     expect(source, isNot(contains('PointerHandle')));
   });
 
+  test('driver visibility reuses hit testing without paint transforms', () {
+    final driver = File('lib/src/app/driver.dart').readAsStringSync();
+    final owner = File('lib/src/framework/owner.dart').readAsStringSync();
+    final renderObject = File(
+      'lib/src/rendering/object.dart',
+    ).readAsStringSync();
+    final renderBox = File('lib/src/rendering/box.dart').readAsStringSync();
+
+    expect(owner, contains('HitTestResult? hitTestAt(Offset position)'));
+    expect(renderObject, contains('visitedRenderObjects'));
+    expect(renderBox, contains('result.recordVisit(this)'));
+    expect(driver, contains('_binding.buildOwner.hitTestAt'));
+    expect(driver, contains('for (final target in targets)'));
+    expect(driver, contains('result.visitedRenderObjects'));
+    expect(driver, contains('_hasHitTargetAncestor'));
+    expect(driver, isNot(contains('applyPaintTransform')));
+  });
+
   test('old region manager contract is deleted', () {
     expect(
       File('lib/src/framework/pointer_manager.dart').existsSync(),

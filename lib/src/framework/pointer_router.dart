@@ -22,18 +22,23 @@ final class PointerRouter {
     _subscription.cancel();
   }
 
+  /// Resolves the current render-tree hit path without dispatching an event.
+  HitTestResult? hitTest(Offset position) {
+    final hitRoot = root;
+    if (hitRoot == null) {
+      return null;
+    }
+    final result = HitTestResult();
+    return hitRoot.hitTest(result, position) ? result : null;
+  }
+
   /// Route [event] to the current render-tree hit-test path.
   void route(MouseEvent event) {
     if (event.isConsumed) {
       return;
     }
-    final hitRoot = root;
-    if (hitRoot == null) {
-      return;
-    }
-
-    final result = HitTestResult();
-    if (!hitRoot.hitTest(result, Offset(event.x, event.y))) {
+    final result = hitTest(Offset(event.x, event.y));
+    if (result == null) {
       return;
     }
 

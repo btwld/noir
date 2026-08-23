@@ -370,6 +370,7 @@ class _PromptBox extends StatelessWidget {
           const SizedBox(width: 1),
           Expanded(
             child: TextInput(
+              key: const ValueKey<String>('composer'),
               controller: controller,
               focusNode: focusNode,
               autofocus: autofocus,
