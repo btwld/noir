@@ -90,6 +90,7 @@ class PubPackageDetail extends StatelessWidget {
             _headlineMetrics(package, theme),
             const SizedBox(height: 1),
             TabSelect<PackageDetailTab>(
+              key: const ValueKey<String>('tabs'),
               options: _detailTabs,
               selectedIndex: activeTab.index,
               tabWidth: null,
@@ -109,6 +110,7 @@ class PubPackageDetail extends StatelessWidget {
               child: DemoPanel(
                 focused: scrollFocusNode.hasFocus,
                 child: ScrollBox(
+                  key: const ValueKey<String>('detail'),
                   controller: scrollController,
                   focusNode: scrollFocusNode,
                   autofocus: true,

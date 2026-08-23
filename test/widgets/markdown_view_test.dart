@@ -519,12 +519,10 @@ void main() {
       ..runApp(const MarkdownView(markdown: '# title\n\nbody', embedded: true))
       ..debugFlushFrame();
 
-    final tree = (host.tree(maxDepth: 12)['lines']! as List<Object?>)
-        .cast<String>()
-        .join('\n');
-    expect(tree, contains('MarkdownView'));
-    expect(tree, contains('DocumentView'));
-    expect(tree, isNot(contains('ScrollBox')));
+    final types = _driverTreeTypes(host.tree(maxDepth: 12));
+    expect(types, contains('MarkdownView'));
+    expect(types, contains('DocumentView'));
+    expect(types, isNot(contains('ScrollBox')));
     expect(_capturedText(host), contains('title'));
     expect(_capturedText(host), contains('body'));
   });
@@ -640,10 +638,8 @@ Detected license: `BSD-3-Clause`.
     expect(text, isNot(contains('<summary>')));
     expect(text, isNot(contains('###')));
 
-    final tree = (host.tree(maxDepth: 16)['lines']! as List<Object?>)
-        .cast<String>()
-        .join('\n');
-    expect(tree, contains('TextTable'));
+    final types = _driverTreeTypes(host.tree(maxDepth: 16));
+    expect(types, contains('TextTable'));
   });
 
   test('fenced details tags stay literal instead of unwrapping', () {

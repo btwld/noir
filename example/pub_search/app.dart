@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
@@ -203,8 +204,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _chooserFocus.addListener(_handleChooserFocusChanged);
     // A queued auto-search is already a request, so the first paint is the
     // searching surface rather than an idle prompt against a prefilled query.
-    _searchState = widget.autoSearch ? PubLoadState.loading : PubLoadState.idle;
-    if (widget.autoSearch) _queueAutoSearch(widget.catalog);
+    // Drive-mode catalog launches must not hit pub.dev; skip the queue there.
+    final autoSearch = widget.autoSearch && !_inDriveMode;
+    _searchState = autoSearch ? PubLoadState.loading : PubLoadState.idle;
+    if (autoSearch) _queueAutoSearch(widget.catalog);
   }
 
   @override
@@ -214,8 +217,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
     oldWidget.catalog.close();
     _resetForCatalogReplacement();
-    if (widget.autoSearch) _queueAutoSearch(widget.catalog);
+    if (widget.autoSearch && !_inDriveMode) _queueAutoSearch(widget.catalog);
   }
+
+  bool get _inDriveMode => io.Platform.environment['NOIR_DRIVE'] == '1';
 
   void _queueAutoSearch(PubCatalog catalog) {
     scheduleMicrotask(() {
@@ -227,7 +232,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
   void _resetForCatalogReplacement() {
     _generation++;
     _view = PubSearchView.search;
-    _searchState = widget.autoSearch ? PubLoadState.loading : PubLoadState.idle;
+    _searchState = widget.autoSearch && !_inDriveMode
+        ? PubLoadState.loading
+        : PubLoadState.idle;
     _detailState = PubLoadState.idle;
     _searchPage = null;
     _package = null;
@@ -721,6 +728,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 children: [
                   Expanded(
                     child: TextInput(
+                      key: const ValueKey<String>('query'),
                       controller: _queryController,
                       focusNode: _searchFocus,
                       autofocus: _autofocusSearch,
@@ -738,6 +746,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
                 spacing: 3,
                 children: [
                   _chooserLauncher(
+                    key: const ValueKey<String>('sort'),
                     theme: theme,
                     label: 'Sort',
                     value: _sort.name,
@@ -746,6 +755,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
                     onActivate: () => _openChooser(_SearchChooser.sort),
                   ),
                   _chooserLauncher(
+                    key: const ValueKey<String>('filter'),
                     theme: theme,
                     label: 'Filter',
                     value: _filter.name,
@@ -807,6 +817,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     required FocusNode focusNode,
     required bool active,
     required VoidCallback onActivate,
+    Key? key,
   }) {
     final focused = focusNode.hasFocus;
     final (color, textColor) = switch ((active, focused)) {
@@ -815,6 +826,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       (false, false) => (theme.surfaceVariant, theme.textMuted),
     };
     return Button(
+      key: key,
       label: '$label: ${value.toUpperCase()} ▾',
       focusNode: focusNode,
       padding: const EdgeInsets.symmetric(horizontal: 2),

@@ -66,7 +66,7 @@ The executable always constructs the live `PubApiCatalog`; there is no offline
 data mode. The adapter is isolated behind `PubCatalog` so tests can inject a
 fake and keep async, empty, error, retry, paging, and stale-response behavior
 deterministic without network access. Drive locators for the example are
-`query`, `sort`, `filter`, `results`, `tabs`, and `detail`.
+`query`, `sort`, `filter`, `tabs`, and `detail`.
 
 ## Drive mode
 

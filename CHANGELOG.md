@@ -19,7 +19,10 @@
   explicit loading/empty/error/ready states, stale-response suppression, paging,
   centered sort and filter overlays above retained results, and a four-tab
   package detail view built with `TabSelect`. Its tests inject a fake catalog,
-  so every async path stays deterministic without network access.
+  so every async path stays deterministic without network access. Drive locators
+  `query`, `sort`, `filter`, `tabs`, and `detail` mark the controls a driver
+  would click or wait for; drive sessions skip the queued auto-search so they
+  stay offline while `main()` still uses the live catalog.
 - A focused supplied `FocusNode` now remains attached and focused when its
   `Focus` widget relocates within one build. The transfer is limited to an
   inactive element owned by the same focus manager; active duplicates and

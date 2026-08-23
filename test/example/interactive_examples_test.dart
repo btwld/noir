@@ -83,6 +83,15 @@ void main() {
           "ValueKey<String>('content')",
           "ValueKey<String>('editor')",
         ],
+        'example/pub_search/app.dart': <String>[
+          "ValueKey<String>('query')",
+          "ValueKey<String>('sort')",
+          "ValueKey<String>('filter')",
+        ],
+        'example/pub_search/package_detail.dart': <String>[
+          "ValueKey<String>('tabs')",
+          "ValueKey<String>('detail')",
+        ],
       };
 
       for (final entry in expected.entries) {

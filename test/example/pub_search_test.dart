@@ -2334,14 +2334,9 @@ void main() {
     expect(scrolled, contains('Impact'));
     expect(scrolled, contains('Upgrade when a patched release is available.'));
 
-    final treeLines = (host.tree(maxDepth: 24)['lines']! as List<Object?>)
-        .cast<String>();
-    final tree = treeLines.join('\n');
-    expect(tree, contains('MarkdownView'));
-    expect(
-      treeLines.where((line) => line.trimLeft().startsWith('ScrollBox#')),
-      hasLength(1),
-    );
+    final types = _driverTreeTypes(host.tree(maxDepth: 24));
+    expect(types, contains('MarkdownView'));
+    expect(types.where((type) => type == 'ScrollBox'), hasLength(1));
   });
 
   test('health first frame shows reports instead of patch sparklines', () {
@@ -3574,4 +3569,18 @@ Future<void> _settle(TuiTestApp app) async {
   app.pumpFrame();
   await Future<void>.delayed(Duration.zero);
   app.pumpFrame();
+}
+
+List<String> _driverTreeTypes(Map<String, Object?> tree) {
+  final types = <String>[];
+  void visit(Map<String, Object?> node) {
+    types.add(node['type']! as String);
+    for (final child in node['children']! as List<Object?>) {
+      visit(child! as Map<String, Object?>);
+    }
+  }
+
+  final root = tree['root'];
+  if (root != null) visit(root as Map<String, Object?>);
+  return types;
 }
