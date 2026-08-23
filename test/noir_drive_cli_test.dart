@@ -7,7 +7,22 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'helpers/tool_json_output.dart';
+
 void main() {
+  test('JSON decoding retains output after Dart build-hook progress', () {
+    expect(
+      decodeToolJsonObjects(
+        'Running build hooks...Running build hooks...{"width": 16}\n'
+        '{"root": null}\n',
+      ),
+      <Map<String, Object?>>[
+        <String, Object?>{'width': 16},
+        <String, Object?>{'root': null},
+      ],
+    );
+  });
+
   test(
     'noir_drive accepts locator find, wait, and click grammar',
     () async {
@@ -47,11 +62,7 @@ quit
       final stderrText = await stderrFuture;
       expect(code, 0, reason: 'stdout:\n$stdoutText\n\nstderr:\n$stderrText');
 
-      final messages = <Map<String, Object?>>[
-        for (final line in const LineSplitter().convert(stdoutText))
-          if (line.startsWith('{'))
-            Map<String, Object?>.from(jsonDecode(line) as Map),
-      ];
+      final messages = decodeToolJsonObjects(stdoutText);
       expect(messages, hasLength(11), reason: stdoutText);
       expect(messages.first['root'], isA<Map<String, Object?>>());
       expect(messages[1]['key'], 'increment');

@@ -271,12 +271,12 @@ class NoirDriver {
 
   /// Resizes the emulated terminal and reports the applied dimensions.
   Future<({int width, int height})> resize(int width, int height) async {
-    final before = (await info()).frames;
     final json = await _call(
       'resize',
       args: <String, Object?>{'width': '$width', 'height': '$height'},
     );
-    await pollFrameAdvance(frames: _frames, before: before);
+    final frameBaseline = json['frames']! as int;
+    await pollFrameAdvance(frames: _frames, before: frameBaseline);
     return (width: json['width']! as int, height: json['height']! as int);
   }
 
@@ -335,16 +335,16 @@ class NoirDriver {
   }
 
   Future<void> _sendBytes(List<int> bytes) async {
-    final before = (await info()).frames;
-    await _call(
+    final response = await _call(
       'sendBytes',
       args: <String, Object?>{'bytes': base64Encode(bytes)},
     );
+    final frameBaseline = response['frames']! as int;
     // Wait for a paint, not for the scheduler to go idle. A pulsing app
     // never reports stable. If the input ended the app, the service is
     // gone and there will never be another frame.
     try {
-      await pollFrameAdvance(frames: _frames, before: before);
+      await pollFrameAdvance(frames: _frames, before: frameBaseline);
     } on Object catch (error) {
       if (isDrivenServiceGone(error)) {
         return;

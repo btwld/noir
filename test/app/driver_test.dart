@@ -159,7 +159,11 @@ void main() {
       expect(host.capture()['lines'], <String>['count 0']);
 
       final ack = host.sendBytes(base64Encode(utf8.encode('\x1b[A')));
-      expect(ack, <String, Object?>{'type': 'Success', 'bytes': 3});
+      expect(ack, <String, Object?>{
+        'type': 'Success',
+        'bytes': 3,
+        'frames': host.info()['frames'],
+      });
 
       await host.waitStable();
       expect(host.capture()['lines'], <String>['count 1']);
@@ -500,10 +504,12 @@ void main() {
         ..runApp(const _Counter())
         ..debugFlushFrame();
 
-      expect(host.resize(24, 4), <String, Object?>{
+      final ack = host.resize(24, 4);
+      expect(ack, <String, Object?>{
         'type': 'Success',
         'width': 24,
         'height': 4,
+        'frames': host.info()['frames'],
       });
       host.binding.debugFlushFrame();
 

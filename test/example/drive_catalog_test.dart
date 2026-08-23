@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 import '../../scripts/driver/noir_driver.dart';
+import '../helpers/tool_json_output.dart';
 
 const _wideExamples = <String>{
   'chat_demo.dart',
@@ -132,11 +133,7 @@ _driveCli(String name, {String size = '80x24'}) async {
   final code = await process.exitCode.timeout(const Duration(minutes: 2));
   final stdout = await stdoutFuture;
   final stderr = await stderrFuture;
-  final messages = <Map<String, Object?>>[
-    for (final line in const LineSplitter().convert(stdout))
-      if (line.startsWith('{'))
-        Map<String, Object?>.from(jsonDecode(line) as Map),
-  ];
+  final messages = decodeToolJsonObjects(stdout);
   return (
     code: code,
     captures: [

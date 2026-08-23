@@ -68,11 +68,13 @@ are complete; `0.0.1-alpha.2` is not published.
       examples expose `ValueKey<String>` on primary controls, catalog drive
       smoke and keyed locator E2E cover the shipped entrypoints, and zero-match
       errors list nearby keys, exact runtime types, and a missing primary-focus
-      hint. As-built docs lock own-route hit points, painted-vs-source text,
-      CLI tree defaults to depth 2, and reject leftover ancestor-point and
-      diagnostic-provider specs. On this tree, format and fatal-info analysis,
-      177 architecture tests, and diff checks pass. The last recorded serial
-      suite on this branch was 1736 tests.
+      hint. Clean-build CLI captures tolerate Dart hook status on the first
+      JSON line, and input settles after its post-dispatch frame baseline even
+      while the app animates. As-built docs lock own-route hit points,
+      painted-vs-source text, CLI tree defaults to depth 2, and reject leftover
+      ancestor-point and diagnostic-provider specs. On this tree, format and
+      fatal-info analysis, 177 architecture tests, the 1738-test serial suite,
+      and diff checks pass.
 - [x] Package metadata, changelog, install guidance, contributor guidance, and
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled

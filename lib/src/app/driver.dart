@@ -373,15 +373,23 @@ final class DriverHost {
   ///
   /// Keys and mouse reports are encoded to escape sequences by the driver
   /// client, so the app side stays byte-only and every injected event travels
-  /// the parser path a real terminal would use.
+  /// the parser path a real terminal would use. The response's `frames` value
+  /// is captured after dispatch so clients can wait past unrelated animation
+  /// frames that painted before this input reached the app.
   Map<String, Object?> sendBytes(String bytes) {
     _checkNotDisposed();
     final decoded = base64Decode(bytes);
     _inputDriver.debugFeedBytes(decoded);
-    return <String, Object?>{'type': 'Success', 'bytes': decoded.length};
+    return <String, Object?>{
+      'type': 'Success',
+      'bytes': decoded.length,
+      'frames': _binding.debugFrameCount,
+    };
   }
 
   /// Resizes the emulated terminal and reports the applied dimensions.
+  ///
+  /// The response's `frames` value is the post-resize repaint baseline.
   Map<String, Object?> resize(int width, int height) {
     _checkNotDisposed();
     if (width <= 0 || height <= 0) {
@@ -397,6 +405,7 @@ final class DriverHost {
       'type': 'Success',
       'width': buffer.width,
       'height': buffer.height,
+      'frames': _binding.debugFrameCount,
     };
   }
 
