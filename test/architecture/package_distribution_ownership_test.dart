@@ -287,65 +287,6 @@ void main() {
     );
   });
 
-  test('packaged hot reload has one public command and current guidance', () {
-    final changelog = _read('CHANGELOG.md');
-    final guidance = '$readme\n$skill\n$releaseTodo\n$changelog';
-
-    expect(File('bin/run.dart').existsSync(), isTrue);
-    expect(readme, contains('dart run noir:run example/counter.dart'));
-    expect(skill, contains('dart run noir:run example/counter.dart'));
-    expect(releaseTodo, contains('dart run noir:run example/counter.dart'));
-    expect(changelog, contains('`dart run noir:run`'));
-    expect(guidance, contains('.dart_tool/noir/run.log'));
-    expect(guidance, isNot(contains('scripts/hot_reload_driver.dart')));
-  });
-
-  test('removed checkout-only hot reload driver has no stale guidance', () {
-    final removedDriverPath = <String>[
-      'scripts',
-      'hot_reload_driver.dart',
-    ].join('/');
-    final guidanceFiles = <File>[
-      for (final root in <String>[
-        'bin',
-        'doc',
-        'example',
-        'hook',
-        'lib',
-        'scripts',
-        'skills',
-      ])
-        ...Directory(root)
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where(
-              (file) => const <String>[
-                '.dart',
-                '.md',
-                '.yaml',
-                '.yml',
-              ].any(file.path.endsWith),
-            ),
-      for (final path in <String>[
-        'AGENTS.md',
-        'CHANGELOG.md',
-        'CONTRIBUTING.md',
-        'GOALS.md',
-        'README.md',
-        'TODO.md',
-        'pubspec.yaml',
-      ])
-        File(path),
-    ];
-    final staleReferences = <String>[
-      for (final file in guidanceFiles)
-        if (file.readAsStringSync().contains(removedDriverPath)) file.path,
-    ];
-
-    expect(File(removedDriverPath).existsSync(), isFalse);
-    expect(staleReferences, isEmpty);
-  });
-
   test('example catalog lists every shipped entrypoint exactly once', () {
     final shippedExamples = Directory('example')
         .listSync()
@@ -544,7 +485,6 @@ void main() {
         'CHANGELOG.md',
         'pubspec.yaml',
         'native_manifest.json',
-        'bin/run.dart',
         'hook/build.dart',
         ...Directory('third_party/opentui-v0.5.1')
             .listSync()

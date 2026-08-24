@@ -106,6 +106,8 @@ class _TourAppState extends State<WidgetsTourApp> {
                 DemoPanel(
                   title: 'Select',
                   focused: _selectFocus.hasFocus,
+                  width: 22,
+                  height: 8,
                   child: SizedBox(
                     width: 18,
                     child: Select<String>(
@@ -123,6 +125,8 @@ class _TourAppState extends State<WidgetsTourApp> {
                 DemoPanel(
                   title: 'ScrollBox',
                   focused: _scrollFocus.hasFocus,
+                  width: 28,
+                  height: 9,
                   child: SizedBox(
                     width: 24,
                     height: 6,
@@ -147,14 +151,19 @@ class _TourAppState extends State<WidgetsTourApp> {
             DemoPanel(
               title: 'TextArea',
               focused: _textFocus.hasFocus,
-              child: TextArea(
-                key: const ValueKey<String>('editor'),
-                focusNode: _textFocus,
-                height: 3,
+              width: 48,
+              height: 6,
+              child: SizedBox(
                 width: 44,
-                placeholder: 'Type… Ctrl+D to submit',
-                onChanged: (v) => setState(() => _typed = v),
-                onSubmit: _submitText,
+                child: TextArea(
+                  key: const ValueKey<String>('editor'),
+                  focusNode: _textFocus,
+                  height: 3,
+                  width: 44,
+                  placeholder: 'Type… Ctrl+D to submit',
+                  onChanged: (v) => setState(() => _typed = v),
+                  onSubmit: _submitText,
+                ),
               ),
             ),
             const SizedBox(height: 1),

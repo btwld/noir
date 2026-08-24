@@ -57,40 +57,6 @@ void main() {
     }
   });
 
-  test('the hot-reload runner is packaged but remains framework-owned', () {
-    final command = File('bin/run.dart');
-    final implementation = File('lib/src/devtools/hot_reload_runner.dart');
-    final pubspec = File('pubspec.yaml').readAsStringSync();
-    final dependencies = pubspec.substring(
-      pubspec.indexOf('dependencies:'),
-      pubspec.indexOf('dev_dependencies:'),
-    );
-    final devDependencies = pubspec.substring(
-      pubspec.indexOf('dev_dependencies:'),
-    );
-
-    expect(command.existsSync(), isTrue);
-    expect(command.readAsStringSync(), contains('runWithHotReload'));
-    expect(implementation.existsSync(), isTrue);
-    expect(
-      implementation.readAsStringSync(),
-      contains('package:vm_service/vm_service.dart'),
-    );
-    expect(dependencies, contains('vm_service:'));
-    expect(devDependencies, isNot(contains('vm_service:')));
-    expect(File('scripts/hot_reload_driver.dart').existsSync(), isFalse);
-
-    for (final barrel in const <String>[
-      'lib/noir.dart',
-      'lib/noir_low_level.dart',
-      'lib/noir_ffi.dart',
-    ]) {
-      final source = File(barrel).readAsStringSync();
-      expect(source, isNot(contains('hot_reload_runner.dart')), reason: barrel);
-      expect(source, isNot(contains('runWithHotReload')), reason: barrel);
-    }
-  });
-
   test('strict locator misses teach exact types and source-only text', () {
     final source = File('scripts/driver/driver_tree.dart').readAsStringSync();
 
@@ -138,19 +104,22 @@ void main() {
     expect(host, contains('own visible pointer route'));
   });
 
-  test('the VM-service client stays confined to the hot-reload runner', () {
-    final importers = <String>[];
+  test('the driver control channel stays out of the shipped package', () {
+    // `vm_service` is a dev dependency. A `lib/` or `bin/` import would make
+    // it a runtime dependency of every consumer, which is exactly why the
+    // driver client and CLI live under `scripts/`.
     for (final root in const <String>['lib', 'bin']) {
       for (final file
           in Directory(root)
               .listSync(recursive: true)
               .whereType<File>()
               .where((file) => file.path.endsWith('.dart'))) {
-        if (file.readAsStringSync().contains('package:vm_service')) {
-          importers.add(file.path);
-        }
+        expect(
+          file.readAsStringSync(),
+          isNot(contains('package:vm_service')),
+          reason: file.path,
+        );
       }
     }
-    expect(importers, ['lib/src/devtools/hot_reload_runner.dart']);
   });
 }

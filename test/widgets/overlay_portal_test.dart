@@ -133,10 +133,12 @@ void main() {
   });
 
   test(
-    'overlay resolves Theme, Actions, and focus ancestry through the portal',
+    'overlay resolves Theme, Actions, Shortcuts, and focus ancestry through '
+    'the portal',
     () {
       Color? resolved;
       Action<Intent>? action;
+      KeyEventResult? shortcutResult;
       final outerFocus = FocusNode(debugLabel: 'outer');
       final overlayFocus = FocusNode(debugLabel: 'overlay');
       final activate = CallbackAction<ActivateIntent>(
@@ -148,21 +150,33 @@ void main() {
           RootOverlay(
             child: Theme(
               data: ThemeData.dark.copyWith(text: Color.red),
-              child: Actions(
-                actions: <Type, Action<Intent>>{ActivateIntent: activate},
-                child: Focus(
-                  focusNode: outerFocus,
-                  child: OverlayPortal(
-                    controller: controller,
-                    overlayChildBuilder: (context) {
-                      resolved = Theme.of(context).text;
-                      action = Actions.maybeFind(context, ActivateIntent);
-                      return Focus(
-                        focusNode: overlayFocus,
-                        child: const Text('overlay'),
-                      );
-                    },
-                    child: const Text('child'),
+              child: Shortcuts(
+                shortcuts: const {
+                  SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+                },
+                child: Actions(
+                  actions: <Type, Action<Intent>>{ActivateIntent: activate},
+                  child: Focus(
+                    focusNode: outerFocus,
+                    child: OverlayPortal(
+                      controller: controller,
+                      overlayChildBuilder: (context) {
+                        resolved = Theme.of(context).text;
+                        action = Actions.maybeFind(context, ActivateIntent);
+                        shortcutResult = Shortcuts.handleKeyEvent(
+                          context,
+                          KeyEvent(
+                            logicalKey: LogicalKeyboardKey.enter,
+                            keyCode: 13,
+                          ),
+                        );
+                        return Focus(
+                          focusNode: overlayFocus,
+                          child: const Text('overlay'),
+                        );
+                      },
+                      child: const Text('child'),
+                    ),
                   ),
                 ),
               ),
@@ -176,6 +190,7 @@ void main() {
       try {
         expect(resolved, Color.red);
         expect(action, same(activate));
+        expect(shortcutResult, KeyEventResult.handled);
         expect(overlayFocus.parent, same(outerFocus));
       } finally {
         host.dispose();
@@ -402,6 +417,100 @@ void main() {
       host.dispose();
     }
   });
+
+  test('ancestor removal detaches a shown portal entry and disposes once', () {
+    final states = <_ProbeState>[];
+    final controller = OverlayPortalController()..show();
+    final host = TestElementHost()
+      ..mount(
+        RootOverlay(
+          child: SizedBox(
+            width: 10,
+            height: 3,
+            child: OverlayPortal(
+              controller: controller,
+              overlayChildBuilder: (context) => _Probe(states: states),
+              child: const Text('child'),
+            ),
+          ),
+        ),
+      )
+      ..pumpFrame(
+        constraints: const BoxConstraints.tight(width: 20, height: 6),
+      );
+
+    try {
+      final overlay = _findOverlay(host.root!);
+      final entry = overlay.entries.single;
+      final state = states.single;
+
+      host
+        ..update(const RootOverlay(child: Text('replacement')))
+        ..pumpBuild();
+
+      expect(overlay.entries, isEmpty);
+      expect(entry.parent, isNull);
+      expect(entry.pipelineOwner, isNull);
+      expect(state.disposeCount, 1);
+      expect(controller.isShowing, isFalse);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  test(
+    'replacing the portal child while shown preserves both render edges',
+    () {
+      final controller = OverlayPortalController()..show();
+      final host = TestElementHost()
+        ..mount(
+          RootOverlay(
+            child: OverlayPortal(
+              controller: controller,
+              overlayChildBuilder: (context) => const Text('overlay'),
+              child: const Text('before'),
+            ),
+          ),
+        )
+        ..pumpFrame(
+          constraints: const BoxConstraints.tight(width: 20, height: 6),
+        );
+
+      try {
+        final overlay = _findOverlay(host.root!);
+        final entry = overlay.entries.single;
+
+        host
+          ..update(
+            RootOverlay(
+              child: OverlayPortal(
+                controller: controller,
+                overlayChildBuilder: (context) => const Text('overlay'),
+                child: const SizedBox(
+                  width: 6,
+                  height: 1,
+                  child: Text('after'),
+                ),
+              ),
+            ),
+          )
+          ..pumpFrame(
+            constraints: const BoxConstraints.tight(width: 20, height: 6),
+          );
+
+        final base = overlay.base;
+        expect(base, isNotNull);
+        expect(base, isNot(same(entry)));
+        expect(base!.parent, same(overlay));
+        expect(overlay.entries, [same(entry)]);
+        expect(overlay.children, [same(base), same(entry)]);
+        expect(_findText(host.root!, 'after'), isTrue);
+        expect(_findText(host.root!, 'overlay'), isTrue);
+      } finally {
+        host.dispose();
+      }
+    },
+  );
 
   test('replacing the controller does not transfer visibility', () {
     final states = <_ProbeState>[];

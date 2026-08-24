@@ -8,6 +8,7 @@ import 'package:test/test.dart';
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
 import '../helpers/test_element_host.dart';
+import '../helpers/tui_test_app.dart';
 
 void main() {
   test('open throws when the controller is not attached', () {
@@ -333,6 +334,47 @@ void main() {
     }
   });
 
+  test('outside left-down closes only the topmost open menu', () {
+    final first = MenuController();
+    final second = MenuController();
+    final app = createTuiTestApp(
+      Column(
+        children: [
+          MenuAnchor(
+            controller: first,
+            menuChildren: const [Text('first-menu')],
+            child: const Text('first-child'),
+          ),
+          MenuAnchor(
+            controller: second,
+            menuChildren: const [Text('second-menu')],
+            child: const Text('second-child'),
+          ),
+        ],
+      ),
+      width: 30,
+      height: 8,
+    );
+
+    try {
+      app.pumpFrame();
+      first.open();
+      second.open();
+      app.pumpFrame();
+
+      app.mockMouse.pressDown(20, 7);
+      app.pumpFrame();
+      expect(first.isOpen, isTrue);
+      expect(second.isOpen, isFalse);
+
+      app.mockMouse.pressDown(20, 7);
+      app.pumpFrame();
+      expect(first.isOpen, isFalse);
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('MenuController.maybeOf does not register a dependency', () {
     MenuController? found;
     final host = TestElementHost()
@@ -362,12 +404,15 @@ void main() {
     final host = TestElementHost()
       ..mount(
         RootOverlay(
-          child: MenuAnchor(
-            controller: controller,
-            menuChildren: const [
-              SizedBox(width: 3, height: 2, child: Text('m')),
-            ],
-            child: const SizedBox(width: 4, height: 1, child: Text('Open')),
+          child: Align(
+            alignment: Alignment.topRight,
+            child: MenuAnchor(
+              controller: controller,
+              menuChildren: const [
+                SizedBox(width: 3, height: 2, child: Text('m')),
+              ],
+              child: const SizedBox(width: 4, height: 1, child: Text('Open')),
+            ),
           ),
         ),
       )
@@ -381,16 +426,44 @@ void main() {
         constraints: const BoxConstraints.tight(width: 40, height: 12),
       );
       final first = _menuOrigin(host.root!);
-      expect(first.dy, greaterThanOrEqualTo(1));
+      expect(first, const Offset(36, 1));
 
       host.pumpFrame(
         constraints: const BoxConstraints.tight(width: 20, height: 8),
       );
       final second = _menuOrigin(host.root!);
-      expect(second.dy, greaterThanOrEqualTo(1));
-      expect(second.dx, greaterThanOrEqualTo(0));
+      expect(second, const Offset(16, 1));
+      expect(controller.isOpen, isTrue);
     } finally {
       host.dispose();
+    }
+  });
+
+  test('paint and hit testing share the anchored menu origin', () {
+    final controller = MenuController();
+    final app = createTuiTestApp(
+      MenuAnchor(
+        controller: controller,
+        menuChildren: const [Text('item-a')],
+        child: const SizedBox(width: 4, height: 1, child: Text('Open')),
+      ),
+      width: 20,
+      height: 6,
+    );
+
+    try {
+      app.pumpFrame();
+      controller.open();
+      app.pumpFrame();
+
+      final menu = app.captureFrame().findText('item-a').single;
+      expect(menu, const BufferPosition(0, 1));
+
+      app.mockMouse.pressDown(menu.x, menu.y);
+      app.pumpFrame();
+      expect(controller.isOpen, isTrue);
+    } finally {
+      app.dispose();
     }
   });
 

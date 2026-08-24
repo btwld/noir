@@ -360,17 +360,6 @@ class FocusManager {
       return;
     }
 
-    final previousElement = identical(node._manager, this)
-        ? _nodeToElement[node]
-        : null;
-    if (previousElement != null) {
-      // Reconciliation has already made the outgoing element inactive, so
-      // transfer the existing attachment instead of clearing focus between
-      // the old and new Focus widgets.
-      _reparentNode(node, previousElement, element);
-      return;
-    }
-
     node._manager = this;
     node._isAttached = true;
     _bindNodeToElement(node, element);
@@ -386,11 +375,7 @@ class FocusManager {
         identical(_nodeToElement[node], element)) {
       return;
     }
-    final previousElement = identical(node._manager, this)
-        ? _nodeToElement[node]
-        : null;
-    final canTransfer = previousElement != null && !previousElement.active;
-    if (node._manager != null && !canTransfer) {
+    if (node._manager != null) {
       throw StateError(
         'FocusNode${node.debugLabel == null ? '' : ' "${node.debugLabel}"'} '
         'is already attached to a live Focus widget. Detach it before reuse.',
@@ -413,19 +398,9 @@ class FocusManager {
     if (identical(oldElement, element)) {
       return;
     }
-    final carriesFocus = node._hasFocus || node._descendantsHaveFocus;
-    final oldParent = node._parent;
-    if (identical(_elementToNode[expectedElement], node)) {
-      _elementToNode[expectedElement] = null;
-    }
-    _detachFromParent(node, preserveFocus: true);
-    if (carriesFocus) {
-      _updateAncestorChainForLoss(oldParent, node);
-    }
+    _detachFromParent(node);
     _bindNodeToElement(node, element);
-    if (carriesFocus) {
-      _updateAncestorsForGain(node);
-    }
+    _updateAncestorsForGain(node);
   }
 
   /// Records the node/element mapping and adopts [node] under the focus
@@ -461,7 +436,7 @@ class FocusManager {
     _invalidateTraversalCache();
   }
 
-  void _detachFromParent(FocusNode node, {bool preserveFocus = false}) {
+  void _detachFromParent(FocusNode node) {
     final parent = node._parent;
     if (parent != null) {
       parent._dropChild(node);
@@ -471,10 +446,8 @@ class FocusManager {
       _updateAncestorsForLoss(parent, child: node);
     }
     node._parent = null;
-    if (!preserveFocus) {
-      node._setDescendantsHaveFocus(false);
-      node._setHasFocus(false);
-    }
+    node._setDescendantsHaveFocus(false);
+    node._setHasFocus(false);
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -752,30 +725,21 @@ class FocusManager {
   }
 
   void _updateAncestorsForLoss(FocusNode node, {FocusNode? child}) {
-    _updateAncestorChainForLoss(node._parent, child ?? node);
-  }
-
-  void _updateAncestorChainForLoss(
-    FocusNode? ancestor,
-    FocusNode currentChild,
-  ) {
-    var currentAncestor = ancestor;
-    var child = currentChild;
-    while (currentAncestor != null) {
-      final hasFocusedDescendant = currentAncestor._children.any(
+    FocusNode? currentChild = child ?? node;
+    var ancestor = node._parent;
+    while (ancestor != null) {
+      final hasFocusedDescendant = ancestor._children.any(
         (c) => c._hasFocus || c._descendantsHaveFocus,
       );
-      currentAncestor._setDescendantsHaveFocus(hasFocusedDescendant);
-      if (currentAncestor is FocusScopeNode &&
-          identical(currentAncestor.focusedChild, child)) {
-        currentAncestor._setFocusedChild(
-          hasFocusedDescendant
-              ? _findFirstFocusableChild(currentAncestor)
-              : null,
+      ancestor._setDescendantsHaveFocus(hasFocusedDescendant);
+      if (ancestor is FocusScopeNode &&
+          identical(ancestor.focusedChild, currentChild)) {
+        ancestor._setFocusedChild(
+          hasFocusedDescendant ? _findFirstFocusableChild(ancestor) : null,
         );
       }
-      child = currentAncestor;
-      currentAncestor = currentAncestor._parent;
+      currentChild = ancestor;
+      ancestor = ancestor._parent;
     }
   }
 

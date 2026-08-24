@@ -19,7 +19,7 @@ void main() {
         Column(
           children: [
             _ExternalHost(key: probe.hostKey),
-            const Text('after'),
+            const SizedBox(width: 4, height: 2, child: Text('after')),
           ],
         ),
       );

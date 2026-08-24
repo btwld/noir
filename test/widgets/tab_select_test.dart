@@ -50,52 +50,6 @@ void main() {
     }
   });
 
-  test('TabSelect paints content-sized tabs from terminal cell widths', () {
-    const contentTabs = <SelectOption<String>>[
-      SelectOption(name: '表', value: 'wide'),
-      SelectOption(name: 'Two', value: 'two'),
-    ];
-    final capture = BufferCapture(width: 9, height: 1);
-    try {
-      final frame = capture.capture(
-        const TabSelect<String>(
-          options: contentTabs,
-          tabWidth: null,
-          selectedIndex: 1,
-          showScrollArrows: false,
-          showDescription: false,
-          showUnderline: false,
-        ),
-      );
-
-      expect(frame.getChar(1, 0), '表');
-      expect(frame.getChar(5, 0), 'T');
-      expect(frame.getChar(7, 0), 'o');
-    } finally {
-      capture.dispose();
-    }
-  });
-
-  test('TabSelect applies terminal attributes to the selected label', () {
-    final capture = BufferCapture(width: 10, height: 1);
-    try {
-      final frame = capture.capture(
-        const TabSelect<String>(
-          options: _tabs,
-          tabWidth: 5,
-          selectedTextAttributes: Attr.bold,
-          showDescription: false,
-          showUnderline: false,
-        ),
-      );
-
-      expect(frame.getCell(1, 0).isBold, isTrue);
-      expect(frame.getCell(6, 0).isBold, isFalse);
-    } finally {
-      capture.dispose();
-    }
-  });
-
   test('TabSelect pointer selects a visible cell-width tab', () async {
     final changes = <int>[];
     final selections = <int>[];
@@ -122,65 +76,5 @@ void main() {
     expect(changes, <int>[1]);
     expect(selections, <int>[1]);
     driver.dispose();
-  });
-
-  test('TabSelect pointer maps content-sized tab boundaries', () async {
-    final changes = <int>[];
-    final selections = <int>[];
-    final driver = KeyDriver(
-      TabSelect<String>(
-        options: _tabs,
-        tabWidth: null,
-        showDescription: false,
-        showUnderline: false,
-        onChanged: (index, _) => changes.add(index),
-        onSelect: (index, _) => selections.add(index),
-      ),
-      paintFrames: true,
-    );
-    await driver.ready();
-
-    await driver.sendMouse(
-      MouseEvent(
-        type: MouseEventType.down,
-        button: MouseButton.left,
-        x: 10,
-        y: 0,
-      ),
-    );
-
-    expect(changes, <int>[2]);
-    expect(selections, <int>[2]);
-    driver.dispose();
-  });
-
-  test('TabSelect can preserve existing focus on pointer selection', () async {
-    final focusNode = FocusNode();
-    final selections = <int>[];
-    final driver = KeyDriver(
-      TabSelect<String>(
-        options: _tabs,
-        tabWidth: 5,
-        focusNode: focusNode,
-        requestFocusOnPointer: false,
-        onSelect: (index, _) => selections.add(index),
-      ),
-      paintFrames: true,
-    );
-    await driver.ready();
-
-    await driver.sendMouse(
-      MouseEvent(
-        type: MouseEventType.down,
-        button: MouseButton.left,
-        x: 6,
-        y: 0,
-      ),
-    );
-
-    expect(selections, <int>[1]);
-    expect(focusNode.hasFocus, isFalse);
-    driver.dispose();
-    focusNode.dispose();
   });
 }

@@ -110,7 +110,7 @@ shrink-wrapped:
 | `TextInput` | One row. No chrome pad. |
 | `TextArea` | `height` is visible rows. |
 | `Select` | `height` is visible options. Highlight mutes when unfocused. |
-| `TabSelect` | Fixed-width or label-sized horizontal tabs with an optional underline and description row. |
+| `TabSelect` | Fixed-width horizontal tabs with an optional underline and description row. |
 | `Slider` | One-cell track on its cross axis; value is caller-controlled. |
 | `ListView` | Same highlight rules. `selectedIndex == null` is plain scroll. |
 | `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |

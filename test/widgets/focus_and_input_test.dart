@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;
-import 'package:noir/src/framework/element.dart' show Element;
 import 'package:test/test.dart';
 
 void main() {
@@ -30,61 +29,6 @@ void main() {
     expect(owner.focusManager.primaryFocus, same(node));
 
     first.unmount();
-    expect(node.isAttached, isFalse);
-  });
-
-  test('a supplied FocusNode retains focus during one-build relocation', () {
-    // Reconciliation deactivates the outgoing Focus but does not unmount it
-    // until the build pass finalizes, so the node has to come free at
-    // deactivation for the incoming Focus to take it in the same pass.
-    final node = FocusNode(debugLabel: 'relocated');
-    final firstScope = FocusScopeNode(debugLabel: 'first relocation scope');
-    final secondScope = FocusScopeNode(debugLabel: 'second relocation scope');
-    final owner = BuildOwner();
-    addTearDown(node.dispose);
-    addTearDown(firstScope.dispose);
-    addTearDown(secondScope.dispose);
-    addTearDown(owner.dispose);
-
-    late _RelocateState state;
-    final element = _Relocate(
-      node: node,
-      firstScope: firstScope,
-      secondScope: secondScope,
-      onReady: (value) => state = value,
-    ).createElement();
-    addTearDown(element.unmount);
-    element.mount(null, owner);
-
-    final manager = owner.focusManager;
-    final oldElement = _findFocusElement(element, manager, node);
-    expect(oldElement, isNotNull);
-
-    node.requestFocus();
-    expect(manager.primaryFocus, same(node));
-    expect(firstScope.focusedChild, same(node));
-
-    state.relocate();
-    owner.buildScope();
-
-    final newElement = _findFocusElement(element, manager, node);
-    expect(newElement, isNotNull);
-    expect(newElement, isNot(same(oldElement)));
-    expect(manager.nodeForElement(oldElement!), isNull);
-    expect(manager.nodeForElement(newElement!), same(node));
-    expect(node.isAttached, isTrue);
-    expect(manager.primaryFocus, same(node));
-    expect(node.hasFocus, isTrue);
-    expect(firstScope.focusedChild, isNull);
-    expect(secondScope.focusedChild, same(node));
-
-    owner.finalizeTree();
-    expect(manager.nodeForElement(oldElement), isNull);
-    expect(manager.nodeForElement(newElement), same(node));
-    expect(node.isAttached, isTrue);
-
-    element.unmount();
-    expect(manager.nodeForElement(newElement), isNull);
     expect(node.isAttached, isFalse);
   });
 
@@ -318,66 +262,4 @@ void main() {
     expect(changes, equals(['h', 'hi', 'h']));
     app.dispose();
   });
-}
-
-Element? _findFocusElement(Element root, FocusManager manager, FocusNode node) {
-  if (identical(manager.nodeForElement(root), node)) {
-    return root;
-  }
-  Element? result;
-  root.visitChildren((child) {
-    result ??= _findFocusElement(child, manager, node);
-  });
-  return result;
-}
-
-/// Moves one supplied-node [Focus] to a different position, under a different
-/// parent, in a single rebuild.
-final class _Relocate extends StatefulWidget {
-  const _Relocate({
-    required this.node,
-    required this.firstScope,
-    required this.secondScope,
-    required this.onReady,
-  });
-
-  final FocusNode node;
-  final FocusScopeNode firstScope;
-  final FocusScopeNode secondScope;
-  final void Function(_RelocateState state) onReady;
-
-  @override
-  State<_Relocate> createState() => _RelocateState();
-}
-
-final class _RelocateState extends State<_Relocate> {
-  var _relocated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.onReady(this);
-  }
-
-  void relocate() => setState(() => _relocated = true);
-
-  @override
-  Widget build(BuildContext context) {
-    final focus = Focus(
-      focusNode: widget.node,
-      child: const SizedBox(width: 1, height: 1),
-    );
-    return Row(
-      children: [
-        FocusScope(
-          node: widget.firstScope,
-          child: Column(children: _relocated ? const [] : [focus]),
-        ),
-        FocusScope(
-          node: widget.secondScope,
-          child: Column(children: _relocated ? [focus] : const []),
-        ),
-      ],
-    );
-  }
 }

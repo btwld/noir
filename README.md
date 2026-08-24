@@ -185,23 +185,6 @@ See
 [the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
 for the complete styled version with a solid action button.
 
-## Hot Reload During Development
-
-Run a Noir entry point through the packaged development command, then save a
-`.dart` file under `lib/` or beside the entry point to reload it:
-
-```sh
-dart run noir:run example/counter.dart
-```
-
-The runner keeps the app attached to the current terminal, asks the Dart VM to
-swap the edited sources, and invokes Noir's `ext.noir.reassemble` extension to
-rebuild, lay out, and repaint the retained widget tree. A compile error leaves
-the last good app running; fix the source and save again to retry. Runner
-diagnostics are written to `.dart_tool/noir/run.log` so they do not overwrite
-the alternate-screen UI. Replace `example/counter.dart` with your package's
-entry point; arguments after it are forwarded to the app unchanged.
-
 ## Widget Lifecycle Hooks
 
 Hooks ship in the main `noir` package but remain outside the default
@@ -229,9 +212,8 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 a finite rich-text grid with wrapping and row-major text selection, and
 `DataTable` for a windowed interactive data source with row selection and
 sorting.
-Likewise, `TabSelect` is the horizontal tab control, with fixed-cell widths by
-default and label-sized tabs via `tabWidth: null`; the existing `Select` remains
-the vertical list-of-options control.
+Likewise, `TabSelect` is the horizontal tab control; the existing `Select`
+remains the vertical list-of-options control.
 
 `OverlayPortal` keeps overlay content as a logical descendant of the portal
 while `runTuiApp` hosts one private root overlay. `MenuAnchor` places an
@@ -334,9 +316,6 @@ backend remain framework-owned; they are not supported package surfaces.
   selection, scrolling, and text submission.
 - [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
   and animation.
-- [Pub search](https://github.com/leoafarias/noir/blob/main/example/pub_search.dart) — a live pub.dev package browser with
-  deterministic fake-backed tests, paging and sort/filter pickers, and spacious
-  Overview, Versions, Dependencies, and Health tabs.
 - [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
   ticker-driven updates.
 - [Like Reactor](https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart) — deterministic heart particles,

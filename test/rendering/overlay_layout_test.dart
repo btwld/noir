@@ -109,6 +109,24 @@ void main() {
       ),
       const Offset(1, 1),
     );
+    expect(
+      resolveAnchoredMenuOrigin(
+        safeRect: const Rect.fromLTWH(0, 0, 10, 6),
+        anchor: const Rect.fromLTWH(1, 2, 2, 1),
+        menuSize: const Size(3, 4),
+        alignmentOffset: Offset.zero,
+      ),
+      const Offset(1, 2),
+    );
+    expect(
+      resolveAnchoredMenuOrigin(
+        safeRect: const Rect.fromLTWH(0, 0, 10, 5),
+        anchor: const Rect.fromLTWH(1, 2, 2, 1),
+        menuSize: const Size(3, 4),
+        alignmentOffset: Offset.zero,
+      ),
+      const Offset(1, 1),
+    );
   });
 
   test('reserved padding deflates without negative extents', () {

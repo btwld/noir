@@ -489,7 +489,7 @@ class _PortalElement extends Element {
       _inflatingOverlay = overlay;
       try {
         final child = Element.inflateWidget(next, this);
-        _children.add(child);
+        _children.insert(overlay ? _children.length : 0, child);
         assign(child);
       } finally {
         _inflatingOverlay = false;
@@ -511,7 +511,7 @@ class _PortalElement extends Element {
     _inflatingOverlay = overlay;
     try {
       final child = Element.inflateWidget(next, this);
-      _children.add(child);
+      _children.insert(overlay ? _children.length : 0, child);
       assign(child);
     } finally {
       _inflatingOverlay = false;
