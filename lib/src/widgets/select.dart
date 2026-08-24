@@ -592,7 +592,7 @@ class RenderSelect<T> extends RenderBox {
         );
       }
 
-      // Paint name cluster-by-cluster (each grapheme → its cell width).
+      // Advance by grapheme clusters so a wide glyph occupies more than one cell.
       var col = 0;
       for (final cluster in opt.name.characters) {
         final cw = terminalCellWidth(cluster);
@@ -607,7 +607,6 @@ class RenderSelect<T> extends RenderBox {
         col += cw;
       }
 
-      // Description (gap + dim color).
       if (opt.description != null && col < usableWidth) {
         canvas.setCell(Offset(originX + col, originY + row), ' ', fg, bg, 0);
         col++;
@@ -636,7 +635,6 @@ class RenderSelect<T> extends RenderBox {
         paintedRows > 0 &&
         _options.length > paintedRows) {
       final indCol = originX + width - 1;
-      // Up arrow at top if scrollable up
       canvas.setCell(
         Offset(indCol, originY),
         _scrollOffset > 0 ? '▲' : ' ',
@@ -644,7 +642,6 @@ class RenderSelect<T> extends RenderBox {
         rowBg,
         0,
       );
-      // Down arrow on the last painted row if scrollable down
       final lastVisible = _scrollOffset + paintedRows;
       canvas.setCell(
         Offset(indCol, originY + paintedRows - 1),
