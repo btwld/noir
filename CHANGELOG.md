@@ -14,6 +14,13 @@
   visibility; menu controller replacement preserves open state. This is not
   Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
   nested overlay, transform, `LayerLink`, animation, or cascade API.
+- Reworked Pub search package details around a responsive hierarchy: package
+  state, publication metadata, install command, and headline metrics now lead
+  the page; 44-cell summary groups pair on wide terminals and stack on narrow
+  ones; Versions uses a friendly release ledger instead of archive metadata;
+  Dependencies uses the available width; and Health prioritizes rendered GFM
+  reports and advisories ahead of technical diagnostics. Sort and Filter now
+  use launcher-anchored `MenuAnchor` menus.
 
 ## 0.0.1-alpha.2
 
@@ -32,7 +39,7 @@
 - Added the Pub search example, a live pub.dev browser demonstrating an
   injected async data source behind an application-owned `PubCatalog` seam,
   explicit loading/empty/error/ready states, stale-response suppression, paging,
-  centered sort and filter overlays above retained results, and a four-tab
+  launcher-anchored sort and filter menus above retained results, and a four-tab
   package detail view built with `TabSelect`. Its tests inject a fake catalog,
   so every async path stays deterministic without network access. Drive locators
   `query`, `sort`, `filter`, `tabs`, and `detail` mark the controls a driver

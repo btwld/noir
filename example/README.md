@@ -24,7 +24,7 @@ dart run example/main.dart
 | `dart run example/parity_components_demo.dart` | `Stack`, `Positioned`, `Wrap`, `TabSelect`, `AsciiFont`, `Slider`, `TextTable`, `CodeView`, `DiffView`, and `MarkdownView` in one interactive app. |
 | `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
 | `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
-| `dart run example/pub_search.dart` | Live pub.dev search with fresh autocomplete, in-panel sort/filter pickers, paging, and a spacious four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
+| `dart run example/pub_search.dart` | Live pub.dev search with fresh autocomplete, anchored sort/filter menus, paging, and a responsive four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
 | `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
 | `dart run example/theme_demo.dart` | `Theme`/`ThemeData` token palette with `t` to swap presets across the whole subtree. |
 | `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
@@ -50,8 +50,8 @@ failure stays silent so typeahead never replaces search results or the search
 error panel. Names and topics are suggested (topics include a package count).
 Press Enter to search or inspect the highlighted package. In a result or empty
 surface, Tab moves through the query, Sort, Filter, and then results when they
-exist. Enter, Space, or a click on `Sort: TOP ▾` or `Filter: ANY ▾` opens the
-corresponding in-panel picker; `s` and `f` do the same from the result list.
+exist. Enter, Space, or a click on `Sort: TOP ▾` or `Filter: ANY ▾` opens a
+launcher-anchored menu; `s` and `f` do the same from the result list.
 Use arrows to preview a choice and Enter or a click to apply it, or Tab/Escape
 to cancel. `n`/`p` move between result pages. Confirming a topic suggestion
 applies that topic to the next search. In package detail, Left/Right, `1`–`4`,
