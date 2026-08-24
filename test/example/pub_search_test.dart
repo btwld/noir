@@ -180,9 +180,12 @@ void main() {
     for (final current in cases) {
       final frame = _capturePackageDetail(current.package);
       expect(
-        const ['ACTIVE', 'UNLISTED', 'DISCONTINUED', 'LATEST RETRACTED']
-            .expand(frame.findText)
-            .length,
+        const [
+          'ACTIVE',
+          'UNLISTED',
+          'DISCONTINUED',
+          'LATEST RETRACTED',
+        ].expand(frame.findText).length,
         1,
         reason: '${current.package.name} should expose one package state',
       );
