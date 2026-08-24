@@ -109,6 +109,7 @@ class _TourAppState extends State<WidgetsTourApp> {
                   child: SizedBox(
                     width: 18,
                     child: Select<String>(
+                      key: const ValueKey<String>('fruit'),
                       focusNode: _selectFocus,
                       autofocus: true,
                       height: 5,
@@ -126,6 +127,7 @@ class _TourAppState extends State<WidgetsTourApp> {
                     width: 24,
                     height: 6,
                     child: ScrollBox(
+                      key: const ValueKey<String>('content'),
                       focusNode: _scrollFocus,
                       onScroll: (o) =>
                           setState(() => _scrollOffset = o.round()),
@@ -146,6 +148,7 @@ class _TourAppState extends State<WidgetsTourApp> {
               title: 'TextArea',
               focused: _textFocus.hasFocus,
               child: TextArea(
+                key: const ValueKey<String>('editor'),
                 focusNode: _textFocus,
                 height: 3,
                 width: 44,

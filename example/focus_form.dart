@@ -78,6 +78,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildField(
+            key: const ValueKey<String>('name'),
             label: 'Name',
             focusNode: _nameFocus,
             value: _name,
@@ -86,6 +87,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
             onChanged: (value) => setState(() => _name = value),
           ),
           _buildField(
+            key: const ValueKey<String>('email'),
             label: 'Email',
             focusNode: _emailFocus,
             value: _email,
@@ -100,6 +102,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
   );
 
   Widget _buildField({
+    required Key key,
     required String label,
     required FocusNode focusNode,
     required String value,
@@ -113,6 +116,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
     width: 54,
     height: 3,
     child: TextInput(
+      key: key,
       focusNode: focusNode,
       autofocus: autofocus,
       value: value,

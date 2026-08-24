@@ -113,6 +113,7 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
           DemoPanel(
             title: 'Packages',
             child: DataTable(
+              key: const ValueKey<String>('table'),
               autofocus: true,
               columns: _columns,
               rowCount: _rows.length,

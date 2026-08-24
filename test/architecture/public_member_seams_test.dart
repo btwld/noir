@@ -813,6 +813,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
     'beginRebuild',
     'endRebuild',
     'pipelineOwner',
+    'hitTestAt',
     'copyToClipboard',
     'scheduleBuild',
     'clearDirty',

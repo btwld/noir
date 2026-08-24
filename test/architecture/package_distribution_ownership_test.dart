@@ -798,6 +798,19 @@ void main() {
     expect(skill, contains('`references/design.md`'));
     expect(driveCli, contains('scroll takes <up|down|left|right> <x> <y>.'));
     expect(skill, contains('scroll <up|down|left|right> <x> <y>'));
+    expect(driveCli, contains('find <locator>'));
+    expect(driveCli, contains('wait <locator>'));
+    expect(driveCli, contains('DriverLocator.byText(value)'));
+    expect(skill, contains('`ValueKey<String>`'));
+    expect(skill, contains('exact and case-sensitive'));
+    expect(skill, contains('fail instead of auto-scrolling'));
+    expect(skill, contains('find key increment'));
+    expect(skill, contains('Select<String>'));
+    expect(skill, contains('own visible pointer route'));
+    expect(skill, contains('painted capture rows'));
+    expect(exampleGuide, contains('find key increment'));
+    expect(exampleGuide, contains('Select<String>'));
+    expect(exampleGuide, contains('tree 10'));
     expect(driveCli, contains("argument == '--size'"));
     expect(skill, contains('`--size 80x24`'));
 

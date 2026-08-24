@@ -64,6 +64,28 @@ data mode. The adapter is isolated behind `PubCatalog` so tests can inject a
 fake and keep async, empty, error, retry, paging, and stale-response behavior
 deterministic without network access.
 
+## Drive mode
+
+Interactive examples expose stable `ValueKey<String>` values on the control a
+driver would click or wait for. A headless drive session against
+`example/counter.dart` can then use exact locators:
+
+```
+tree 10
+find key increment
+click key increment
+capture --plain
+quit
+```
+
+A `tree` listing is depth-limited unless you pass a larger depth; `find`
+always searches the whole snapshot. Put each key on the control itself or a
+small wrapper widget, not on a layout box around it. Type locators match
+`runtimeType` exactly (`Select<String>`, not `Select`). Text locators read
+`Text` and `RichText` source, not painted Select or table glyphs.
+`example/bindings_validation.dart` needs a real terminal stdin lease and
+exits 70 under drive mode.
+
 ## Tips
 
 - Use a wide terminal for the layout demos to reduce clipping. Chat, the

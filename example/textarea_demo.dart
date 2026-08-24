@@ -55,6 +55,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
             DemoPanel(
               title: 'Draft',
               child: TextArea(
+                key: const ValueKey<String>('editor'),
                 autofocus: true,
                 width: 50,
                 height: 6,

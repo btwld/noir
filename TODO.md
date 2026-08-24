@@ -62,6 +62,25 @@ from its own exact candidate tree rather than reusing those results.
 
 ## Done — alpha.2 candidate preparation and recorded baseline
 
+- [x] **Locator-based drive refinement**: drive mode retains its seven-method
+      byte-input surface while adding parser-backed Shift+Tab/Home/End/Delete,
+      structured exact-key/text/focus snapshots with private driver-owned text
+      extraction, fresh client-side locators, visibility-safe locator clicks
+      that credit both production `HitTestResult.path` `RenderObject` targets
+      and RenderBox visit lineage, CLI grammar coverage, and keyed-control
+      VM-service E2E coverage. A custom low-level `HitTestTarget` that is not
+      a `RenderBox` shares the same cell for ordinary dispatch and locator
+      clicks; the review blocker on that equivalence is closed. Interactive
+      examples expose `ValueKey<String>` on primary controls, catalog drive
+      smoke and keyed locator E2E cover the shipped entrypoints, and zero-match
+      errors list nearby keys, exact runtime types, and a missing primary-focus
+      hint. Clean-build CLI captures tolerate Dart hook status on the first
+      JSON line, and input settles after its post-dispatch frame baseline even
+      while the app animates. As-built docs lock own-route hit points,
+      painted-vs-source text, CLI tree defaults to depth 2, and reject leftover
+      ancestor-point and diagnostic-provider specs. On this tree, format and
+      fatal-info analysis, 177 architecture tests, the 1738-test serial suite,
+      and diff checks pass.
 - [x] Package metadata, changelog, install guidance, contributor guidance, and
       release assertions agree on the current candidate version.
 - [x] The build hook declares `native_manifest.json` and the selected bundled
@@ -217,12 +236,9 @@ authorization.
   animating app never reports `stable: true`, an in-app `TuiApp.exit` ends the
   driven session (the host follows the binding down), and `reload` inherits
   the `reassemble()` limits described above.
-- `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
-  drives is proven by `test/app/driver_test.dart` and
-  `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
-  `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
-  capture parsing are proven by `test/driver_client_test.dart`. The CLI command
-  grammar itself is only exercised by running it.
+- The line-oriented drive CLI trims outer command whitespace, so an exact key,
+  type, or text locator cannot itself begin or end with whitespace. The Dart
+  client preserves those values exactly.
 - The packaged hot-reload runner is covered downstream by
   `test/bin/run_test.dart`, including a real source swap, Noir reassembly,
   compile-error recovery, diagnostics, argument forwarding, and process exit.

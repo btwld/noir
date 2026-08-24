@@ -74,9 +74,11 @@ that way and reads commands from its own stdin, interactively or from a pipe:
 
     capture [--ansi|--plain|--cells]
     tree [depth]
-    key <up|down|left|right|enter|tab|space|esc|backspace|pgup|pgdn|ctrl-<a-z>>
+    find key|type|text <exact value> | find focused
+    wait key|type|text <exact value> | wait focused
+    key <up|down|left|right|enter|tab|shift-tab|space|esc|backspace|home|end|delete|pgup|pgdn|ctrl-<a-z>>
     type <text...>
-    click <x> <y>
+    click <x> <y> | click key|type|text <exact value> | click focused
     scroll <up|down|left|right> <x> <y>
     resize <WxH>
     reload
@@ -86,7 +88,7 @@ that way and reads commands from its own stdin, interactively or from a pipe:
 Rendered frames and tree output go to stdout while status and errors go to
 stderr, so a scripted run captures exactly what the app painted:
 
-    printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
+    printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
       dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
 
 Pass `--verbosity=error` whenever the frames are piped or redirected. Dart
@@ -94,9 +96,39 @@ writes its build-hook status to stdout, which otherwise lands in front of the
 first captured row.
 
 `scripts/driver/noir_driver.dart` exposes the same surface as a Dart client for
-scripts that assert against captures. Neither is a test harness: they drive a
-live app process instead of mounting widgets, so the four harnesses above
-remain the way to test widget behavior.
+scripts that assert against captures. `tree()` returns structured `DriverNode`
+snapshots, and `DriverLocator.byKey`, `.byType`, `.byText`, and `.focused`
+resolve exactly and case-sensitively on the client. Only `ValueKey<String>` is
+a stable key locator; text comes directly from `Text` and `RichText` source
+content, not painted Select, TabSelect, DataTable, or ListView glyphs. Type
+locators are `runtimeType` strings, so `Select<String>` matches and `Select`
+does not. Strict lookups and clicks reject ambiguous matches. A zero-match
+error lists nearby keys or exact types from the same snapshot.
+
+The line-oriented CLI trims outer command whitespace, so use the Dart client
+when an exact key, type, or text value itself starts or ends with whitespace.
+
+CLI tree defaults to depth 2 so a human listing stays short; `find`, `wait`,
+and `click` always snapshot the full tree. Use `tree 10` when you want to see
+`increment` in the listing.
+
+`waitForText` polls painted capture rows for a substring. `byText` / `find
+text` match exact `Text` and `RichText` source, not those cells.
+
+Put `ValueKey<String>` on the control or a Stateless/Stateful wrapper that
+owns it. A key on a layout `RenderObjectWidget` such as `Padding` or `Column`
+does not inherit a child's pointer route. A locator click uses that node's
+own visible pointer route and does not borrow an ancestor or descendant
+`hitPoint`.
+
+Every locator operation fetches a fresh tree. Locator clicks use a currently
+visible hit-tested cell from the production render-tree path, including
+ScrollBox translation, clipping, Stack occlusion, and custom `RenderObject`
+`HitTestTarget`s that join `HitTestResult.path` without being a `RenderBox`.
+They do not auto-scroll; an offscreen, fully obscured, or non-pointer target
+fails clearly. Neither the CLI nor client is a test harness: they drive a live
+app process instead of mounting widgets, so the four harnesses above remain the
+way to test widget behavior.
 
 Keys and mouse reports are encoded to escape bytes on the client side and
 injected through the production ANSI parser, so a driven interaction takes the
