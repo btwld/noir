@@ -7,6 +7,7 @@ void main() {
   final compactOwner = owner.replaceAll(RegExp(r'\s+'), ' ');
   final element = File('lib/src/framework/element.dart').readAsStringSync();
   final flexible = File('lib/src/widgets/flexible.dart').readAsStringSync();
+  final overlay = File('lib/src/widgets/overlay.dart').readAsStringSync();
   final productionSources = <String, String>{
     for (final file in Directory(
       'lib',
@@ -206,6 +207,7 @@ void main() {
         <String, int>{
           'lib/src/framework/element.dart': 3,
           'lib/src/widgets/flexible.dart': 1,
+          'lib/src/widgets/overlay.dart': 3,
         },
         reason: 'every production deactivation caller must be inventoried',
       );
@@ -225,6 +227,11 @@ void main() {
           flexible,
           '  void performRebuild()',
           '  @override\n  RenderObject? findRenderObject()',
+        ),
+        '_OverlayTheaterElement': _slice(
+          overlay,
+          '  void _updateChild(Widget newWidget)',
+          '  void _attachChildRenderObject()',
         ),
       };
       for (final entry in singleOwnerMethods.entries) {
@@ -258,6 +265,25 @@ void main() {
         reason:
             'MultiChildRenderObjectElement must pair its deactivation call '
             'with committed identity cleanup in the same finally',
+      );
+
+      final portalSlot = _slice(
+        overlay,
+        '  void _updateSlot({',
+        '  @override\n  void insertRenderObjectChild',
+      );
+      expect(
+        deactivateCall.allMatches(portalSlot),
+        hasLength(2),
+        reason:
+            '_PortalElement must deactivate both overlay slots through owner',
+      );
+      expect(
+        _portalCommittedCleanup.allMatches(portalSlot),
+        hasLength(2),
+        reason:
+            '_PortalElement must pair each deactivation call with committed '
+            'identity cleanup in the same finally',
       );
     },
   );
@@ -340,6 +366,20 @@ final _singleCommittedCleanup = RegExp(
   r'if\s*\(\s*currentChild\.parent\s*==\s*null\s*'
   r'&&\s*!currentChild\.active\s*\)\s*\{\s*'
   r'_children\.clear\(\);\s*'
+  r'\}\s*\}',
+  multiLine: true,
+);
+
+final _portalCommittedCleanup = RegExp(
+  r'try\s*\{\s*'
+  r'owner\.deactivateChild\(current\);\s*'
+  r'\}\s*finally\s*\{\s*'
+  r'if\s*\(\s*current\.parent\s*==\s*null\s*'
+  r'&&\s*!current\.active\s*\)\s*\{\s*'
+  r'_children\.removeWhere\(\s*'
+  r'\(candidate\)\s*=>\s*identical\(candidate,\s*current\)\s*'
+  r'\);\s*'
+  r'assign\(null\);\s*'
   r'\}\s*\}',
   multiLine: true,
 );

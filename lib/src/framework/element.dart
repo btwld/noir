@@ -13,6 +13,30 @@ import 'widget.dart';
 /// Signature for callbacks that visit an [Element].
 typedef ElementVisitor = void Function(Element element);
 
+/// One render-object edge hosted outside this element's ordinary parent chain.
+///
+/// Snapshot-only: constructing a record must not mutate the tree. The
+/// [detach] callback is invoked later, still before Element publication, and
+/// must be idempotent for an already-detached, already-correct state.
+@internal
+final class ExternalRenderEdge {
+  /// Identifies [child] as attached to [expectedParent] with [detach].
+  const ExternalRenderEdge({
+    required this.child,
+    required this.expectedParent,
+    required this.detach,
+  });
+
+  /// Render object hosted under [expectedParent].
+  final RenderObject child;
+
+  /// Render parent that currently owns [child].
+  final RenderObject expectedParent;
+
+  /// Drops [child] from [expectedParent] when still attached there.
+  final void Function() detach;
+}
+
 /// An instantiation of a [Widget] at a location in the element tree.
 abstract class Element {
   /// Creates an element backed by [widget].
@@ -329,6 +353,15 @@ abstract class Element {
 
   /// The render object associated with this element, if any.
   RenderObject? findRenderObject() => null;
+
+  /// Appends externally hosted render edges owned by this element, not by
+  /// descendants.
+  ///
+  /// [BuildOwner.deactivateChild] walks the logical subtree and calls this
+  /// on every node before any render detach or Element publication. The
+  /// default is a no-op so ordinary one-edge trees stay unchanged.
+  @internal
+  void collectOwnedExternalRenderEdges(List<ExternalRenderEdge> edges) {}
 
   /// Bubble a render-object child insertion toward the nearest render parent.
   void insertRenderObjectChild(RenderObject child, Element childElement) {

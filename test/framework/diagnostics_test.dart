@@ -49,13 +49,15 @@ void main() {
       final widget = _Root(child: _Intermediate(child: const _Leaf()));
 
       final app = runTuiApp(widget, headless: true);
-      final tree = inspector.describeTree(maxDepth: 4);
+      final tree = inspector.describeTree(maxDepth: 10);
 
       expect(inspector.rootElement, isNotNull);
       expect(tree, isNotEmpty);
-      // runTuiApp mounts its app scope above the caller's root, so the scope
-      // is the tree root and the caller's widgets hang below it.
+      // runTuiApp mounts its app scope and private root overlay above the
+      // caller's root, so the scope is the tree root and the caller's widgets
+      // hang below the overlay theater.
       expect(tree.first.startsWith('_TuiAppScope'), isTrue);
+      expect(tree.any((line) => line.contains('RootOverlay')), isTrue);
       expect(tree.any((line) => line.trim().startsWith('_Root')), isTrue);
       expect(tree.any((line) => line.trim().startsWith('_Leaf')), isTrue);
 

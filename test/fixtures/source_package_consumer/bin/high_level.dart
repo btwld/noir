@@ -81,3 +81,32 @@ final class ConsumerDecoration extends Decoration {
 
 final ActionCallback<ActivateIntent> consumerAction = (intent, context) =>
     KeyEventResult.handled;
+
+Widget consumerOverlayAndMenu() {
+  final portal = OverlayPortalController(debugLabel: 'consumer');
+  final menu = MenuController();
+  const WidgetBuilder overlayBuilder = _overlayChild;
+  return Column(
+    children: [
+      OverlayPortal(
+        controller: portal,
+        overlayChildBuilder: overlayBuilder,
+        child: const Text('portal-child'),
+      ),
+      MenuAnchor(
+        controller: menu,
+        alignmentOffset: Offset.zero,
+        reservedPadding: EdgeInsets.zero,
+        onOpen: () {},
+        onClose: () {},
+        menuChildren: const [Text('item')],
+        builder:
+            (BuildContext context, MenuController controller, Widget? child) =>
+                Text(controller.isOpen ? 'open' : 'closed'),
+        child: const Text('launcher'),
+      ),
+    ],
+  );
+}
+
+Widget _overlayChild(BuildContext context) => const Text('overlay');

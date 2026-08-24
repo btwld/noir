@@ -1,4 +1,4 @@
-# Release TODO — `0.0.1-alpha.2`
+# Release TODO — `0.0.1-alpha.3`
 
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
@@ -8,7 +8,12 @@ manual workflow dispatch, or public repository visibility until the applicable
 open items below are closed. The previous pub.dev publications recorded below
 are complete; `0.0.1-alpha.2` is not published.
 
-## Open — OpenTUI component parity program
+This alpha.3 development tree is not eligible to land or release until the
+reviewed alpha.2 candidate completes the blocking operations below. The
+alpha.2 evidence remains recorded verbatim; alpha.3 verification must be added
+from its own exact candidate tree rather than reusing those results.
+
+## Blocking prerequisite — alpha.2 OpenTUI component parity program
 
 - [x] **Phase 1 Image automated gate**: `TerminalImage`, all five source
       forms, ownership/cancellation, fit modes, display-list/native drawing,
@@ -34,7 +39,7 @@ are complete; `0.0.1-alpha.2` is not published.
       Kitty, Sixel, tmux, Screen, OSC52, resize/crop, or other real-terminal
       checks, then record the results from the exact candidate tree.
 
-## Open — remaining release operations
+## Blocking prerequisite — remaining alpha.2 release operations
 
 - [x] **Independent behavior and full-diff review** of the alpha.2 parity
       candidate accepted the exact implementation and evidence snapshot with
@@ -54,7 +59,7 @@ are complete; `0.0.1-alpha.2` is not published.
 - [ ] **Repository visibility, tag, and GitHub release** — each remains a
       separate, deliberate decision. The repository is private today.
 
-## Done — candidate preparation and recorded baseline
+## Done — alpha.2 candidate preparation and recorded baseline
 
 - [x] **Locator-based drive refinement**: drive mode retains its seven-method
       byte-input surface while adding parser-backed Shift+Tab/Home/End/Delete,

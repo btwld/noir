@@ -201,6 +201,7 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 | Area | Public widgets and types |
 | --- | --- |
 | Layout | `Container`, `Row`, `Column`, `Flexible`, `Expanded`, `Stack`, `Positioned`, `Wrap`, `Align`, `Padding`, `SizedBox` |
+| Overlay and menus | `OverlayPortal`, `OverlayPortalController`, `MenuAnchor`, `MenuController` |
 | Text and media | `Text`, `RichText`, linked `TextSpan`, `AsciiFont`, `Image`, `TerminalImage` |
 | Input | `TextInput`, `TextArea`, `Select`, `TabSelect`, `Slider`, `Checkbox`, `Switch`, `Button` |
 | Scrolling and data | `ScrollBox`, `ListView`, virtualized interactive `DataTable`, static rich `TextTable` |
@@ -213,6 +214,16 @@ a finite rich-text grid with wrapping and row-major text selection, and
 sorting.
 Likewise, `TabSelect` is the horizontal tab control; the existing `Select`
 remains the vertical list-of-options control.
+
+`OverlayPortal` keeps overlay content as a logical descendant of the portal
+while `runTuiApp` hosts one private root overlay. `MenuAnchor` places an
+unstyled integer-cell menu relative to its launcher and follows that launcher
+in the same frame after resize or movement. It does not close on resize the
+way Flutter currently does. Outside pointer events are consumed at render-tree
+priority so they cannot reach lower widgets; only a left-button down closes
+the topmost menu. `TuiApp.onMouse` may still observe the raw event. There is
+no public `Overlay` / `OverlayEntry`, nested overlay, transform, `LayerLink`,
+animation, or cascade API.
 
 ## Application Lifecycle and API Tiers
 
