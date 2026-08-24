@@ -132,73 +132,70 @@ void main() {
     }
   });
 
-  test(
-    'overlay resolves Theme, Actions, Shortcuts, and focus ancestry through '
-    'the portal',
-    () {
-      Color? resolved;
-      Action<Intent>? action;
-      KeyEventResult? shortcutResult;
-      final outerFocus = FocusNode(debugLabel: 'outer');
-      final overlayFocus = FocusNode(debugLabel: 'overlay');
-      final activate = CallbackAction<ActivateIntent>(
-        (intent, context) => KeyEventResult.handled,
-      );
-      final controller = OverlayPortalController()..show();
-      final host = TestElementHost()
-        ..mount(
-          RootOverlay(
-            child: Theme(
-              data: ThemeData.dark.copyWith(text: Color.red),
-              child: Shortcuts(
-                shortcuts: const {
-                  SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-                },
-                child: Actions(
-                  actions: <Type, Action<Intent>>{ActivateIntent: activate},
-                  child: Focus(
-                    focusNode: outerFocus,
-                    child: OverlayPortal(
-                      controller: controller,
-                      overlayChildBuilder: (context) {
-                        resolved = Theme.of(context).text;
-                        action = Actions.maybeFind(context, ActivateIntent);
-                        shortcutResult = Shortcuts.handleKeyEvent(
-                          context,
-                          KeyEvent(
-                            logicalKey: LogicalKeyboardKey.enter,
-                            keyCode: 13,
-                          ),
-                        );
-                        return Focus(
-                          focusNode: overlayFocus,
-                          child: const Text('overlay'),
-                        );
-                      },
-                      child: const Text('child'),
-                    ),
+  test('overlay resolves Theme, Actions, Shortcuts, and focus ancestry through '
+      'the portal', () {
+    Color? resolved;
+    Action<Intent>? action;
+    KeyEventResult? shortcutResult;
+    final outerFocus = FocusNode(debugLabel: 'outer');
+    final overlayFocus = FocusNode(debugLabel: 'overlay');
+    final activate = CallbackAction<ActivateIntent>(
+      (intent, context) => KeyEventResult.handled,
+    );
+    final controller = OverlayPortalController()..show();
+    final host = TestElementHost()
+      ..mount(
+        RootOverlay(
+          child: Theme(
+            data: ThemeData.dark.copyWith(text: Color.red),
+            child: Shortcuts(
+              shortcuts: const {
+                SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+              },
+              child: Actions(
+                actions: <Type, Action<Intent>>{ActivateIntent: activate},
+                child: Focus(
+                  focusNode: outerFocus,
+                  child: OverlayPortal(
+                    controller: controller,
+                    overlayChildBuilder: (context) {
+                      resolved = Theme.of(context).text;
+                      action = Actions.maybeFind(context, ActivateIntent);
+                      shortcutResult = Shortcuts.handleKeyEvent(
+                        context,
+                        KeyEvent(
+                          logicalKey: LogicalKeyboardKey.enter,
+                          keyCode: 13,
+                        ),
+                      );
+                      return Focus(
+                        focusNode: overlayFocus,
+                        child: const Text('overlay'),
+                      );
+                    },
+                    child: const Text('child'),
                   ),
                 ),
               ),
             ),
           ),
-        )
-        ..pumpFrame(
-          constraints: const BoxConstraints.tight(width: 20, height: 6),
-        );
+        ),
+      )
+      ..pumpFrame(
+        constraints: const BoxConstraints.tight(width: 20, height: 6),
+      );
 
-      try {
-        expect(resolved, Color.red);
-        expect(action, same(activate));
-        expect(shortcutResult, KeyEventResult.handled);
-        expect(overlayFocus.parent, same(outerFocus));
-      } finally {
-        host.dispose();
-        outerFocus.dispose();
-        overlayFocus.dispose();
-      }
-    },
-  );
+    try {
+      expect(resolved, Color.red);
+      expect(action, same(activate));
+      expect(shortcutResult, KeyEventResult.handled);
+      expect(overlayFocus.parent, same(outerFocus));
+    } finally {
+      host.dispose();
+      outerFocus.dispose();
+      overlayFocus.dispose();
+    }
+  });
 
   test('unattached show is pending until the next valid attachment', () {
     final controller = OverlayPortalController()..show();
