@@ -8,6 +8,7 @@ import '../foundation/first_error.dart';
 import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../widgets/overlay.dart';
 import 'driver.dart';
 import 'hot_reload.dart';
 import 'tui_binding.dart';
@@ -71,7 +72,12 @@ TuiApp _mount(
   void Function(int exitCode)? exitCodeSink,
 }) {
   final handle = TuiApp._(binding, exitCodeSink ?? _defaultExitCodeSink);
-  binding.runApp(_TuiAppScope(handle: handle, child: app));
+  binding.runApp(
+    _TuiAppScope(
+      handle: handle,
+      child: RootOverlay(child: app),
+    ),
+  );
   if (enableMouse) {
     handle.enableMouse();
   }

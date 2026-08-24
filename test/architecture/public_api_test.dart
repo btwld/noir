@@ -215,6 +215,16 @@ void main() {
         'MarkdownThemeData',
         'MarkdownView',
       },
+      'src/widgets/menu_anchor.dart': {
+        'MenuAnchor',
+        'MenuAnchorChildBuilder',
+        'MenuController',
+      },
+      'src/widgets/overlay.dart': {
+        'OverlayPortal',
+        'OverlayPortalController',
+        'WidgetBuilder',
+      },
       'src/widgets/padding.dart': {'Padding'},
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/progress_bar.dart': {'ProgressBar'},
@@ -367,8 +377,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(235),
-      reason: 'The high-level surface is locked at exactly 235 symbols.',
+      hasLength(241),
+      reason: 'The high-level surface is locked at exactly 241 symbols.',
     );
   });
 

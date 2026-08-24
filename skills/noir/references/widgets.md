@@ -6,6 +6,7 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 ## Contents
 
 - [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
+- [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `MenuAnchor`
 - [Theme](#theme): `Theme`, `ThemeData`
 - [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
@@ -188,6 +189,86 @@ const DecoratedBox({
   Widget? child,
   Key? key,
 })
+```
+
+---
+
+## Overlay and menus
+
+`OverlayPortal` keeps overlay content in the ordinary logical tree and hosts
+`overlayChildBuilder` on the one package-owned root overlay installed by
+`runTuiApp`. The overlay subtree stays a logical descendant of the portal, so
+`Theme`, `Actions`, `Shortcuts`, and focus ancestry resolve through the portal
+rather than the host. Hiding destroys overlay `State`; showing again builds a
+fresh subtree. `show()` on an already shown portal moves that identity to the
+top; rebuilds do not reorder entries. Controller replacement does not transfer
+visibility.
+
+Raw overlay content is laid out at natural size from the terminal origin,
+clipped to the terminal, and hit-tested only within its own bounds. There is
+no public `Overlay`, `OverlayState`, or `OverlayEntry`. Nested overlays,
+`overlayChildLayoutBuilder`, matrix transforms, `LayerLink`, and animation are
+not part of this API.
+
+```dart
+const OverlayPortal({
+  required this.controller,
+  required this.overlayChildBuilder,
+  super.key,
+  this.child,
+})
+```
+
+`MenuAnchor` places `menuChildren` as an unstyled `Column` (`MainAxisSize.min`,
+start alignment, no implicit padding) and follows the launcher in the same
+frame after resize or ancestor movement. Flutter currently closes an open menu
+when the view size or anchor scroll position changes; Noir follows instead.
+`MenuController.open(position:)` is launcher-local and ignores
+`alignmentOffset`. `null` alignment offset is `Offset.zero`. Effective
+reserved padding must be non-negative.
+
+Outside pointer events are consumed at render-tree priority. Only a left-button
+down closes the topmost menu; other outside pointer kinds are consumed without
+closing. That consumption does not hide the event from app-priority
+`TuiApp.onMouse`. Escape, Tab, and Shift+Tab close the menu, restore focus, and
+do not advance Tab on that same event. Independent anchors do not form a group.
+`MenuController.open` while detached throws; there is no pending-open contract.
+Replacing a caller-supplied controller preserves the open subtree and does not
+fire `onOpen` / `onClose`. Teardown also skips those callbacks.
+`MenuController.maybeOf` does not register an inherited dependency.
+
+```dart
+const MenuAnchor({
+  required this.menuChildren,
+  super.key,
+  this.controller,
+  this.childFocusNode,
+  this.alignmentOffset = Offset.zero,
+  this.reservedPadding,
+  this.onOpen,
+  this.onClose,
+  this.builder,
+  this.child,
+})
+```
+
+```dart
+final controller = MenuController();
+MenuAnchor(
+  controller: controller,
+  childFocusNode: launcherFocus,
+  menuChildren: [
+    Button(label: 'Rename', onPressed: () {
+      rename();
+      controller.close();
+    }),
+  ],
+  builder: (context, menu, child) => Button(
+    label: 'Actions',
+    focusNode: launcherFocus,
+    onPressed: () => menu.open(),
+  ),
+)
 ```
 
 ---

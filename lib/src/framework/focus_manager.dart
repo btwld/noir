@@ -258,6 +258,10 @@ class FocusNode extends ChangeNotifier {
   /// Whether this node is registered with a [FocusManager].
   bool get isAttached => _isAttached;
 
+  /// Whether this node is currently attached to [manager].
+  @internal
+  bool isAttachedTo(FocusManager manager) => identical(_manager, manager);
+
   bool _isAncestorOf(FocusNode? node) {
     var ancestor = node?._parent;
     while (ancestor != null) {
