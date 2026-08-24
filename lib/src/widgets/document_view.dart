@@ -750,7 +750,8 @@ final class _DocumentViewState extends State<DocumentView>
 
   void _pointerDown(MouseEvent event, DocumentSelectionScope? selectionScope) {
     if (event.button != MouseButton.left) return;
-    if ((selectionScope?.leafCanRequestFocus ?? true) && !focusNode.hasFocus) {
+    final canRequestFocus = selectionScope?.leafCanRequestFocus ?? true;
+    if (canRequestFocus && !focusNode.hasFocus) {
       focusNode.requestFocus();
     }
     final offset = _metrics.sourceOffsetAt(
@@ -827,6 +828,7 @@ final class _DocumentViewState extends State<DocumentView>
     final handlesScrolling = DocumentScrollScope.handlesScrollingOf(context);
     final handlesHorizontalScrolling =
         DocumentScrollScope.handlesHorizontalScrollingOf(context);
+    final canRequestFocus = selectionScope?.leafCanRequestFocus ?? true;
     return Shortcuts(
       shortcuts: _shortcuts(
         handlesScrolling: handlesScrolling,
@@ -841,7 +843,7 @@ final class _DocumentViewState extends State<DocumentView>
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
-          canRequestFocus: selectionScope?.leafCanRequestFocus ?? true,
+          canRequestFocus: canRequestFocus,
           child: PointerListener(
             onPointerDown: (event) => _pointerDown(event, selectionScope),
             onPointerMove: (event) => _pointerMove(event, selectionScope),

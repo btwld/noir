@@ -256,22 +256,14 @@ void main() {
       expect(frame.findText('COMPATIBILITY'), hasLength(1));
       expect(frame.findText('DISCOVERY'), hasLength(1));
       expect(frame.findText('PACKAGE CONFIG'), hasLength(1));
-      final package = frame.findText('PACKAGE').first;
-      final compatibility = frame.findText('COMPATIBILITY').single;
-      final discovery = frame.findText('DISCOVERY').single;
-      final configuration = frame.findText('PACKAGE CONFIG').single;
-
-      if (width >= 100) {
-        expect(compatibility.y, package.y, reason: 'width $width');
-        expect(configuration.y, discovery.y, reason: 'width $width');
-      } else {
-        expect(compatibility.y, greaterThan(package.y), reason: 'width $width');
-        expect(
-          configuration.y,
-          greaterThan(discovery.y),
-          reason: 'width $width',
-        );
-      }
+      _expectGroupsPair(
+        frame,
+        'PACKAGE',
+        'COMPATIBILITY',
+        width: width,
+        leftUsesFirstMatch: true,
+      );
+      _expectGroupsPair(frame, 'DISCOVERY', 'PACKAGE CONFIG', width: width);
     }
   });
 
@@ -411,14 +403,12 @@ void main() {
       );
       expect(frame.findText('DIRECT DEPENDENCIES'), hasLength(1));
       expect(frame.findText('DEVELOPMENT DEPENDENCIES'), hasLength(1));
-      final direct = frame.findText('DIRECT DEPENDENCIES').single;
-      final development = frame.findText('DEVELOPMENT DEPENDENCIES').single;
-
-      if (width >= 100) {
-        expect(development.y, direct.y, reason: 'width $width');
-      } else {
-        expect(development.y, greaterThan(direct.y), reason: 'width $width');
-      }
+      _expectGroupsPair(
+        frame,
+        'DIRECT DEPENDENCIES',
+        'DEVELOPMENT DEPENDENCIES',
+        width: width,
+      );
     }
   });
 
@@ -521,14 +511,7 @@ void main() {
       );
       expect(frame.findText('QUALITY'), hasLength(1));
       expect(frame.findText('DOWNLOAD TREND'), hasLength(1));
-      final quality = frame.findText('QUALITY').single;
-      final downloads = frame.findText('DOWNLOAD TREND').single;
-
-      if (width >= 100) {
-        expect(downloads.y, quality.y, reason: 'width $width');
-      } else {
-        expect(downloads.y, greaterThan(quality.y), reason: 'width $width');
-      }
+      _expectGroupsPair(frame, 'QUALITY', 'DOWNLOAD TREND', width: width);
     }
   });
 
@@ -4130,6 +4113,24 @@ _TabStyle _tabStyle(TuiTestApp app, String label) {
 }
 
 Color _painted(Color color) => Color.fromHex(color.toHex());
+
+void _expectGroupsPair(
+  CapturedBuffer frame,
+  String left,
+  String right, {
+  required int width,
+  bool leftUsesFirstMatch = false,
+}) {
+  final a = leftUsesFirstMatch
+      ? frame.findText(left).first
+      : frame.findText(left).single;
+  final b = frame.findText(right).single;
+  if (width >= 100) {
+    expect(b.y, a.y, reason: 'width $width');
+  } else {
+    expect(b.y, greaterThan(a.y), reason: 'width $width');
+  }
+}
 
 List<({int x, int y})> _spinnerPositions(TuiTestApp app) {
   app.pumpFrame();

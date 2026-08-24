@@ -229,7 +229,8 @@ final class _TextTableState extends State<TextTable>
     MouseEvent event,
   ) {
     if (event.button != MouseButton.left) return;
-    if (scope?.leafCanRequestFocus ?? true) focusNode.requestFocus();
+    final canRequestFocus = scope?.leafCanRequestFocus ?? true;
+    if (canRequestFocus) focusNode.requestFocus();
     if (!widget.selectable) return;
     final table = _renderTable(context);
     if (table == null) return;
@@ -287,6 +288,7 @@ final class _TextTableState extends State<TextTable>
         ? _selection
         : scope.selectionForBlock(plainText.length);
     final theme = Theme.of(context);
+    final canRequestFocus = scope?.leafCanRequestFocus ?? true;
     final paintSelection =
         widget.selection ??
         (effectiveSelection == null || effectiveSelection.isCollapsed
@@ -310,7 +312,7 @@ final class _TextTableState extends State<TextTable>
       child: Focus(
         focusNode: focusNode,
         autofocus: widget.autofocus,
-        canRequestFocus: scope?.leafCanRequestFocus ?? true,
+        canRequestFocus: canRequestFocus,
         child: PointerListener(
           onPointerDown: (event) =>
               _pointerDown(context, scope, plainText, event),

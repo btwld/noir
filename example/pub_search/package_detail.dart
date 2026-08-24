@@ -79,21 +79,14 @@ class PubPackageDetail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _packageMetadata(package, theme),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${_padCells('INSTALL', 10)} ',
-                    style: TextStyle(color: theme.textMuted),
-                  ),
-                  TextSpan(
-                    text: 'dart pub add ${package.name}',
-                    style: const TextStyle(
-                      color: pubEmphasis,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            ?_fact(
+              theme,
+              'INSTALL',
+              'dart pub add ${package.name}',
+              labelWidth: 10,
+              valueStyle: const TextStyle(
+                color: pubEmphasis,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 1),
@@ -138,36 +131,31 @@ class PubPackageDetail extends StatelessWidget {
   }
 }
 
-Widget _packageMetadata(PubPackageSnapshot package, ThemeData theme) {
-  final status = _packageBadge(package);
-  return Wrap(
-    spacing: 2,
-    runSpacing: 1,
-    children: [
-      Badge(label: status.label, variant: status.variant),
-      Text(
-        'Published ${_date(package.published)}',
-        style: TextStyle(color: theme.textMuted),
-      ),
-      if (package.publisher case final publisher?)
-        Text('by $publisher', style: TextStyle(color: theme.textMuted)),
-    ],
-  );
-}
+Widget _packageMetadata(PubPackageSnapshot package, ThemeData theme) => Wrap(
+  spacing: 2,
+  runSpacing: 1,
+  children: [
+    _packageBadge(package),
+    Text(
+      'Published ${_date(package.published)}',
+      style: TextStyle(color: theme.textMuted),
+    ),
+    if (package.publisher case final publisher?)
+      Text('by $publisher', style: TextStyle(color: theme.textMuted)),
+  ],
+);
 
-({String label, BadgeVariant variant}) _packageBadge(
-  PubPackageSnapshot package,
-) {
+Widget _packageBadge(PubPackageSnapshot package) {
   if (package.isDiscontinued) {
-    return (label: 'DISCONTINUED', variant: BadgeVariant.danger);
+    return const Badge(label: 'DISCONTINUED', variant: BadgeVariant.danger);
   }
   if (package.isUnlisted) {
-    return (label: 'UNLISTED', variant: BadgeVariant.warning);
+    return const Badge(label: 'UNLISTED', variant: BadgeVariant.warning);
   }
   if (package.retracted) {
-    return (label: 'LATEST RETRACTED', variant: BadgeVariant.danger);
+    return const Badge(label: 'LATEST RETRACTED', variant: BadgeVariant.danger);
   }
-  return (label: 'ACTIVE', variant: BadgeVariant.success);
+  return const Badge(label: 'ACTIVE', variant: BadgeVariant.success);
 }
 
 Widget _headlineMetrics(PubPackageSnapshot package, ThemeData theme) => Row(
@@ -202,10 +190,21 @@ Widget _metric(ThemeData theme, String value, String label) => Column(
   ],
 );
 
-Widget _summaryGroup(String title, List<Widget?> children) {
-  final items = children.whereType<Widget>().toList(growable: false);
+/// Two groups fit a 100-column frame: 44 + Wrap spacing 2 + 44.
+const _summaryGroupWidth = 44;
+
+Widget _summaryGroup(
+  String title,
+  List<Widget?> children, {
+  String? emptyText,
+}) {
+  final present = children.whereType<Widget>().toList(growable: false);
+  final items = [
+    ...present,
+    if (present.isEmpty && emptyText != null) Text(emptyText),
+  ];
   return SizedBox(
-    width: 44,
+    width: _summaryGroupWidth,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -260,8 +259,6 @@ Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
         ),
       ]),
       _summaryGroup('PACKAGE CONFIG', [
-        if (!_hasPackageConfiguration(package))
-          const Text('No package configuration reported'),
         _fact(theme, 'PUBLISH TO', package.publishTo),
         _fact(theme, 'RESOLUTION', package.resolution),
         _fact(theme, 'WORKSPACE', _joined(package.workspace)),
@@ -275,11 +272,10 @@ Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
                     .map((item) => '${item.description} — ${item.path}')
                     .join('; '),
         ),
-      ]),
+      ], emptyText: 'No package configuration reported'),
     ]),
     const SizedBox(height: 1),
     ..._section('PROJECT LINKS', [
-      if (!_hasProjectLinks(package)) const Text('No project links provided'),
       _fact(theme, 'PUB.DEV', package.packageUrl),
       _fact(
         theme,
@@ -293,7 +289,7 @@ Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
       _fact(theme, 'DOCUMENTATION', package.documentationUrl),
       _fact(theme, 'CONTRIBUTING', package.contributingUrl),
       for (final url in package.fundingUrls) _fact(theme, 'FUNDING', url),
-    ]),
+    ], emptyText: 'No project links provided'),
   ],
 );
 
@@ -594,26 +590,48 @@ Widget? _affectedVersions(ThemeData theme, List<String> versions) {
   return _fact(theme, 'AFFECTED', '${versions.length} versions');
 }
 
-List<Widget> _section(String title, List<Widget?> children) {
+List<Widget> _section(
+  String title,
+  List<Widget?> children, {
+  String? emptyText,
+}) {
   final items = children.whereType<Widget>().toList(growable: false);
-  if (items.isEmpty) return const [];
+  if (items.isNotEmpty) {
+    return [
+      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ...items,
+      const SizedBox(height: 1),
+    ];
+  }
+  if (emptyText == null) return const [];
   return [
     Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-    ...items,
+    Text(emptyText),
     const SizedBox(height: 1),
   ];
 }
 
-Widget? _fact(ThemeData theme, String label, String? value, {String? uri}) {
+Widget? _fact(
+  ThemeData theme,
+  String label,
+  String? value, {
+  String? uri,
+  int labelWidth = 16,
+  TextStyle? valueStyle,
+}) {
   if (value == null || value.isEmpty) return null;
   return RichText(
     text: TextSpan(
       children: [
         TextSpan(
-          text: '${_padCells(label, 16)} ',
+          text: '${_padCells(label, labelWidth)} ',
           style: TextStyle(color: theme.textMuted),
         ),
-        TextSpan(text: value, uri: _semanticHttpUri(uri ?? value)),
+        TextSpan(
+          text: value,
+          style: valueStyle,
+          uri: _semanticHttpUri(uri ?? value),
+        ),
       ],
     ),
   );
@@ -685,41 +703,17 @@ List<Widget> _rangeFacts(
 ];
 
 String _documentationLabel(PackageRelease release) {
+  final (label, canonical) = switch (release.hasDocumentation) {
+    true => ('docs ready', 'documented'),
+    false => ('no docs', 'no docs'),
+    null => ('docs unknown', 'unknown'),
+  };
   final status = release.documentationStatus?.trim();
-  final availability = switch (release.hasDocumentation) {
-    true => 'docs ready',
-    false => 'no docs',
-    null => 'docs unknown',
-  };
-  if (status == null || status.isEmpty) return availability;
+  if (status == null || status.isEmpty) return label;
   final normalized = status.toLowerCase().replaceAll('-', ' ');
-  final standardStatus = switch (release.hasDocumentation) {
-    true => 'documented',
-    false => 'no docs',
-    null => 'unknown',
-  };
-  if (normalized == standardStatus) return availability;
-  return '$availability ($status)';
+  if (normalized == canonical) return label;
+  return '$label ($status)';
 }
-
-bool _hasPackageConfiguration(PubPackageSnapshot package) =>
-    _hasText(package.publishTo) ||
-    _hasText(package.resolution) ||
-    package.workspace.isNotEmpty ||
-    package.executables.isNotEmpty ||
-    package.screenshots.isNotEmpty;
-
-bool _hasProjectLinks(PubPackageSnapshot package) =>
-    _hasText(package.packageUrl) ||
-    _hasText(package.changelogUrl) ||
-    _hasText(package.homepage) ||
-    _hasText(package.repository) ||
-    _hasText(package.issueTracker) ||
-    _hasText(package.documentationUrl) ||
-    _hasText(package.contributingUrl) ||
-    package.fundingUrls.isNotEmpty;
-
-bool _hasText(String? value) => value != null && value.isNotEmpty;
 
 String _number(num? value) {
   if (value == null) return '—';

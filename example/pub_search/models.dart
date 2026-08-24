@@ -829,7 +829,7 @@ List<String> _diagnosticSummaries(
       final parts = <String>[];
       for (final key in allowedKeys) {
         final field = value[key];
-        if (field is String && field.isNotEmpty ||
+        if ((field is String && field.isNotEmpty) ||
             field is num ||
             field is bool) {
           parts.add('$key: $field');
