@@ -9,7 +9,7 @@ enum PackageDetailTab {
   /// Identity, compatibility, discovery, and links.
   overview,
 
-  /// Published versions and artifacts.
+  /// Published versions and documentation availability.
   versions,
 
   /// Direct, development, override, and transitive dependencies.
@@ -73,22 +73,31 @@ class PubPackageDetail extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        if (package.publisher != null)
-          Text(package.publisher, style: TextStyle(color: theme.textMuted)),
       ],
       child: Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'dart pub add ${package.name}',
-              style: const TextStyle(
-                color: pubEmphasis,
-                fontWeight: FontWeight.bold,
+            _packageMetadata(package, theme),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${_padCells('INSTALL', 10)} ',
+                    style: TextStyle(color: theme.textMuted),
+                  ),
+                  TextSpan(
+                    text: 'dart pub add ${package.name}',
+                    style: const TextStyle(
+                      color: pubEmphasis,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-            _headlineMetrics(package, theme),
             const SizedBox(height: 1),
+            _headlineMetrics(package, theme),
             TabSelect<PackageDetailTab>(
               key: const ValueKey<String>('tabs'),
               options: _detailTabs,
@@ -118,7 +127,6 @@ class PubPackageDetail extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 1),
             Text(
               '←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results',
               style: TextStyle(color: theme.textMuted),
@@ -128,6 +136,38 @@ class PubPackageDetail extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _packageMetadata(PubPackageSnapshot package, ThemeData theme) {
+  final status = _packageBadge(package);
+  return Wrap(
+    spacing: 2,
+    runSpacing: 1,
+    children: [
+      Badge(label: status.label, variant: status.variant),
+      Text(
+        'Published ${_date(package.published)}',
+        style: TextStyle(color: theme.textMuted),
+      ),
+      if (package.publisher case final publisher?)
+        Text('by $publisher', style: TextStyle(color: theme.textMuted)),
+    ],
+  );
+}
+
+({String label, BadgeVariant variant}) _packageBadge(
+  PubPackageSnapshot package,
+) {
+  if (package.isDiscontinued) {
+    return (label: 'DISCONTINUED', variant: BadgeVariant.danger);
+  }
+  if (package.isUnlisted) {
+    return (label: 'UNLISTED', variant: BadgeVariant.warning);
+  }
+  if (package.retracted) {
+    return (label: 'LATEST RETRACTED', variant: BadgeVariant.danger);
+  }
+  return (label: 'ACTIVE', variant: BadgeVariant.success);
 }
 
 Widget _headlineMetrics(PubPackageSnapshot package, ThemeData theme) => Row(
@@ -162,48 +202,97 @@ Widget _metric(ThemeData theme, String value, String label) => Column(
   ],
 );
 
+Widget _summaryGroup(String title, List<Widget?> children) {
+  final items = children.whereType<Widget>().toList(growable: false);
+  return SizedBox(
+    width: 44,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ...items,
+      ],
+    ),
+  );
+}
+
+Widget _summaryWrap(List<Widget> groups) => Wrap(
+  spacing: 2,
+  runSpacing: 1,
+  alignment: WrapAlignment.spaceBetween,
+  children: groups,
+);
+
 Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
-    ..._section(theme, 'PACKAGE PROFILE', [
-      _fact(theme, 'PUBLISHED', _date(package.published)),
-      _fact(theme, 'LATEST', package.version),
-      _fact(theme, 'STATUS', _packageStatus(package)),
-      _fact(theme, 'REPLACED BY', package.replacedBy),
+    _summaryWrap([
+      _summaryGroup('PACKAGE', [
+        _fact(theme, 'PUBLISHED', _date(package.published)),
+        _fact(theme, 'LATEST', package.version),
+        _fact(theme, 'REPLACED BY', package.replacedBy),
+      ]),
+      _summaryGroup('COMPATIBILITY', [
+        if (package.environment.isEmpty)
+          const Text('No SDK constraints reported')
+        else
+          ..._mapFacts(theme, package.environment),
+        _fact(
+          theme,
+          'PLATFORMS',
+          _joined(package.platforms) ?? 'No platforms listed',
+        ),
+        _fact(
+          theme,
+          'RUNTIMES',
+          _joined(package.runtimes) ?? 'No runtimes listed',
+        ),
+      ]),
     ]),
-    ..._section(theme, 'RUNS ON', [
-      _fact(theme, 'PLATFORMS', _joined(package.platforms)),
-      _fact(theme, 'RUNTIMES', _joined(package.runtimes)),
-      ..._mapFacts(theme, package.environment),
+    const SizedBox(height: 1),
+    _summaryWrap([
+      _summaryGroup('DISCOVERY', [
+        _fact(theme, 'TOPICS', _joined(package.topics) ?? 'No topics listed'),
+        _fact(
+          theme,
+          'LICENSES',
+          _joined(package.licenses) ?? 'No licenses listed',
+        ),
+      ]),
+      _summaryGroup('PACKAGE CONFIG', [
+        if (!_hasPackageConfiguration(package))
+          const Text('No package configuration reported'),
+        _fact(theme, 'PUBLISH TO', package.publishTo),
+        _fact(theme, 'RESOLUTION', package.resolution),
+        _fact(theme, 'WORKSPACE', _joined(package.workspace)),
+        _fact(theme, 'EXECUTABLES', _mapValue(package.executables)),
+        _fact(
+          theme,
+          'SCREENSHOTS',
+          package.screenshots.isEmpty
+              ? null
+              : package.screenshots
+                    .map((item) => '${item.description} — ${item.path}')
+                    .join('; '),
+        ),
+      ]),
     ]),
-    ..._section(theme, 'DISCOVERY', [
-      _fact(theme, 'TOPICS', _joined(package.topics)),
-      _fact(theme, 'LICENSES', _joined(package.licenses)),
-    ]),
-    ..._section(theme, 'LINKS', [
+    const SizedBox(height: 1),
+    ..._section('PROJECT LINKS', [
+      if (!_hasProjectLinks(package)) const Text('No project links provided'),
       _fact(theme, 'PUB.DEV', package.packageUrl),
-      _fact(theme, 'CHANGELOG', package.changelogUrl),
+      _fact(
+        theme,
+        'CHANGELOG',
+        package.changelogUrl.isEmpty ? null : 'View changelog ↗',
+        uri: package.changelogUrl,
+      ),
       _fact(theme, 'HOMEPAGE', package.homepage),
       _fact(theme, 'REPOSITORY', package.repository),
       _fact(theme, 'ISSUES', package.issueTracker),
       _fact(theme, 'DOCUMENTATION', package.documentationUrl),
       _fact(theme, 'CONTRIBUTING', package.contributingUrl),
-      _fact(theme, 'FUNDING', _joined(package.fundingUrls)),
-    ]),
-    ..._section(theme, 'PACKAGE CONFIG', [
-      _fact(theme, 'PUBLISH TO', package.publishTo),
-      _fact(theme, 'RESOLUTION', package.resolution),
-      _fact(theme, 'WORKSPACE', _joined(package.workspace)),
-      _fact(theme, 'EXECUTABLES', _mapValue(package.executables)),
-      _fact(
-        theme,
-        'SCREENSHOTS',
-        package.screenshots.isEmpty
-            ? null
-            : package.screenshots
-                  .map((item) => '${item.description} — ${item.path}')
-                  .join('; '),
-      ),
+      for (final url in package.fundingUrls) _fact(theme, 'FUNDING', url),
     ]),
   ],
 );
@@ -211,37 +300,87 @@ Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
 Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
-    ..._section(theme, 'PUBLISHED VERSIONS', [
-      if (package.releases.isEmpty) const Text('Not provided'),
-      for (final release in package.releases)
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text:
-                    '${_padCells(release.version, 18)} ${_date(release.published)}  ',
-              ),
-              TextSpan(
-                text: release.retracted ? 'RETRACTED' : 'active',
-                style: release.retracted
-                    ? TextStyle(color: theme.danger)
-                    : null,
-              ),
-              TextSpan(text: '  ${_documentationLabel(release)}'),
-            ],
-          ),
+    Wrap(
+      spacing: 2,
+      alignment: WrapAlignment.spaceBetween,
+      children: [
+        const Text(
+          'PUBLISHED VERSIONS',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-    ]),
-    ..._section(theme, 'LATEST ARCHIVE', [
-      _fact(theme, 'URL', package.archiveUrl),
-      _fact(theme, 'SHA-256', package.archiveSha256),
-      _fact(theme, 'RETRACTED', package.retracted ? 'yes' : 'no'),
-    ]),
-    ..._section(theme, 'SCORECARD TARGET', [
-      _fact(theme, 'PACKAGE VERSION', package.scorecardPackageVersion),
-      _fact(theme, 'RUNTIME VERSION', package.scorecardRuntimeVersion),
-      _fact(theme, 'METRICS UPDATED', _dateTime(package.metricsUpdated)),
-    ]),
+        if (package.changelogUrl.isNotEmpty)
+          RichText(
+            text: TextSpan(
+              text: 'View changelog ↗',
+              uri: _semanticHttpUri(package.changelogUrl),
+            ),
+          ),
+      ],
+    ),
+    if (package.releases.isEmpty)
+      const Text('No published versions reported')
+    else
+      for (final release in package.releases)
+        _releaseRow(theme, release, latest: release.version == package.version),
+    const SizedBox(height: 1),
+  ],
+);
+
+Widget _releaseRow(
+  ThemeData theme,
+  PackageRelease release, {
+  required bool latest,
+}) => Wrap(
+  spacing: 2,
+  children: [
+    SizedBox(
+      width: 24,
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: latest ? '● ' : '○ ',
+              style: TextStyle(color: latest ? theme.accent : theme.textMuted),
+            ),
+            TextSpan(
+              text: release.version,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    ),
+    SizedBox(width: 15, child: Text(_date(release.published))),
+    SizedBox(
+      width: 18,
+      child: RichText(
+        text: TextSpan(
+          children: [
+            if (latest)
+              TextSpan(
+                text: 'LATEST',
+                style: TextStyle(
+                  color: theme.accent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            if (latest && release.retracted) const TextSpan(text: ' '),
+            if (release.retracted)
+              TextSpan(
+                text: 'RETRACTED',
+                style: TextStyle(
+                  color: theme.danger,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+    Text(
+      _documentationLabel(release),
+      style: TextStyle(color: theme.textMuted),
+    ),
   ],
 );
 
@@ -254,29 +393,50 @@ Widget _buildDependencies(PubPackageSnapshot package, ThemeData theme) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      ..._section(
-        theme,
-        'DIRECT DEPENDENCIES',
-        _dependencyFacts(theme, package.directDependencies, nameWidth),
-      ),
-      ..._section(
-        theme,
-        'DEV DEPENDENCIES',
-        _dependencyFacts(theme, package.devDependencies, nameWidth),
-      ),
-      ..._section(
-        theme,
-        'DEPENDENCY OVERRIDES',
-        _dependencyFacts(theme, package.dependencyOverrides, nameWidth),
-      ),
-      ..._section(theme, 'ALL ANALYZED DEPENDENCIES', [
-        if (package.transitiveDependencies.isEmpty)
-          const Text('Not provided')
-        else
-          for (final name in package.transitiveDependencies) Text(name),
+      _summaryWrap([
+        _summaryGroup(
+          'DIRECT DEPENDENCIES',
+          _dependencyFacts(
+            theme,
+            package.directDependencies,
+            nameWidth,
+            emptyText: 'No direct dependencies',
+          ),
+        ),
+        _summaryGroup(
+          'DEVELOPMENT DEPENDENCIES',
+          _dependencyFacts(
+            theme,
+            package.devDependencies,
+            nameWidth,
+            emptyText: 'No development dependencies',
+          ),
+        ),
       ]),
-      // Executables, workspace members, and resolution are pubspec configuration
-      // rather than dependencies; Overview's PACKAGE CONFIG is their one home.
+      if (package.dependencyOverrides.isNotEmpty) ...[
+        const SizedBox(height: 1),
+        ..._section(
+          'OVERRIDES',
+          _dependencyFacts(
+            theme,
+            package.dependencyOverrides,
+            nameWidth,
+            emptyText: 'No overrides',
+          ),
+        ),
+      ],
+      const SizedBox(height: 1),
+      ..._section('ALL ANALYZED', [
+        if (package.transitiveDependencies.isEmpty)
+          const Text('No analyzed dependencies')
+        else
+          Wrap(
+            spacing: 2,
+            children: [
+              for (final name in package.transitiveDependencies) Text(name),
+            ],
+          ),
+      ]),
     ],
   );
 }
@@ -286,42 +446,55 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      ..._section(theme, 'PUB SCORE', [
-        Row(
-          spacing: 1,
-          children: [
-            _fact(
-              theme,
-              'POINTS',
-              '${package.grantedPoints ?? '—'} / ${package.maxPoints ?? '—'}',
-            )!,
-            if (package.grantedPoints != null &&
-                package.maxPoints != null &&
-                package.maxPoints! > 0)
-              ProgressBar(
-                value: package.grantedPoints! / package.maxPoints!,
-                width: 24,
+      _summaryWrap([
+        _summaryGroup('QUALITY', [
+          Row(
+            spacing: 1,
+            children: [
+              _fact(
+                theme,
+                'POINTS',
+                '${package.grantedPoints ?? '—'} / ${package.maxPoints ?? '—'}',
+              )!,
+              if (package.grantedPoints != null &&
+                  package.maxPoints != null &&
+                  package.maxPoints! > 0)
+                ProgressBar(
+                  value: package.grantedPoints! / package.maxPoints!,
+                  width: 16,
+                ),
+            ],
+          ),
+          _fact(theme, 'PANA', package.analysisStatus),
+          _fact(theme, 'DARTDOC', package.dartdocStatus),
+          _fact(theme, 'TASK', package.taskStatus),
+        ]),
+        _summaryGroup('DOWNLOAD TREND', [
+          if (recentWeekly.isEmpty)
+            const Text('No download history reported')
+          else
+            Text(
+              downloadSparkline(recentWeekly),
+              style: TextStyle(
+                color: theme.accent,
+                fontWeight: FontWeight.bold,
               ),
-          ],
-        ),
+            ),
+          _fact(
+            theme,
+            'HISTORY',
+            package.weeklyDownloads.isEmpty
+                ? null
+                : '${package.weeklyDownloads.length} weeks',
+          ),
+          _fact(theme, 'NEWEST WEEK', _date(package.weeklyDownloadsNewestDate)),
+          ..._rangeFacts(theme, 'MAJOR', package.majorVersionDownloads.take(1)),
+        ]),
       ]),
-      ..._section(theme, 'WEEKLY DOWNLOADS', [
-        Text(
-          downloadSparkline(recentWeekly),
-          style: TextStyle(color: theme.accent, fontWeight: FontWeight.bold),
-        ),
-        _fact(
-          theme,
-          'HISTORY',
-          package.weeklyDownloads.isEmpty
-              ? null
-              : '${package.weeklyDownloads.length} weeks',
-        ),
-        _fact(theme, 'NEWEST WEEK', _date(package.weeklyDownloadsNewestDate)),
-        ..._rangeFacts(theme, 'MAJOR', package.majorVersionDownloads),
-      ]),
-      ..._section(theme, 'REPORT SECTIONS', [
-        if (package.healthSections.isEmpty) const Text('Not provided'),
+      const SizedBox(height: 1),
+      ..._section('REPORT SECTIONS', [
+        if (package.healthSections.isEmpty)
+          const Text('No analyzer reports available'),
         for (final (index, section) in package.healthSections.indexed) ...[
           _reportSectionHeader(theme, section),
           if (section.summary.trim().isNotEmpty) ...[
@@ -332,7 +505,7 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
             const SizedBox(height: 1),
         ],
       ]),
-      ..._section(theme, 'SECURITY', [
+      ..._section('SECURITY', [
         _fact(theme, 'UPDATED', _dateTime(package.advisoriesUpdated)),
         if (package.advisories.isEmpty) const Text('No advisories reported'),
         for (final (index, advisory) in package.advisories.indexed) ...[
@@ -351,10 +524,14 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
           if (index < package.advisories.length - 1) const SizedBox(height: 1),
         ],
       ]),
-      ..._section(theme, 'ANALYSIS', [
-        _fact(theme, 'PANA', package.analysisStatus),
-        _fact(theme, 'DARTDOC', package.dartdocStatus),
-        _fact(theme, 'TASK', package.taskStatus),
+      ..._section('TECHNICAL ANALYSIS', [
+        _fact(theme, 'ANALYZED', _dateTime(package.analysisUpdated)),
+        _fact(theme, 'PANA VERSION', package.panaVersion),
+        _fact(theme, 'SDK', package.analyzedSdkVersion),
+        _fact(theme, 'FLUTTER', package.analyzedFlutterVersion),
+        _fact(theme, 'SCORECARD TARGET', package.scorecardPackageVersion),
+        _fact(theme, 'SCORECARD RUNTIME', package.scorecardRuntimeVersion),
+        _fact(theme, 'METRICS UPDATED', _dateTime(package.metricsUpdated)),
         _fact(
           theme,
           'RESULT POINTS',
@@ -363,22 +540,16 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
               ? null
               : '${package.analysisGrantedPoints ?? '—'} / ${package.analysisMaxPoints ?? '—'}',
         ),
-        _fact(theme, 'ANALYZED', _dateTime(package.analysisUpdated)),
-        _fact(theme, 'PANA VERSION', package.panaVersion),
-        _fact(theme, 'SDK', package.analyzedSdkVersion),
-        _fact(theme, 'FLUTTER', package.analyzedFlutterVersion),
       ]),
-      ..._section(theme, 'DIAGNOSTICS', [
+      ..._section('DIAGNOSTICS', [
         _fact(theme, 'URL PROBLEMS', _joined(package.urlProblems)),
         _fact(theme, 'SCREENSHOT CHECKS', _joined(package.analysisScreenshots)),
       ]),
-      ..._section(theme, 'REPOSITORY', [
+      ..._section('REPOSITORY', [
         _fact(theme, 'PROVIDER', package.repositorySummary?.provider),
         _fact(theme, 'HOST', package.repositorySummary?.host),
         _fact(theme, 'REPOSITORY', package.repositorySummary?.repository),
         _fact(theme, 'BRANCH', package.repositorySummary?.branch),
-        _fact(theme, 'UNLISTED', package.isUnlisted ? 'yes' : 'no'),
-        _fact(theme, 'DISCONTINUED', package.isDiscontinued ? 'yes' : 'no'),
       ]),
     ],
   );
@@ -423,20 +594,17 @@ Widget? _affectedVersions(ThemeData theme, List<String> versions) {
   return _fact(theme, 'AFFECTED', '${versions.length} versions');
 }
 
-List<Widget> _section(ThemeData theme, String title, List<Widget?> children) {
+List<Widget> _section(String title, List<Widget?> children) {
   final items = children.whereType<Widget>().toList(growable: false);
   if (items.isEmpty) return const [];
   return [
-    Text(
-      title,
-      style: TextStyle(color: theme.textMuted, fontWeight: FontWeight.bold),
-    ),
+    Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
     ...items,
     const SizedBox(height: 1),
   ];
 }
 
-Widget? _fact(ThemeData theme, String label, String? value) {
+Widget? _fact(ThemeData theme, String label, String? value, {String? uri}) {
   if (value == null || value.isEmpty) return null;
   return RichText(
     text: TextSpan(
@@ -445,7 +613,7 @@ Widget? _fact(ThemeData theme, String label, String? value) {
           text: '${_padCells(label, 16)} ',
           style: TextStyle(color: theme.textMuted),
         ),
-        TextSpan(text: value, uri: _semanticHttpUri(value)),
+        TextSpan(text: value, uri: _semanticHttpUri(uri ?? value)),
       ],
     ),
   );
@@ -457,20 +625,18 @@ Uri? _semanticHttpUri(String value) {
   return uri.scheme == 'http' || uri.scheme == 'https' ? uri : null;
 }
 
-List<Widget> _mapFacts(ThemeData theme, Map<String, String> values) =>
-    values.isEmpty
-    ? const [Text('Not provided')]
-    : [
-        for (final entry in values.entries)
-          ?_fact(theme, entry.key.toUpperCase(), entry.value),
-      ];
+List<Widget> _mapFacts(ThemeData theme, Map<String, String> values) => [
+  for (final entry in values.entries)
+    ?_fact(theme, entry.key.toUpperCase(), entry.value),
+];
 
 List<Widget> _dependencyFacts(
   ThemeData theme,
   Map<String, PackageDependencySummary> values,
-  int nameWidth,
-) {
-  if (values.isEmpty) return const [Text('None')];
+  int nameWidth, {
+  required String emptyText,
+}) {
+  if (values.isEmpty) return [Text(emptyText)];
   return [
     for (final entry in values.entries)
       RichText(
@@ -508,7 +674,7 @@ String _padCells(String text, int width) {
 List<Widget> _rangeFacts(
   ThemeData theme,
   String label,
-  List<PackageVersionDownloads> values,
+  Iterable<PackageVersionDownloads> values,
 ) => [
   for (final value in values)
     ?_fact(
@@ -518,25 +684,42 @@ List<Widget> _rangeFacts(
     ),
 ];
 
-String _packageStatus(PubPackageSnapshot package) {
-  if (package.isDiscontinued) return 'discontinued';
-  if (package.isUnlisted) return 'unlisted';
-  if (package.retracted) return 'latest release retracted';
-  return 'active';
-}
-
 String _documentationLabel(PackageRelease release) {
   final status = release.documentationStatus?.trim();
   final availability = switch (release.hasDocumentation) {
-    true => 'documented',
+    true => 'docs ready',
     false => 'no docs',
     null => 'docs unknown',
   };
   if (status == null || status.isEmpty) return availability;
-  if (release.hasDocumentation == null) return status;
-  if (status.toLowerCase() == availability) return availability;
+  final normalized = status.toLowerCase().replaceAll('-', ' ');
+  final standardStatus = switch (release.hasDocumentation) {
+    true => 'documented',
+    false => 'no docs',
+    null => 'unknown',
+  };
+  if (normalized == standardStatus) return availability;
   return '$availability ($status)';
 }
+
+bool _hasPackageConfiguration(PubPackageSnapshot package) =>
+    _hasText(package.publishTo) ||
+    _hasText(package.resolution) ||
+    package.workspace.isNotEmpty ||
+    package.executables.isNotEmpty ||
+    package.screenshots.isNotEmpty;
+
+bool _hasProjectLinks(PubPackageSnapshot package) =>
+    _hasText(package.packageUrl) ||
+    _hasText(package.changelogUrl) ||
+    _hasText(package.homepage) ||
+    _hasText(package.repository) ||
+    _hasText(package.issueTracker) ||
+    _hasText(package.documentationUrl) ||
+    _hasText(package.contributingUrl) ||
+    package.fundingUrls.isNotEmpty;
+
+bool _hasText(String? value) => value != null && value.isNotEmpty;
 
 String _number(num? value) {
   if (value == null) return '—';
@@ -557,8 +740,26 @@ String? _mapValue(Map<String, String?> values) => values.isEmpty
           .map((entry) => '${entry.key}: ${entry.value ?? entry.key}')
           .join(', ');
 
-String? _date(DateTime? value) =>
-    value?.toUtc().toIso8601String().split('T').first;
+const _months = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String? _date(DateTime? value) {
+  if (value == null) return null;
+  final utc = value.toUtc();
+  return '${_months[utc.month - 1]} ${utc.day}, ${utc.year}';
+}
 
 String? _dateTime(DateTime? value) {
   if (value == null) return null;
@@ -569,5 +770,5 @@ String? _dateTime(DateTime? value) {
   }
   final hours = utc.hour.toString().padLeft(2, '0');
   final minutes = utc.minute.toString().padLeft(2, '0');
-  return '$date $hours:$minutes UTC';
+  return '$date · $hours:$minutes UTC';
 }

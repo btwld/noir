@@ -104,17 +104,16 @@ void main() {
       expect(snapshot.directDependencies['local_pkg']?.path, '../local_pkg');
       expect(snapshot.directDependencies['flutter']?.sdk, 'flutter');
       expect(snapshot.directDependencies['flutter']?.constraint, '^3.0.0');
+      expect(
+        snapshot.directDependencies['flutter_unconstrained']?.displayValue,
+        'sdk flutter',
+      );
       expect(snapshot.dependencyOverrides['meta']?.constraint, '^1.12.0');
       expect(snapshot.releases.map((release) => release.version), [
         '0.0.1-alpha.1',
         '0.0.1-alpha.0',
       ]);
       expect(snapshot.releases.first.hasDocumentation, isTrue);
-      expect(
-        snapshot.releases.first.archiveUrl,
-        'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
-      );
-      expect(snapshot.releases.first.archiveSha256, 'abc123');
       expect(snapshot.downloadCount30Days, 56);
       expect(snapshot.weeklyDownloads, [4, 9, 16]);
       expect(
@@ -185,8 +184,6 @@ void main() {
         version: '1.0.0',
         published: DateTime.utc(2026),
         retracted: false,
-        archiveUrl: 'https://example.com/archive.tar.gz',
-        archiveSha256: 'abc',
       ),
     ];
     final page = PackageSearchPage(
@@ -459,6 +456,33 @@ void main() {
     });
 
     test(
+      'labels unexpected required detail failures at the catalog boundary',
+      () async {
+        final client = _FakePubClient()
+          ..packageError = StateError('private package parser state');
+        final catalog = PubApiCatalog(client: client);
+
+        await expectLater(
+          catalog.loadPackage('noir'),
+          throwsA(
+            isA<PubCatalogException>()
+                .having(
+                  (error) => error.operation,
+                  'operation',
+                  'Load noir from pub.dev',
+                )
+                .having(
+                  (error) => '$error',
+                  'safe message',
+                  'Load noir from pub.dev failed. Please try again.',
+                ),
+          ),
+        );
+        catalog.close();
+      },
+    );
+
+    test(
       'labels required failures without exposing response details',
       () async {
         final searchClient = _FakePubClient()
@@ -546,7 +570,7 @@ final class _FakePubClient extends PubClient {
   String? loadedPackage;
   bool closed = false;
   Exception? searchError;
-  Exception? packageError;
+  Object? packageError;
   Exception? metricsError;
 
   @override
@@ -588,7 +612,9 @@ final class _FakePubClient extends PubClient {
 
   @override
   Future<PubPackage> packageInfo(String packageName) async {
-    if (packageError case final error?) throw error;
+    if (packageError case final error?) {
+      Error.throwWithStackTrace(error, StackTrace.current);
+    }
     loadedPackage = packageName;
     return PubPackage.fromMap(_packagePayload());
   }
@@ -685,6 +711,7 @@ Map<String, dynamic> _versionPayload({
       },
       'local_pkg': {'path': '../local_pkg'},
       'flutter': {'sdk': 'flutter', 'version': '^3.0.0'},
+      'flutter_unconstrained': {'sdk': 'flutter'},
     },
     'dev_dependencies': {'test': '^1.25.0'},
     'dependency_overrides': {'meta': '^1.12.0'},

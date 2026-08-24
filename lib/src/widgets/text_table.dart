@@ -229,7 +229,7 @@ final class _TextTableState extends State<TextTable>
     MouseEvent event,
   ) {
     if (event.button != MouseButton.left) return;
-    focusNode.requestFocus();
+    if (scope?.leafCanRequestFocus ?? true) focusNode.requestFocus();
     if (!widget.selectable) return;
     final table = _renderTable(context);
     if (table == null) return;
@@ -310,6 +310,7 @@ final class _TextTableState extends State<TextTable>
       child: Focus(
         focusNode: focusNode,
         autofocus: widget.autofocus,
+        canRequestFocus: scope?.leafCanRequestFocus ?? true,
         child: PointerListener(
           onPointerDown: (event) =>
               _pointerDown(context, scope, plainText, event),

@@ -9,6 +9,7 @@ import '../../example/pub_search/catalog.dart';
 import '../../example/pub_search/models.dart';
 import '../../example/pub_search/package_detail.dart';
 import '../../example/pub_search/theme.dart';
+import '../helpers/buffer_capture.dart';
 import '../helpers/tui_test_app.dart';
 import 'pub_search_test_data.dart';
 
@@ -130,6 +131,401 @@ void main() {
       );
     } finally {
       app.dispose();
+    }
+  });
+
+  test('package metadata shows one semantic status badge above the tabs', () {
+    final cases = <({PubPackageSnapshot package, String label, Color color})>[
+      (
+        package: _statusPackage('active'),
+        label: 'ACTIVE',
+        color: pubTheme.success,
+      ),
+      (
+        package: _statusPackage('unlisted', isUnlisted: true),
+        label: 'UNLISTED',
+        color: pubTheme.warning,
+      ),
+      (
+        package: _statusPackage('discontinued', isDiscontinued: true),
+        label: 'DISCONTINUED',
+        color: pubTheme.danger,
+      ),
+      (
+        package: _statusPackage('retracted', retracted: true),
+        label: 'LATEST RETRACTED',
+        color: pubTheme.danger,
+      ),
+      (
+        package: _statusPackage(
+          'discontinued_priority',
+          isUnlisted: true,
+          isDiscontinued: true,
+          retracted: true,
+        ),
+        label: 'DISCONTINUED',
+        color: pubTheme.danger,
+      ),
+      (
+        package: _statusPackage(
+          'unlisted_priority',
+          isUnlisted: true,
+          retracted: true,
+        ),
+        label: 'UNLISTED',
+        color: pubTheme.warning,
+      ),
+    ];
+
+    for (final current in cases) {
+      final frame = _capturePackageDetail(current.package);
+      expect(
+        const ['ACTIVE', 'UNLISTED', 'DISCONTINUED', 'LATEST RETRACTED']
+            .expand(frame.findText)
+            .length,
+        1,
+        reason: '${current.package.name} should expose one package state',
+      );
+      final badges = frame.findText(current.label);
+      expect(
+        badges,
+        hasLength(1),
+        reason: '${current.package.name} should have one top status badge',
+      );
+      final badge = badges.single;
+      expect(badge.y, lessThan(frame.findText('1 OVERVIEW').single.y));
+      expect(
+        frame.getBackgroundColor(badge.x, badge.y),
+        _painted(current.color),
+      );
+    }
+  });
+
+  test('wrapped package metadata keeps one blank row between runs', () {
+    final package = PubPackageSnapshot(
+      name: 'wrapped_metadata',
+      version: '1.0.0',
+      description: 'Long publisher metadata should wrap with clear spacing.',
+      published: DateTime.utc(2026, 8, 16),
+      publisher: 'a-very-long-publisher-identity.example.dev',
+    );
+    final frame = _capturePackageDetail(package, width: 60);
+    final status = frame.findText('ACTIVE').single;
+    final publisher = frame
+        .findText('by a-very-long-publisher-identity.example.dev')
+        .single;
+
+    expect(publisher.y, status.y + 2);
+  });
+
+  test('package dates are friendly UTC values with midnight suppression', () {
+    final package = PubPackageSnapshot(
+      name: 'dated_package',
+      version: '1.0.0',
+      description: 'Dates should be deterministic and readable.',
+      published: DateTime.parse('2025-12-31T23:59:00-05:00'),
+      publisher: 'example.dev',
+      analysisUpdated: DateTime.parse('2025-12-31T23:59:00-05:00'),
+      metricsUpdated: DateTime.utc(2026, 8, 6),
+    );
+
+    final overview = _capturePackageDetail(package).toText();
+    expect(overview, contains('Published Jan 1, 2026'));
+    expect(overview, isNot(contains('2026-01-01')));
+
+    final health = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.health,
+      height: 64,
+    ).toText();
+    expect(health, contains('Jan 1, 2026 · 04:59 UTC'));
+    expect(health, contains('Aug 6, 2026'));
+    expect(health, isNot(contains('Aug 6, 2026 · 00:00 UTC')));
+  });
+
+  test('overview summary groups pair only at wide terminal sizes', () {
+    for (final width in [60, 80, 100, 120]) {
+      final frame = _capturePackageDetail(
+        examplePubPackage,
+        width: width,
+        height: 64,
+      );
+      expect(frame.findText('COMPATIBILITY'), hasLength(1));
+      expect(frame.findText('DISCOVERY'), hasLength(1));
+      expect(frame.findText('PACKAGE CONFIG'), hasLength(1));
+      final package = frame.findText('PACKAGE').first;
+      final compatibility = frame.findText('COMPATIBILITY').single;
+      final discovery = frame.findText('DISCOVERY').single;
+      final configuration = frame.findText('PACKAGE CONFIG').single;
+
+      if (width >= 100) {
+        expect(compatibility.y, package.y, reason: 'width $width');
+        expect(configuration.y, discovery.y, reason: 'width $width');
+      } else {
+        expect(compatibility.y, greaterThan(package.y), reason: 'width $width');
+        expect(
+          configuration.y,
+          greaterThan(discovery.y),
+          reason: 'width $width',
+        );
+      }
+    }
+  });
+
+  test('versions form a friendly release ledger without artifact data', () {
+    final frame = _capturePackageDetail(
+      examplePubPackage,
+      activeTab: PackageDetailTab.versions,
+      height: 64,
+    );
+    final text = frame.toText();
+
+    expect(text, contains('Aug 16, 2026'));
+    expect(text, contains('LATEST'));
+    expect(text, contains('RETRACTED'));
+    expect(text, contains('docs ready'));
+    expect(text, contains('no docs'));
+    expect(text, contains('docs unknown'));
+    expect(text, isNot(contains(RegExp(r'\bactive\b'))));
+    expect(text, isNot(contains('/api/archives/')));
+    expect(text, isNot(contains('SHA-256')));
+    expect(text, isNot(contains('abc123')));
+  });
+
+  test('versions marks the package version latest, not the newest upload', () {
+    final package = PubPackageSnapshot(
+      name: 'stable_package',
+      version: '2.0.0',
+      description: 'A prerelease was uploaded after the latest stable.',
+      published: DateTime.utc(2026, 8, 16),
+      releases: [
+        PackageRelease(
+          version: '2.1.0-dev.1',
+          published: DateTime.utc(2026, 8, 23),
+          retracted: false,
+        ),
+        PackageRelease(
+          version: '2.0.0',
+          published: DateTime.utc(2026, 8, 16),
+          retracted: false,
+        ),
+      ],
+    );
+    final frame = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.versions,
+      height: 48,
+    );
+    final latest = frame.findText('LATEST');
+
+    expect(latest, hasLength(1));
+    expect(latest.single.y, frame.findText('2.0.0').last.y);
+    expect(latest.single.y, isNot(frame.findText('2.1.0-dev.1').single.y));
+  });
+
+  test('View changelog retains the package changelog semantic URI', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['noir']))
+      ..detailResults['noir'] = Future.value(examplePubPackage);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      app.mockInput.typeText('2');
+      await _settle(app);
+
+      final frame = app.captureFrame();
+      expect(frame.findText('View changelog'), hasLength(1));
+      final link = frame.findText('View changelog').single;
+      final attributes = frame.getCell(link.x, link.y).attributes;
+      expect(
+        app.renderer.debugCurrentBuffer.linkForAttributes(attributes),
+        examplePubPackage.changelogUrl,
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('each funding URL retains its own semantic URI', () async {
+    const urls = ['https://one.example/fund', 'https://two.example/fund'];
+    final package = PubPackageSnapshot(
+      name: 'funded_package',
+      version: '1.0.0',
+      description: 'A package with multiple funding destinations.',
+      published: DateTime.utc(2026, 8, 16),
+      fundingUrls: urls,
+    );
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['funded_package']))
+      ..detailResults['funded_package'] = Future.value(package);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 64,
+    );
+
+    try {
+      await _settle(app);
+      app.mockInput
+        ..pressTab()
+        ..pressTab()
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+
+      final frame = app.captureFrame();
+      for (final url in urls) {
+        final position = frame.findText(url).single;
+        final attributes = frame.getCell(position.x, position.y).attributes;
+        expect(
+          app.renderer.debugCurrentBuffer.linkForAttributes(attributes),
+          url,
+        );
+      }
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('dependency summary groups pair only at wide terminal sizes', () {
+    for (final width in [60, 80, 100, 120]) {
+      final frame = _capturePackageDetail(
+        examplePubPackage,
+        activeTab: PackageDetailTab.dependencies,
+        width: width,
+        height: 64,
+      );
+      expect(frame.findText('DIRECT DEPENDENCIES'), hasLength(1));
+      expect(frame.findText('DEVELOPMENT DEPENDENCIES'), hasLength(1));
+      final direct = frame.findText('DIRECT DEPENDENCIES').single;
+      final development = frame.findText('DEVELOPMENT DEPENDENCIES').single;
+
+      if (width >= 100) {
+        expect(development.y, direct.y, reason: 'width $width');
+      } else {
+        expect(development.y, greaterThan(direct.y), reason: 'width $width');
+      }
+    }
+  });
+
+  test('empty detail groups use domain-specific copy', () {
+    final package = PubPackageSnapshot(
+      name: 'empty_package',
+      version: '1.0.0',
+      description: 'A package with intentionally sparse metadata.',
+      published: DateTime.utc(2026, 8, 16),
+    );
+
+    final overview = _capturePackageDetail(package, height: 64).toText();
+    expect(overview, contains('No SDK constraints reported'));
+    expect(overview, contains('No platforms listed'));
+    expect(overview, contains('No runtimes listed'));
+    expect(overview, contains('No topics listed'));
+    expect(overview, contains('No licenses listed'));
+    expect(overview, contains('No package configuration reported'));
+    expect(overview, contains('No project links provided'));
+
+    final versions = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.versions,
+      height: 64,
+    ).toText();
+    expect(versions, contains('No published versions reported'));
+    expect(versions, isNot(contains('View changelog')));
+
+    final dependencies = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.dependencies,
+      height: 64,
+    ).toText();
+    expect(dependencies, contains('No direct dependencies'));
+    expect(dependencies, contains('No development dependencies'));
+    expect(dependencies, contains('No analyzed dependencies'));
+    expect(dependencies, isNot(contains('OVERRIDES')));
+    expect(dependencies, isNot(contains('Not provided')));
+  });
+
+  test('health orders reports and security before technical diagnostics', () {
+    final package = PubPackageSnapshot(
+      name: 'ordered_health',
+      version: '1.0.0',
+      description: 'Health evidence should follow decision priority.',
+      published: DateTime.utc(2026, 8, 16),
+      healthSections: const [
+        PackageHealthSection(
+          title: 'Follow Dart file conventions',
+          status: 'passed',
+          summary: '### [*] 10/10 points: Use valid metadata',
+        ),
+      ],
+      advisories: [
+        PackageAdvisorySummary(
+          id: 'GHSA-order',
+          summary: 'A sample advisory',
+          details: 'Upgrade to a patched release.',
+        ),
+      ],
+      analysisUpdated: DateTime.utc(2026, 8, 17),
+      panaVersion: '0.22.17',
+      urlProblems: const ['repository redirects'],
+      repositorySummary: const PackageRepositorySummary(
+        provider: 'github',
+        host: 'github.com',
+        repository: 'example/ordered_health',
+        branch: 'main',
+      ),
+    );
+    final frame = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.health,
+      height: 80,
+    );
+
+    expect(frame.findText('REPORT SECTIONS'), hasLength(1));
+    expect(frame.findText('SECURITY'), hasLength(1));
+    expect(frame.findText('TECHNICAL ANALYSIS'), hasLength(1));
+    expect(frame.findText('DIAGNOSTICS'), hasLength(1));
+    expect(frame.findText('REPOSITORY'), isNotEmpty);
+    final reports = frame.findText('REPORT SECTIONS').single.y;
+    final security = frame.findText('SECURITY').single.y;
+    final technical = frame.findText('TECHNICAL ANALYSIS').single.y;
+    final diagnostics = frame.findText('DIAGNOSTICS').single.y;
+    final repository = frame.findText('REPOSITORY').first.y;
+    expect(reports, lessThan(security));
+    expect(security, lessThan(technical));
+    expect(technical, lessThan(diagnostics));
+    expect(diagnostics, lessThan(repository));
+  });
+
+  test('health summary groups pair only at wide terminal sizes', () {
+    for (final width in [60, 80, 100, 120]) {
+      final frame = _capturePackageDetail(
+        examplePubPackage,
+        activeTab: PackageDetailTab.health,
+        width: width,
+        height: 64,
+      );
+      expect(frame.findText('QUALITY'), hasLength(1));
+      expect(frame.findText('DOWNLOAD TREND'), hasLength(1));
+      final quality = frame.findText('QUALITY').single;
+      final downloads = frame.findText('DOWNLOAD TREND').single;
+
+      if (width >= 100) {
+        expect(downloads.y, quality.y, reason: 'width $width');
+      } else {
+        expect(downloads.y, greaterThan(quality.y), reason: 'width $width');
+      }
     }
   });
 
@@ -2222,7 +2618,7 @@ void main() {
         await _settle(app);
 
         expect(_render(app), contains('1 OVERVIEW'));
-        expect(_render(app), contains('RUNS ON'));
+        expect(_render(app), contains('COMPATIBILITY'));
         final overview = _tabStyle(app, '1 OVERVIEW');
         expect(overview.background, _painted(pubTheme.accent));
         expect(overview.foreground, _painted(pubTheme.accentForeground));
@@ -2244,26 +2640,22 @@ void main() {
         expect(versions.foreground, _painted(pubTheme.accentForeground));
         expect(versions.bold, isTrue);
         expect(_render(app), contains('PUBLISHED VERSIONS'));
-        expect(_render(app), isNot(contains('documented (documented)')));
-        expect(
-          _render(app),
-          contains('https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz'),
-        );
+        expect(_render(app), contains('docs ready'));
+        expect(_render(app), isNot(contains('/api/archives/')));
+        expect(_render(app), isNot(contains('SHA-256')));
 
         app.mockInput.typeText('3');
         await _settle(app);
         expect(_render(app), contains('3 DEPENDENCIES'));
         expect(_render(app), contains('DIRECT DEPENDENCIES'));
-        expect(
-          _render(app),
-          contains('git https://example.com/noir_plugin.git'),
-        );
+        expect(_render(app), contains('noir_plugin  git'));
+        expect(_render(app), contains('https://example.com/noir_plugin.git'));
 
         app.mockInput.typeText('4');
         await _settle(app);
         expect(_render(app), contains('4 HEALTH'));
-        expect(_render(app), contains('PUB SCORE'));
-        expect(_render(app), contains('WEEKLY DOWNLOADS'));
+        expect(_render(app), contains('QUALITY'));
+        expect(_render(app), contains('DOWNLOAD TREND'));
         expect(_render(app), contains('▁'));
         expect(_render(app), isNot(contains('RECENT ')));
         expect(_render(app), isNot(contains('T00:00:00')));
@@ -2353,6 +2745,8 @@ void main() {
     expect(text, contains('pubspec.yaml'));
     expect(text, contains('1 check passed'));
     expect(text, contains('BSD-3-Clause'));
+    expect(text, contains('Impact'));
+    expect(text, contains('Upgrade when a patched release is available.'));
     expect(text, isNot(contains('###')));
     expect(text, isNot(contains('<details>')));
     expect(text, isNot(contains('<summary>')));
@@ -2377,8 +2771,8 @@ void main() {
     final scrolled = (host.capture()['lines']! as List<Object?>)
         .cast<String>()
         .join('\n');
-    expect(scrolled, contains('Impact'));
-    expect(scrolled, contains('Upgrade when a patched release is available.'));
+    expect(scrolled, contains('TECHNICAL ANALYSIS'));
+    expect(scrolled, contains('REPOSITORY'));
 
     final types = _driverTreeTypes(host.tree(maxDepth: 24));
     expect(types, contains('MarkdownView'));
@@ -2438,8 +2832,8 @@ void main() {
     final text = (host.capture()['lines']! as List<Object?>)
         .cast<String>()
         .join('\n');
-    expect(text, contains('PUB SCORE'));
-    expect(text, contains('WEEKLY DOWNLOADS'));
+    expect(text, contains('QUALITY'));
+    expect(text, contains('DOWNLOAD TREND'));
     expect(text, contains('MAJOR'));
     expect(text, contains('10/10 points'));
     expect(text, contains('Follow Dart file conventions'));
@@ -2448,7 +2842,7 @@ void main() {
     expect(text, isNot(contains('DOWNLOADS / 30D')));
   });
 
-  test('dependency names share one column on the dependencies tab', () {
+  test('dependency names align within each dependencies summary group', () {
     final scrollController = ScrollController();
     final scrollFocus = FocusNode(debugLabel: 'deps column');
     final host = DriverHost.create(width: 100, height: 32);
@@ -2470,11 +2864,19 @@ void main() {
                   source: PackageDependencySource.hosted,
                   constraint: '^2.5.0',
                 ),
+                'characters': PackageDependencySummary(
+                  source: PackageDependencySource.hosted,
+                  constraint: '^1.3.0',
+                ),
               },
               devDependencies: const {
                 'dart_flutter_team_lints': PackageDependencySummary(
                   source: PackageDependencySource.hosted,
                   constraint: '^3.0.0',
+                ),
+                'test': PackageDependencySummary(
+                  source: PackageDependencySource.hosted,
+                  constraint: '^1.25.0',
                 ),
               },
               transitiveDependencies: const ['async', 'collection', 'meta'],
@@ -2503,7 +2905,14 @@ void main() {
     final lintsLine = lines.firstWhere(
       (line) => line.contains('dart_flutter_team_lints'),
     );
-    expect(asyncLine.indexOf('^2.5.0'), lintsLine.indexOf('^3.0.0'));
+    final charactersLine = lines.firstWhere(
+      (line) => line.contains('characters') && line.contains('^1.3.0'),
+    );
+    final testLine = lines.firstWhere(
+      (line) => line.contains('test') && line.contains('^1.25.0'),
+    );
+    expect(asyncLine.indexOf('^2.5.0'), charactersLine.indexOf('^1.3.0'));
+    expect(lintsLine.indexOf('^3.0.0'), testLine.indexOf('^1.25.0'));
     expect(text, contains('collection'));
     expect(text, isNot(contains('async, collection')));
   });
@@ -2622,7 +3031,7 @@ void main() {
       final end = frame.findText('Esc').last;
       expect(end.y, start.y);
       expect(frame.toText(), contains('DOWNLOADS 30D'));
-      expect(frame.toText(), contains('PACKAGE PROFILE'));
+      expect(frame.toText(), contains('PACKAGE'));
     } finally {
       app.dispose();
     }
@@ -2655,10 +3064,10 @@ void main() {
       );
 
       const cases = [
-        ('1 OVERVIEW', 'PACKAGE PROFILE', '2'),
+        ('1 OVERVIEW', 'PACKAGE', '2'),
         ('2 VERSIONS', 'PUBLISHED VERSIONS', '1'),
         ('3 DEPENDENCIES', 'DIRECT DEPENDENCIES', '1'),
-        ('4 HEALTH', 'PUB SCORE', '1'),
+        ('4 HEALTH', 'QUALITY', '1'),
       ];
       for (final (label, content, alternateTab) in cases) {
         for (final rightPadding in [false, true]) {
@@ -3269,6 +3678,83 @@ void main() {
   });
 
   test(
+    'returning from detail does not retain an abandoned initial search',
+    () async {
+      final initialSearch = Completer<PackageSearchPage>();
+      final catalog = _FakePubCatalog()
+        ..searchResults.add(initialSearch.future)
+        ..suggestions.add(const PubSuggestion.package('noirx_package'))
+        ..detailResults['noirx_package'] = Future.value(examplePubPackage);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        expect(_render(app), contains('Searching pub.dev…'));
+        app.mockInput.typeText('x');
+        await _waitForCompletionDebounce(app);
+        expect(_render(app), contains('SUGGESTIONS'));
+
+        app.mockInput
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+        expect(_render(app), contains('dart pub add noir'));
+
+        app.mockInput.pressEscape();
+        await _settle(app);
+        expect(_render(app), isNot(contains('Searching pub.dev…')));
+        expect(_render(app), isNot(contains('Unknown error')));
+        expect(app.captureFrame().cursor.visible, isTrue);
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test('returning from detail preserves an initial search error', () async {
+    final initialSearch = Completer<PackageSearchPage>();
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(initialSearch.future)
+      ..suggestions.add(const PubSuggestion.package('noirx_package'))
+      ..detailResults['noirx_package'] = Future.value(examplePubPackage);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      initialSearch.completeError(const PubCatalogException('Search pub.dev'));
+      await _settle(app);
+      expect(_render(app), contains('Search unavailable'));
+
+      app.mockInput.typeText('x');
+      await _waitForCompletionDebounce(app);
+      app.mockInput
+        ..pressTab()
+        ..pressEnter();
+      await _settle(app);
+      expect(_render(app), contains('dart pub add noir'));
+
+      app.mockInput.pressEscape();
+      await _settle(app);
+      expect(_render(app), contains('Search unavailable'));
+      expect(
+        _render(app),
+        contains('Search pub.dev failed. Please try again.'),
+      );
+      expect(_render(app), isNot(contains('Unknown error')));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test(
     'opening last results clears a failed refresh before returning',
     () async {
       final failedRefresh = Completer<PackageSearchPage>();
@@ -3302,7 +3788,7 @@ void main() {
           ..pressTab()
           ..pressEnter();
         await _settle(app);
-        expect(_render(app), contains('PACKAGE PROFILE'));
+        expect(_render(app), contains('PACKAGE'));
 
         app.mockInput.pressEscape();
         await _settle(app);
@@ -3545,6 +4031,55 @@ String _render(TuiTestApp app) {
   app.pumpFrame();
   return app.captureFrame().toText();
 }
+
+CapturedBuffer _capturePackageDetail(
+  PubPackageSnapshot package, {
+  PackageDetailTab activeTab = PackageDetailTab.overview,
+  int width = 100,
+  int height = 32,
+}) {
+  final scrollController = ScrollController();
+  final scrollFocusNode = FocusNode(debugLabel: 'captured package detail');
+  final capture = BufferCapture(
+    width: width,
+    height: height,
+    layoutConstraints: BoxConstraints.tight(width: width, height: height),
+  );
+  try {
+    return capture.capture(
+      Theme(
+        data: pubTheme,
+        child: PubPackageDetail(
+          package: package,
+          activeTab: activeTab,
+          onTabSelected: (_) {},
+          scrollController: scrollController,
+          scrollFocusNode: scrollFocusNode,
+        ),
+      ),
+    );
+  } finally {
+    capture.dispose();
+    scrollController.dispose();
+    scrollFocusNode.dispose();
+  }
+}
+
+PubPackageSnapshot _statusPackage(
+  String name, {
+  bool isUnlisted = false,
+  bool isDiscontinued = false,
+  bool retracted = false,
+}) => PubPackageSnapshot(
+  name: name,
+  version: '1.0.0',
+  description: 'Package state fixture.',
+  published: DateTime.utc(2026, 8, 16),
+  publisher: 'example.dev',
+  isUnlisted: isUnlisted,
+  isDiscontinued: isDiscontinued,
+  retracted: retracted,
+);
 
 typedef _PanelBorders = ({Color query, Color results});
 

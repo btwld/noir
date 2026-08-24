@@ -106,8 +106,6 @@ final class PackageRelease {
     required this.version,
     required this.published,
     required this.retracted,
-    required this.archiveUrl,
-    required this.archiveSha256,
     this.hasDocumentation,
     this.documentationStatus,
   });
@@ -120,12 +118,6 @@ final class PackageRelease {
 
   /// Whether this release was retracted.
   final bool retracted;
-
-  /// Download URL for this release's archive.
-  final String archiveUrl;
-
-  /// SHA-256 digest reported for this release's archive.
-  final String archiveSha256;
 
   /// Whether hosted API documentation exists, when known.
   final bool? hasDocumentation;
@@ -364,8 +356,6 @@ final class PubPackageSnapshot {
     List<PackageHealthSection> healthSections = const [],
     List<String> urlProblems = const [],
     List<String> analysisScreenshots = const [],
-    this.archiveUrl = '',
-    this.archiveSha256 = '',
     this.metricsUpdated,
     this.analysisUpdated,
     this.scorecardPackageVersion,
@@ -499,8 +489,6 @@ final class PubPackageSnapshot {
             version: release.version,
             published: release.published,
             retracted: release.retracted,
-            archiveUrl: release.archiveUrl,
-            archiveSha256: release.archiveSha256,
             hasDocumentation: doc?.hasDocumentation,
             documentationStatus: doc?.status,
           );
@@ -554,8 +542,6 @@ final class PubPackageSnapshot {
         'path',
         'url',
       ]),
-      archiveUrl: package.latest.archiveUrl,
-      archiveSha256: package.latest.archiveSha256,
       metricsUpdated: scorecard?.updated,
       analysisUpdated: pana?.timestamp,
       scorecardPackageVersion: scorecard?.packageVersion,
@@ -714,12 +700,6 @@ final class PubPackageSnapshot {
   /// Screenshot checks reported by pana.
   final List<String> analysisScreenshots;
 
-  /// Latest archive URL.
-  final String archiveUrl;
-
-  /// Latest archive SHA-256.
-  final String archiveSha256;
-
   /// Scorecard update time.
   final DateTime? metricsUpdated;
 
@@ -830,7 +810,7 @@ PackageDependencySummary _dependencySummary(
   SdkDependency(:final sdk, :final version) => PackageDependencySummary(
     source: PackageDependencySource.sdk,
     sdk: sdk,
-    constraint: '$version',
+    constraint: version.isAny ? null : '$version',
   ),
 };
 

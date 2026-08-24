@@ -1,32 +1,32 @@
                                                                                                     
-  noir 0.0.1-alpha.1 leoafarias.com                                                                 
+  noir 0.0.1-alpha.1                                                                                
   A Flutter-like reactive terminal UI framework for Dart.                                           
                                                                                                     
-  dart pub add noir                                                                                 
-  160/160                 56                      12                      2                         
-  POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
+   ACTIVE   Published Aug 16, 2026  by leoafarias.com                                               
+  INSTALL    dart pub add noir                                                                      
                                                                                                     
+  160/160                 56                      12                      3                         
+  POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
    1 OVERVIEW  2 VERSIONS  3 DEPENDENCIES  4 HEALTH                                                 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐  
-  │PACKAGE PROFILE                                                                               │  
-  │PUBLISHED        2026-08-16                                                                   │  
-  │LATEST           0.0.1-alpha.1                                                                │  
-  │STATUS           active                                                                       │  
+  │PACKAGE                                       COMPATIBILITY                                   │  
+  │PUBLISHED        Aug 16, 2026                 SDK              >=3.10.0 <4.0.0                │  
+  │LATEST           0.0.1-alpha.1                PLATFORMS        linux, macos, windows          │  
+  │                                              RUNTIMES         native-aot                     │  
   │                                                                                              │  
-  │RUNS ON                                                                                       │  
-  │PLATFORMS        linux, macos, windows                                                        │  
-  │RUNTIMES         native-aot                                                                   │  
-  │SDK              >=3.10.0 <4.0.0                                                              │  
+  │DISCOVERY                                     PACKAGE CONFIG                                  │  
+  │TOPICS           tui, terminal, widgets       PUBLISH TO       https://pub.dev                │  
+  │LICENSES         BSD-3-Clause (LICENSE)       EXECUTABLES      noir: noir                     │  
+  │                                              SCREENSHOTS      Quiet terminal UI —            │  
+  │                                              screenshots/noir.png                            │  
   │                                                                                              │  
-  │DISCOVERY                                                                                     │  
-  │TOPICS           tui, terminal, widgets                                                       │  
-  │LICENSES         BSD-3-Clause (LICENSE)                                                       │  
-  │                                                                                              │  
-  │LINKS                                                                                         │  
+  │PROJECT LINKS                                                                                 │  
   │PUB.DEV          https://pub.dev/packages/noir                                                │  
-  │CHANGELOG        https://pub.dev/packages/noir/changelog                                      │  
+  │CHANGELOG        View changelog ↗                                                             │  
   │HOMEPAGE         https://github.com/leoafarias/noir                                           │  
+  │REPOSITORY       https://github.com/leoafarias/noir                                           │  
+  │ISSUES           https://github.com/leoafarias/noir/issues                                    │  
+  │DOCUMENTATION    https://pub.dev/documentation/noir/latest/                                   │  
   └──────────────────────────────────────────────────────────────────────────────────────────────┘  
-                                                                                                    
   ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     
                                                                                                     

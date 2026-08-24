@@ -73,19 +73,20 @@ final examplePubPackage = PubPackageSnapshot(
       version: '0.0.1-alpha.1',
       published: _published,
       retracted: false,
-      archiveUrl: 'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
-      archiveSha256: 'abc123',
       hasDocumentation: true,
       documentationStatus: 'documented',
     ),
     PackageRelease(
       version: '0.0.1-alpha.0',
       published: _earlier,
+      retracted: true,
+      hasDocumentation: false,
+      documentationStatus: 'no-docs',
+    ),
+    PackageRelease(
+      version: '0.0.1-dev.1',
+      published: _oldest,
       retracted: false,
-      archiveUrl: 'https://pub.dev/api/archives/noir-0.0.1-alpha.0.tar.gz',
-      archiveSha256: 'def456',
-      hasDocumentation: true,
-      documentationStatus: 'documented',
     ),
   ],
   advisories: [
@@ -110,8 +111,6 @@ final examplePubPackage = PubPackageSnapshot(
       maxPoints: 30,
     ),
   ],
-  archiveUrl: 'https://pub.dev/api/archives/noir-0.0.1-alpha.1.tar.gz',
-  archiveSha256: 'abc123',
   metricsUpdated: _updated,
   analysisUpdated: _updated,
   scorecardPackageVersion: '0.0.1-alpha.1',
@@ -138,6 +137,7 @@ final examplePubPackage = PubPackageSnapshot(
 
 final _published = DateTime.utc(2026, 8, 16, 12);
 final _earlier = DateTime.utc(2026, 8, 9, 12);
+final _oldest = DateTime.utc(2026, 8, 2, 12);
 final _updated = DateTime.utc(2026, 8, 17);
 final _newestDownloads = DateTime.utc(2026, 8, 15);
 
@@ -176,4 +176,17 @@ final gfmHealthPackage = PubPackageSnapshot(
       details: '### Impact\n\nUpgrade when a patched release is available.',
     ),
   ],
+  analysisUpdated: _updated,
+  panaVersion: '0.22.17',
+  analyzedSdkVersion: '3.10.0',
+  scorecardPackageVersion: '1.0.0',
+  scorecardRuntimeVersion: '2026.08.12',
+  metricsUpdated: _updated,
+  urlProblems: const ['repository redirects'],
+  repositorySummary: const PackageRepositorySummary(
+    provider: 'github',
+    host: 'github.com',
+    repository: 'example/gfm_health',
+    branch: 'main',
+  ),
 );

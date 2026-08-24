@@ -130,33 +130,33 @@ final class PubApiCatalog implements PubCatalog {
 
   @override
   Future<PubPackageSnapshot> loadPackage(String name) async {
-    // Only the package record is required. Every other endpoint is optional,
-    // so a failing score, publisher, or advisory lookup renders its absent
-    // state instead of losing the package the user actually asked for.
-    final packageFuture = _client.packageInfo(name);
-    final metricsFuture = _optional(_client.packageMetrics(name));
-    final publisherFuture = _optional(_client.packagePublisher(name));
-    final optionsFuture = _optional(_client.packageOptions(name));
-    final documentationFuture = _optional(_client.documentation(name));
-    final advisoriesFuture = _optional(_client.packageAdvisories(name));
-
-    late final PubPackage package;
     try {
-      package = await packageFuture;
-    } on Exception {
+      // Only the package record is required. Every other endpoint is optional,
+      // so a failing score, publisher, or advisory lookup renders its absent
+      // state instead of losing the package the user actually asked for.
+      final packageFuture = _client.packageInfo(name);
+      final metricsFuture = _optional(_client.packageMetrics(name));
+      final publisherFuture = _optional(_client.packagePublisher(name));
+      final optionsFuture = _optional(_client.packageOptions(name));
+      final documentationFuture = _optional(_client.documentation(name));
+      final advisoriesFuture = _optional(_client.packageAdvisories(name));
+
+      final package = await packageFuture;
+      final metrics = await metricsFuture;
+      final score =
+          metrics?.score ?? await _optional(_client.packageScore(name));
+      return PubPackageSnapshot.fromApi(
+        package: package,
+        score: score,
+        metrics: metrics,
+        publisher: await publisherFuture,
+        options: await optionsFuture,
+        documentation: await documentationFuture,
+        advisories: await advisoriesFuture,
+      );
+    } on Object {
       throw PubCatalogException('Load $name from pub.dev');
     }
-    final metrics = await metricsFuture;
-    final score = metrics?.score ?? await _optional(_client.packageScore(name));
-    return PubPackageSnapshot.fromApi(
-      package: package,
-      score: score,
-      metrics: metrics,
-      publisher: await publisherFuture,
-      options: await optionsFuture,
-      documentation: await documentationFuture,
-      advisories: await advisoriesFuture,
-    );
   }
 
   @override

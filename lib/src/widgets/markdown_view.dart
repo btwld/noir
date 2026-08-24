@@ -279,6 +279,7 @@ final class _MarkdownViewState extends State<MarkdownView>
           onSelectionChanged: _setSelection,
           onDraggingChanged: _setDragging,
           onCopy: widget.onCopy,
+          leafCanRequestFocus: !widget.embedded,
           child: block.widget,
         ),
       );
@@ -513,7 +514,7 @@ final class _MarkdownViewState extends State<MarkdownView>
       return TextSpan(
         text: alt.isEmpty ? source ?? '' : alt,
         style: theme.link,
-        uri: source == null ? null : Uri.tryParse(source),
+        uri: _semanticHttpUri(source),
       );
     }
     if (node.tag == 'br') return const TextSpan(text: '\n');
@@ -529,7 +530,7 @@ final class _MarkdownViewState extends State<MarkdownView>
       _ => inherited,
     };
     final uri = node.tag == 'a'
-        ? Uri.tryParse(node.attributes['href'] ?? '')
+        ? _semanticHttpUri(node.attributes['href'])
         : null;
     return TextSpan(
       style: style,
@@ -540,6 +541,13 @@ final class _MarkdownViewState extends State<MarkdownView>
       ],
     );
   }
+}
+
+Uri? _semanticHttpUri(String? value) {
+  if (value == null) return null;
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.host.isEmpty) return null;
+  return uri.scheme == 'http' || uri.scheme == 'https' ? uri : null;
 }
 
 TextStyle _mergeInlineStyle(TextStyle inherited, TextStyle overlay) =>

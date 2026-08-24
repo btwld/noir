@@ -94,6 +94,34 @@ void main() {
     expect(types, isNot(contains('Image')));
   });
 
+  test('Markdown links expose only absolute HTTP and HTTPS targets', () {
+    final host = DriverHost.create(width: 100, height: 4);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        const MarkdownView(
+          markdown: '''
+[safe](https://safe.example/path)
+[script](javascript:alert(1))
+[local](file:///tmp/private) [relative](/relative)
+![unsafe image](file:///tmp/image.png)
+''',
+        ),
+      )
+      ..debugFlushFrame();
+
+    final rows =
+        (host.capture(format: DriverCaptureFormat.cells)['rows']!
+                as List<Object?>)
+            .cast<Map<String, Object?>>();
+    final links = <String>{
+      for (final row in rows)
+        for (final link in (row['links']! as List<Object?>).cast<String?>())
+          ?link,
+    };
+    expect(links, {'https://safe.example/path'});
+  });
+
   test('CRLF input renders identically to LF input', () {
     const lf = '# Heading\n\nBody\n\n- a\n- b';
     final lfHost = DriverHost.create(width: 30, height: 7);
@@ -598,6 +626,77 @@ void main() {
       );
       await driver.sendLogicalKey(LogicalKeyboardKey.arrowDown);
       expect(controller.offset, 1);
+    },
+  );
+
+  test(
+    'embedded Markdown tables leave focus with the ancestor ScrollBox',
+    () async {
+      final controller = ScrollController();
+      final ancestorFocus = FocusNode(debugLabel: 'table scroll owner');
+      final nextFocus = FocusNode(debugLabel: 'after embedded table');
+      addTearDown(controller.dispose);
+      addTearDown(ancestorFocus.dispose);
+      addTearDown(nextFocus.dispose);
+      final driver = KeyDriver(
+        Column(
+          children: [
+            Expanded(
+              child: ScrollBox(
+                controller: controller,
+                focusNode: ancestorFocus,
+                autofocus: true,
+                child: MarkdownView(
+                  markdown:
+                      '''
+| Package | State |
+| --- | --- |
+| noir | ready |
+
+${List<String>.generate(12, (index) => 'paragraph $index').join('\n\n')}
+''',
+                  embedded: true,
+                ),
+              ),
+            ),
+            Focus(focusNode: nextFocus, child: const Text('NEXT')),
+          ],
+        ),
+        width: 30,
+        height: 5,
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+
+      expect(driver.app.buildOwner.focusManager.traversalOrder(), [
+        ancestorFocus,
+        nextFocus,
+      ]);
+      expect(ancestorFocus.hasFocus, isTrue);
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          x: 2,
+          y: 1,
+          button: MouseButton.left,
+        ),
+      );
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.up,
+          x: 2,
+          y: 1,
+          button: MouseButton.left,
+        ),
+      );
+      expect(ancestorFocus.hasFocus, isTrue);
+      await driver.sendLogicalKey(LogicalKeyboardKey.arrowDown);
+      expect(controller.offset, 1);
+
+      controller.jumpTo(0);
+      ancestorFocus.requestFocus();
+      await driver.sendLogicalKey(LogicalKeyboardKey.tab, code: 9);
+      expect(nextFocus.hasFocus, isTrue);
     },
   );
 

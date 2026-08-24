@@ -12,12 +12,14 @@ final _updateGoldens = Platform.environment['UPDATE_GOLDENS'] == '1';
 
 void main() {
   group('Pub search golden', () {
-    late GoldenTester tester;
+    late GoldenTester wideTester;
+    late GoldenTester narrowTester;
     late ScrollController scrollController;
     late FocusNode scrollFocusNode;
 
     setUpAll(() {
-      tester = GoldenTester(width: 100, height: 32);
+      wideTester = GoldenTester(width: 100, height: 32);
+      narrowTester = GoldenTester();
     });
 
     setUp(() {
@@ -31,22 +33,57 @@ void main() {
     });
 
     tearDownAll(() {
-      tester.dispose();
+      wideTester.dispose();
+      narrowTester.dispose();
     });
 
-    test('quiet tabs overview', () async {
-      await tester.expectGolden(
-        Theme(
-          data: pubTheme,
-          child: PubPackageDetail(
-            package: examplePubPackage,
-            activeTab: PackageDetailTab.overview,
-            onTabSelected: (_) {},
-            scrollController: scrollController,
-            scrollFocusNode: scrollFocusNode,
-          ),
-        ),
+    Widget detail(PackageDetailTab tab) => Theme(
+      data: pubTheme,
+      child: PubPackageDetail(
+        package: examplePubPackage,
+        activeTab: tab,
+        onTabSelected: (_) {},
+        scrollController: scrollController,
+        scrollFocusNode: scrollFocusNode,
+      ),
+    );
+
+    test('wide overview pairs compact summary groups', () async {
+      await wideTester.expectGolden(
+        detail(PackageDetailTab.overview),
         'pub_search_detail',
+        updateGoldens: _updateGoldens,
+      );
+    });
+
+    test('narrow overview stacks compact summary groups', () async {
+      await narrowTester.expectGolden(
+        detail(PackageDetailTab.overview),
+        'pub_search_detail_overview_narrow',
+        updateGoldens: _updateGoldens,
+      );
+    });
+
+    test('versions show a friendly release ledger', () async {
+      await wideTester.expectGolden(
+        detail(PackageDetailTab.versions),
+        'pub_search_detail_versions',
+        updateGoldens: _updateGoldens,
+      );
+    });
+
+    test('dependencies pair primary groups', () async {
+      await wideTester.expectGolden(
+        detail(PackageDetailTab.dependencies),
+        'pub_search_detail_dependencies',
+        updateGoldens: _updateGoldens,
+      );
+    });
+
+    test('health prioritizes summaries and rendered reports', () async {
+      await wideTester.expectGolden(
+        detail(PackageDetailTab.health),
+        'pub_search_detail_health',
         updateGoldens: _updateGoldens,
       );
     });

@@ -181,7 +181,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
   var _completeGeneration = 0;
   PackageDetailTab _activeTab = PackageDetailTab.overview;
   String? _selectedPackage;
-  String? _error;
+  String? _searchError;
+  String? _detailError;
   var _selectedIndex = 0;
   var _generation = 0;
   // Page currently requested, which leads _searchPage while a request is in
@@ -255,7 +256,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _selectedPackage = null;
     _selectedIndex = 0;
     _page = 1;
-    _error = null;
+    _searchError = null;
+    _detailError = null;
     _autofocusResults = false;
     _detailScroll.jumpTo(0);
   }
@@ -376,7 +378,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       _searchState = PubLoadState.loading;
       _suggestions = const [];
       _showSuggestions = false;
-      _error = null;
+      _searchError = null;
       _autofocusResults = keepResultsFocus;
       _page = page;
       _requestedCriteria = criteria;
@@ -411,7 +413,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       if (_isStale(request)) return;
       setState(() {
         _searchState = PubLoadState.error;
-        _error = '$error';
+        _searchError = '$error';
         // The last good results stay on screen, so the header follows them
         // back rather than naming the page that just failed.
         _page = _searchPage?.page ?? 1;
@@ -444,6 +446,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
               _searchState == PubLoadState.error) &&
           _searchPage != null) {
         _searchState = PubLoadState.ready;
+        _searchError = null;
         _page = _searchPage!.page;
         final criteria = _searchPageCriteria;
         if (criteria != null) {
@@ -451,13 +454,15 @@ class _PubSearchAppState extends State<PubSearchApp> {
           _filter = criteria.filter;
           _requestedCriteria = criteria;
         }
+      } else if (_searchState == PubLoadState.loading) {
+        _searchState = PubLoadState.idle;
       }
       _detailState = PubLoadState.loading;
       _selectedPackage = name;
       _activeTab = PackageDetailTab.overview;
       _detailScroll.jumpTo(0);
       _package = null;
-      _error = null;
+      _detailError = null;
     });
     try {
       final package = await widget.catalog.loadPackage(name);
@@ -470,7 +475,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       if (_isStale(request)) return;
       setState(() {
         _detailState = PubLoadState.error;
-        _error = '$error';
+        _detailError = '$error';
       });
     }
   }
@@ -556,12 +561,14 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   void _returnToResults({bool focusSearch = false}) {
     _generation++;
+    final focusResults =
+        !focusSearch && (_searchPage?.packages.isNotEmpty ?? false);
     setState(() {
       _view = PubSearchView.search;
       _detailState = PubLoadState.idle;
       _package = null;
-      _error = null;
-      _autofocusResults = !focusSearch;
+      _detailError = null;
+      _autofocusResults = focusResults;
     });
   }
 
@@ -983,7 +990,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Search unavailable', style: TextStyle(color: theme.danger)),
-        Text(_error ?? 'Unknown error'),
+        Text(_searchError ?? 'Unknown error'),
         Text(
           _searchFocus.hasFocus
               ? 'Edit the query or press Enter to retry.'
@@ -1092,7 +1099,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         ]),
         PubLoadState.error => _buildDetailStatus([
           Text('Package unavailable', style: TextStyle(color: theme.danger)),
-          Text(_error ?? 'Unknown error'),
+          Text(_detailError ?? 'Unknown error'),
         ]),
         // Unreachable: detail view is only entered through _loadPackage, which
         // sets loading, ready, or error. Dart still requires exhaustiveness.
