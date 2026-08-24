@@ -134,13 +134,27 @@ void main() {
     }
   });
 
-  test('package metadata shows one semantic status badge above the tabs', () {
+  test('normal package metadata avoids a redundant active status badge', () {
+    final frame = _capturePackageDetail(_statusPackage('active'));
+    final text = frame.toText();
+
+    expect(text, contains('Published Aug 16, 2026'));
+    expect(text, contains('by example.dev'));
+    expect(text, isNot(contains('ACTIVE')));
+    expect(text, contains(r'$ dart pub add active'));
+
+    final install = frame.findText('INSTALL').single;
+    final command = frame.findText(r'$ dart pub add active').single;
+    expect(command.y, install.y);
+    expect(command.x, greaterThan(install.x));
+    expect(
+      frame.getForegroundColor(install.x, install.y),
+      _painted(pubTheme.accent),
+    );
+  });
+
+  test('exceptional package metadata shows one status badge', () {
     final cases = <({PubPackageSnapshot package, String label, Color color})>[
-      (
-        package: _statusPackage('active'),
-        label: 'ACTIVE',
-        color: pubTheme.success,
-      ),
       (
         package: _statusPackage('unlisted', isUnlisted: true),
         label: 'UNLISTED',
@@ -181,7 +195,6 @@ void main() {
       final frame = _capturePackageDetail(current.package);
       expect(
         const [
-          'ACTIVE',
           'UNLISTED',
           'DISCONTINUED',
           'LATEST RETRACTED',
@@ -204,7 +217,7 @@ void main() {
     }
   });
 
-  test('wrapped package metadata keeps one blank row between runs', () {
+  test('wrapped package metadata keeps adjacent runs compact', () {
     final package = PubPackageSnapshot(
       name: 'wrapped_metadata',
       version: '1.0.0',
@@ -213,12 +226,12 @@ void main() {
       publisher: 'a-very-long-publisher-identity.example.dev',
     );
     final frame = _capturePackageDetail(package, width: 60);
-    final status = frame.findText('ACTIVE').single;
+    final published = frame.findText('Published Aug 16, 2026').single;
     final publisher = frame
         .findText('by a-very-long-publisher-identity.example.dev')
         .single;
 
-    expect(publisher.y, status.y + 2);
+    expect(publisher.y, published.y + 1);
   });
 
   test('package dates are friendly UTC values with midnight suppression', () {
@@ -281,6 +294,7 @@ void main() {
     expect(text, contains('docs ready'));
     expect(text, contains('no docs'));
     expect(text, contains('docs unknown'));
+    expect(text, isNot(contains('○')));
     expect(text, isNot(contains(RegExp(r'\bactive\b'))));
     expect(text, isNot(contains('/api/archives/')));
     expect(text, isNot(contains('SHA-256')));
@@ -316,6 +330,31 @@ void main() {
     expect(latest, hasLength(1));
     expect(latest.single.y, frame.findText('2.0.0').last.y);
     expect(latest.single.y, isNot(frame.findText('2.1.0-dev.1').single.y));
+  });
+
+  test('completed documentation builds do not repeat their status', () {
+    final package = PubPackageSnapshot(
+      name: 'documented_package',
+      version: '1.0.0',
+      description: 'Completed is transport state, not extra row copy.',
+      published: DateTime.utc(2026, 8, 16),
+      releases: [
+        PackageRelease(
+          version: '1.0.0',
+          published: DateTime.utc(2026, 8, 16),
+          retracted: false,
+          hasDocumentation: true,
+          documentationStatus: 'completed',
+        ),
+      ],
+    );
+    final text = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.versions,
+    ).toText();
+
+    expect(text, contains('docs ready'));
+    expect(text, isNot(contains('docs ready (completed)')));
   });
 
   test('View changelog retains the package changelog semantic URI', () async {
@@ -401,15 +440,53 @@ void main() {
         width: width,
         height: 64,
       );
-      expect(frame.findText('DIRECT DEPENDENCIES'), hasLength(1));
-      expect(frame.findText('DEVELOPMENT DEPENDENCIES'), hasLength(1));
+      expect(frame.findText('│DEPENDENCIES'), hasLength(1));
+      expect(frame.findText('DEV DEPENDENCIES'), hasLength(1));
       _expectGroupsPair(
         frame,
-        'DIRECT DEPENDENCIES',
-        'DEVELOPMENT DEPENDENCIES',
+        '│DEPENDENCIES',
+        'DEV DEPENDENCIES',
         width: width,
       );
     }
+  });
+
+  test('dependency groups size their value columns independently', () {
+    final package = PubPackageSnapshot(
+      name: 'dependency_widths',
+      version: '1.0.0',
+      description: 'One long dev name must not squeeze direct constraints.',
+      published: DateTime.utc(2026, 8, 16),
+      directDependencies: const {
+        'web': PackageDependencySummary(
+          source: PackageDependencySource.hosted,
+          constraint: '>=0.5.0 <2.0.0',
+        ),
+      },
+      devDependencies: const {
+        'http_client_conformance_tests': PackageDependencySummary(
+          source: PackageDependencySource.path,
+          path: '../http_client_conformance_tests/',
+        ),
+      },
+    );
+    final frame = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.dependencies,
+    );
+    final directLine = frame
+        .toText()
+        .split('\n')
+        .firstWhere((line) => line.contains('web'));
+
+    expect(directLine, contains('>=0.5.0 <2.0.0'));
+    final paths = frame.findText('↳ ../http_client_conformance_tests/');
+    expect(paths, hasLength(1));
+    final path = paths.single;
+    expect(
+      path.y,
+      greaterThan(frame.findText('http_client_conformance_tests').first.y),
+    );
   });
 
   test('empty detail groups use domain-specific copy', () {
@@ -513,6 +590,28 @@ void main() {
       expect(frame.findText('DOWNLOAD TREND'), hasLength(1));
       _expectGroupsPair(frame, 'QUALITY', 'DOWNLOAD TREND', width: width);
     }
+  });
+
+  test('health keeps a long major range and its sparkline on one row', () {
+    final package = PubPackageSnapshot(
+      name: 'download_range',
+      version: '1.0.0',
+      description: 'Long version ranges keep their chart label attached.',
+      published: DateTime.utc(2026, 8, 16),
+      majorVersionDownloads: [
+        PackageVersionDownloads(
+          versionRange: '>=0.0.0-0 <1.0.0',
+          counts: [for (var count = 1; count <= 30; count++) count],
+        ),
+      ],
+    );
+    final rangeLine = _capturePackageDetail(
+      package,
+      activeTab: PackageDetailTab.health,
+    ).toText().split('\n').firstWhere((line) => line.contains('MAJOR'));
+    final sparkline = RegExp('[▁▂▃▄▅▆▇█]+').firstMatch(rangeLine)?.group(0);
+
+    expect(sparkline?.runes, hasLength(20));
   });
 
   test('ignores a stale search completion', () async {
@@ -2633,7 +2732,7 @@ void main() {
         app.mockInput.typeText('3');
         await _settle(app);
         expect(_render(app), contains('3 DEPENDENCIES'));
-        expect(_render(app), contains('DIRECT DEPENDENCIES'));
+        expect(_render(app), contains('│DEPENDENCIES'));
         expect(_render(app), contains('noir_plugin  git'));
         expect(_render(app), contains('https://example.com/noir_plugin.git'));
 
@@ -2649,7 +2748,7 @@ void main() {
         app.mockInput.pressArrow(ArrowDirection.left);
         await _settle(app);
         expect(_render(app), contains('3 DEPENDENCIES'));
-        expect(_render(app), contains('DIRECT DEPENDENCIES'));
+        expect(_render(app), contains('│DEPENDENCIES'));
 
         app.mockInput.pressArrow(ArrowDirection.right);
         await _settle(app);
@@ -2879,7 +2978,9 @@ void main() {
     final text = (host.capture()['lines']! as List<Object?>)
         .cast<String>()
         .join('\n');
-    expect(text, contains('DIRECT DEPENDENCIES'));
+    expect(text, contains('│DEPENDENCIES'));
+    expect(text, contains('DEV DEPENDENCIES'));
+    expect(text, isNot(contains('DEVELOPMENT DEPENDENCIES')));
     expect(text, contains('async'));
     expect(text, contains('^2.5.0'));
     expect(text, contains('dart_flutter_team_lints'));
@@ -3052,7 +3153,7 @@ void main() {
       const cases = [
         ('1 OVERVIEW', 'PACKAGE', '2'),
         ('2 VERSIONS', 'PUBLISHED VERSIONS', '1'),
-        ('3 DEPENDENCIES', 'DIRECT DEPENDENCIES', '1'),
+        ('3 DEPENDENCIES', '│DEPENDENCIES', '1'),
         ('4 HEALTH', 'QUALITY', '1'),
       ];
       for (final (label, content, alternateTab) in cases) {

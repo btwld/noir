@@ -2,8 +2,8 @@
   noir 0.0.1-alpha.1                                                                                
   A Flutter-like reactive terminal UI framework for Dart.                                           
                                                                                                     
-   ACTIVE   Published Aug 16, 2026  by leoafarias.com                                               
-  INSTALL    dart pub add noir                                                                      
+  Published Aug 16, 2026  by leoafarias.com                                                         
+  INSTALL    $ dart pub add noir                                                                    
                                                                                                     
   160/160                 56                      12                      3                         
   POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
@@ -11,8 +11,8 @@
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐  
   │PUBLISHED VERSIONS  View changelog ↗                                                          │  
   │● 0.0.1-alpha.1           Aug 16, 2026     LATEST              docs ready                     │  
-  │○ 0.0.1-alpha.0           Aug 9, 2026      RETRACTED           no docs                        │  
-  │○ 0.0.1-dev.1             Aug 2, 2026                          docs unknown                   │  
+  │  0.0.1-alpha.0           Aug 9, 2026      RETRACTED           no docs                        │  
+  │  0.0.1-dev.1             Aug 2, 2026                          docs unknown                   │  
   │                                                                                              │  
   │                                                                                              │  
   │                                                                                              │  

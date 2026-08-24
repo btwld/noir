@@ -2,8 +2,8 @@
   noir 0.0.1-alpha.1                                                            
   A Flutter-like reactive terminal UI framework for Dart.                       
                                                                                 
-   ACTIVE   Published Aug 16, 2026  by leoafarias.com                           
-  INSTALL    dart pub add noir                                                  
+  Published Aug 16, 2026  by leoafarias.com                                     
+  INSTALL    $ dart pub add noir                                                
                                                                                 
   160/160            56                 12                 3                    
   POINTS             DOWNLOADS 30D      LIKES              VERSIONS             

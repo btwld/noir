@@ -79,16 +79,7 @@ class PubPackageDetail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _packageMetadata(package, theme),
-            ?_fact(
-              theme,
-              'INSTALL',
-              'dart pub add ${package.name}',
-              labelWidth: 10,
-              valueStyle: const TextStyle(
-                color: pubEmphasis,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            _installCommand(package.name, theme),
             const SizedBox(height: 1),
             _headlineMetrics(package, theme),
             TabSelect<PackageDetailTab>(
@@ -133,9 +124,8 @@ class PubPackageDetail extends StatelessWidget {
 
 Widget _packageMetadata(PubPackageSnapshot package, ThemeData theme) => Wrap(
   spacing: 2,
-  runSpacing: 1,
   children: [
-    _packageBadge(package),
+    ?_packageBadge(package),
     Text(
       'Published ${_date(package.published)}',
       style: TextStyle(color: theme.textMuted),
@@ -145,7 +135,7 @@ Widget _packageMetadata(PubPackageSnapshot package, ThemeData theme) => Wrap(
   ],
 );
 
-Widget _packageBadge(PubPackageSnapshot package) {
+Widget? _packageBadge(PubPackageSnapshot package) {
   if (package.isDiscontinued) {
     return const Badge(label: 'DISCONTINUED', variant: BadgeVariant.danger);
   }
@@ -155,8 +145,27 @@ Widget _packageBadge(PubPackageSnapshot package) {
   if (package.retracted) {
     return const Badge(label: 'LATEST RETRACTED', variant: BadgeVariant.danger);
   }
-  return const Badge(label: 'ACTIVE', variant: BadgeVariant.success);
+  return null;
 }
+
+Widget _installCommand(String packageName, ThemeData theme) => RichText(
+  text: TextSpan(
+    children: [
+      TextSpan(
+        text: '${_padCells('INSTALL', 10)} ',
+        style: TextStyle(color: theme.accent, fontWeight: FontWeight.bold),
+      ),
+      TextSpan(
+        text: r'$ ',
+        style: TextStyle(color: theme.textMuted),
+      ),
+      TextSpan(
+        text: 'dart pub add $packageName',
+        style: const TextStyle(color: pubEmphasis, fontWeight: FontWeight.bold),
+      ),
+    ],
+  ),
+);
 
 Widget _headlineMetrics(PubPackageSnapshot package, ThemeData theme) => Row(
   children: [
@@ -192,6 +201,7 @@ Widget _metric(ThemeData theme, String value, String label) => Column(
 
 /// Two groups fit a 100-column frame: 44 + Wrap spacing 2 + 44.
 const _summaryGroupWidth = 44;
+const _summarySparklineWidth = 20;
 
 Widget _summaryGroup(
   String title,
@@ -335,7 +345,7 @@ Widget _releaseRow(
         text: TextSpan(
           children: [
             TextSpan(
-              text: latest ? '● ' : '○ ',
+              text: latest ? '● ' : '  ',
               style: TextStyle(color: latest ? theme.accent : theme.textMuted),
             ),
             TextSpan(
@@ -381,30 +391,27 @@ Widget _releaseRow(
 );
 
 Widget _buildDependencies(PubPackageSnapshot package, ThemeData theme) {
-  final nameWidth = _dependencyNameWidth([
-    ...package.directDependencies.keys,
-    ...package.devDependencies.keys,
-    ...package.dependencyOverrides.keys,
-  ]);
+  final directNameWidth = _dependencyNameWidth(package.directDependencies.keys);
+  final devNameWidth = _dependencyNameWidth(package.devDependencies.keys);
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _summaryWrap([
         _summaryGroup(
-          'DIRECT DEPENDENCIES',
+          'DEPENDENCIES',
           _dependencyFacts(
             theme,
             package.directDependencies,
-            nameWidth,
+            directNameWidth,
             emptyText: 'No direct dependencies',
           ),
         ),
         _summaryGroup(
-          'DEVELOPMENT DEPENDENCIES',
+          'DEV DEPENDENCIES',
           _dependencyFacts(
             theme,
             package.devDependencies,
-            nameWidth,
+            devNameWidth,
             emptyText: 'No development dependencies',
           ),
         ),
@@ -416,7 +423,7 @@ Widget _buildDependencies(PubPackageSnapshot package, ThemeData theme) {
           _dependencyFacts(
             theme,
             package.dependencyOverrides,
-            nameWidth,
+            _dependencyNameWidth(package.dependencyOverrides.keys),
             emptyText: 'No overrides',
           ),
         ),
@@ -657,20 +664,45 @@ List<Widget> _dependencyFacts(
   if (values.isEmpty) return [Text(emptyText)];
   return [
     for (final entry in values.entries)
-      RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: _padCells(entry.key, nameWidth),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(
-              text: '  ${entry.value.displayValue}',
-              style: TextStyle(color: theme.textMuted),
-            ),
-          ],
-        ),
+      ..._dependencyRows(theme, entry.key, entry.value, nameWidth),
+  ];
+}
+
+List<Widget> _dependencyRows(
+  ThemeData theme,
+  String name,
+  PackageDependencySummary dependency,
+  int nameWidth,
+) {
+  final (value, details) = switch (dependency.source) {
+    PackageDependencySource.git => (
+      'git',
+      [
+        ?dependency.url,
+        if (dependency.ref case final ref?) 'ref $ref',
+        if (dependency.path case final path?) 'path $path',
+      ],
+    ),
+    PackageDependencySource.path => ('path', [?dependency.path]),
+    _ => (dependency.displayValue, const <String>[]),
+  };
+  return [
+    RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: _padCells(name, nameWidth),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(
+            text: '  $value',
+            style: TextStyle(color: theme.textMuted),
+          ),
+        ],
       ),
+    ),
+    for (final detail in details)
+      Text('  ↳ $detail', style: TextStyle(color: theme.textMuted)),
   ];
 }
 
@@ -698,7 +730,9 @@ List<Widget> _rangeFacts(
     ?_fact(
       theme,
       '$label ${value.versionRange}',
-      downloadSparkline(recentDownloadCounts(value.counts)),
+      downloadSparkline(
+        recentDownloadCounts(value.counts, limit: _summarySparklineWidth),
+      ),
     ),
 ];
 
@@ -711,7 +745,7 @@ String _documentationLabel(PackageRelease release) {
   final status = release.documentationStatus?.trim();
   if (status == null || status.isEmpty) return label;
   final normalized = status.toLowerCase().replaceAll('-', ' ');
-  if (normalized == canonical) return label;
+  if (normalized == canonical || normalized == 'completed') return label;
   return '$label ($status)';
 }
 
