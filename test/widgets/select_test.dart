@@ -204,6 +204,40 @@ void main() {
       }
     });
 
+    test('scroll indicator leaves no gutter when every option fits', () {
+      final capture = BufferCapture(width: 6, height: 2);
+      try {
+        final frame = capture.capture(
+          const Theme(
+            data: ThemeData(surfaceVariant: Color.red),
+            child: SizedBox(
+              width: 6,
+              height: 2,
+              child: Select<String>(
+                height: 2,
+                showScrollIndicator: true,
+                backgroundColor: Color.blue,
+                options: [
+                  SelectOption(name: 'A', value: 'a'),
+                  SelectOption(name: 'B', value: 'b'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          frame.getBackgroundColor(5, 0),
+          Color.red,
+          reason:
+              'the highlighted row owns the final cell when no '
+              'indicator is visible',
+        );
+      } finally {
+        capture.dispose();
+      }
+    });
+
     test('a zero-row Select paints no indicator outside its box', () {
       // `height: 0` is a legal hint, and a parent can still force the box
       // taller. Nothing is painted, so there is no window for an arrow to

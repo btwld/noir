@@ -3,10 +3,12 @@
   A Flutter-like reactive terminal UI framework for Dart.                                           
                                                                                                     
   Published Aug 16, 2026  by leoafarias.com                                                         
+                                                                                                    
   INSTALL    $ dart pub add noir                                                                    
                                                                                                     
   160/160                 56                      12                      3                         
   POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
+                                                                                                    
    1 OVERVIEW  2 VERSIONS  3 DEPENDENCIES  4 HEALTH                                                 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐  
   │DEPENDENCIES                                  DEV DEPENDENCIES                                │  
@@ -24,8 +26,6 @@
   │                                                                                              │  
   │ALL ANALYZED                                                                                  │  
   │characters  ffi  meta  hooks                                                                  │  
-  │                                                                                              │  
-  │                                                                                              │  
   │                                                                                              │  
   └──────────────────────────────────────────────────────────────────────────────────────────────┘  
   ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     

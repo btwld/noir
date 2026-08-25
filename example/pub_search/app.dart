@@ -45,7 +45,7 @@ const _sortOptions = <SelectOption<PackageSort>>[
     value: PackageSort.top,
   ),
   SelectOption(
-    name: 'TEXT',
+    name: 'RELEVANCE',
     description: 'Text relevance',
     value: PackageSort.text,
   ),
@@ -542,6 +542,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
     return index < 0 ? 0 : index;
   }
 
+  String _optionName<T>(List<SelectOption<T>> options, T value) =>
+      options[_indexOfOption(options, value)].name;
+
   void _refreshForChooser() {
     unawaited(
       _runSearch(
@@ -777,7 +780,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
                   _chooserAnchor(
                     chooser: _SearchChooser.sort,
                     label: 'Sort',
-                    value: _sort.name,
+                    value: _optionName(_sortOptions, _sort),
                     launcherKey: const ValueKey<String>('sort'),
                     title: 'CHOOSE SORT',
                     options: _sortOptions,
@@ -786,7 +789,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
                   _chooserAnchor(
                     chooser: _SearchChooser.filter,
                     label: 'Filter',
-                    value: _filter.name,
+                    value: _optionName(_filterOptions, _filter),
                     launcherKey: const ValueKey<String>('filter'),
                     title: 'CHOOSE FILTER',
                     options: _filterOptions,
@@ -961,6 +964,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     selectedIndex: _chooserHighlightedIndex,
     height: options.length,
     options: options,
+    backgroundColor: Color.transparent,
     onChanged: (index, option) {
       if (index == _chooserHighlightedIndex) return;
       setState(() => _chooserHighlightedIndex = index);
@@ -1022,6 +1026,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     focusNode: _resultsFocus,
     height: _suggestions.length,
     showScrollIndicator: true,
+    backgroundColor: Color.transparent,
     options: [
       for (final item in _suggestions)
         SelectOption(
@@ -1064,6 +1069,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
           selectedIndex: _selectedIndex,
           height: page.packages.length,
           showScrollIndicator: true,
+          backgroundColor: Color.transparent,
           options: [
             for (final package in page.packages)
               SelectOption(name: package, value: package),

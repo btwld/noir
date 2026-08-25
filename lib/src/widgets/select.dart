@@ -545,14 +545,18 @@ class RenderSelect<T> extends RenderBox {
       final segLen = nameW + descW;
       if (segLen > desiredWidth) desiredWidth = segLen;
     }
-    if (_showScrollIndicator) desiredWidth += 1;
+    final h = constraints.constrainHeight(_visibleRows);
+    final paintedRows = math.min(h, _visibleRows);
+    if (_showsScrollIndicator(paintedRows)) desiredWidth += 1;
     final w = constraints.constrainWidth(
       desiredWidth == 0 ? constraints.minWidth : desiredWidth,
     );
-    final h = constraints.constrainHeight(_visibleRows);
     size = Size(w, h);
-    _layoutMetrics?.publish(math.max(0, math.min(h, _visibleRows)));
+    _layoutMetrics?.publish(paintedRows);
   }
+
+  bool _showsScrollIndicator(int paintedRows) =>
+      _showScrollIndicator && paintedRows > 0 && _options.length > paintedRows;
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -571,12 +575,13 @@ class RenderSelect<T> extends RenderBox {
       );
     }
 
-    final usableWidth = _showScrollIndicator ? width - 1 : width;
     // Rows layout actually granted, which is what `_SelectState` scrolls
     // against: the height hint is an upper bound, and a tight parent can hand
     // back fewer rows. Painting and the arrows must describe the same window,
     // otherwise a constrained list scrolls with no indication that it did.
     final paintedRows = math.min(height, _visibleRows);
+    final showsScrollIndicator = _showsScrollIndicator(paintedRows);
+    final usableWidth = showsScrollIndicator ? width - 1 : width;
     for (var row = 0; row < paintedRows; row++) {
       final index = _scrollOffset + row;
       if (index >= _options.length) break;
@@ -631,9 +636,7 @@ class RenderSelect<T> extends RenderBox {
     // Scroll indicator (always last column when enabled and overflow). A box
     // taller than a zero-row hint paints no options at all, so there is no
     // window for an arrow to describe and no row of ours to put one on.
-    if (_showScrollIndicator &&
-        paintedRows > 0 &&
-        _options.length > paintedRows) {
+    if (showsScrollIndicator) {
       final indCol = originX + width - 1;
       canvas.setCell(
         Offset(indCol, originY),

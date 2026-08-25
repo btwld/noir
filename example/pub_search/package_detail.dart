@@ -79,9 +79,11 @@ class PubPackageDetail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _packageMetadata(package, theme),
+            const Flexible(child: SizedBox(height: 1)),
             _installCommand(package.name, theme),
-            const SizedBox(height: 1),
+            const Flexible(child: SizedBox(height: 1)),
             _headlineMetrics(package, theme),
+            const Flexible(child: SizedBox(height: 1)),
             TabSelect<PackageDetailTab>(
               key: const ValueKey<String>('tabs'),
               options: _detailTabs,
@@ -100,6 +102,8 @@ class PubPackageDetail extends StatelessWidget {
               },
             ),
             Expanded(
+              // Header gaps yield before the viewport on short terminals.
+              flex: 20,
               child: DemoPanel(
                 focused: scrollFocusNode.hasFocus,
                 child: ScrollBox(
@@ -553,7 +557,7 @@ Widget _buildHealth(PubPackageSnapshot package, ThemeData theme) {
         _fact(theme, 'HOST', package.repositorySummary?.host),
         _fact(theme, 'REPOSITORY', package.repositorySummary?.repository),
         _fact(theme, 'BRANCH', package.repositorySummary?.branch),
-      ]),
+      ], trailingSpace: false),
     ],
   );
 }
@@ -601,20 +605,21 @@ List<Widget> _section(
   String title,
   List<Widget?> children, {
   String? emptyText,
+  bool trailingSpace = true,
 }) {
   final items = children.whereType<Widget>().toList(growable: false);
   if (items.isNotEmpty) {
     return [
       Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       ...items,
-      const SizedBox(height: 1),
+      if (trailingSpace) const SizedBox(height: 1),
     ];
   }
   if (emptyText == null) return const [];
   return [
     Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
     Text(emptyText),
-    const SizedBox(height: 1),
+    if (trailingSpace) const SizedBox(height: 1),
   ];
 }
 

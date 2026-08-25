@@ -69,6 +69,30 @@ void main() {
     }
   });
 
+  test('result rows inherit the enclosing panel surface', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.add(_page(['alpha_pkg', 'beta_pkg']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final frame = app.captureFrame();
+      final row = frame.findText('beta_pkg').single;
+      final blankAfterLabel = row.x + terminalStringWidth('beta_pkg') + 1;
+
+      expect(
+        frame.getBackgroundColor(blankAfterLabel, row.y),
+        _painted(pubTheme.surfaceVariant),
+      );
+    } finally {
+      app.dispose();
+    }
+  });
+
   test(
     'single-clicking a package opens detail and hides the query cursor',
     () async {
@@ -150,6 +174,19 @@ void main() {
     expect(
       frame.getForegroundColor(install.x, install.y),
       _painted(pubTheme.accent),
+    );
+  });
+
+  test('package detail separates metadata, install, metrics, and tabs', () {
+    final frame = _capturePackageDetail(_statusPackage('spaced'));
+    final published = frame.findText('Published Aug 16, 2026').single;
+    final install = frame.findText('INSTALL').single;
+    final points = frame.findText('POINTS').single;
+    final overviewTab = frame.findText('1 OVERVIEW').single;
+
+    expect(
+      (install.y - published.y, points.y - install.y, overviewTab.y - points.y),
+      (2, 3, 2),
     );
   });
 
@@ -1756,15 +1793,15 @@ void main() {
       await _settle(app);
       expect(_render(app), contains('CHOOSE SORT'));
 
-      final text = app.captureFrame().findText('TEXT').single;
+      final text = app.captureFrame().findText('RELEVANCE').single;
       app.mockMouse.click(text.x, text.y);
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(2));
       expect(catalog.searchCalls.last.sort, PackageSort.text);
-      expect(_render(app), contains('Sort: TEXT ▾'));
+      expect(_render(app), contains('Sort: RELEVANCE ▾'));
       expect(_render(app), contains('sorted'));
-      final style = _tabStyle(app, 'Sort: TEXT ▾');
+      final style = _tabStyle(app, 'Sort: RELEVANCE ▾');
       expect(style.background, _painted(pubTheme.accent));
       expect(style.foreground, _painted(pubTheme.accentForeground));
       expect(style.bold, isTrue);
@@ -1959,7 +1996,7 @@ void main() {
           filter: PackageSearchFilter.any,
           topic: null,
         ));
-        expect(_render(app), contains('Sort: TEXT ▾'));
+        expect(_render(app), contains('Sort: RELEVANCE ▾'));
         expect(_render(app), contains('noir'));
         expect(
           _render(app),
@@ -2063,7 +2100,7 @@ void main() {
         _render(app),
         contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
       );
-      expect(_tabStyle(app, 'Sort: TEXT ▾').bold, isTrue);
+      expect(_tabStyle(app, 'Sort: RELEVANCE ▾').bold, isTrue);
       expect(app.captureFrame().cursor.visible, isFalse);
     } finally {
       app.dispose();
@@ -3702,7 +3739,7 @@ void main() {
 
       expect(_render(app), contains('Searching pub.dev…'));
       expect(_render(app), contains('kept_package'));
-      expect(_render(app), contains('Sort: TEXT ▾'));
+      expect(_render(app), contains('Sort: RELEVANCE ▾'));
 
       app.mockInput.pressEnter();
       await _settle(app);
