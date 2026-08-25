@@ -1,0 +1,4 @@
+{
+  "prompt": "Edit only the code-and-terminal preview in the most recent Noir documentation homepage comp. Preserve every other visual detail, layout, color, typography, navigation item, button, card, and spacing exactly. Replace the Dart editor contents with this exact supported Noir program, spelled exactly and with no additional classes or widgets:\n\nimport 'package:noir/noir.dart';\n\nvoid main() => runTuiApp(\n  const Text('Hello, Noir!'),\n);\n\nIn the terminal preview, keep \"Hello, Noir!\" and change the footer instruction to \"Press Ctrl+C to exit.\" Do not add Center, MaterialApp, Scaffold, or any other API. Keep the image a 16:9 high-fidelity desktop website comp. No watermark.\n",
+  "createdAt": "2026-08-25T17:02:28.479Z"
+}

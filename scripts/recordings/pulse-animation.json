@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entrypoint": "example/pulse_animation.dart",
+  "output": ".context/demos/pulse-animation.cast",
+  "title": "Noir · Pulse animation",
+  "width": 56,
+  "height": 18,
+  "durationMs": 2800,
+  "fps": 12,
+  "actions": []
+}

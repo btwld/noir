@@ -1,0 +1,4 @@
+interface:
+  display_name: "Record Noir Demo"
+  short_description: "Capture Noir examples as local terminal replays"
+  default_prompt: "Use $record-noir-demo to capture a shipped Noir example as a local documentation replay."
