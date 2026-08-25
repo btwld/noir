@@ -1,0 +1,71 @@
+---
+title: Hooks
+description: Use Noir’s optional HookWidget surface without hiding state ownership or effect cleanup.
+---
+
+# Hooks
+
+<code>package:noir/hooks.dart</code> provides reusable widget lifecycle hooks as
+an opt-in library in the main Noir package. Its production implementation uses
+no private Element, low-level renderer, or FFI API.
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir/hooks.dart';
+```
+
+## Start with a HookWidget
+
+The [Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
+uses a stable top-level <code>useState</code> call and changes it in a Button
+callback.
+
+```dart
+class HooksCounterApp extends HookWidget {
+  const HooksCounterApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useState<int>(0);
+    return Button(label: '+ Add one', onPressed: () => count.value++);
+  }
+}
+```
+
+<code>useState</code> owns and observes a <code>ValueNotifier</code>; changing
+<code>count.value</code> rebuilds the <code>HookWidget</code>. The result is
+intentionally comparable with [Counter’s setState](/examples#counter), not a
+replacement for the foundational state model.
+
+## Keep hook identity stable
+
+Stateful hooks use call order as identity. Call them unconditionally and in
+the same order on every build. Do not invoke hooks from an event handler,
+effect, cleanup, or another lifecycle callback. Top-level custom hook functions
+should begin with <code>use</code>.
+
+<code>useContext</code> and <code>useTickerProvider</code> are build-only
+lookups; they do not consume a hook slot. A key changes only that hook slot, and
+Noir snapshots key lists so later caller mutation cannot change stored identity.
+
+## Effects synchronize resources
+
+<code>useEffect</code> is synchronous. It is for synchronizing an external
+resource and returning cleanup, not for routing a button action. Without keys,
+cleanup then the effect runs on every build; keyed effects replace only when
+their keys change. Cleanup also runs when a slot is removed or its widget is
+disposed.
+
+An effect or cleanup must not synchronously request a hook rebuild. Update state
+later from a timer, future, stream, or user input instead.
+
+## Choose the needed integration
+
+Core hooks include <code>useState</code>, <code>useEffect</code>,
+
+<code>useMemoized</code>, <code>useCallback</code>, and <code>useRef</code>.
+Noir integrations include <code>useAnimationController</code>,
+<code>useTextEditingController</code>, <code>useFocusNode</code>,
+<code>useScrollController</code>, and <code>useViewportController</code>. Keep a
+future or stream outside build, or retain it with
+<code>useMemoized</code>, so a rebuild does not restart observation.

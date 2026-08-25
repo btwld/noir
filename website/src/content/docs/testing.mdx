@@ -1,0 +1,43 @@
+---
+title: Testing
+description: Test Noir through its supported widget, buffer, input, and binding harnesses.
+---
+
+# Testing
+
+Noir has four supported test tools. Choose the smallest one that proves the
+behavior you are changing:
+
+| Need                        | Supported harness             |
+| --------------------------- | ----------------------------- |
+| Layout and widget behavior  | <code>WidgetTester</code>     |
+| One rendered terminal frame | <code>BufferCapture</code>    |
+| Parsed synthetic input      | <code>KeyDriver</code>        |
+| Binding integration         | <code>createTuiTestApp</code> |
+
+Use <code>BufferMatchers</code> for cell-level assertions. Visual goldens
+include style and cursor sidecars unless they are deliberately text-only. Do
+not invent a fifth harness for an example-specific test.
+
+## Test behavior, not just a return value
+
+Counter tests cover its visual hierarchy, keyboard and pointer activation,
+compact dimensions, and mouse setup. Chat tests cover submitting a prompt,
+animated and stable spinner states, transcript scrolling, focus traversal, and
+Escape behavior. Motion tests assert timeline changes and cleanup, rather than
+merely constructing a controller.
+
+```sh
+dart test test/example/counter_test.dart --concurrency=1
+dart test test/example/hooks_counter_test.dart --concurrency=1
+```
+
+## Headless recordings are evidence, not terminal-emulator proof
+
+The six site recordings use <code>NoirDriver (NOIR_DRIVE=1)</code> through the
+existing headless driver. They exercise normal layout, paint, and parsed input
+paths, but do not prove real terminal escape rendering or raw-mode input. Keep
+that distinction visible when reviewing a recording or writing a test.
+
+Read the [Examples](/examples) links beside each recording for the focused Dart
+test that proves its behavior.

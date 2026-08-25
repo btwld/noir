@@ -15,6 +15,9 @@
 .github/
 /scripts/
 /tools/
+/website/
+/.impeccable/
+/DESIGN.md
 
 # Internal Patch Manager implementation is development-only.
 /lib/src/tools/

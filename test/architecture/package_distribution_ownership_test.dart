@@ -600,6 +600,14 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
+  test('website application and its design record stay outside the Dart package archive', () {
+    final pubignoreLines = _read('.pubignore').split('\n');
+
+    expect(pubignoreLines, contains('/website/'));
+    expect(pubignoreLines, contains('/.impeccable/'));
+    expect(pubignoreLines, contains('/DESIGN.md'));
+  });
+
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
         'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir/references/hooks.md'

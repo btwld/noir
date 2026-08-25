@@ -1,0 +1,483 @@
+@import 'asciinema-player/dist/bundle/asciinema-player.css';
+
+:root {
+  --ink: #11110f;
+  --paper: #fbfbf8;
+  --quiet: #5f5f58;
+  --rule: #d4d4cb;
+  --terminal: #090909;
+  --terminal-ink: #f6f6ee;
+  --nextra-bg: 251, 251, 248;
+  --nextra-primary-hue: 0deg;
+  --nextra-primary-saturation: 0%;
+  --nextra-primary-lightness: 12%;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  scroll-behavior: smooth;
+}
+
+html.dark {
+  --ink: #f5f5ef;
+  --paper: #0c0c0b;
+  --quiet: #b9b9b1;
+  --rule: #44443f;
+  --terminal: #000;
+  --terminal-ink: #f8f8ef;
+  --nextra-bg: 12, 12, 11;
+  --nextra-primary-lightness: 95%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', ui-serif, serif;
+  font-size: 1.075rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+a {
+  color: inherit;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  padding: 0.58rem 0.72rem;
+}
+
+button:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+code,
+kbd,
+pre,
+.terminal-demo,
+.install-command {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+pre {
+  border: 1px solid var(--rule);
+  border-radius: 0;
+}
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.wordmark {
+  font-family: Georgia, 'Times New Roman', ui-serif, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.site-nav-link {
+  color: var(--quiet);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.site-nav-link:hover {
+  color: var(--ink);
+}
+
+.home-page,
+.not-found {
+  margin: 0 auto;
+  max-width: 76rem;
+  padding: clamp(3rem, 8vw, 8rem) clamp(1.25rem, 5vw, 4rem) 6rem;
+}
+
+.home-intro {
+  max-width: 51rem;
+}
+
+.home-intro h1,
+.not-found h1 {
+  font-size: clamp(3rem, 7.2vw, 6rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.home-summary {
+  font-size: clamp(1.22rem, 2vw, 1.58rem);
+  line-height: 1.42;
+  margin: 2rem 0 2.3rem;
+  max-width: 44rem;
+}
+
+.prerelease-notice {
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.91rem;
+  gap: 0.8rem;
+  line-height: 1.45;
+  margin: 2.25rem 0;
+  max-width: 48rem;
+  padding: 0.85rem 0;
+}
+
+.prerelease-notice strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.77rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.install-command {
+  align-items: stretch;
+  border: 1px solid var(--ink);
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.install-command code {
+  overflow-wrap: anywhere;
+  padding: 0.65rem 0.8rem;
+}
+
+.install-command button {
+  border: 0;
+  border-left: 1px solid var(--ink);
+  flex: 0 0 auto;
+}
+
+.home-command-note {
+  color: var(--quiet);
+  font-size: 0.94rem;
+  margin-top: 0.8rem;
+}
+
+.home-terminal {
+  margin: clamp(3rem, 8vw, 7rem) 0;
+}
+
+.terminal-demo {
+  background: var(--terminal);
+  border: 1px solid var(--terminal);
+  color: var(--terminal-ink);
+  margin: 0;
+  max-width: 100%;
+}
+
+.terminal-demo figcaption {
+  align-items: baseline;
+  border-bottom: 1px solid #51514d;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.65rem 0.8rem;
+}
+
+.terminal-demo-caption {
+  color: #c7c7bd;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+}
+
+.terminal-poster {
+  background: var(--terminal);
+  border: 0;
+  color: var(--terminal-ink);
+  font-size: clamp(0.66rem, 1.5vw, 0.92rem);
+  line-height: 1.3;
+  margin: 0;
+  min-height: 12rem;
+  overflow-x: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.terminal-player {
+  min-height: 12rem;
+  overflow-x: auto;
+}
+
+.terminal-player .ap {
+  margin: 0;
+}
+
+.terminal-demo-actions {
+  align-items: center;
+  border-top: 1px solid #51514d;
+  display: flex;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.terminal-demo-actions a {
+  color: var(--terminal-ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+}
+
+.terminal-demo-note {
+  border-top: 1px solid #51514d;
+  color: #d4d4ca;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+}
+
+.architecture-signal {
+  border-bottom: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  margin: clamp(3rem, 8vw, 7rem) 0;
+  padding: clamp(2rem, 4vw, 3.5rem) 0;
+}
+
+.architecture-signal h2,
+.next-reads h2 {
+  font-size: clamp(1.75rem, 3vw, 2.65rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0 0 1.3rem;
+  max-width: 38rem;
+}
+
+.architecture-signal ol {
+  border-top: 1px solid var(--rule);
+  list-style: none;
+  margin: 2rem 0 0;
+  max-width: 58rem;
+  padding: 0;
+}
+
+.architecture-signal li {
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: minmax(8rem, 15rem) 1fr;
+  padding: 0.75rem 0;
+}
+
+.architecture-signal strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.next-reads {
+  display: grid;
+  gap: 0;
+  max-width: 52rem;
+}
+
+.next-reads h2 {
+  margin-bottom: 1.5rem;
+}
+
+.next-reads a {
+  border-top: 1px solid var(--rule);
+  font-size: clamp(1.15rem, 2vw, 1.42rem);
+  padding: 0.82rem 0;
+  text-decoration: none;
+}
+
+.next-reads a:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.next-reads a::after {
+  content: ' →';
+}
+
+.not-found {
+  max-width: 58rem;
+}
+
+.not-found p {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  margin: 0 0 1rem;
+}
+
+.not-found a {
+  display: inline-block;
+  margin-top: 2rem;
+}
+
+.nextra-content {
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.nextra-content h1 {
+  font-size: clamp(2.65rem, 5vw, 4.7rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.nextra-content h2 {
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin-top: 4.5rem;
+}
+
+.nextra-content h3 {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  margin-top: 2rem;
+}
+
+.nextra-content p,
+.nextra-content li {
+  max-width: 72ch;
+}
+
+.nextra-content blockquote {
+  border-inline-start: 1px solid var(--ink);
+  color: var(--quiet);
+}
+
+.nextra-content code {
+  font-size: 0.86em;
+}
+
+.nextra-content pre {
+  background: var(--terminal);
+  color: var(--terminal-ink);
+}
+
+.nextra-content :not(pre) > code {
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 0.08em 0.3em;
+}
+
+.example-section {
+  border-top: 1px solid var(--ink);
+  margin-top: 4.5rem;
+  padding-top: 1.4rem;
+}
+
+.example-section > header h2 {
+  margin: 0;
+}
+
+.example-section > header p {
+  font-size: 1.16rem;
+  margin: 0.8rem 0 2rem;
+}
+
+.example-run pre {
+  margin: 0.65rem 0 1.8rem;
+}
+
+.example-how-it-works ol {
+  max-width: 65ch;
+}
+
+.example-links {
+  display: flex;
+  flex-wrap: wrap;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+  gap: 1rem;
+  margin: 1.6rem 0 2rem;
+}
+
+.example-links a::after {
+  content: ' ↗';
+}
+
+@media (max-width: 700px) {
+  .site-nav-link:not(.site-nav-github) {
+    display: none;
+  }
+
+  .prerelease-notice {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .install-command {
+    display: flex;
+  }
+
+  .install-command code {
+    flex: 1 1 auto;
+  }
+
+  .terminal-demo figcaption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .architecture-signal li {
+    display: block;
+  }
+
+  .architecture-signal strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

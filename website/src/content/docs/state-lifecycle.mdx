@@ -1,0 +1,62 @@
+---
+title: State & Lifecycle
+description: Preserve identity with State, update through setState, and dispose owned resources explicitly.
+---
+
+# State & Lifecycle
+
+A <code>StatefulWidget</code> declares configuration; its retained
+
+<code>State</code> owns local, mutable resources. When matching widgets
+reconcile across a rebuild, Noir keeps the existing state where identity permits
+it.
+
+## Update local state from an event
+
+Counter makes the core sequence visible:
+
+1. A focused key or a left-pointer-down event calls a state method.
+2. That method changes <code>\_count</code> inside <code>setState</code>.
+3. Noir rebuilds the state’s widget subtree, then lays out and paints a new
+   terminal frame.
+
+```dart
+void _incrementCounter() => setState(() => _count++);
+```
+
+The same app gives its pointer target a stable
+
+<code>ValueKey&lt;String&gt;('increment')</code>, which lets headless driver
+tests target the real control without relying on terminal coordinates.
+
+## Own resources where they live
+
+Initialize and dispose a controller, focus node, subscription, or animation
+with the state object that owns it. Chat creates a
+
+<code>TextEditingController</code>, transcript <code>ScrollController</code>,
+and <code>FocusNode</code> in <code>initState</code>, then disposes all three in
+<code>dispose</code>. Pulse removes its animation listener and disposes its
+<code>AnimationController</code> in the same lifecycle.
+
+<code>initState</code>, <code>didChangeDependencies</code>,
+<code>didUpdateWidget</code>, <code>deactivate</code>, <code>dispose</code>, and
+<code>mounted</code> follow Noir’s documented lifecycle contract. Explicit
+lifecycle methods are the resource owner; finalizers are only a safety net.
+
+## StatefulWidget and HookWidget
+
+<code>HookWidget</code> remains a normal Noir
+<code>StatefulWidget</code> underneath. Prefer an ordinary state class when it
+makes lifecycle ownership clearest; prefer a hook when a reusable composition is
+the clearer unit. In either form, handle input in an input callback—not in an
+effect.
+
+```dart
+final count = useState<int>(0);
+Button(label: '+ Add one', onPressed: () => count.value++);
+```
+
+Read [Hooks](/docs/hooks) for call-order identity, cleanup, and controller
+hooks, then compare [Counter](/examples#counter) with
+[Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart).

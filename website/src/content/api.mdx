@@ -1,0 +1,22 @@
+---
+title: API
+description: A concise chooser for Noir’s supported public API tiers.
+---
+
+# API
+
+Choose the narrowest supported package surface that owns the job.
+
+| If you are…                                             | Import                                                                |
+| ------------------------------------------------------- | --------------------------------------------------------------------- |
+| Building an application or ordinary widget              | <code>package:noir/noir.dart</code>                                   |
+| Opting into HookWidget lifecycle helpers                | <code>package:noir/hooks.dart</code> alongside <code>noir.dart</code> |
+| Hosting Noir or writing a supported custom RenderObject | <code>package:noir/noir_low_level.dart</code>                         |
+| Working against guarded, ABI-unstable bindings          | <code>package:noir/noir_ffi.dart</code>                               |
+
+The public reference is on [pub.dev](https://pub.dev/documentation/noir/latest/).
+Noir deliberately does not mirror generated API documentation here. The
+repository source can be ahead of the latest published prerelease.
+
+For ownership boundaries and what remains framework-owned, read
+[Architecture & API](/docs/architecture-api).

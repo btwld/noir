@@ -1,0 +1,296 @@
+---
+title: Examples
+description: Six source-backed Noir recordings and the complete shipped example catalog.
+---
+
+# Examples
+
+These examples ship with Noir and use supported package APIs. The six featured
+casts are authentic asciicast v2 recordings produced through Noir’s headless
+driver. They prove the same layout, paint, and parsed-input paths used by the
+ordinary suite; they do not claim real-terminal or raw-mode proof.
+
+## Featured examples
+
+<ExampleSection
+  id="counter"
+  title="Counter"
+  proves="A StatefulWidget keeps one counter, accepts keyboard and pointer activation, and repaints the changing declaration."
+  run="dart run example/counter.dart"
+  controls="Up or + increments; Down or - decrements; Enter, Space, and a left click increment; Ctrl+C exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/counter.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/counter_test.dart"
+  guideHref="/docs/state-lifecycle"
+  demo={{
+    id: 'counter',
+    title: 'Counter — StatefulWidget and input',
+    castUrl: '/demos/counter.cast',
+    cols: 64,
+    rows: 18,
+    poster:
+      'NOIR COUNTER\n\nYou have pushed the button\nthis many times:\n\n            3\n\nUp/+ add | Down/- subtract | Enter/Space | Ctrl+C     +',
+  }}
+>
+  <ol>
+    <li>
+      A focused <code>Focus</code> handles Up, Down, +, -, Enter, and Space; the{' '}
+      <code>PointerListener</code> routes a left click to the same increment
+      method.
+    </li>
+    <li>
+      The retained <code>_CounterAppState</code> owns <code>_count</code> and
+      changes it through <code>setState</code>.
+    </li>
+    <li>
+      Its build lays out a header, expanded count, and fixed action surface in
+      terminal cells.
+    </li>
+    <li>
+      The rebuilt declaration is laid out and painted as the next terminal
+      frame.
+    </li>
+  </ol>
+  <p>
+    Compare it with{' '}
+    <a href="https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart">
+      Hooks Counter
+    </a>
+    : <code>useState</code> owns the local notifier, while the same input
+    callback changes <code>count.value</code>. The{' '}
+    <a href="/docs/hooks">Hooks guide</a> explains the opt-in public surface and
+    its lifecycle rules.
+  </p>
+</ExampleSection>
+
+<ExampleSection
+  id="chat"
+  title="Chat"
+  proves="A text controller, asynchronous state, ScrollBox, and the standard Spinner form one complete input-to-reply flow."
+  run="dart run example/chat_demo.dart"
+  controls="Type a prompt and press Enter; PageUp and PageDown move transcript history; Tab follows focus traversal; Escape exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/chat_demo_test.dart"
+  guideHref="/docs/input-focus"
+  demo={{
+    id: 'chat',
+    title: 'Chat — asynchronous state',
+    castUrl: '/demos/chat-loading.cast',
+    cols: 64,
+    rows: 16,
+    poster:
+      'NOIR CHAT\n\nNoir is thinking  ·\n\nYou: Show me async UI\n\n> Waiting for Noir',
+  }}
+>
+  <ol>
+    <li>
+      <code>TextEditingController</code> owns editable prompt text beside a
+      dedicated input focus node.
+    </li>
+    <li>
+      Submit trims and appends a user message, marks the app thinking, then
+      starts the response without blocking the event loop.
+    </li>
+    <li>
+      <code>ScrollBox</code> and its controller keep the newest-first transcript
+      navigable while PageUp and PageDown reach history.
+    </li>
+    <li>
+      The mounted <code>Spinner</code> exposes pending work; the assistant reply
+      clears thinking and records the next frame.
+    </li>
+  </ol>
+</ExampleSection>
+
+<ExampleSection
+  id="components"
+  title="Components"
+  proves="Built-in controls retain controlled values, move focus predictably, and make a Spinner’s mount lifecycle visible."
+  run="dart run example/components_demo.dart"
+  controls="Tab and Shift+Tab move focus; Enter, Space, and left click activate a focused control; s toggles the spinner; q exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/components_demo.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/component_examples_test.dart"
+  guideHref="/docs/input-focus"
+  demo={{
+    id: 'components',
+    title: 'Components — controlled values',
+    castUrl: '/demos/components-spinner.cast',
+    cols: 80,
+    rows: 24,
+    poster:
+      'COMPONENTS DEMO\n\n[x] soft wrap   [ ] verbose\n\n[ Step ] [ Reset ]  ███████░░░░░░░░  3/10\n\nRUNNING  ·',
+  }}
+>
+  <ol>
+    <li>
+      Focusable Checkbox, Switch, and Button controls use normal traversal, so
+      keyboard ownership is visible instead of ad hoc.
+    </li>
+    <li>
+      The state object keeps bool and step values controlled; callbacks replace
+      those values through <code>setState</code>.
+    </li>
+    <li>
+      A Row and Column composition puts controls, progress, status Badge, and
+      Divider into bounded terminal panels.
+    </li>
+    <li>
+      Pressing <code>s</code> mounts or removes the standard{' '}
+      <code>Spinner</code>, so stopping it means removing its lifecycle from the
+      tree.
+    </li>
+  </ol>
+</ExampleSection>
+
+<ExampleSection
+  id="pub-search"
+  title="Pub Search"
+  proves="Composed state coordinates a live pub.dev query, focusable result controls, and a focused package-detail pane."
+  run="dart run example/pub_search.dart"
+  controls="Enter searches or opens a highlighted package; Tab moves query, sort, filter, and results; s/f open pickers; n/p page; Escape returns or exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/pub_search/app.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/pub_search_test.dart"
+  guideHref="/docs/input-focus"
+  demo={{
+    id: 'pub-search',
+    title: 'Pub Search — deterministic recording data',
+    castUrl: '/demos/pub-search.cast',
+    cols: 100,
+    rows: 30,
+    poster:
+      'PUB SEARCH\n\nSEARCH  noir\n\nRESULTS\n> noir\n  noir_hooks\n  noir_cli\n\nDeterministic documentation fixture',
+  }}
+>
+  <ol>
+    <li>
+      The executable builds a live <code>PubApiCatalog</code>; it validates the
+      query, requests pub.dev, and maps its responses into app models.
+    </li>
+    <li>
+      Separate focus nodes coordinate the query, results, sort/filter launchers,
+      chooser, and scrollable detail pane.
+    </li>
+    <li>
+      Query, request generation, result state, selected package, and detail
+      state compose into one search or package-detail surface.
+    </li>
+    <li>
+      This recording deliberately injects a local <code>PubCatalog</code>{' '}
+      fixture, so its results are deterministic and are not evidence of a live
+      network response.
+    </li>
+  </ol>
+</ExampleSection>
+
+<ExampleSection
+  id="like-reactor"
+  title="Like Reactor"
+  proves="A bounded particle simulation turns keyboard and pointer bursts into a clipped-looking, cell-constrained animation."
+  run="dart run example/like_reactor.dart"
+  controls="Space, Enter, or a left click emits a burst; Ctrl+C exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/like_reactor_test.dart"
+  guideHref="/docs/state-lifecycle"
+  demo={{
+    id: 'like-reactor',
+    title: 'Like Reactor — bounded motion',
+    castUrl: '/demos/like-reactor.cast',
+    cols: 72,
+    rows: 24,
+    poster:
+      'NOIR · LIKE REACTOR\n\n       ♥  ✦  ♡  ♥\n\n          █████\n        █████████\n          █████\n\nSpace/Enter/click burst · Ctrl+C exit',
+  }}
+>
+  <ol>
+    <li>
+      A focused key handler and the heart’s <code>PointerListener</code> both
+      call one burst action.
+    </li>
+    <li>
+      <code>AnimationController</code> ticks the simulation; each burst emits
+      deterministic particles and the list is capped at 72.
+    </li>
+    <li>
+      Particles project into a fixed 56-by-8 cell stage, clamping their
+      coordinates before rows are painted; the heart has its own fixed
+      footprint.
+    </li>
+    <li>
+      The controller stops once no frame work remains, then restarts for the
+      next activation; disposal clears owned simulation state and listeners.
+    </li>
+  </ol>
+</ExampleSection>
+
+<ExampleSection
+  id="pulse"
+  title="Pulse"
+  proves="A controller-owned ticker drives fractional ProgressBar values and pauses or resumes without resetting its place."
+  run="dart run example/pulse_animation.dart"
+  controls="Space pauses or resumes the pulse; Ctrl+C exits."
+  sourceHref="https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart"
+  testHref="https://github.com/leoafarias/noir/blob/main/test/example/pulse_animation_test.dart"
+  guideHref="/docs/state-lifecycle"
+  demo={{
+    id: 'pulse',
+    title: 'Pulse — controller lifecycle',
+    castUrl: '/demos/pulse-animation.cast',
+    cols: 56,
+    rows: 18,
+    poster:
+      'Terminal-native motion\n\n████████████████░░░░░░░░░░░░░░░░\n\ncontroller.value: 0.50 · running\n1/8-cell progress · Space pause/resume · Ctrl+C exit',
+  }}
+>
+  <ol>
+    <li>
+      <code>initState</code> creates an <code>AnimationController</code>,
+      listens for ticker changes, and begins its forward run.
+    </li>
+    <li>
+      Status changes reverse at either endpoint, while each tick calls{' '}
+      <code>setState</code> only while the state remains mounted.
+    </li>
+    <li>
+      The fractional controller value becomes the <code>ProgressBar</code> value
+      and interpolates its terminal color.
+    </li>
+    <li>
+      Space stops or resumes from the current direction; <code>dispose</code>{' '}
+      removes the listener and releases the controller.
+    </li>
+  </ol>
+</ExampleSection>
+
+## Complete catalog
+
+Every shipped entrypoint remains here, even when it does not need a recording.
+
+| Group      | Example                                                                                                | Run                                                       | Learn                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| Start here | [Main](https://github.com/leoafarias/noir/blob/main/example/main.dart)                                 | <code>dart run example/main.dart</code>                   | Canonical minimal entry point                                     |
+| Start here | [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart)                               | <code>dart run example/hello.dart</code>                  | Stateless widget and renderer composition                         |
+| Start here | [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart)                           | <code>dart run example/counter.dart</code>                | Stateful updates and pointer input                                |
+| Start here | [Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)               | <code>dart run example/hooks_counter.dart</code>          | Opt-in HookWidget and useState                                    |
+| Core       | [Layout Basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart)               | <code>dart run example/layout_basics.dart</code>          | Flex, spacing, and cells                                          |
+| Core       | [Layout Demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart)                   | <code>dart run example/layout_demo.dart</code>            | Alignment and nested layouts                                      |
+| Core       | [Inherited Example](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart)       | <code>dart run example/inherited_example.dart</code>      | Inherited rebuilds                                                |
+| Core       | [Theme Demo](https://github.com/leoafarias/noir/blob/main/example/theme_demo.dart)                     | <code>dart run example/theme_demo.dart</code>             | Theme tokens                                                      |
+| Core       | [Framework Primitives](https://github.com/leoafarias/noir/blob/main/example/framework_primitives.dart) | <code>dart run example/framework_primitives.dart</code>   | Notifiers, actions, local pointers                                |
+| Core       | [Image Demo](https://github.com/leoafarias/noir/blob/main/example/image_demo.dart)                     | <code>dart run example/image_demo.dart</code>             | Terminal image fallback                                           |
+| Controls   | [Components](https://github.com/leoafarias/noir/blob/main/example/components_demo.dart)                | <code>dart run example/components_demo.dart</code>        | Core controls and feedback                                        |
+| Controls   | [Focus Form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart)                     | <code>dart run example/focus_form.dart</code>             | Validation and focus                                              |
+| Controls   | [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart)                        | <code>dart run example/select_demo.dart</code>            | Keyboard and pointer selection                                    |
+| Controls   | [ScrollBox](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart)                  | <code>dart run example/scrollbox_demo.dart</code>         | Viewport clipping and scrolling                                   |
+| Controls   | [ListView](https://github.com/leoafarias/noir/blob/main/example/listview_demo.dart)                    | <code>dart run example/listview_demo.dart</code>          | Virtualized lists                                                 |
+| Controls   | [DataTable](https://github.com/leoafarias/noir/blob/main/example/data_table_demo.dart)                 | <code>dart run example/data_table_demo.dart</code>        | Windowed data and sorting                                         |
+| Controls   | [TextArea](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart)                    | <code>dart run example/textarea_demo.dart</code>          | Multi-line editing                                                |
+| Controls   | [Widgets Tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart)                 | <code>dart run example/widgets_tour.dart</code>           | Select, ScrollBox, TextArea                                       |
+| Apps       | [Chat](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart)                            | <code>dart run example/chat_demo.dart</code>              | Async state and scrollback                                        |
+| Apps       | [Pub Search](https://github.com/leoafarias/noir/blob/main/example/pub_search.dart)                     | <code>dart run example/pub_search.dart</code>             | Live pub.dev search                                               |
+| Motion     | [Pulse](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart)                     | <code>dart run example/pulse_animation.dart</code>        | Fractional progress and ticker lifecycle                          |
+| Motion     | [Like Reactor](https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart)                 | <code>dart run example/like_reactor.dart</code>           | Bounded particles                                                 |
+| Advanced   | [Parity Components](https://github.com/leoafarias/noir/blob/main/example/parity_components_demo.dart)  | <code>dart run example/parity_components_demo.dart</code> | Phase-two component reference                                     |
+| Advanced   | [Bindings Validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart)   | <code>dart run example/bindings_validation.dart</code>    | Advanced FFI validation; requires a real terminal at least 120×40 |
+
+[Bindings Validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart)
+is a real-terminal validation tool, not a headless animation. It is the one
+catalog entry the headless driver cannot run.

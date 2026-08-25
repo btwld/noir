@@ -1,0 +1,42 @@
+---
+title: Architecture & API
+description: Choose a supported Noir import surface and understand the retained rendering boundary.
+---
+
+# Architecture & API
+
+Noir keeps a narrow ownership boundary:
+
+> Widgets declare. Elements preserve identity. RenderObjects layout and record
+> paint. The compositor talks to OpenTUI. The native layer owns FFI, memory,
+> ABI, and binaries.
+
+## Choose a supported import
+
+| Import                                        | Use it for                                                                              |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| <code>package:noir/noir.dart</code>           | Ordinary application and widget authoring.                                              |
+| <code>package:noir/hooks.dart</code>          | Opt-in widget lifecycle hooks.                                                          |
+| <code>package:noir/noir_low_level.dart</code> | Advanced hosting, renderer/buffer access, and supported custom render-object protocols. |
+| <code>package:noir/noir_ffi.dart</code>       | Guarded but ABI-unstable raw FFI access.                                                |
+
+Start with <code>noir.dart</code>. Add <code>hooks.dart</code> only when a
+HookWidget or hook solves a local lifecycle problem. Use the low-level and FFI
+tiers only when an application actually owns the extra responsibility they
+expose.
+
+Concrete Element implementations, generated bindings, library discovery, and
+the recording/display-list/compositor internals remain framework-owned. A
+widget must not call FFI directly; render-object paint goes through
+
+<code>PaintingContext</code>, not <code>Buffer</code>.
+
+## Public reference
+
+The generated Dart API is maintained on pub.dev rather than mirrored here.
+[Open Noir’s published API reference](https://pub.dev/documentation/noir/latest/).
+The source tree can be ahead of that published prerelease, so pair it with the
+current repository source when evaluating an unreleased API.
+
+For the short import chooser, see [API](/api). For platform and native caveats,
+continue to [Platform & Limitations](/docs/platform-limitations).

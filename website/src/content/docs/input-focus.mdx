@@ -1,0 +1,51 @@
+---
+title: Input & Focus
+description: Route keyboard and pointer events through focus, controllers, and render-tree hit testing.
+---
+
+# Input & Focus
+
+Focused widgets own keyboard intent. Pointer events map through render-tree hit
+testing and arrive with <code>MouseEvent.localPosition</code>; do not map a
+browser-like global coordinate into a widget yourself.
+
+## Keyboard ownership
+
+Use <code>Focus</code> or <code>FocusScope</code> to decide who receives a
+
+<code>KeyEvent</code>. Interactive controls such as Button, Checkbox, Switch,
+Select, and TextInput are keyboard-accessible through focus traversal. In
+[Components](https://github.com/leoafarias/noir/blob/main/example/components_demo.dart),
+Tab and Shift+Tab move focus, while Enter, Space, and a left click activate the
+current control.
+
+Focus-owning widgets use <code>FocusNodeOwnerStateMixin</code>. Give important
+controls a stable <code>ValueKey&lt;String&gt;</code> so tests and headless
+driving can use intent rather than coordinates.
+
+## Edit text with a controller
+
+Text editing uses <code>TextEditingController</code>. Chat owns one alongside a
+prompt focus node; submitting trims its text, appends a user message, and begins
+an asynchronous assistant turn. Its controller is disposed with the rest of the
+state’s owned resources.
+
+```dart
+late final TextEditingController _inputController;
+
+void _submitPrompt() {
+  final prompt = _inputController.text.trim();
+  // append the turn, then resolve the reply asynchronously
+}
+```
+
+## Scroll deliberately
+
+<code>ScrollBox</code> wraps one overflowing child and can use a
+<code>ScrollController</code>. Chat keeps its newest-first transcript reachable
+while preserving older history; Pub Search gives its package detail a focused,
+scrollable section. Use PageUp, PageDown, Home, End, and wheel behavior only
+where the component documents it.
+
+See [Chat](/examples#chat) and [Pub Search](/examples#pub-search) for complete
+input, focus, and scrolling flows.

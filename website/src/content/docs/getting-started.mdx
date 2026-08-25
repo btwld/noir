@@ -1,0 +1,99 @@
+---
+title: Getting Started
+description: Install Noir, run Counter, and see one state change become a terminal frame.
+---
+
+# Getting Started
+
+Noir is a Flutter-like reactive terminal UI framework for Dart, powered by
+OpenTUI. It is a prerelease: APIs and platform guarantees may change before
+1.0.
+
+<PrereleaseNotice />
+
+## Install the package
+
+<InstallCommand />
+
+The source tree can be ahead of the latest published prerelease. When you need
+an unreleased API while working beside a checkout, use a path dependency:
+
+```yaml
+dependencies:
+  noir:
+    path: ../noir
+```
+
+## Run Counter
+
+From the repository root:
+
+```sh
+dart run example/counter.dart
+```
+
+Counter is the shortest complete stateful Noir app. Its root mounts a
+
+<code>StatefulWidget</code>, requests mouse reporting, and keeps the changing
+value in its retained <code>State</code> object.
+
+```dart
+class CounterApp extends StatefulWidget {
+  const CounterApp({super.key});
+
+  @override
+  State<CounterApp> createState() => _CounterAppState();
+}
+
+class _CounterAppState extends State<CounterApp> {
+  int _count = 0;
+
+  void _incrementCounter() => setState(() => _count++);
+}
+```
+
+<code>setState</code> says that this state object changed. Noir rebuilds the
+affected declaration, lays out the resulting terminal cells, and records a fresh
+frame. The [complete Counter
+source](https://github.com/leoafarias/noir/blob/main/example/counter.dart) also
+routes Up, <code>+</code>, Enter, Space, a left click, Down, and
+<code>-</code> through the same local state.
+
+## The same local state with Hooks
+
+<code>StatefulWidget</code> is Noir’s foundational state model: its lifecycle
+owner is plainly visible. Hooks are an equally supported, opt-in way to express
+local state when composable hooks read better for a component.
+
+| StatefulWidget                                      | HookWidget                                                             |
+| --------------------------------------------------- | ---------------------------------------------------------------------- |
+| <code>int \_count</code> lives on a retained State. | <code>useState&lt;int&gt;(0)</code> owns a notifier for the hook slot. |
+| Event handlers call <code>setState</code>.          | Event handlers change <code>count.value</code>.                        |
+| Lifecycle ownership is explicit in the class.       | Reusable lifecycle behavior can be composed as hooks.                  |
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir/hooks.dart';
+
+class HooksCounterApp extends HookWidget {
+  const HooksCounterApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useState<int>(0);
+    return Button(label: '+ Add one', onPressed: () => count.value++);
+  }
+}
+```
+
+The second import is intentional: Hooks ship with Noir, but stay outside the
+default <code>package:noir/noir.dart</code> namespace. See the full
+[Hooks Counter source](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
+and the [Hooks guide](/docs/hooks) before introducing effects or controllers.
+
+## Choose the next question
+
+- Learn how terminal cells compose in [Widgets & Layout](/docs/widgets-layout).
+- Follow local state through identity and disposal in
+  [State & Lifecycle](/docs/state-lifecycle).
+- See the same ideas in six real apps on [Examples](/examples).

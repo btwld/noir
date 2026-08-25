@@ -1,0 +1,60 @@
+---
+title: Widgets & Layout
+description: Compose Noir interfaces with integer terminal cells, constraints, and recorded paint.
+---
+
+# Widgets & Layout
+
+Noir widgets declare immutable configuration. Their Elements preserve identity;
+RenderObjects turn constraints into integer-cell geometry and record paint for
+the compositor. A widget does not call FFI or draw directly into an OpenTUI
+buffer.
+
+## Compose in cells
+
+<code>Row</code>, <code>Column</code>, <code>Container</code>,
+<code>Padding</code>, <code>SizedBox</code>, <code>Align</code>,
+<code>Flexible</code>, and <code>Expanded</code> use whole terminal cells.
+<code>spacing</code> is the number of cells between children. Borders are
+themselves cells, so a bordered region’s content starts on the first inner row
+and column.
+
+```dart
+Row(
+  spacing: 1,
+  children: [
+    const Text('Status'),
+    Expanded(child: ProgressBar(value: 0.5, width: 24)),
+  ],
+)
+```
+
+Start content at the top and leading edge. When a shrink-wrapped terminal panel
+has unused rows, reduce its height rather than vertically centering its copy.
+See [layout_basics.dart](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart)
+for the smallest runnable layout composition.
+
+## Constraints first, paint second
+
+Render objects receive constraints, choose a size, lay out children, and record
+paint operations through <code>PaintingContext</code>. The compositor is the
+normal bridge from display lists to OpenTUI buffers. That separation keeps
+layout, clipping, hit testing, and native ownership testable without making
+every widget a terminal binding.
+
+Use <code>Stack</code> and <code>Positioned</code> for integer-cell overlays,
+
+<code>Wrap</code> for bounded runs, and <code>ScrollBox</code> for one
+overflowing child. Paint that intentionally escapes local bounds must use
+<code>PaintingContext</code> and <code>TuiCanvas.clipRect</code>.
+
+## Read the terminal as a medium
+
+The terminal already has optical air around every cell. Avoid browser-card
+habits such as excess internal chrome or vertical centering inside a fixed
+region. A named bordered region uses <code>Border.title</code>; a second Text
+inside is a second header.
+
+For component-scale layout, inspect
+[components_demo.dart](https://github.com/leoafarias/noir/blob/main/example/components_demo.dart)
+and [Widgets Tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart).
