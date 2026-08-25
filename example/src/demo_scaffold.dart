@@ -80,8 +80,9 @@ class DemoScaffold extends StatelessWidget {
 }
 
 /// A bordered, optionally titled panel whose border turns to the theme accent
-/// while [focused] is true — the demos' shared "this pane owns the keyboard"
-/// affordance.
+/// and gains a `›` marker while [focused] is true — the demos' shared
+/// "this pane owns the keyboard" affordance. The marker remains visible when
+/// the panel has no title, so focus never relies on color alone.
 class DemoPanel extends StatelessWidget {
   /// Wraps [child] in a themed border, titled when [title] is non-null.
   const DemoPanel({
@@ -112,16 +113,19 @@ class DemoPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = this.title;
+    final borderTitle = switch ((title, focused)) {
+      (final title?, true) => ' › $title ',
+      (final title?, false) => ' $title ',
+      (null, true) => ' › ',
+      (null, false) => null,
+    };
     final chrome = focused ? theme.accent : theme.border;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         color: theme.surfaceVariant,
-        border: Border.all(
-          color: chrome,
-          title: title == null ? null : ' $title ',
-        ),
+        border: Border.all(color: chrome, title: borderTitle),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 1),
       child: child,

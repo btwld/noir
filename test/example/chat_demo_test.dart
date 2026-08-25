@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../../example/chat_demo.dart';
@@ -75,7 +76,32 @@ void main() {
 
         expect(first, contains('Noir is thinking'));
         expect(second, contains('Noir is thinking'));
+        expect(
+          SpinnerFrames.dots.any(first.contains),
+          isTrue,
+          reason: "chat reuses Noir's standard loading language",
+        );
+        expect(SpinnerFrames.dots.any(second.contains), isTrue);
         expect(first, isNot(second));
+      } finally {
+        app.dispose();
+      }
+    });
+
+    test('disabled loading animation renders one stable standard frame', () {
+      final app = createTuiTestApp(
+        const ChatDemoApp(initialThinking: true, enableAnimation: false),
+        width: 64,
+        height: 16,
+      );
+      try {
+        app.pumpFrame();
+        final first = app.captureFrame().toText();
+        app.pumpFrame(const Duration(milliseconds: 800));
+        final second = app.captureFrame().toText();
+
+        expect(first, contains('Noir is thinking ${SpinnerFrames.dots.first}'));
+        expect(second, first);
       } finally {
         app.dispose();
       }

@@ -13,19 +13,22 @@ class PulseAnimationDemo extends StatefulWidget {
 class _PulseAnimationDemoState extends State<PulseAnimationDemo>
     with SingleTickerProviderStateMixin<PulseAnimationDemo> {
   late final AnimationController _controller;
+  var _forward = true;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 1600),
     )..addListener(_onTick);
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
+        _forward = false;
         _controller.reverse();
       } else if (status == AnimationStatus.dismissed) {
+        _forward = true;
         _controller.forward();
       }
     });
@@ -36,6 +39,24 @@ class _PulseAnimationDemoState extends State<PulseAnimationDemo>
   void _onTick() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (!event.isPress || event.character != ' ') {
+      return KeyEventResult.ignored;
+    }
+    setState(() {
+      if (_controller.isAnimating) {
+        _controller.stop();
+      } else {
+        if (_forward) {
+          _controller.forward();
+        } else {
+          _controller.reverse();
+        }
+      }
+    });
+    return KeyEventResult.handled;
   }
 
   @override
@@ -49,37 +70,41 @@ class _PulseAnimationDemoState extends State<PulseAnimationDemo>
   @override
   Widget build(BuildContext context) {
     final value = _controller.value;
-    final width = 8 + (value * 12).round();
-    final height = 2 + (value * 4).round();
-    final color = Color.rgb(0.2 + value * 0.6, 0.3, 0.6 + value * 0.3);
     final theme = Theme.of(context);
+    final progressColor = Color.lerp(theme.info, theme.accent, value);
 
-    return Container(
-      color: theme.surface,
-      alignment: Alignment.center,
-      padding: EdgeInsets.all(2),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        spacing: 1,
-        children: [
-          Text(
-            'AnimationController demo',
-            style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
-          ),
-          Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: color,
-              border: Border.all(color: theme.border),
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _onKey,
+      child: Container(
+        color: theme.surface,
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 1,
+          children: [
+            Text(
+              'Terminal-native motion',
+              style: TextStyle(color: theme.text, fontWeight: FontWeight.bold),
             ),
-          ),
-          Text(
-            'controller.value: ${value.toStringAsFixed(2)}',
-            style: TextStyle(color: theme.info),
-          ),
-          Text('(Ctrl+C to exit)', style: TextStyle(color: theme.textMuted)),
-        ],
+            ProgressBar(
+              value: value,
+              width: 32,
+              color: progressColor,
+              trackColor: theme.border,
+            ),
+            Text(
+              'controller.value: ${value.toStringAsFixed(2)} · '
+              '${_controller.isAnimating ? 'running' : 'paused'}',
+              style: TextStyle(color: theme.info),
+            ),
+            Text(
+              '1/8-cell progress · Space pause/resume · Ctrl+C exit',
+              style: TextStyle(color: theme.textMuted),
+            ),
+          ],
+        ),
       ),
     );
   }

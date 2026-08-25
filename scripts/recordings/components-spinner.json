@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entrypoint": "example/components_demo.dart",
+  "output": ".context/demos/components-spinner.cast",
+  "title": "Noir · Component states",
+  "width": 80,
+  "height": 24,
+  "durationMs": 2600,
+  "fps": 20,
+  "actions": [
+    {"atMs": 700, "type": "s"},
+    {"atMs": 1400, "type": "s"},
+    {"atMs": 2000, "clickKey": "step"}
+  ]
+}

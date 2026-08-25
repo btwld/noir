@@ -77,6 +77,35 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('tracked showcase recipes are local and runnable', () {
+      const expected = <String>{
+        'chat-loading.json',
+        'components-spinner.json',
+        'counter.json',
+        'like-reactor.json',
+        'pub-search.json',
+        'pulse-animation.json',
+      };
+      final files = Directory('scripts/recordings')
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.json'))
+          .toList(growable: false);
+
+      expect(files.map((file) => file.uri.pathSegments.last), expected);
+      for (final file in files) {
+        final recipe = RecordingRecipe.fromJson(
+          jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+        );
+        expect(File(recipe.entrypoint).existsSync(), isTrue, reason: file.path);
+        expect(
+          recipe.output,
+          startsWith('.context/demos/'),
+          reason: '${file.path} must remain a local review artifact',
+        );
+      }
+    });
   });
 
   test('asciicast encoder preserves styled frames and skips duplicates', () {

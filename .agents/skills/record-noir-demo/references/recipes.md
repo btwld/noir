@@ -30,7 +30,8 @@ Use one JSON object per recording:
   test geometry or 80×24.
 - `durationMs`: `100`–`60000`.
 - `fps`: `1`–`60`; use 12 for cell animation unless faster sampling is visibly
-  necessary.
+  necessary. Sample fine-grained progress or particles at 30 fps. If exporting
+  a GIF with `agg`, choose a cap above this value and verify decoded timing.
 - `actions`: optional ordered or unordered inputs. The recorder sorts them by
   `atMs`.
 

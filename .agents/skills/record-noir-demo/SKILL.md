@@ -40,7 +40,9 @@ TTY or raw mode.
 - Use asciicast for the documentation site. It stays cell-sharp, carries timing
   and input, and can be self-hosted with `asciinema-player`.
 - Generate GIF only as a compatibility fallback through `agg` when the user
-  needs an image-only destination.
+  needs an image-only destination. Set `--fps-cap` above the recipe cadence
+  (for example, cap a 30 fps cast at 60) because equal rounded timestamps can
+  otherwise merge source frames.
 - Use VHS for WebM/MP4 or an actual terminal-emulator recording only when the
   user explicitly authorizes PTY/raw-terminal capture. Name that stronger proof
   separately; do not silently substitute it for drive mode.
@@ -63,4 +65,6 @@ TTY or raw mode.
 Treat a successful process exit as necessary but insufficient. Inspect the cast
 metadata and content. When a web player is available, play the entire loop and
 check cell geometry, pacing, colors, cursor behavior, legibility, and cleanup.
+For a GIF fallback, also decode it and check frame count plus frame delays
+against the cast; the conversion exit code does not prove preserved timing.
 Keep one recording active on a page; additional examples should be click-to-play.

@@ -1,8 +1,9 @@
 // Run with: dart run example/data_table_demo.dart
 //
 // Use ↑/↓ (or j/k), PageUp/PageDown, Home/End to move the highlight and Enter
-// to open a row. Click a `file` or `state` header to sort by it; clicking the
-// same header again reverses the direction. Press q to quit.
+// to open a row. Press s to cycle sortable columns, or click a `package` or
+// `state` header; repeating either action reverses the direction. Press q to
+// quit.
 //
 // Sorting is presentational in DataTable: the table reports the request and
 // this demo reorders its own list, which is the only place row order lives.
@@ -51,11 +52,33 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
   ];
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
-    if (event.isPress && event.character == 'q') {
+    if (!event.isPress) return KeyEventResult.ignored;
+    if (event.character == 'q') {
       TuiApp.exit(context);
       return KeyEventResult.handled;
     }
+    if (event.character == 's') {
+      _cycleSort();
+      return KeyEventResult.handled;
+    }
     return KeyEventResult.ignored;
+  }
+
+  void _cycleSort() {
+    switch ((_sortColumn, _ascending)) {
+      case (null, _):
+        _sort(0, true);
+      case (0, true):
+        _sort(0, false);
+      case (0, false):
+        _sort(2, true);
+      case (2, true):
+        _sort(2, false);
+      case (2, false):
+        _sort(0, true);
+      default:
+        _sort(0, true);
+    }
   }
 
   void _sort(int column, bool ascending) {
@@ -106,7 +129,7 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
     onKeyEvent: _onAppKey,
     child: DemoScaffold(
       title: 'DataTable demo',
-      hint: '↑/↓ to move · Enter to open · click a header to sort · q quits',
+      hint: '↑/↓ move · Enter opens · s or header click sorts · q quits',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

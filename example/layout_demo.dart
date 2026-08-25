@@ -74,7 +74,7 @@ class FlexLayoutShowcase extends StatelessWidget {
           alignment: Alignment.center,
           color: theme.selectedBackground,
           child: Text(
-            'Sections',
+            'Static specimen index',
             style: TextStyle(color: theme.selectedForeground),
           ),
         ),

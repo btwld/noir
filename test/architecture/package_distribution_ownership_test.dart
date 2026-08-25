@@ -359,6 +359,19 @@ void main() {
 
     expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
     expect(catalogEntries, unorderedEquals(shippedExamples));
+    for (final example in shippedExamples) {
+      expect(readme, contains('example/$example'), reason: example);
+    }
+    for (final heading in <String>[
+      '## Start here',
+      '## Core concepts',
+      '## Controls and data',
+      '## Complete apps',
+      '## Motion',
+      '## Advanced and reference',
+    ]) {
+      expect(exampleGuide, contains(heading));
+    }
   });
 
   test('example guide explains optional quiet build-hook status', () {

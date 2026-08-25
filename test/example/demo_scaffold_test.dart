@@ -103,7 +103,7 @@ void main() {
       }
     });
 
-    test('focused chrome uses the accent', () {
+    test('focused chrome uses the accent and a structural marker', () {
       final capture = BufferCapture(
         width: 20,
         height: 6,
@@ -122,10 +122,33 @@ void main() {
           ),
         );
 
-        final title = frame.findText('Pane').single;
+        final title = frame.findText('› Pane').single;
         expect(frame.getForegroundColor(title.x, title.y), Color.yellow);
         expect(frame.getChar(0, title.y), '┌');
         expect(frame.getForegroundColor(0, title.y), Color.yellow);
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('untitled focused chrome still exposes a structural marker', () {
+      final capture = BufferCapture(
+        width: 20,
+        height: 6,
+        layoutConstraints: const BoxConstraints.tight(width: 20, height: 6),
+      );
+      try {
+        final frame = capture.capture(
+          const Theme(
+            data: theme,
+            child: DemoPanel(focused: true, width: 16, child: Text('Body')),
+          ),
+        );
+
+        final marker = frame.findText('›').single;
+        expect(frame.getForegroundColor(marker.x, marker.y), Color.yellow);
+        expect(frame.getChar(0, marker.y), '┌');
+        expect(frame.getForegroundColor(0, marker.y), Color.yellow);
       } finally {
         capture.dispose();
       }

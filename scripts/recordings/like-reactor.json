@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entrypoint": "example/like_reactor.dart",
+  "output": ".context/demos/like-reactor.cast",
+  "title": "Noir · Like Reactor",
+  "width": 72,
+  "height": 24,
+  "durationMs": 3600,
+  "fps": 30,
+  "actions": [
+    {"atMs": 700, "key": "space"},
+    {"atMs": 1250, "key": "enter"}
+  ]
+}

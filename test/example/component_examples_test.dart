@@ -87,6 +87,34 @@ void main() {
     }
   });
 
+  test('data table demo cycles sortable columns from the keyboard', () async {
+    final app = createTuiTestApp(
+      const DataTableDemoApp(),
+      width: 50,
+      height: 20,
+    );
+    try {
+      await _settle(app);
+
+      app.mockInput.typeText('s');
+      await _settle(app);
+      expect(_render(app), contains('package▲'));
+      expect(_firstBodyRow(app), 'analyzer');
+
+      app.mockInput.typeText('s');
+      await _settle(app);
+      expect(_render(app), contains('package▼'));
+      expect(_firstBodyRow(app), 'yaml');
+
+      app.mockInput.typeText('s');
+      await _settle(app);
+      expect(_render(app), contains('state▲'));
+      expect(_firstBodyRow(app), 'test');
+    } finally {
+      app.dispose();
+    }
+  });
+
   test('listview demo moves its highlight and confirms a row', () async {
     final app = createTuiTestApp(
       const ListViewDemoApp(),

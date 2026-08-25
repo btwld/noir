@@ -69,6 +69,7 @@ void main() {
         'example/focus_form.dart': <String>[
           "ValueKey<String>('name')",
           "ValueKey<String>('email')",
+          "ValueKey<String>('save')",
         ],
         'example/parity_components_demo.dart': <String>[
           "ValueKey<String>('slider')",
@@ -233,21 +234,30 @@ void main() {
     }
   });
 
-  test('focus form placeholders are hints, not submitted values', () async {
+  test('focus form Save button validates and preserves typed values', () async {
     final app = createTuiTestApp(const FocusFormApp());
-
     try {
       await _settleAutofocus(app);
-      expect(_render(app), contains('Enter name'));
-      expect(_render(app), contains('Enter email'));
-      expect(_render(app), isNot(contains('Jane Doe')));
-
+      expect(_render(app), contains('Enter in a field or Save submits.'));
       app.mockInput
+        ..typeText('Ada')
         ..pressTab()
-        ..pressEnter();
+        ..typeText('not-an-email');
+      await _settleInput();
+      app.pumpFrame();
+
+      final save = app.captureFrame().findText('Save').first;
+      app.mockMouse.click(save.x, save.y);
       await _settleInput();
 
-      expect(_render(app), contains('Saved:  - '));
+      final frame = _render(app);
+      expect(frame, contains('Ada'));
+      expect(frame, contains('not-an-email'));
+      expect(
+        frame,
+        contains('Email error: Enter an email like name@example.com.'),
+      );
+      expect(frame, isNot(contains('Saved:')));
     } finally {
       app.dispose();
     }
@@ -516,6 +526,7 @@ void main() {
 
     try {
       await _settleAutofocus(app);
+      expect(_render(app), contains('Static specimen index'));
       expect(_render(app), contains('Start'));
       expect(_render(app), isNot(contains('End')));
 
@@ -585,7 +596,7 @@ void main() {
         final select = frame
             .findText('Select')
             .firstWhere(
-              (pos) => pos.x >= 3 && frame.getChar(pos.x - 3, pos.y) == '┌',
+              (pos) => pos.x >= 5 && frame.getChar(pos.x - 5, pos.y) == '┌',
             );
         final lastSelectRow = frame.findText('Blue').single;
         expect(
@@ -594,7 +605,7 @@ void main() {
           reason: 'Select height 5 starts on the first inner row',
         );
         expect(
-          frame.getChar(select.x - 3, lastSelectRow.y + 1),
+          frame.getChar(select.x - 5, lastSelectRow.y + 1),
           '└',
           reason:
               'Select panel must not leave a blank row under the last option',
