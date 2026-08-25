@@ -174,6 +174,7 @@ void main() {
         'ImageLoadException',
         'ImageLoadingBuilder',
       },
+      'src/widgets/icons.dart': {'Icons'},
       'src/widgets/input.dart': {'TextInput', 'ValueChanged'},
       'src/widgets/intents.dart': {
         'ActivateIntent',
@@ -377,8 +378,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(241),
-      reason: 'The high-level surface is locked at exactly 241 symbols.',
+      hasLength(242),
+      reason: 'The high-level surface is locked at exactly 242 symbols.',
     );
   });
 

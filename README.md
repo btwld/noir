@@ -223,7 +223,12 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 | Input | `TextInput`, `TextArea`, `Select`, `TabSelect`, `Slider`, `Checkbox`, `Switch`, `Button` |
 | Scrolling and data | `ScrollBox`, `ListView`, virtualized interactive `DataTable`, static rich `TextTable` |
 | Documents | `CodeView`, `DiffView`, `UnifiedDiffParser`, `MarkdownView`, `SelectedText` |
-| Feedback and chrome | `Divider`, `ProgressBar`, `Spinner`, `Badge`, `Theme` |
+| Feedback and chrome | `Divider`, `ProgressBar`, `Spinner`, `Badge`, `Theme`, `Icons` |
+
+`Icons` is a catalog of named single-cell glyph strings, not a widget: a
+terminal icon is a character, so `Text(Icons.check)` is the whole API and there
+is no `Icon`, `IconData`, or `IconTheme`. No member carries the Unicode `Emoji`
+property, which terminals widen through a fallback font.
 
 `TextTable` complements rather than replaces `DataTable`: use `TextTable` for
 a finite rich-text grid with wrapping and row-major text selection, and

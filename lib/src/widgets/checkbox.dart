@@ -4,17 +4,20 @@ import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
 import 'activatable.dart';
 import 'focus_node_owner_mixin.dart';
+import 'icons.dart';
 import 'input.dart';
 import 'row_column.dart';
 import 'text.dart';
 import 'text_style.dart';
 import 'theme.dart';
 
-/// Glyphs are the geometric-shapes block, not the ballot box: `☐`/`☑` render
-/// at double width in several terminals, which would shift the label by a cell
-/// as the value changes.
-const String _unchecked = '□'; // U+25A1
-const String _checked = '■'; // U+25A0
+/// Geometric shapes, not the ballot box `☐`/`☑`: `☑` carries the Unicode
+/// `Emoji` property and `☐` does not, so terminals that resolve emoji through
+/// a fallback font widen only the checked glyph and shift the label by a cell
+/// as the value changes. [Icons.square] and [Icons.squareOutline] share one
+/// width class, so the pair stays the same width in every terminal.
+const String _unchecked = Icons.squareOutline;
+const String _checked = Icons.square;
 
 /// A two-state box with an optional label, toggled by Space, Enter, or a click.
 ///

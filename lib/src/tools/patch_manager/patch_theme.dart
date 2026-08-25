@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs
 
 import '../../core/color.dart';
+import '../../widgets/icons.dart';
 import 'review_controller.dart';
 
 /// Visual design language for Patch Manager: palette tokens and status glyphs.
@@ -48,13 +49,17 @@ class PatchTheme {
   static const Color diffDelBg = Color(0.20, 0.07, 0.08);
   static const Color diffNoNewlineBg = Color(0.14, 0.11, 0.04);
 
-  /// Single-cell BMP glyph that visually represents the given status.
-  /// Distinct shapes so the status reads even in monochrome.
+  /// Single-cell glyph that visually represents the given status.
+  ///
+  /// Distinct shapes so the status reads even in monochrome, and all four are
+  /// drawn from the narrow [Icons] group: they share a column, so a glyph that
+  /// widened alone would misalign every row below it. `○` and `◆` are
+  /// ambiguous-width and would have.
   static String statusGlyph(PatchReviewStatus status) => switch (status) {
-    PatchReviewStatus.unreviewed => '○', // ○ outline circle
-    PatchReviewStatus.staged => '◆', // ◆ filled diamond
-    PatchReviewStatus.skipped => '✗', // ✗ ballot X
-    PatchReviewStatus.failed => '!',
+    PatchReviewStatus.unreviewed => Icons.circleDotted,
+    PatchReviewStatus.staged => Icons.lozenge,
+    PatchReviewStatus.skipped => Icons.close,
+    PatchReviewStatus.failed => Icons.bang,
   };
 
   /// Color paired with each status glyph.
@@ -68,6 +73,8 @@ class PatchTheme {
   /// Selected-row accent bar glyph (one-eighth left block, U+258E).
   static const String accentBar = '▎';
 
-  /// Selection caret glyph (filled right-pointing triangle, U+25B6).
-  static const String caret = '▶';
+  /// Selection caret, drawn against a blank cell on unselected rows. Both are
+  /// narrow, so the selected row does not shift against its neighbours — `▶`
+  /// carries the Unicode `Emoji` property and would have.
+  static const String caret = Icons.pointerRight;
 }

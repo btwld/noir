@@ -15,6 +15,7 @@ import '../rendering/object.dart';
 import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
+import 'icons.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
@@ -636,11 +637,18 @@ class RenderSelect<T> extends RenderBox {
     // Scroll indicator (always last column when enabled and overflow). A box
     // taller than a zero-row hint paints no options at all, so there is no
     // window for an arrow to describe and no row of ours to put one on.
+    //
+    // The arrows are ambiguous-width and the blank is narrow, so this gutter
+    // mixes Icons width groups. That is deliberate: it costs a cell only under
+    // ambiguous-doubling, where every box-drawing border around this Select has
+    // already shifted, and DataTable's sort carets must keep matching these
+    // (data_table.dart). Narrow carets here would buy alignment inside chrome
+    // that is broken anyway, at the price of three widgets changing shape.
     if (showsScrollIndicator) {
       final indCol = originX + width - 1;
       canvas.setCell(
         Offset(indCol, originY),
-        _scrollOffset > 0 ? '▲' : ' ',
+        _scrollOffset > 0 ? Icons.triangleUp : ' ',
         _color,
         rowBg,
         0,
@@ -648,7 +656,7 @@ class RenderSelect<T> extends RenderBox {
       final lastVisible = _scrollOffset + paintedRows;
       canvas.setCell(
         Offset(indCol, originY + paintedRows - 1),
-        lastVisible < _options.length ? '▼' : ' ',
+        lastVisible < _options.length ? Icons.triangleDown : ' ',
         _color,
         rowBg,
         0,

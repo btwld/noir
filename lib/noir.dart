@@ -162,6 +162,7 @@ export 'src/widgets/divider.dart' show Divider;
 export 'src/widgets/document_view.dart' show SelectionCopyCallback;
 export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
 export 'src/widgets/focus.dart' show Focus, FocusScope;
+export 'src/widgets/icons.dart' show Icons;
 export 'src/widgets/image.dart'
     show
         Image,

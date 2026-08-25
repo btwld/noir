@@ -281,7 +281,9 @@ TextOverflow.ellipsis)`). A right-aligned numeric column needs
 
 ## Checkbox
 
-Two-state box (`□`/`■`, not ballot-box glyphs — those are double-width).
+Two-state box (`Icons.squareOutline`/`Icons.square`, not ballot-box
+glyphs — `☑` carries the Unicode `Emoji` property and `☐` does not, so
+terminals widen only the checked one and the label jumps a cell).
 Caller-owned value. Null `onChanged` disables it.
 
 ```dart

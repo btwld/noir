@@ -67,7 +67,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
     _selectableBuilds++;
     final theme = Theme.of(context);
     return Text(
-      '${selected ? '▶' : ' '} Item ${index.toString().padLeft(3, '0')}',
+      '${selected ? Icons.pointerRight : ' '} Item ${index.toString().padLeft(3, '0')}',
       maxLines: 1,
       softWrap: false,
       style: TextStyle(
