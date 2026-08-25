@@ -174,6 +174,129 @@ void main() {
         capture.dispose();
       }
     });
+
+    test('scroll indicator follows the laid-out rows, not the height '
+        'hint', () {
+      // The host grants fewer rows than `height` asks for, so the list
+      // overflows its painted window even though `options.length` is below
+      // the hint. The arrows have to describe what was painted.
+      final capture = BufferCapture(width: 10, height: 4);
+      try {
+        final captured = capture.capture(
+          SizedBox(
+            width: 10,
+            height: 4,
+            child: Select<int>(
+              height: 13,
+              showScrollIndicator: true,
+              options: List<SelectOption<int>>.generate(
+                10,
+                (i) => SelectOption(name: 'Item ${i + 1}', value: i),
+              ),
+            ),
+          ),
+        );
+
+        expect(captured.getChar(9, 0), ' ', reason: 'top of list, no up arrow');
+        expect(captured.getChar(9, 3), '▼', reason: 'six rows remain below');
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('scroll indicator leaves no gutter when every option fits', () {
+      final capture = BufferCapture(width: 6, height: 2);
+      try {
+        final frame = capture.capture(
+          const Theme(
+            data: ThemeData(surfaceVariant: Color.red),
+            child: SizedBox(
+              width: 6,
+              height: 2,
+              child: Select<String>(
+                height: 2,
+                showScrollIndicator: true,
+                backgroundColor: Color.blue,
+                options: [
+                  SelectOption(name: 'A', value: 'a'),
+                  SelectOption(name: 'B', value: 'b'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          frame.getBackgroundColor(5, 0),
+          Color.red,
+          reason:
+              'the highlighted row owns the final cell when no '
+              'indicator is visible',
+        );
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('a zero-row Select paints no indicator outside its box', () {
+      // `height: 0` is a legal hint, and a parent can still force the box
+      // taller. Nothing is painted, so there is no window for an arrow to
+      // describe — and the row above belongs to a sibling.
+      final capture = BufferCapture(width: 10, height: 4);
+      try {
+        final captured = capture.capture(
+          Column(
+            children: [
+              const Text('sentinel'),
+              SizedBox(
+                width: 10,
+                height: 3,
+                child: Select<int>(
+                  height: 0,
+                  showScrollIndicator: true,
+                  options: List<SelectOption<int>>.generate(
+                    5,
+                    (i) => SelectOption(name: 'Item ${i + 1}', value: i),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        expect(
+          captured.getChar(9, 0),
+          ' ',
+          reason: 'sentinel row is untouched',
+        );
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('PageDown is a no-op when layout published zero rows', () async {
+      final changes = <int>[];
+      final driver = KeyDriver(
+        SizedBox(
+          width: 12,
+          height: 0,
+          child: Select<int>(
+            autofocus: true,
+            height: 5,
+            options: List<SelectOption<int>>.generate(
+              8,
+              (i) => SelectOption(name: 'Item $i', value: i),
+            ),
+            onChanged: (i, _) => changes.add(i),
+          ),
+        ),
+        paintFrames: true,
+      );
+      await driver.ready();
+      await driver.sendLogicalKey(LogicalKeyboardKey.pageDown);
+      expect(changes, isEmpty);
+      driver.dispose();
+    });
   });
 
   group('Select theming', () {

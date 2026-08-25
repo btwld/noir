@@ -22,6 +22,7 @@ void main() {
       'example/like_reactor.dart',
       'example/layout_demo.dart',
       'example/listview_demo.dart',
+      'example/pub_search.dart',
       'example/select_demo.dart',
       'example/scrollbox_demo.dart',
       'example/widgets_tour.dart',
@@ -82,6 +83,15 @@ void main() {
           "ValueKey<String>('content')",
           "ValueKey<String>('editor')",
         ],
+        'example/pub_search/app.dart': <String>[
+          "ValueKey<String>('query')",
+          "ValueKey<String>('sort')",
+          "ValueKey<String>('filter')",
+        ],
+        'example/pub_search/package_detail.dart': <String>[
+          "ValueKey<String>('tabs')",
+          "ValueKey<String>('detail')",
+        ],
       };
 
       for (final entry in expected.entries) {
@@ -107,6 +117,79 @@ void main() {
         reason: '${file.path}: runTuiApp registers hot reload itself',
       );
     }
+  });
+
+  test('pub search client is a hosted 4.x pub.dev dependency', () {
+    final pubspec = io.File('pubspec.yaml').readAsStringSync();
+    expect(
+      pubspec,
+      matches(RegExp(r'^  pub_api_client:\s+\^4\.\d+', multiLine: true)),
+    );
+    expect(
+      pubspec,
+      isNot(contains(RegExp(r'pub_api_client:\s*\n\s+git:', multiLine: true))),
+    );
+
+    final lockfile = io.File('pubspec.lock').readAsStringSync();
+    final lockEntry = RegExp(
+      r'  pub_api_client:\n(?:    .*\n)*?    source: (\w+)\n    version: "([^"]+)"',
+    ).firstMatch(lockfile);
+    expect(
+      lockEntry,
+      isNotNull,
+      reason: 'pubspec.lock must list pub_api_client',
+    );
+    expect(lockEntry!.group(1), 'hosted');
+    expect(lockEntry.group(2), startsWith('4.'));
+    expect(lockfile, isNot(contains('github.com/leoafarias/pub_api_client')));
+  });
+
+  test('pub search executable is live-only with fresh completion', () {
+    final entrypoint = io.File('example/pub_search.dart').readAsStringSync();
+    final app = io.File('example/pub_search/app.dart').readAsStringSync();
+    final catalog = io.File(
+      'example/pub_search/catalog.dart',
+    ).readAsStringSync();
+
+    expect(
+      entrypoint,
+      matches(
+        RegExp(
+          r'runTuiApp\s*\(\s*PubSearchApp\s*\(\s*'
+          r'catalog:\s*PubApiCatalog\s*\(\s*\)\s*,?\s*\)\s*,\s*'
+          r'enableMouse:\s*true\s*,?\s*\)',
+          dotAll: true,
+        ),
+      ),
+    );
+    expect(entrypoint, isNot(contains('PubSearchConnection')));
+    expect(app, isNot(contains('PubSearchConnection')));
+    expect(app, isNot(contains('LIVE PUB.DEV')));
+    expect(app, isNot(contains('OFFLINE DATA')));
+    final fields = RegExp(
+      r'final class PubApiCatalog implements PubCatalog\s*\{(.*?)^\s*@override',
+      dotAll: true,
+      multiLine: true,
+    ).firstMatch(catalog);
+    expect(fields, isNotNull, reason: 'locate PubApiCatalog instance fields');
+    expect(
+      fields!.group(1),
+      isNot(
+        matches(
+          RegExp(
+            r'^\s*(?:final|var)?\s*'
+            r'(?:Future\s*<\s*(?:List\s*<\s*String\s*>|'
+            r'Map\s*<\s*String\s*,\s*int\s*>)\s*>|'
+            r'List\s*<\s*String\s*>|Map\s*<\s*String\s*,\s*int\s*>)'
+            r'\s*\?\s+_[A-Za-z]*(?:package|topic)[A-Za-z]*\s*;',
+            caseSensitive: false,
+            multiLine: true,
+          ),
+        ),
+      ),
+      reason:
+          'PubApiCatalog must not retain nullable completion datasets or futures',
+    );
   });
 
   test('layout examples exit through the tree exactly once', () async {
@@ -485,6 +568,48 @@ void main() {
             );
           }
         }
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'widget tour panels have no empty row above the bottom border',
+    () async {
+      final app = createTuiTestApp(const WidgetsTourApp());
+      try {
+        await _settleAutofocus(app);
+        final frame = app.captureFrame();
+
+        final select = frame
+            .findText('Select')
+            .firstWhere(
+              (pos) => pos.x >= 3 && frame.getChar(pos.x - 3, pos.y) == '┌',
+            );
+        final lastSelectRow = frame.findText('Blue').single;
+        expect(
+          lastSelectRow.y,
+          select.y + 5,
+          reason: 'Select height 5 starts on the first inner row',
+        );
+        expect(
+          frame.getChar(select.x - 3, lastSelectRow.y + 1),
+          '└',
+          reason:
+              'Select panel must not leave a blank row under the last option',
+        );
+
+        final area = frame
+            .findText('TextArea')
+            .firstWhere(
+              (pos) => pos.x >= 3 && frame.getChar(pos.x - 3, pos.y) == '┌',
+            );
+        expect(
+          frame.getChar(area.x - 3, area.y + 4),
+          '└',
+          reason: 'TextArea height 3 starts on the first inner row',
+        );
       } finally {
         app.dispose();
       }

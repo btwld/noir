@@ -353,10 +353,22 @@ class FocusManager {
     _keySubscription.cancel();
   }
 
+  Element? _elementIfAttachedHere(FocusNode node) =>
+      identical(node._manager, this) ? _nodeToElement[node] : null;
+
   void _attachNode(FocusNode node, Element element) {
     _validateNodeAttachment(node, element);
     if (identical(node._manager, this) &&
         identical(_nodeToElement[node], element)) {
+      return;
+    }
+
+    final previousElement = _elementIfAttachedHere(node);
+    if (previousElement != null) {
+      // Reconciliation has already made the outgoing element inactive, so
+      // transfer the existing attachment instead of clearing focus between
+      // the old and new Focus widgets.
+      _reparentNode(node, previousElement, element);
       return;
     }
 
@@ -375,7 +387,9 @@ class FocusManager {
         identical(_nodeToElement[node], element)) {
       return;
     }
-    if (node._manager != null) {
+    final previousElement = _elementIfAttachedHere(node);
+    final canTransfer = previousElement != null && !previousElement.active;
+    if (node._manager != null && !canTransfer) {
       throw StateError(
         'FocusNode${node.debugLabel == null ? '' : ' "${node.debugLabel}"'} '
         'is already attached to a live Focus widget. Detach it before reuse.',
@@ -398,9 +412,19 @@ class FocusManager {
     if (identical(oldElement, element)) {
       return;
     }
-    _detachFromParent(node);
+    final carriesFocus = node._hasFocus || node._descendantsHaveFocus;
+    final oldParent = node._parent;
+    if (identical(_elementToNode[expectedElement], node)) {
+      _elementToNode[expectedElement] = null;
+    }
+    _detachFromParent(node, preserveFocus: true);
+    if (carriesFocus) {
+      _updateAncestorChainForLoss(oldParent, node);
+    }
     _bindNodeToElement(node, element);
-    _updateAncestorsForGain(node);
+    if (carriesFocus) {
+      _updateAncestorsForGain(node);
+    }
   }
 
   /// Records the node/element mapping and adopts [node] under the focus
@@ -436,7 +460,7 @@ class FocusManager {
     _invalidateTraversalCache();
   }
 
-  void _detachFromParent(FocusNode node) {
+  void _detachFromParent(FocusNode node, {bool preserveFocus = false}) {
     final parent = node._parent;
     if (parent != null) {
       parent._dropChild(node);
@@ -446,8 +470,10 @@ class FocusManager {
       _updateAncestorsForLoss(parent, child: node);
     }
     node._parent = null;
-    node._setDescendantsHaveFocus(false);
-    node._setHasFocus(false);
+    if (!preserveFocus) {
+      node._setDescendantsHaveFocus(false);
+      node._setHasFocus(false);
+    }
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -725,21 +751,30 @@ class FocusManager {
   }
 
   void _updateAncestorsForLoss(FocusNode node, {FocusNode? child}) {
-    FocusNode? currentChild = child ?? node;
-    var ancestor = node._parent;
-    while (ancestor != null) {
-      final hasFocusedDescendant = ancestor._children.any(
+    _updateAncestorChainForLoss(node._parent, child ?? node);
+  }
+
+  void _updateAncestorChainForLoss(
+    FocusNode? ancestor,
+    FocusNode currentChild,
+  ) {
+    var currentAncestor = ancestor;
+    var child = currentChild;
+    while (currentAncestor != null) {
+      final hasFocusedDescendant = currentAncestor._children.any(
         (c) => c._hasFocus || c._descendantsHaveFocus,
       );
-      ancestor._setDescendantsHaveFocus(hasFocusedDescendant);
-      if (ancestor is FocusScopeNode &&
-          identical(ancestor.focusedChild, currentChild)) {
-        ancestor._setFocusedChild(
-          hasFocusedDescendant ? _findFirstFocusableChild(ancestor) : null,
+      currentAncestor._setDescendantsHaveFocus(hasFocusedDescendant);
+      if (currentAncestor is FocusScopeNode &&
+          identical(currentAncestor.focusedChild, child)) {
+        currentAncestor._setFocusedChild(
+          hasFocusedDescendant
+              ? _findFirstFocusableChild(currentAncestor)
+              : null,
         );
       }
-      currentChild = ancestor;
-      ancestor = ancestor._parent;
+      child = currentAncestor;
+      currentAncestor = currentAncestor._parent;
     }
   }
 

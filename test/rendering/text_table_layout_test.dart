@@ -1,5 +1,6 @@
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/app/driver.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
@@ -231,6 +232,25 @@ void main() {
     } finally {
       capture.dispose();
     }
+  });
+
+  test('content-mode tables do not stretch the last column to the parent', () {
+    final host = DriverHost.create(width: 40, height: 5);
+    addTearDown(host.dispose);
+    host.binding
+      ..runApp(
+        const TextTable(
+          content: _content,
+          columnWidthMode: TextTableColumnWidthMode.content,
+        ),
+      )
+      ..debugFlushFrame();
+
+    final top = (host.capture()['lines']! as List<Object?>)
+        .cast<String>()
+        .first;
+    expect(top, contains('┌'));
+    expect(top.indexOf('┐'), inInclusiveRange(1, 20));
   });
 
   test('horizontal padding remains part of each hit-test cell', () {

@@ -6,10 +6,10 @@ final _materialBlue = Color.fromHex('#1976D2');
 final _bodyTextColor = Color.fromHex('#424242');
 final _mutedTextColor = Color.fromHex('#616161');
 
-// `runTuiApp` registers the hot-reload extension itself, so a driver can
-// rebuild this app after it swaps sources:
+// `runTuiApp` registers the hot-reload extension itself, so Noir's packaged
+// runner can rebuild this app after it swaps sources:
 //
-//     dart run scripts/hot_reload_driver.dart example/counter.dart
+//     dart run noir:run example/counter.dart
 //
 // Edit any `build()` below and save to see it repaint.
 void main() => runTuiApp(const CounterApp(), enableMouse: true);

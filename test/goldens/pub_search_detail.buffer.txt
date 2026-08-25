@@ -1,0 +1,32 @@
+                                                                                                    
+  noir 0.0.1-alpha.1                                                                                
+  A Flutter-like reactive terminal UI framework for Dart.                                           
+                                                                                                    
+  Published Aug 16, 2026  by leoafarias.com                                                         
+                                                                                                    
+  INSTALL    $ dart pub add noir                                                                    
+                                                                                                    
+  160/160                 56                      12                      3                         
+  POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
+                                                                                                    
+   1 OVERVIEW  2 VERSIONS  3 DEPENDENCIES  4 HEALTH                                                 
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐  
+  │PACKAGE                                       COMPATIBILITY                                   │  
+  │PUBLISHED        Aug 16, 2026                 SDK              >=3.10.0 <4.0.0                │  
+  │LATEST           0.0.1-alpha.1                PLATFORMS        linux, macos, windows          │  
+  │                                              RUNTIMES         native-aot                     │  
+  │                                                                                              │  
+  │DISCOVERY                                     PACKAGE CONFIG                                  │  
+  │TOPICS           tui, terminal, widgets       PUBLISH TO       https://pub.dev                │  
+  │LICENSES         BSD-3-Clause (LICENSE)       EXECUTABLES      noir: noir                     │  
+  │                                              SCREENSHOTS      Quiet terminal UI —            │  
+  │                                              screenshots/noir.png                            │  
+  │                                                                                              │  
+  │PROJECT LINKS                                                                                 │  
+  │PUB.DEV          https://pub.dev/packages/noir                                                │  
+  │CHANGELOG        View changelog ↗                                                             │  
+  │HOMEPAGE         https://github.com/leoafarias/noir                                           │  
+  │REPOSITORY       https://github.com/leoafarias/noir                                           │  
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘  
+  ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     
+                                                                                                    

@@ -14,9 +14,21 @@
   visibility; menu controller replacement preserves open state. This is not
   Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
   nested overlay, transform, `LayerLink`, animation, or cascade API.
+- Reworked Pub search package details around a responsive hierarchy: package
+  state, publication metadata, install command, and headline metrics now lead
+  the page; 44-cell summary groups pair on wide terminals and stack on narrow
+  ones; Versions uses a friendly release ledger instead of archive metadata;
+  Dependencies uses the available width; and Health prioritizes rendered GFM
+  reports and advisories ahead of technical diagnostics. Sort and Filter now
+  use launcher-anchored `MenuAnchor` menus.
 
 ## 0.0.1-alpha.2
 
+- Added the packaged `dart run noir:run` development command. It launches a
+  Noir entry point with inherited terminal I/O, watches Dart sources, performs
+  VM source reload plus Noir reassembly, preserves the last good app after a
+  rejected edit, forwards arguments and exit status, and keeps diagnostics in
+  `.dart_tool/noir/run.log`.
 - Added the opt-in `package:noir/hooks.dart` library with `HookWidget`, state
   and effect primitives, listenable and async observation, and Noir controller
   and animation hooks. Keyed effects defer old cleanup until later hook slots
@@ -24,11 +36,29 @@
   Synchronous effect callbacks and cleanup fail fast if they request a hook
   rebuild; non-rebuilding reference writes and later asynchronous updates stay
   supported.
+- Added the Pub search example, a live pub.dev browser demonstrating an
+  injected async data source behind an application-owned `PubCatalog` seam,
+  explicit loading/empty/error/ready states, stale-response suppression, paging,
+  launcher-anchored sort and filter menus above retained results, and a four-tab
+  package detail view built with `TabSelect`. Its tests inject a fake catalog,
+  so every async path stays deterministic without network access. Drive locators
+  `query`, `sort`, `filter`, `tabs`, and `detail` mark the controls a driver
+  would click or wait for; drive sessions skip the queued auto-search so they
+  stay offline while `main()` still uses the live catalog.
+- A focused supplied `FocusNode` now remains attached and focused when its
+  `Focus` widget relocates within one build. The transfer is limited to an
+  inactive element owned by the same focus manager; active duplicates and
+  cross-manager reuse remain rejected, and permanent removal still detaches.
+- `Select`'s scroll indicator now describes the rows layout actually granted
+  rather than the constructor `height` hint, so a list constrained shorter than
+  its hint shows its up/down arrows, positions the down arrow on the last
+  painted row, and draws no arrow at all when no option row was painted.
 - Added whole-cell `Stack`/`Positioned` overlay layout and horizontal or
   vertical `Wrap` runs with spacing and alignment.
-- Added horizontal `TabSelect`, controlled horizontal/vertical `Slider`, and
-  `AsciiFont` with seven Noir-designed treatments of an original printable-
-  ASCII alphabet.
+- Added horizontal `TabSelect` with fixed or label-sized cells, optional
+  pointer-focus preservation, and selected-label terminal attributes;
+  controlled horizontal/vertical `Slider`; and `AsciiFont` with seven
+  Noir-designed treatments of an original printable-ASCII alphabet.
 - Added static rich-text `TextTable` with wrapping, proportional or balanced
   column fitting, padding, gaps, borders, pointer/keyboard grid selection, and
   explicit copy. The existing virtualized interactive `DataTable` remains a
@@ -37,6 +67,13 @@
   `MarkdownView`, including async-safe highlighting, shared line gutters,
   grapheme-safe keyboard/pointer selection, explicit OSC52 copy, semantic
   terminal hyperlinks, and semantic URL arrays in driver cell captures.
+  `MarkdownView` unwraps GitHub `<details>` wrappers outside fenced samples,
+  leaves GFM text unescaped so table cells keep `>=` / `<`, keeps headings
+  tight with the following block, omits empty table columns, paints
+  content-mode tables to their grid width, and can embed
+  inside a parent `ScrollBox` without a nested viewport. The pub search Health
+  tab renders pana report summaries and advisory bodies through that embedded
+  document, and search results shrink to the returned package rows.
 - Rebuilt Patch Manager's tracked-file diff presentation on `DiffView` while
   retaining its staging parser, interactive cards, actions, focus, locks, and
   scroll anchors.

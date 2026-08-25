@@ -1,0 +1,32 @@
+                                                                                                    
+  noir 0.0.1-alpha.1                                                                                
+  A Flutter-like reactive terminal UI framework for Dart.                                           
+                                                                                                    
+  Published Aug 16, 2026  by leoafarias.com                                                         
+                                                                                                    
+  INSTALL    $ dart pub add noir                                                                    
+                                                                                                    
+  160/160                 56                      12                      3                         
+  POINTS                  DOWNLOADS 30D           LIKES                   VERSIONS                  
+                                                                                                    
+   1 OVERVIEW  2 VERSIONS  3 DEPENDENCIES  4 HEALTH                                                 
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐  
+  │QUALITY                                       DOWNLOAD TREND                                  │  
+  │POINTS           160 / 160 ████████████████   ▁▂▃▄▆█                                          │  
+  │PANA             success                      HISTORY          6 weeks                        │  
+  │DARTDOC          success                      NEWEST WEEK      Aug 15, 2026                   │  
+  │TASK             completed                    MAJOR >=0.0.0 <1.0.0 ▁▂▃▄▆█                     │  
+  │                                                                                              │  
+  │REPORT SECTIONS                                                                               │  
+  │Follow Dart file conventions  passed  30/30                                                   │  
+  │                                                                                              │  
+  │[*] 10/10 points: Provide a valid pubspec.yaml                                                │  
+  │1 check passed                                                                                │  
+  │                                                                                              │  
+  │Detected license: BSD-3-Clause.                                                               │  
+  │                                                                                              │  
+  │SECURITY                                                                                      │  
+  │UPDATED          Aug 17, 2026                                                                 │  
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘  
+  ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     
+                                                                                                    

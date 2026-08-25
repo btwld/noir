@@ -189,10 +189,10 @@ class _SelectState<T> extends State<Select<T>>
 
   int _paintedViewportRows() {
     final published = _layoutMetrics.lastCompletedRows;
-    final laidOutRows = published != null && published > 0
-        ? published
-        : widget.height;
-    return math.max(0, math.min(laidOutRows, widget.height));
+    if (published != null) {
+      return math.max(0, math.min(published, widget.height));
+    }
+    return math.max(0, widget.height);
   }
 
   void _move(int delta) {
@@ -214,8 +214,8 @@ class _SelectState<T> extends State<Select<T>>
   void _pageBy(int pages) {
     if (widget.options.isEmpty) return;
     final rows = _refreshViewportFromLayout();
-    final delta = pages * (rows > 0 ? rows : widget.height);
-    _setHighlighted(_highlighted + delta);
+    if (rows == 0) return;
+    _setHighlighted(_highlighted + pages * rows);
   }
 
   void _confirm() {
@@ -545,14 +545,18 @@ class RenderSelect<T> extends RenderBox {
       final segLen = nameW + descW;
       if (segLen > desiredWidth) desiredWidth = segLen;
     }
-    if (_showScrollIndicator) desiredWidth += 1;
+    final h = constraints.constrainHeight(_visibleRows);
+    final paintedRows = math.min(h, _visibleRows);
+    if (_showsScrollIndicator(paintedRows)) desiredWidth += 1;
     final w = constraints.constrainWidth(
       desiredWidth == 0 ? constraints.minWidth : desiredWidth,
     );
-    final h = constraints.constrainHeight(_visibleRows);
     size = Size(w, h);
-    _layoutMetrics?.publish(math.max(0, math.min(h, _visibleRows)));
+    _layoutMetrics?.publish(paintedRows);
   }
+
+  bool _showsScrollIndicator(int paintedRows) =>
+      _showScrollIndicator && paintedRows > 0 && _options.length > paintedRows;
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -571,8 +575,14 @@ class RenderSelect<T> extends RenderBox {
       );
     }
 
-    final usableWidth = _showScrollIndicator ? width - 1 : width;
-    for (var row = 0; row < height && row < _visibleRows; row++) {
+    // Rows layout actually granted, which is what `_SelectState` scrolls
+    // against: the height hint is an upper bound, and a tight parent can hand
+    // back fewer rows. Painting and the arrows must describe the same window,
+    // otherwise a constrained list scrolls with no indication that it did.
+    final paintedRows = math.min(height, _visibleRows);
+    final showsScrollIndicator = _showsScrollIndicator(paintedRows);
+    final usableWidth = showsScrollIndicator ? width - 1 : width;
+    for (var row = 0; row < paintedRows; row++) {
       final index = _scrollOffset + row;
       if (index >= _options.length) break;
       final opt = _options[index];
@@ -587,7 +597,7 @@ class RenderSelect<T> extends RenderBox {
         );
       }
 
-      // Paint name cluster-by-cluster (each grapheme → its cell width).
+      // Advance by grapheme clusters so a wide glyph occupies more than one cell.
       var col = 0;
       for (final cluster in opt.name.characters) {
         final cw = terminalCellWidth(cluster);
@@ -602,7 +612,6 @@ class RenderSelect<T> extends RenderBox {
         col += cw;
       }
 
-      // Description (gap + dim color).
       if (opt.description != null && col < usableWidth) {
         canvas.setCell(Offset(originX + col, originY + row), ' ', fg, bg, 0);
         col++;
@@ -624,10 +633,11 @@ class RenderSelect<T> extends RenderBox {
       }
     }
 
-    // Scroll indicator (always last column when enabled and overflow)
-    if (_showScrollIndicator && _options.length > _visibleRows) {
+    // Scroll indicator (always last column when enabled and overflow). A box
+    // taller than a zero-row hint paints no options at all, so there is no
+    // window for an arrow to describe and no row of ours to put one on.
+    if (showsScrollIndicator) {
       final indCol = originX + width - 1;
-      // Up arrow at top if scrollable up
       canvas.setCell(
         Offset(indCol, originY),
         _scrollOffset > 0 ? '▲' : ' ',
@@ -635,10 +645,9 @@ class RenderSelect<T> extends RenderBox {
         rowBg,
         0,
       );
-      // Down arrow at bottom if scrollable down
-      final lastVisible = _scrollOffset + _visibleRows;
+      final lastVisible = _scrollOffset + paintedRows;
       canvas.setCell(
-        Offset(indCol, originY + height - 1),
+        Offset(indCol, originY + paintedRows - 1),
         lastVisible < _options.length ? '▼' : ' ',
         _color,
         rowBg,

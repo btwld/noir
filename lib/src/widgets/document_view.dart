@@ -83,6 +83,7 @@ final class DocumentSelectionScope extends InheritedWidget {
     required this.onDraggingChanged,
     required this.onCopy,
     required super.child,
+    this.leafCanRequestFocus = true,
     super.key,
   }) : _selectionSnapshot = selection,
        _draggingSnapshot = dragging;
@@ -117,6 +118,9 @@ final class DocumentSelectionScope extends InheritedWidget {
 
   /// Receives explicit copy results for complete-document selections.
   final SelectionCopyCallback? onCopy;
+
+  /// Whether a descendant document leaf may become the primary focus.
+  final bool leafCanRequestFocus;
 
   /// Returns the nearest composed selection scope, if one exists.
   static DocumentSelectionScope? maybeOf(BuildContext context) =>
@@ -160,6 +164,7 @@ final class DocumentSelectionScope extends InheritedWidget {
       sourceBase != oldWidget.sourceBase ||
       _selectionSnapshot != oldWidget._selectionSnapshot ||
       _draggingSnapshot != oldWidget._draggingSnapshot ||
+      leafCanRequestFocus != oldWidget.leafCanRequestFocus ||
       !identical(readSelection, oldWidget.readSelection) ||
       !identical(readDragging, oldWidget.readDragging) ||
       !identical(onSelectionChanged, oldWidget.onSelectionChanged) ||
@@ -745,7 +750,10 @@ final class _DocumentViewState extends State<DocumentView>
 
   void _pointerDown(MouseEvent event, DocumentSelectionScope? selectionScope) {
     if (event.button != MouseButton.left) return;
-    if (!focusNode.hasFocus) focusNode.requestFocus();
+    final canRequestFocus = selectionScope?.leafCanRequestFocus ?? true;
+    if (canRequestFocus && !focusNode.hasFocus) {
+      focusNode.requestFocus();
+    }
     final offset = _metrics.sourceOffsetAt(
       event.localPosition,
       _scrollX,
@@ -820,6 +828,7 @@ final class _DocumentViewState extends State<DocumentView>
     final handlesScrolling = DocumentScrollScope.handlesScrollingOf(context);
     final handlesHorizontalScrolling =
         DocumentScrollScope.handlesHorizontalScrollingOf(context);
+    final canRequestFocus = selectionScope?.leafCanRequestFocus ?? true;
     return Shortcuts(
       shortcuts: _shortcuts(
         handlesScrolling: handlesScrolling,
@@ -834,6 +843,7 @@ final class _DocumentViewState extends State<DocumentView>
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
+          canRequestFocus: canRequestFocus,
           child: PointerListener(
             onPointerDown: (event) => _pointerDown(event, selectionScope),
             onPointerMove: (event) => _pointerMove(event, selectionScope),

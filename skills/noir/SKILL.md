@@ -246,23 +246,30 @@ void main() => runTuiApp(const MyApp());
 `registerHotReloadExtension` stays exported for custom hosts that do not
 go through `runTuiApp`.
 
-Inside this repo, run the app under the bundled driver and save a `.dart`
-file to reload:
+Run an app through Noir's packaged development command and save a `.dart` file
+under `lib/` or beside the entry point to reload:
 
 ```sh
-dart run scripts/hot_reload_driver.dart example/counter.dart
+dart run noir:run example/counter.dart
 ```
 
-Outside the repo, any driver works that calls `reloadSources` and then the
-extension — for instance `package:hotreloader` with
+The command is available to package consumers as `dart run noir:run`; replace
+the example path with the consuming package's entry point. It inherits the
+app's terminal streams and writes its own diagnostics to
+`.dart_tool/noir/run.log`, keeping them out of the alternate-screen UI. A
+compile error leaves the last good app running, and the next valid save retries
+the reload. Arguments after the entry point pass through unchanged.
+
+For a custom driver, call `reloadSources` and then the extension — for instance
+use `package:hotreloader` with
 `onAfterReload: (_) => app.reassemble()`. `app.reassemble()` invokes
-`State.reassemble()` on every retained state, then re-runs every `build()`
-and forces a full layout and paint pass; `State`, focus, scroll, and
-animation values survive, and no terminal or native resource is recreated.
-`main()` and `initState` of already-mounted state are not re-run — override
-`State.reassemble()` to re-derive what those `initState` bodies computed.
-Other changes the VM cannot swap still need a restart: signatures held by
-live stack frames, enum-to-class conversions, and the native OpenTUI library.
+`State.reassemble()` on every retained state, then re-runs every `build()` and
+forces a full layout and paint pass; `State`, focus, scroll, and animation
+values survive, and no terminal or native resource is recreated. `main()` and
+`initState` of already-mounted state are not re-run — override
+`State.reassemble()` to re-derive what those `initState` bodies computed. Other
+changes the VM cannot swap still need a restart: signatures held by live stack
+frames, enum-to-class conversions, and the native OpenTUI library.
 
 ## See and drive a running app (drive mode)
 
