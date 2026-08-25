@@ -38,33 +38,33 @@ export function ExampleSection({
 }: ExampleSectionProps) {
   return (
     <section className="example-section" id={id}>
-      <header>
+      <header className="example-section-header">
         <h2>{title}</h2>
-        <h3>What it proves</h3>
         <p>{proves}</p>
       </header>
-      <div className="example-run">
-        <h3>Run it</h3>
-        <pre>
-          <code>{run}</code>
-        </pre>
+      <div className="example-brief">
+        <div className="example-run">
+          <p className="example-label">Run</p>
+          <pre>
+            <code>{run}</code>
+          </pre>
+        </div>
+        <div className="example-controls">
+          <p className="example-label">Controls</p>
+          <p>{controls}</p>
+        </div>
       </div>
       <div className="example-how-it-works">
         <h3>How it works</h3>
         {children}
       </div>
-      <div className="example-controls">
-        <h3>Controls</h3>
-        <p>{controls}</p>
-      </div>
-      <p className="example-links">
-        <a href={sourceHref}>Source</a>
-        <a href={testHref}>Relevant test</a>
-        <a href={guideHref}>Related guide</a>
-      </p>
+      <nav className="example-links" aria-label={`${title} resources`}>
+        <a href={sourceHref}>View source</a>
+        <a href={testHref}>Read the test</a>
+        <a href={guideHref}>Open the guide</a>
+      </nav>
       {demo ? (
         <div className="example-watch">
-          <h3>Watch it</h3>
           <TerminalDemo {...demo} />
         </div>
       ) : null}

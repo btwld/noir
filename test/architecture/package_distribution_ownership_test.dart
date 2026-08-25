@@ -600,13 +600,16 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
-  test('website application and its design record stay outside the Dart package archive', () {
-    final pubignoreLines = _read('.pubignore').split('\n');
+  test(
+    'website application and its design record stay outside the Dart package archive',
+    () {
+      final pubignoreLines = _read('.pubignore').split('\n');
 
-    expect(pubignoreLines, contains('/website/'));
-    expect(pubignoreLines, contains('/.impeccable/'));
-    expect(pubignoreLines, contains('/DESIGN.md'));
-  });
+      expect(pubignoreLines, contains('/website/'));
+      expect(pubignoreLines, contains('/.impeccable/'));
+      expect(pubignoreLines, contains('/DESIGN.md'));
+    },
+  );
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =

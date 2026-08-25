@@ -1,12 +1,12 @@
 const pages = {
-  'getting-started': 'Getting Started',
-  'widgets-layout': 'Widgets & Layout',
-  'state-lifecycle': 'State & Lifecycle',
+  'getting-started': 'Getting started',
+  'widgets-layout': 'Widgets and layout',
+  'state-lifecycle': 'State and lifecycle',
   hooks: 'Hooks',
-  'input-focus': 'Input & Focus',
+  'input-focus': 'Input and focus',
   testing: 'Testing',
-  'architecture-api': 'Architecture & API',
-  'platform-limitations': 'Platform & Limitations',
+  'architecture-api': 'Architecture and API',
+  'platform-limitations': 'Platform support and limitations',
 };
 
 export default pages;

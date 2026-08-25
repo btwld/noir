@@ -17,16 +17,17 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <section className="home-intro" aria-labelledby="home-title">
-        <h1 id="home-title">A retained UI tree for the terminal.</h1>
+        <h1 id="home-title">Build reactive terminal UIs in Dart.</h1>
         <p className="home-summary">
-          Flutter-like widgets, state, integer-cell layout, focus, input, and
-          native OpenTUI rendering—kept behind explicit ownership boundaries.
+          Noir brings Flutter-like widgets, state, layout, focus, and input to
+          Dart terminal apps. Native OpenTUI rendering stays behind explicit
+          framework boundaries.
         </p>
         <PrereleaseNotice />
         <InstallCommand />
         <p className="home-command-note">
-          Then run <code>dart run example/counter.dart</code> from the
-          repository.
+          Working from a repository checkout? Run{' '}
+          <code>dart run example/counter.dart</code> to try Counter.
         </p>
       </section>
 
@@ -49,7 +50,7 @@ export default function HomePage() {
         aria-labelledby="architecture-title"
       >
         <h2 id="architecture-title">
-          One declarative path, five clear owners.
+          From widget declaration to terminal output.
         </h2>
         <ol>
           <li>
@@ -73,10 +74,10 @@ export default function HomePage() {
       </section>
 
       <nav className="next-reads" aria-label="Choose a next reading path">
-        <h2>Choose the next question.</h2>
+        <h2>Where do you want to go next?</h2>
         <Link href="/docs/getting-started">How do I run my first app?</Link>
         <Link href="/examples#counter">
-          What does state look like in a real example?
+          How does state flow through a real example?
         </Link>
         <Link href="/docs/architecture-api">
           Which public API tier should I import?

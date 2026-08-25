@@ -1,11 +1,11 @@
 ---
-title: Architecture & API
+title: Architecture and API
 description: Choose a supported Noir import surface and understand the retained rendering boundary.
 ---
 
-# Architecture & API
+# Architecture and API
 
-Noir keeps a narrow ownership boundary:
+Noir keeps each part of the rendering path in one owning layer:
 
 > Widgets declare. Elements preserve identity. RenderObjects layout and record
 > paint. The compositor talks to OpenTUI. The native layer owns FFI, memory,
@@ -13,30 +13,50 @@ Noir keeps a narrow ownership boundary:
 
 ## Choose a supported import
 
-| Import                                        | Use it for                                                                              |
-| --------------------------------------------- | --------------------------------------------------------------------------------------- |
-| <code>package:noir/noir.dart</code>           | Ordinary application and widget authoring.                                              |
-| <code>package:noir/hooks.dart</code>          | Opt-in widget lifecycle hooks.                                                          |
-| <code>package:noir/noir_low_level.dart</code> | Advanced hosting, renderer/buffer access, and supported custom render-object protocols. |
-| <code>package:noir/noir_ffi.dart</code>       | Guarded but ABI-unstable raw FFI access.                                                |
+<dl className="api-surfaces api-surfaces-detailed">
+  <div>
+    <dt>
+      <code>package:noir/noir.dart</code>
+    </dt>
+    <dd>Ordinary application and widget authoring.</dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/hooks.dart</code>
+    </dt>
+    <dd>Opt-in widget lifecycle hooks.</dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/noir_low_level.dart</code>
+    </dt>
+    <dd>
+      Advanced hosting, renderer and buffer access, and supported custom
+      render-object protocols.
+    </dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/noir_ffi.dart</code>
+    </dt>
+    <dd>Guarded but ABI-unstable raw FFI access.</dd>
+  </div>
+</dl>
 
-Start with <code>noir.dart</code>. Add <code>hooks.dart</code> only when a
-HookWidget or hook solves a local lifecycle problem. Use the low-level and FFI
-tiers only when an application actually owns the extra responsibility they
-expose.
+Start with `noir.dart`. Add `hooks.dart` when a HookWidget or hook solves a
+local lifecycle problem. Use the low-level and FFI libraries only when the
+application needs the extra responsibility they expose.
 
 Concrete Element implementations, generated bindings, library discovery, and
-the recording/display-list/compositor internals remain framework-owned. A
-widget must not call FFI directly; render-object paint goes through
+recording, display-list, and compositor internals remain framework-owned. A
+widget never calls FFI directly; render-object paint goes through
+`PaintingContext`, not `Buffer`.
 
-<code>PaintingContext</code>, not <code>Buffer</code>.
+## Read the generated reference
 
-## Public reference
-
-The generated Dart API is maintained on pub.dev rather than mirrored here.
 [Open Noir’s published API reference](https://pub.dev/documentation/noir/latest/).
-The source tree can be ahead of that published prerelease, so pair it with the
-current repository source when evaluating an unreleased API.
+The repository can be ahead of that published prerelease, so check current
+source when evaluating an unreleased API.
 
-For the short import chooser, see [API](/api). For platform and native caveats,
-continue to [Platform & Limitations](/docs/platform-limitations).
+For a shorter import chooser, see [API](/api). For native caveats, continue to
+[Platform support and limitations](/docs/platform-limitations).

@@ -1,43 +1,31 @@
 ---
-title: Getting Started
-description: Install Noir, run Counter, and see one state change become a terminal frame.
+title: Getting started
+description: Install Noir, run a small stateful app, and see how one event becomes a terminal frame.
 ---
 
-# Getting Started
+# Getting started
 
 Noir is a Flutter-like reactive terminal UI framework for Dart, powered by
-OpenTUI. It is a prerelease: APIs and platform guarantees may change before
-1.0.
+OpenTUI. This guide starts with a small stateful app, then shows the same local
+state with Hooks.
 
 <PrereleaseNotice />
 
-## Install the package
+## Add Noir to a Dart package
+
+Run the install command from your package directory:
 
 <InstallCommand />
 
-The source tree can be ahead of the latest published prerelease. When you need
-an unreleased API while working beside a checkout, use a path dependency:
+## Run your first app
 
-```yaml
-dependencies:
-  noir:
-    path: ../noir
-```
-
-## Run Counter
-
-From the repository root:
-
-```sh
-dart run example/counter.dart
-```
-
-Counter is the shortest complete stateful Noir app. Its root mounts a
-
-<code>StatefulWidget</code>, requests mouse reporting, and keeps the changing
-value in its retained <code>State</code> object.
+Save this as `bin/noir_demo.dart`:
 
 ```dart
+import 'package:noir/noir.dart';
+
+void main() => runTuiApp(const CounterApp(), enableMouse: true);
+
 class CounterApp extends StatefulWidget {
   const CounterApp({super.key});
 
@@ -48,28 +36,50 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
-  void _incrementCounter() => setState(() => _count++);
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    spacing: 1,
+    children: [
+      Text('Count: $_count'),
+      Button(
+        autofocus: true,
+        label: '+ Add one',
+        onPressed: () => setState(() => _count++),
+      ),
+    ],
+  );
 }
 ```
 
-<code>setState</code> says that this state object changed. Noir rebuilds the
-affected declaration, lays out the resulting terminal cells, and records a fresh
-frame. The [complete Counter
-source](https://github.com/leoafarias/noir/blob/main/example/counter.dart) also
-routes Up, <code>+</code>, Enter, Space, a left click, Down, and
-<code>-</code> through the same local state.
+Run it:
 
-## The same local state with Hooks
+```sh
+dart run bin/noir_demo.dart
+```
 
-<code>StatefulWidget</code> is Noir’s foundational state model: its lifecycle
-owner is plainly visible. Hooks are an equally supported, opt-in way to express
-local state when composable hooks read better for a component.
+Press Enter or Space to update the count. With mouse reporting enabled, you
+can also click the button. Press Ctrl+C to exit.
 
-| StatefulWidget                                      | HookWidget                                                             |
-| --------------------------------------------------- | ---------------------------------------------------------------------- |
-| <code>int \_count</code> lives on a retained State. | <code>useState&lt;int&gt;(0)</code> owns a notifier for the hook slot. |
-| Event handlers call <code>setState</code>.          | Event handlers change <code>count.value</code>.                        |
-| Lifecycle ownership is explicit in the class.       | Reusable lifecycle behavior can be composed as hooks.                  |
+The event calls `setState`, which marks the retained state as changed. Noir
+rebuilds that declaration, lays it out in terminal cells, and records the next
+frame.
+
+For the complete repository example—with Up, Down, `+`, `-`, Enter, Space, and
+pointer handling—run:
+
+```sh
+dart run example/counter.dart
+```
+
+[Read the complete Counter source](https://github.com/leoafarias/noir/blob/main/example/counter.dart).
+
+## Express the same state with Hooks
+
+`StatefulWidget` is Noir’s foundational state model. Its state class makes
+lifecycle ownership explicit. Hooks are an opt-in way to express the same
+local state when composable lifecycle helpers make the component easier to
+read.
 
 ```dart
 import 'package:noir/noir.dart';
@@ -86,14 +96,25 @@ class HooksCounterApp extends HookWidget {
 }
 ```
 
-The second import is intentional: Hooks ship with Noir, but stay outside the
-default <code>package:noir/noir.dart</code> namespace. See the full
+Hooks ship in the main Noir package but stay outside the default
+`package:noir/noir.dart` namespace. Read the
 [Hooks Counter source](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
-and the [Hooks guide](/docs/hooks) before introducing effects or controllers.
+and the [Hooks guide](/docs/hooks) before adding effects or controller hooks.
 
-## Choose the next question
+## Work from a source checkout
 
-- Learn how terminal cells compose in [Widgets & Layout](/docs/widgets-layout).
-- Follow local state through identity and disposal in
-  [State & Lifecycle](/docs/state-lifecycle).
-- See the same ideas in six real apps on [Examples](/examples).
+The repository can be ahead of the latest published prerelease. To evaluate an
+unreleased API beside a checkout, use a path dependency:
+
+```yaml
+dependencies:
+  noir:
+    path: ../noir
+```
+
+## Keep going
+
+- Learn how terminal cells compose in [Widgets and layout](/docs/widgets-layout).
+- Follow state through identity and disposal in
+  [State and lifecycle](/docs/state-lifecycle).
+- See these ideas in six complete apps on [Examples](/examples).

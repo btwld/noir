@@ -78,6 +78,12 @@ async function runSmoke() {
   const browser = await launchBrowser();
   const context = await browser.newContext();
   const page = await context.newPage();
+  const browserErrors = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
 
   try {
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
@@ -89,8 +95,25 @@ async function runSmoke() {
       /Timeout/,
       'recordings must stay as posters until the reader chooses Play',
     );
+    await page.keyboard.press('Tab');
+    const keyboardFocus = await page.evaluate(() => {
+      const element = document.activeElement;
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return { outlineStyle: style.outlineStyle, tagName: element.tagName };
+    });
+    assert.notEqual(
+      keyboardFocus?.tagName,
+      'BODY',
+      'Tab must move focus to an interactive element',
+    );
+    assert.notEqual(
+      keyboardFocus?.outlineStyle,
+      'none',
+      'keyboard focus must have a visible outline',
+    );
 
-    await page.getByRole('link', { name: /What does state look like/ }).click();
+    await page.getByRole('link', { name: /How does state flow/ }).click();
     await page.waitForURL('**/examples#counter');
     await page.getByRole('link', { name: 'Hooks guide' }).click();
     await page.waitForURL('**/docs/hooks');
@@ -108,16 +131,79 @@ async function runSmoke() {
     await search.fill('state');
     await page
       .locator('[role="option"]')
-      .filter({ hasText: /^State & Lifecycle/ })
+      .filter({ hasText: /^State and lifecycle/ })
       .first()
       .waitFor();
 
     await page.goto(`${baseUrl}/examples`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page.getByRole('link', { name: 'Index', exact: true }).count(),
+      0,
+      'the custom homepage must not appear as an Index documentation page',
+    );
+    assert.equal(
+      await page.getByRole('heading', { name: 'What it proves' }).count(),
+      0,
+      'example metadata labels must not flatten the document heading hierarchy',
+    );
     assert.equal(await page.locator('.terminal-player').count(), 0);
     const playButtons = page.getByRole('button', { name: 'Play recording' });
+    assert.equal(
+      await playButtons.count(),
+      6,
+      'the six reviewed recordings must stay attached to the featured examples',
+    );
+    assert.equal(
+      await page.locator('.example-catalog li').count(),
+      24,
+      'the complete catalog must keep every shipped example',
+    );
     await playButtons.nth(0).click();
     await page.locator('.terminal-player > *').waitFor({ state: 'attached' });
     assert.equal(await page.locator('.terminal-player').count(), 1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${baseUrl}/examples`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+      true,
+      'the Examples page must not overflow the mobile viewport',
+    );
+
+    await page.goto(`${baseUrl}/api`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page.locator('.api-surfaces').count(),
+      1,
+      'the API chooser must use the responsive package-surface layout',
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+      true,
+      'the API page must not overflow the mobile viewport',
+    );
+
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto(`${baseUrl}/docs/architecture-api`, {
+      waitUntil: 'networkidle',
+    });
+    assert.equal(
+      await page
+        .locator('.api-surfaces-detailed > div')
+        .first()
+        .evaluate((element) => getComputedStyle(element).display),
+      'block',
+      'the detailed API chooser must stack when the documentation sidebar narrows its article',
+    );
+
+    await page.goto(`${baseUrl}/examples`, { waitUntil: 'networkidle' });
     await playButtons.nth(1).click();
     await page.locator('.terminal-player > *').waitFor({ state: 'attached' });
     assert.equal(await page.locator('.terminal-player').count(), 1);
@@ -141,12 +227,14 @@ async function runSmoke() {
       'dart pub add noir',
     );
 
+    assert.deepEqual(browserErrors, [], 'browser console must stay error-free');
+
     await page.goto(`${baseUrl}/not-a-real-route`, {
       waitUntil: 'networkidle',
     });
     await page
       .getByRole('heading', {
-        name: 'This page is not part of Noir’s small documentation set.',
+        name: 'That page isn’t in the Noir documentation.',
       })
       .waitFor();
   } finally {

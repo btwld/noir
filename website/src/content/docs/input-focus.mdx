@@ -1,51 +1,49 @@
 ---
-title: Input & Focus
+title: Input and focus
 description: Route keyboard and pointer events through focus, controllers, and render-tree hit testing.
 ---
 
-# Input & Focus
+# Input and focus
 
-Focused widgets own keyboard intent. Pointer events map through render-tree hit
-testing and arrive with <code>MouseEvent.localPosition</code>; do not map a
-browser-like global coordinate into a widget yourself.
+Focus determines which widget receives keyboard input. Pointer events travel
+through render-tree hit testing and arrive with `MouseEvent.localPosition`, so
+widgets do not need to translate global terminal coordinates themselves.
 
-## Keyboard ownership
+## Give keyboard input one owner
 
-Use <code>Focus</code> or <code>FocusScope</code> to decide who receives a
-
-<code>KeyEvent</code>. Interactive controls such as Button, Checkbox, Switch,
-Select, and TextInput are keyboard-accessible through focus traversal. In
+Use `Focus` or `FocusScope` to decide who receives a `KeyEvent`. Interactive
+controls such as Button, Checkbox, Switch, Select, and TextInput participate in
+normal focus traversal. In
 [Components](https://github.com/leoafarias/noir/blob/main/example/components_demo.dart),
 Tab and Shift+Tab move focus, while Enter, Space, and a left click activate the
 current control.
 
-Focus-owning widgets use <code>FocusNodeOwnerStateMixin</code>. Give important
-controls a stable <code>ValueKey&lt;String&gt;</code> so tests and headless
-driving can use intent rather than coordinates.
+Focus-owning widgets use `FocusNodeOwnerStateMixin`. Give important controls a
+stable `ValueKey<String>` when tests or headless driving need to identify an
+intent without relying on coordinates.
 
 ## Edit text with a controller
 
-Text editing uses <code>TextEditingController</code>. Chat owns one alongside a
-prompt focus node; submitting trims its text, appends a user message, and begins
-an asynchronous assistant turn. Its controller is disposed with the rest of the
-state’s owned resources.
+Text editing uses `TextEditingController`. Chat owns one beside its prompt focus
+node. Submitting trims the input, appends a user message, and starts an
+asynchronous assistant turn. The app disposes the controller with its other
+owned state.
 
 ```dart
 late final TextEditingController _inputController;
 
 void _submitPrompt() {
   final prompt = _inputController.text.trim();
-  // append the turn, then resolve the reply asynchronously
+  // Append the turn, then resolve the reply asynchronously.
 }
 ```
 
-## Scroll deliberately
+## Make scrolling deliberate
 
-<code>ScrollBox</code> wraps one overflowing child and can use a
-<code>ScrollController</code>. Chat keeps its newest-first transcript reachable
-while preserving older history; Pub Search gives its package detail a focused,
-scrollable section. Use PageUp, PageDown, Home, End, and wheel behavior only
-where the component documents it.
+`ScrollBox` wraps one overflowing child and can use a `ScrollController`. Chat
+keeps its newest-first transcript navigable while preserving older history. Pub
+Search gives its package detail pane independent focus and scrolling.
 
-See [Chat](/examples#chat) and [Pub Search](/examples#pub-search) for complete
-input, focus, and scrolling flows.
+Add PageUp, PageDown, Home, End, and wheel behavior only where the component
+documents it. See [Chat](/examples#chat) and
+[Pub Search](/examples#pub-search) for complete flows.

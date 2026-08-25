@@ -6,38 +6,37 @@ description: Test Noir through its supported widget, buffer, input, and binding 
 # Testing
 
 Noir has four supported test tools. Choose the smallest one that proves the
-behavior you are changing:
+behavior you are changing.
 
-| Need                        | Supported harness             |
-| --------------------------- | ----------------------------- |
-| Layout and widget behavior  | <code>WidgetTester</code>     |
-| One rendered terminal frame | <code>BufferCapture</code>    |
-| Parsed synthetic input      | <code>KeyDriver</code>        |
-| Binding integration         | <code>createTuiTestApp</code> |
+| What you need               | Supported harness  |
+| --------------------------- | ------------------ |
+| Layout and widget behavior  | `WidgetTester`     |
+| One rendered terminal frame | `BufferCapture`    |
+| Parsed synthetic input      | `KeyDriver`        |
+| Binding integration         | `createTuiTestApp` |
 
-Use <code>BufferMatchers</code> for cell-level assertions. Visual goldens
-include style and cursor sidecars unless they are deliberately text-only. Do
-not invent a fifth harness for an example-specific test.
+Use `BufferMatchers` for cell-level assertions. Visual goldens include style
+and cursor sidecars unless they are deliberately text-only. Do not introduce a
+fifth, example-specific harness.
 
-## Test behavior, not just a return value
+## Test the behavior the user sees
 
-Counter tests cover its visual hierarchy, keyboard and pointer activation,
-compact dimensions, and mouse setup. Chat tests cover submitting a prompt,
-animated and stable spinner states, transcript scrolling, focus traversal, and
-Escape behavior. Motion tests assert timeline changes and cleanup, rather than
-merely constructing a controller.
+Counter tests its visual hierarchy, keyboard and pointer activation, compact
+dimensions, and mouse setup. Chat tests prompt submission, animated and stable
+spinner states, transcript scrolling, focus traversal, and Escape behavior.
+Motion tests assert timeline changes and cleanup instead of stopping after a
+controller is constructed.
 
 ```sh
 dart test test/example/counter_test.dart --concurrency=1
 dart test test/example/hooks_counter_test.dart --concurrency=1
 ```
 
-## Headless recordings are evidence, not terminal-emulator proof
+## Know what a headless recording proves
 
-The six site recordings use <code>NoirDriver (NOIR_DRIVE=1)</code> through the
-existing headless driver. They exercise normal layout, paint, and parsed input
-paths, but do not prove real terminal escape rendering or raw-mode input. Keep
-that distinction visible when reviewing a recording or writing a test.
+The six site recordings use `NoirDriver (NOIR_DRIVE=1)`. They exercise Noir’s
+normal layout, paint, and parsed-input paths, but they do not prove raw-mode
+input or escape rendering in a terminal emulator.
 
-Read the [Examples](/examples) links beside each recording for the focused Dart
-test that proves its behavior.
+Each recording on [Examples](/examples) links to the focused Dart test that
+proves its behavior.

@@ -1,56 +1,49 @@
 ---
-title: State & Lifecycle
+title: State and lifecycle
 description: Preserve identity with State, update through setState, and dispose owned resources explicitly.
 ---
 
-# State & Lifecycle
+# State and lifecycle
 
-A <code>StatefulWidget</code> declares configuration; its retained
+A `StatefulWidget` describes configuration. Its retained `State` object owns
+local mutable values and resources. When a rebuild produces the same widget
+type and key in the same place, Noir preserves that state.
 
-<code>State</code> owns local, mutable resources. When matching widgets
-reconcile across a rebuild, Noir keeps the existing state where identity permits
-it.
+## Update state from an event
 
-## Update local state from an event
+Counter makes the sequence visible:
 
-Counter makes the core sequence visible:
-
-1. A focused key or a left-pointer-down event calls a state method.
-2. That method changes <code>\_count</code> inside <code>setState</code>.
-3. Noir rebuilds the state’s widget subtree, then lays out and paints a new
-   terminal frame.
+1. A focused key or left-pointer event calls a state method.
+2. The method changes `_count` inside `setState`.
+3. Noir rebuilds that widget subtree, then lays out and paints a new terminal
+   frame.
 
 ```dart
 void _incrementCounter() => setState(() => _count++);
 ```
 
-The same app gives its pointer target a stable
+The full example gives its pointer target a stable
+`ValueKey<String>('increment')`, so headless tests can target the real control
+without depending on terminal coordinates.
 
-<code>ValueKey&lt;String&gt;('increment')</code>, which lets headless driver
-tests target the real control without relying on terminal coordinates.
+## Dispose what the state owns
 
-## Own resources where they live
+Create a controller, focus node, subscription, or animation in the state that
+owns it, then release it from `dispose`. Chat creates a
+`TextEditingController`, transcript `ScrollController`, and `FocusNode` in
+`initState`; Pulse owns an `AnimationController` and its listener. Both examples
+dispose those resources explicitly.
 
-Initialize and dispose a controller, focus node, subscription, or animation
-with the state object that owns it. Chat creates a
+`initState`, `didChangeDependencies`, `didUpdateWidget`, `deactivate`,
+`dispose`, and `mounted` follow Noir’s documented lifecycle contract. Finalizers
+are a safety net, not the primary owner.
 
-<code>TextEditingController</code>, transcript <code>ScrollController</code>,
-and <code>FocusNode</code> in <code>initState</code>, then disposes all three in
-<code>dispose</code>. Pulse removes its animation listener and disposes its
-<code>AnimationController</code> in the same lifecycle.
+## Choose a state class or a hook
 
-<code>initState</code>, <code>didChangeDependencies</code>,
-<code>didUpdateWidget</code>, <code>deactivate</code>, <code>dispose</code>, and
-<code>mounted</code> follow Noir’s documented lifecycle contract. Explicit
-lifecycle methods are the resource owner; finalizers are only a safety net.
-
-## StatefulWidget and HookWidget
-
-<code>HookWidget</code> remains a normal Noir
-<code>StatefulWidget</code> underneath. Prefer an ordinary state class when it
-makes lifecycle ownership clearest; prefer a hook when a reusable composition is
-the clearer unit. In either form, handle input in an input callback—not in an
-effect.
+`HookWidget` uses Noir’s normal retained widget lifecycle. Choose a state class
+when it makes ownership easiest to see. Choose a hook when reusable lifecycle
+behavior is the clearer unit. In either form, handle input in the event
+callback—not in an effect.
 
 ```dart
 final count = useState<int>(0);
@@ -58,5 +51,5 @@ Button(label: '+ Add one', onPressed: () => count.value++);
 ```
 
 Read [Hooks](/docs/hooks) for call-order identity, cleanup, and controller
-hooks, then compare [Counter](/examples#counter) with
-[Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart).
+hooks. Then compare [Counter](/examples#counter) with the
+[Hooks Counter source](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart).

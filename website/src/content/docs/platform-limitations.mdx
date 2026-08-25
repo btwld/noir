@@ -1,45 +1,43 @@
 ---
-title: Platform & Limitations
-description: Read Noir’s prerelease platform floor and known native limitations before choosing a deployment target.
+title: Platform support and limitations
+description: Check Noir’s prerelease platform floor and known native limitations before choosing a deployment target.
 ---
 
-# Platform & Limitations
+# Platform support and limitations
 
-Noir is a prerelease candidate, not a stable 1.0 promise. Its currently
-supported desktop targets are macOS, Linux, and Windows on x64 and arm64.
-Android, iOS, and web are not supported targets.
+Noir is a prerelease, not a stable 1.0 release. It currently targets macOS,
+Linux, and Windows on x64 and arm64. Android, iOS, and web are not supported.
 
 <PrereleaseNotice>
-  Current alpha release operations and a direct real-terminal parity matrix
-  remain intentionally separate from ordinary headless verification.
+  Release operations and the direct real-terminal parity matrix remain separate
+  from ordinary headless verification.
 </PrereleaseNotice>
 
-## Platform floor
+## Check the macOS floor
 
-The bundled macOS libraries require macOS 13.0 or later. Dart 3.10’s native
-asset hooks declare a macOS 12 target, so the normal CLI build can succeed and
-the native loader can report the incompatibility later on macOS 12. Run
+The bundled macOS libraries require macOS 13.0 or later. Dart 3.10 native-asset
+hooks declare a macOS 12 target, so a normal CLI build can succeed before the
+native loader reports an incompatibility on macOS 12.
 
-<code>dart run noir:health_check</code> to verify headless native-asset
-resolution; it does not validate real terminal escape rendering.
+Run `dart run noir:health_check` to verify headless native-asset resolution. It
+does not validate real terminal escape rendering.
 
-## Known native boundaries
+## Account for known native boundaries
 
-- Terminal protocol acceptance for Kitty, Sixel, and OSC52 depends on the
-  terminal or multiplexer. The current candidate has not completed the
-  separately authorized direct-terminal matrix.
-- A run beginning with a source-level zero-width grapheme can diverge from the
-  pinned native <code>bufferDrawText</code> paint path, even though Noir keeps
-  source-correct layout semantics.
+- Kitty, Sixel, and OSC52 acceptance depends on the terminal or multiplexer.
+  The current candidate has not completed the separately authorized matrix for
+  direct terminal checks.
+- A source run beginning with a zero-width grapheme can diverge from the pinned
+  native `bufferDrawText` paint path, even though Noir keeps source-correct
+  layout semantics.
 - A decorated box that straddles a clipped viewport edge can paint its border
-  outside the native scissor rect.
-- The observed macOS/iTerm alternate-screen lifecycle can restore the launch
-  cursor imperfectly. Apps must still dispose <code>TuiApp</code> so owned
-  resources and terminal modes are released.
-- Hot reload rebuilds, lays out, and paints retained state; it does not rerun
-  <code>main()</code> or <code>initState</code>, and some structural Dart
-  changes require restart.
+  outside the native scissor rectangle.
+- On an observed macOS/iTerm path, alternate-screen teardown can restore the
+  launch cursor imperfectly. Apps must still dispose `TuiApp` so Noir releases
+  owned resources and terminal modes.
+- Hot reload rebuilds, lays out, and paints retained state. It does not rerun
+  `main()` or `initState`, and some structural Dart changes require a restart.
 
-The full release record lives in the repository’s <code>TODO.md</code>. Treat
-it as the source of truth for live gates, bundled artifacts, and residual
-risk—not this guide as a release approval.
+The repository’s `TODO.md` is the source of truth for current release gates,
+bundled artifacts, and accepted residual risks. This page is not a release
+approval.

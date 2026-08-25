@@ -12,22 +12,12 @@ export const metadata: Metadata = {
   description:
     'Noir is a prerelease Flutter-like reactive terminal UI framework for Dart.',
   title: {
-    default: 'Noir — terminal UI for Dart',
+    default: 'Noir — reactive terminal UI for Dart',
     template: '%s · Noir',
   },
 };
 
 const repository = 'https://github.com/leoafarias/noir';
-
-const designContract = `<!--
-QUIET-SIGNAL-2026
-THESIS: Noir documentation treats a real terminal frame as evidence, not decoration.
-OWN-WORLD: Black-and-white editorial reading, hairline rules, and one terminal anchor.
-STORY: A Dart developer installs Noir, understands retained rendering, and chooses a safe next step.
-FIRST VIEWPORT: A short promise, copyable install command, and Counter poster lead the page.
-FORM: Quiet Signal; user-supplied implementation direction; seed quiet-signal-2026.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
--->`;
 
 const navbar = (
   <Navbar logo={<span className="wordmark">Noir</span>}>
@@ -52,7 +42,10 @@ const navbar = (
 const footer = (
   <Footer>
     <span>
-      Noir is a prerelease. Read the limits before making a platform promise.
+      Noir is a prerelease.{' '}
+      <Link href="/docs/platform-limitations">
+        Review platform support and known limitations.
+      </Link>
     </span>
   </Footer>
 );
@@ -70,11 +63,8 @@ export default async function RootLayout({
         }}
       />
       <body>
-        <template
-          data-design-contract="quiet-signal-2026"
-          dangerouslySetInnerHTML={{ __html: designContract }}
-        />
         <Layout
+          copyPageButton={false}
           docsRepositoryBase={`${repository}/tree/main/website`}
           editLink="View source on GitHub"
           feedback={{

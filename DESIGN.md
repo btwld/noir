@@ -17,16 +17,16 @@ typography:
     letterSpacing: "-0.045em"
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(2.65rem, 5vw, 4.7rem)"
+    fontSize: "clamp(2.5rem, 4vw, 4rem)"
     fontWeight: 500
-    lineHeight: 1
-    letterSpacing: "-0.045em"
+    lineHeight: 1.02
+    letterSpacing: "-0.04em"
   section-heading:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(1.75rem, 3vw, 2.65rem)"
+    fontSize: "clamp(1.65rem, 2.5vw, 2.3rem)"
     fontWeight: 500
-    lineHeight: 1.08
-    letterSpacing: "-0.035em"
+    lineHeight: 1.12
+    letterSpacing: "-0.025em"
   body:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
     fontSize: "1.075rem"
@@ -280,9 +280,10 @@ generic call to action.
 
 ### Code Blocks
 
-Documentation code blocks use the same Terminal Field / Terminal Ink inversion
-as recorded evidence, with a square Hairline Rule. Inline code is lighter: it
-stays on paper inside a small square rule rather than becoming a colored chip.
+Documentation code blocks keep Nextra's paired light and dark syntax surfaces
+so every token remains legible in either theme. The black Terminal Field is
+reserved for recorded evidence. Inline code stays on the reading surface inside
+a small square rule rather than becoming a colored chip.
 
 ## Do's and Don'ts
 

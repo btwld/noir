@@ -1,22 +1,42 @@
 ---
 title: API
-description: A concise chooser for Noir’s supported public API tiers.
+description: Choose the narrowest supported Noir package surface for your work.
 ---
 
 # API
 
-Choose the narrowest supported package surface that owns the job.
+Start with the narrowest supported package surface that owns the job.
 
-| If you are…                                             | Import                                                                |
-| ------------------------------------------------------- | --------------------------------------------------------------------- |
-| Building an application or ordinary widget              | <code>package:noir/noir.dart</code>                                   |
-| Opting into HookWidget lifecycle helpers                | <code>package:noir/hooks.dart</code> alongside <code>noir.dart</code> |
-| Hosting Noir or writing a supported custom RenderObject | <code>package:noir/noir_low_level.dart</code>                         |
-| Working against guarded, ABI-unstable bindings          | <code>package:noir/noir_ffi.dart</code>                               |
+<dl className="api-surfaces">
+  <div>
+    <dt>Applications and ordinary widgets</dt>
+    <dd>
+      <code>package:noir/noir.dart</code>
+    </dd>
+  </div>
+  <div>
+    <dt>HookWidget and reusable lifecycle hooks</dt>
+    <dd>
+      <code>package:noir/hooks.dart</code> alongside <code>noir.dart</code>
+    </dd>
+  </div>
+  <div>
+    <dt>Advanced hosting and custom RenderObjects</dt>
+    <dd>
+      <code>package:noir/noir_low_level.dart</code>
+    </dd>
+  </div>
+  <div>
+    <dt>Guarded, ABI-unstable bindings</dt>
+    <dd>
+      <code>package:noir/noir_ffi.dart</code>
+    </dd>
+  </div>
+</dl>
 
-The public reference is on [pub.dev](https://pub.dev/documentation/noir/latest/).
-Noir deliberately does not mirror generated API documentation here. The
-repository source can be ahead of the latest published prerelease.
+Use the [generated API reference on pub.dev](https://pub.dev/documentation/noir/latest/)
+for published symbols and signatures. The repository can be ahead of the latest
+prerelease.
 
-For ownership boundaries and what remains framework-owned, read
-[Architecture & API](/docs/architecture-api).
+For ownership boundaries and framework-owned internals, read
+[Architecture and API](/docs/architecture-api).

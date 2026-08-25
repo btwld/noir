@@ -5,19 +5,21 @@ description: Use Noir’s optional HookWidget surface without hiding state owner
 
 # Hooks
 
-<code>package:noir/hooks.dart</code> provides reusable widget lifecycle hooks as
-an opt-in library in the main Noir package. Its production implementation uses
-no private Element, low-level renderer, or FFI API.
+Hooks are an opt-in way to compose local state and lifecycle behavior. Import
+the normal widget surface first, then add `package:noir/hooks.dart`:
 
 ```dart
 import 'package:noir/noir.dart';
 import 'package:noir/hooks.dart';
 ```
 
+The Hooks library ships in the main Noir package and is built only on the
+supported high-level widget API.
+
 ## Start with a HookWidget
 
 The [Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
-uses a stable top-level <code>useState</code> call and changes it in a Button
+keeps `useState` at the top level of `build` and changes its value from a Button
 callback.
 
 ```dart
@@ -32,40 +34,38 @@ class HooksCounterApp extends HookWidget {
 }
 ```
 
-<code>useState</code> owns and observes a <code>ValueNotifier</code>; changing
-<code>count.value</code> rebuilds the <code>HookWidget</code>. The result is
-intentionally comparable with [Counter’s setState](/examples#counter), not a
-replacement for the foundational state model.
+`useState` owns and observes a `ValueNotifier`. Changing `count.value` rebuilds
+the `HookWidget`. This is the hook form of [Counter’s `setState`](/examples#counter),
+not a replacement for Noir’s foundational state model.
 
-## Keep hook identity stable
+## Keep hook order stable
 
-Stateful hooks use call order as identity. Call them unconditionally and in
-the same order on every build. Do not invoke hooks from an event handler,
-effect, cleanup, or another lifecycle callback. Top-level custom hook functions
-should begin with <code>use</code>.
+Stateful hooks use call order as identity. Call them unconditionally and in the
+same order on every build. Do not call a hook from an event handler, effect,
+cleanup function, or another lifecycle callback. Top-level custom hooks should
+begin with `use`.
 
-<code>useContext</code> and <code>useTickerProvider</code> are build-only
-lookups; they do not consume a hook slot. A key changes only that hook slot, and
-Noir snapshots key lists so later caller mutation cannot change stored identity.
+`useContext` and `useTickerProvider` are build-only lookups, so they do not
+consume hook slots. A hook key changes only that slot. Noir snapshots key lists,
+which prevents later caller mutation from changing stored identity.
 
-## Effects synchronize resources
+## Use effects for external resources
 
-<code>useEffect</code> is synchronous. It is for synchronizing an external
-resource and returning cleanup, not for routing a button action. Without keys,
-cleanup then the effect runs on every build; keyed effects replace only when
-their keys change. Cleanup also runs when a slot is removed or its widget is
-disposed.
+`useEffect` runs synchronously. Use it to synchronize an external resource and
+return its cleanup—not to handle a button press. Without keys, cleanup runs and
+the effect starts again on every build. With keys, Noir replaces the effect only
+when those keys change. Cleanup also runs when the hook disappears or the widget
+is disposed.
 
-An effect or cleanup must not synchronously request a hook rebuild. Update state
-later from a timer, future, stream, or user input instead.
+An effect or cleanup must not request a synchronous hook rebuild. Schedule a
+later update from a timer, future, stream, or user event instead.
 
-## Choose the needed integration
+## Pick the smallest hook that owns the job
 
-Core hooks include <code>useState</code>, <code>useEffect</code>,
+Core hooks include `useState`, `useEffect`, `useMemoized`, `useCallback`, and
+`useRef`. Noir also provides `useAnimationController`,
+`useTextEditingController`, `useFocusNode`, `useScrollController`, and
+`useViewportController`.
 
-<code>useMemoized</code>, <code>useCallback</code>, and <code>useRef</code>.
-Noir integrations include <code>useAnimationController</code>,
-<code>useTextEditingController</code>, <code>useFocusNode</code>,
-<code>useScrollController</code>, and <code>useViewportController</code>. Keep a
-future or stream outside build, or retain it with
-<code>useMemoized</code>, so a rebuild does not restart observation.
+Keep a future or stream outside `build`, or retain it with `useMemoized`, so a
+rebuild does not restart the work.
