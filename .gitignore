@@ -17,7 +17,9 @@ test/failures/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/noir
-!.claude/skills/noir-hooks
+!.claude/skills/impeccable
+!.claude/skills/nextra-docs
+!.claude/skills/vercel-react-best-practices
 .context/
 
 # FVM Version Cache

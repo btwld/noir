@@ -589,7 +589,7 @@ void main() {
 
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir-hooks/SKILL.md skills/noir-hooks/agents/openai.yaml'
+        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir/references/hooks.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [
