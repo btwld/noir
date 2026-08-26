@@ -1,4 +1,9 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Page not found',
+};
 
 export default function NotFound() {
   return (
@@ -11,7 +16,7 @@ export default function NotFound() {
       </p>
       <nav className="not-found-links" aria-label="Documentation recovery">
         <Link href="/docs/getting-started">Getting started</Link>
-        <Link href="/docs/widgets-layout">Documentation</Link>
+        <Link href="/docs/widgets-layout">Widgets and layout</Link>
         <Link href="/api">API</Link>
       </nav>
     </main>

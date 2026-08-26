@@ -125,6 +125,7 @@ class LogPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
+      constraints: const BoxConstraints(minWidth: 18),
       decoration: BoxDecoration(
         color: theme.surfaceVariant,
         border: Border.all(color: theme.border, title: ' Build log '),
@@ -137,8 +138,10 @@ class LogPanel extends StatelessWidget {
 ```
 
 Pass `color` or `decoration` to `Container`, never both. Use `color` for a plain
-fill. Use `decoration` when the box also needs a border. `Border.all()` defaults
-to black, so pass a theme color when the background may be dark.
+fill. Use `decoration` when the box also needs a border. Size the panel wide
+enough for `Border.title`; a box that hugs a short child will clip the label.
+`Border.all()` defaults to black, so pass a theme color when the background may
+be dark.
 
 ## Leave paint and FFI below widgets
 

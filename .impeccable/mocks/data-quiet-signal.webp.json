@@ -1,6 +1,0 @@
-{
-  "promptFile": ".context/prompts/datamatics-quiet-signal.txt",
-  "prompt": "Refine the supplied Noir documentation concepts into a quieter, cleaner, more elegant high-fidelity desktop homepage. Preserve the severe black-and-white signal identity, but make technical documentation the primary reading experience. Use a generous 12-column white field, a controlled two-line headline, one black 80×24 terminal specimen as the only heavy visual anchor, one small Widget → Element → RenderObject → Paint signal curve, and three quiet typographic guide links below the fold. Keep black coverage below roughly 30%, use proportional text for reading and monospace only for identity, code, terminal, and measurements. Avoid full-width barcode rain, alternating inverted bands, card grids, dashboard density, gradients, color, glass, decorative charts, fake claims, and illegible pseudo-code. All visible product text must come from the factual copy in the full prompt file.",
-  "createdAt": "2026-08-25T17:23:00.000Z",
-  "approved": false
-}

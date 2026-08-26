@@ -361,6 +361,18 @@ async function runSmoke() {
     );
     await page.getByRole('button', { name: 'Menu' }).click();
 
+    await page.goto(`${baseUrl}/docs/widgets-layout`, {
+      waitUntil: 'networkidle',
+    });
+    assert.equal(
+      await page
+        .locator('main pre')
+        .filter({ hasText: 'minWidth: 18' })
+        .count(),
+      1,
+      'the layout guide must size a titled border wide enough to paint the title',
+    );
+
     await page.goto(`${baseUrl}/docs/hooks`, { waitUntil: 'networkidle' });
     assert.equal(
       await page
@@ -581,6 +593,13 @@ async function runSmoke() {
       await page.getByRole('link', { name: 'Examples', exact: true }).count(),
       0,
       'the not-found page must not offer the removed destination',
+    );
+    assert.deepEqual(
+      (await page.locator('.not-found-links a').allTextContents()).map((text) =>
+        text.trim(),
+      ),
+      ['Getting started', 'Widgets and layout', 'API'],
+      'the not-found page must recover into current documentation routes',
     );
     assert.deepEqual(
       browserErrors,

@@ -105,7 +105,7 @@ blue by default.
 
 - Display and page titles use the configured Georgia stack with moderate
   tracking (`-0.03em`) and enough leading that large type can breathe.
-- Body copy uses the same serif stack at 1.1rem / 1.75 leading and stays near
+- Body copy uses the same serif stack at 1.1rem / 1.7 leading and stays near
   65–68 characters per line. Paragraphs and headings are separated by more
   space above a heading than below it.
 - Navigation and evidence labels use system sans.
