@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entrypoint": "example/counter.dart",
+  "output": ".context/demos/counter.cast",
+  "title": "Noir · Stateful counter",
+  "width": 64,
+  "height": 18,
+  "durationMs": 2800,
+  "fps": 12,
+  "actions": [
+    {"atMs": 800, "key": "up"},
+    {"atMs": 1500, "key": "space"},
+    {"atMs": 2200, "clickKey": "increment"}
+  ]
+}

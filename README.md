@@ -310,46 +310,31 @@ backend remain framework-owned; they are not supported package surfaces.
 
 ## Example Apps
 
-- [Hello](https://github.com/leoafarias/noir/blob/main/example/hello.dart) — a minimal stateless application.
-- [Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart) — a Flutter-inspired app bar, centered
-  stateful body, and solid action button controlled by Up/Down,
-  `+`/`-`, Enter/Space, or click.
-- [Hooks counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart) — polished opt-in
-  `HookWidget` and `useState` example with a focused `Button` for Enter, Space,
-  and mouse input.
-- [Layout basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart) — core layout and flex usage.
-- [Layout demo](https://github.com/leoafarias/noir/blob/main/example/layout_demo.dart) — alignment, decoration, and richer
-  flex combinations.
-- [Image](https://github.com/leoafarias/noir/blob/main/example/image_demo.dart) — embedded RGBA fill rendering and
-  terminal protocol fallback.
-- [Parity components](https://github.com/leoafarias/noir/blob/main/example/parity_components_demo.dart) — overlays, wrapping,
-  tabs, a slider, ASCII-art text, a static rich table, and selectable code,
-  diff, and Markdown views in one interactive app.
-- [Inherited state](https://github.com/leoafarias/noir/blob/main/example/inherited_example.dart) — inherited dependencies
-  and visible rebuild propagation when `t` switches palettes.
-- [Framework primitives](https://github.com/leoafarias/noir/blob/main/example/framework_primitives.dart) —
-  notifier ownership, semantic shortcuts/actions, a `GlobalKey`, rich text, and
-  localized pointer input in one focused app.
-- [Focus form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart) — focus management and text input.
-- [Select](https://github.com/leoafarias/noir/blob/main/example/select_demo.dart) — keyboard and mouse option selection.
-- [Scroll box](https://github.com/leoafarias/noir/blob/main/example/scrollbox_demo.dart) — clipped keyboard/wheel scrolling
-  and scrollbars.
-- [Text area](https://github.com/leoafarias/noir/blob/main/example/textarea_demo.dart) — multiline editing with portable
-  Ctrl+D submission.
-- [Widgets tour](https://github.com/leoafarias/noir/blob/main/example/widgets_tour.dart) — the interactive widget set with
-  selection, scrolling, and text submission.
-- [Chat demo](https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart) — scrollback, input, asynchronous state,
-  and animation.
-- [Pub search](https://github.com/leoafarias/noir/blob/main/example/pub_search.dart) — a live pub.dev package browser with
-  deterministic fake-backed tests, paging and anchored sort/filter menus, plus
-  responsive Overview, Versions, Dependencies, and Health tabs.
-- [Pulse animation](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart) — `AnimationController` and
-  ticker-driven updates.
-- [Like Reactor](https://github.com/leoafarias/noir/blob/main/example/like_reactor.dart) — deterministic heart particles,
-  animation-driven morphing, and overlapping keyboard/mouse activation.
-- [Bindings validation](https://github.com/leoafarias/noir/blob/main/example/bindings_validation.dart) — interactive
-  advanced renderer/buffer and ABI-unstable FFI validation in a terminal at
-  least 120×40 cells.
+Start with [Main](example/main.dart), [Counter](example/counter.dart),
+[Layout basics](example/layout_basics.dart), and
+[Components](example/components_demo.dart). Then choose the example that
+matches the behavior you are building:
+
+- Foundations: [Hello](example/hello.dart),
+  [Hooks counter](example/hooks_counter.dart),
+  [Layout showcase](example/layout_demo.dart),
+  [Inherited state](example/inherited_example.dart),
+  [Theme](example/theme_demo.dart), [Image](example/image_demo.dart), and
+  [Framework primitives](example/framework_primitives.dart).
+- Controls and data: [Focus form](example/focus_form.dart),
+  [Select](example/select_demo.dart), [ScrollBox](example/scrollbox_demo.dart),
+  [ListView](example/listview_demo.dart),
+  [DataTable](example/data_table_demo.dart),
+  [TextArea](example/textarea_demo.dart), and
+  [Widgets tour](example/widgets_tour.dart).
+- Complete apps: [Chat](example/chat_demo.dart) and the live
+  [pub.dev search](example/pub_search.dart).
+- Motion: [Pulse](example/pulse_animation.dart) and
+  [Like Reactor](example/like_reactor.dart).
+- Reference and validation:
+  [Parity components](example/parity_components_demo.dart) and
+  [Bindings validation](example/bindings_validation.dart), which requires a
+  real terminal at least 120×40.
 
 The
 [example guide](https://github.com/leoafarias/noir/blob/main/example/README.md)

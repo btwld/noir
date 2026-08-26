@@ -1,0 +1,151 @@
+---
+title: Widgets and layout
+description: Compose Noir interfaces with whole-cell geometry, constraints, and bounded terminal regions.
+---
+
+# Widgets and layout
+
+Noir follows Flutter’s declarative layout model, but every size and gap is a
+whole terminal cell. Start by describing relationships between widgets. Add an
+explicit size only where the interface has a real boundary.
+
+## Compose a status region
+
+`StatusRegion` is a small `StatelessWidget`: a natural-width Badge, a message
+that owns the remaining row, a trailing percentage, and a fixed-width progress
+bar.
+
+```dart
+class StatusRegion extends StatelessWidget {
+  const StatusRegion({required this.progress, super.key});
+
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 1,
+      children: [
+        Row(
+          spacing: 1,
+          children: [
+            const Badge(label: 'BUILD', variant: BadgeVariant.info),
+            const Expanded(
+              child: Text(
+                'Compiling package graph',
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text('${(progress * 100).round()}%'),
+          ],
+        ),
+        ProgressBar(value: progress, width: 32),
+      ],
+    );
+  }
+}
+```
+
+`spacing: 1` inserts one cell only between adjacent children. `Expanded` takes
+the row left after the Badge, gap cells, and percentage. The ProgressBar is
+deliberately 32 cells wide, so its extent stays predictable as the viewport
+changes.
+
+## Think in terminal cells
+
+Widths, heights, padding, offsets, and flex spacing are integers. A row is
+usually about twice as tall as a column is wide, so one blank row already
+creates substantial vertical separation. CJK characters and many emoji occupy
+two columns even though they are one grapheme.
+
+Use the grid as the design constraint:
+
+- Use `spacing: 1` for a normal gap. Two rows is already generous at 80×24.
+- Keep controls one row tall unless the control is a viewport or editor.
+- Let unused width trail at the end of a region. Do not stretch every child to
+  make an 80-column screen look full.
+- Clamp one-line table and status text with `maxLines: 1`, `softWrap: false`,
+  and an explicit overflow behavior.
+
+## Follow the layout protocol
+
+<ol className="concept-flow layout-protocol">
+  <li>
+    <strong>Constraints go down.</strong>
+    <span>
+      A parent tells each child the smallest and largest size it may use.
+    </span>
+  </li>
+  <li>
+    <strong>Sizes come up.</strong>
+    <span>
+      The child chooses an integer-cell size inside those constraints.
+    </span>
+  </li>
+  <li>
+    <strong>Parents set positions.</strong>
+    <span>
+      The parent places each child and establishes its hit-test geometry.
+    </span>
+  </li>
+</ol>
+
+`Flexible` lets a child use less than its flex share. `Expanded` requires it to
+fill that share. `SizedBox` sets an exact extent; `ConstrainedBox` adds a
+minimum or maximum without promising an exact result.
+
+| When the relationship is…             | Start with                      |
+| ------------------------------------- | ------------------------------- |
+| A horizontal or vertical sequence     | `Row` or `Column`               |
+| One child owns leftover space         | `Expanded` or `Flexible`        |
+| Children continue onto another run    | `Wrap`                          |
+| Children overlap at cell offsets      | `Stack` and `Positioned`        |
+| One child is larger than its viewport | `ScrollBox`                     |
+| Content appears above the root tree   | `OverlayPortal` or `MenuAnchor` |
+
+The [Widget catalog](/docs/widget-catalog) covers the rest of the public
+composition surface.
+
+## Put borders around regions, not every widget
+
+A border occupies the outside cells of its box. Put the region name in
+`Border.title`; a second Text heading inside the same box creates duplicate
+chrome.
+
+```dart
+class LogPanel extends StatelessWidget {
+  const LogPanel({required this.log, super.key});
+
+  final Widget log;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18),
+      decoration: BoxDecoration(
+        color: theme.surfaceVariant,
+        border: Border.all(color: theme.border, title: ' Build log '),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: log,
+    );
+  }
+}
+```
+
+Pass `color` or `decoration` to `Container`, never both. Use `color` for a plain
+fill. Use `decoration` when the box also needs a border. Size the panel wide
+enough for `Border.title`; a box that hugs a short child will clip the label.
+`Border.all()` defaults to black, so pass a theme color when the background may
+be dark.
+
+## Leave paint and FFI below widgets
+
+Widgets declare configuration. Paint recordings and FFI stay in the layers
+described in [Architecture](/docs/architecture-api). The repository’s
+[Layout Basics](https://github.com/leoafarias/noir/blob/main/example/layout_basics.dart)
+is a runnable comparison of main-axis alignment and flex distribution.

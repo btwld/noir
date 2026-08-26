@@ -1,0 +1,135 @@
+---
+title: Testing Noir apps
+description: Test application behavior through public state and lifecycle seams, and use Noir Driver for repository inspection.
+---
+
+# Testing Noir apps
+
+Test the behavior your application owns at the narrowest useful boundary. Noir
+does not export a public widget-test harness, so package authors should not
+import repository helpers or `package:noir/src/**` into application tests.
+
+## Choose the boundary
+
+| What you need to prove                             | Use                                                     |
+| -------------------------------------------------- | ------------------------------------------------------- |
+| A rule, command, controller, or state transition   | A plain Dart unit test                                  |
+| The public app tree can mount and dispose          | `runTuiApp(..., headless: true)`                        |
+| A live repository example responds and paints      | Repository-only Noir Driver                             |
+| Noir layout, cells, parser input, or golden output | The repository contributor harness that owns that layer |
+| A terminal accepts raw input or an escape protocol | A separately authorized real-terminal check             |
+
+This split keeps fast application tests independent of terminal rendering and
+keeps framework-only helpers out of the published API.
+
+## Test owned behavior first
+
+Move an application command into a small state owner, then test the command
+without mounting a widget tree:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:test/test.dart';
+
+final class CounterController extends ValueNotifier<int> {
+  CounterController() : super(0);
+
+  void increment() {
+    value++;
+  }
+}
+
+void main() {
+  test('increment advances the count', () {
+    final counter = CounterController();
+    addTearDown(counter.dispose);
+
+    counter.increment();
+
+    expect(counter.value, 1);
+  });
+}
+```
+
+The Button in the application can call `counter.increment`. The test now covers
+the promised state change without knowing how the Button is painted or which
+key activated it. Use the same boundary for validation, asynchronous state,
+and commands called from keyboard, pointer, paste, or widget callbacks.
+
+Run ordinary tests from the package root:
+
+```sh
+dart pub add --dev test
+dart test
+```
+
+## Mount the public lifecycle when needed
+
+Use a headless app check when construction, inherited dependencies, or
+deterministic disposal is part of the behavior you need to cover:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('mounts and disposes headlessly', () {
+    final app = runTuiApp(const Text('ready'), headless: true);
+
+    expect(app.isHeadless, isTrue);
+    app.dispose();
+  });
+}
+```
+
+Headless mode mounts Noir’s normal widget and element tree without an owned
+terminal renderer. It proves that the tree builds and tears down. It does not
+show a rendered frame, exercise raw-mode stdin, or prove that a terminal
+accepts an escape sequence.
+
+Always dispose the app handle, focus nodes, editing and scroll controllers,
+notifiers, subscriptions, and animation controllers in the layer that created
+them.
+
+Application tests stop here. The rest of this page is for inspecting a live
+repository checkout or contributing to Noir itself.
+
+## Inspect a live app with Noir Driver
+
+The repository includes a `NoirDriver` client. It starts an unchanged app with
+`NOIR_DRIVE=1`, reads rendered frames, inspects the widget tree, injects bytes
+through the production ANSI parser, resizes the viewport, and requests hot
+reload.
+
+From a Noir repository checkout, this script clicks the Counter’s keyed action
+and captures the new frame:
+
+```sh
+printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
+  dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+```
+
+The CLI also supports `capture --ansi`, `capture --cells`, `key`, `type`,
+`scroll`, `resize`, `reload`, and `watch`. The repository covers the driver
+surface end to end and drives the shipped example catalog in automated tests.
+
+The `NoirDriver` client and `scripts/noir_drive.dart` are repository-only and
+are excluded from the published package. The VM-service extension surface is
+development tooling, not stable application API. Use it to look at or script a
+live process; keep downstream automated assertions in the public seams above.
+
+Drive mode is headless. It exercises layout, paint, and parsed input, but it
+cannot establish how a real terminal renders Kitty, Sixel, OSC52, raw input, or
+alternate-screen teardown.
+
+## Match framework tests to their layer
+
+The Noir repository has four test compositions: `WidgetTester` for layout,
+`BufferCapture` for one painted frame, `KeyDriver` for parsed synthetic input,
+and `createTuiTestApp` for binding and byte-parser integration. They are
+intentionally absent from the package archive.
+
+Framework contributors should follow the repository’s
+[test helper guide](https://github.com/leoafarias/noir/blob/main/test/helpers/README.md).
+Do not turn drive mode into a fifth harness; it drives a separate live process
+instead of mounting a second in-process test composition.

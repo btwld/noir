@@ -101,6 +101,20 @@ void main() {
       await driver.clickLocator(const DriverLocator.byKey('step'));
       expect((await driver.capture()).contains('4/10'), isTrue);
     });
+
+    test('focus form Save key exposes both blank-field errors', () async {
+      final driver = await NoirDriver.launch('example/focus_form.dart');
+      addTearDown(driver.quit);
+
+      await driver.clickLocator(const DriverLocator.byKey('save'));
+      final frame = await driver.capture();
+      expect(frame.contains('Name error: Enter your name.'), isTrue);
+      expect(
+        frame.contains('Email error: Enter an email like name@example.com.'),
+        isTrue,
+      );
+      expect(frame.contains('Saved:'), isFalse);
+    });
   });
 }
 

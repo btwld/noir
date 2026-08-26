@@ -10,36 +10,65 @@ Run an example from the repository root:
 dart run example/main.dart
 ```
 
-## Example Catalog
+For a first pass, run `main`, then `counter`, `layout_basics`,
+`components_demo`, and `chat_demo`. The rest of the catalog is grouped by the
+question each example answers; it is not a required sequence.
 
-| Example | Highlights |
-| ------- | ---------- |
-| `dart run example/main.dart` | Canonical entry point — minimal Flutter-like terminal app. |
-| `dart run example/hello.dart` | Minimal renderer + widget pipeline smoke test. |
-| `dart run example/counter.dart` | Flutter-inspired full-screen `setState` counter with a flat app bar, centered body, solid 7×3 action button, and Up/Down, `+`/`-`, Enter/Space, and click controls. |
-| `dart run example/hooks_counter.dart` | Polished opt-in `HookWidget` + `useState` counter with a focused `Button` for Enter, Space, and mouse input. |
-| `dart run example/layout_basics.dart` | Basic `Container`, `Row`, `Column`, spacing, and flex usage. |
-| `dart run example/layout_demo.dart` | Richer flex, alignment, decoration, and layout combinations. |
-| `dart run example/image_demo.dart` | Embedded RGBA image sizing and deterministic drive-mode block fallback without network state. |
-| `dart run example/parity_components_demo.dart` | `Stack`, `Positioned`, `Wrap`, `TabSelect`, `AsciiFont`, `Slider`, `TextTable`, `CodeView`, `DiffView`, and `MarkdownView` in one interactive app. |
-| `dart run example/focus_form.dart` | Focus manager, keyboard routing, and shared input handling. |
-| `dart run example/chat_demo.dart` | Chat-style scrollback, text input submit, async reply state, and loading animation. |
-| `dart run example/pub_search.dart` | Live pub.dev search with fresh autocomplete, anchored sort/filter menus, paging, and a responsive four-tab package detail view covering versions, dependencies, scores, downloads, analysis, and advisories. |
-| `dart run example/inherited_example.dart` | Inherited dependency registration and rebuild propagation. |
-| `dart run example/theme_demo.dart` | `Theme`/`ThemeData` token palette with `t` to swap presets across the whole subtree. |
-| `dart run example/framework_primitives.dart` | `ValueNotifier`, `Shortcuts`/`Actions`, `GlobalKey`, styled `TextSpan`s, and localized pointer activation. |
-| `dart run example/bindings_validation.dart` | Interactive alternate-screen validation of advanced renderer/buffer APIs and ABI-unstable FFI values; requires a terminal at least 120x40. |
-| `dart run example/pulse_animation.dart` | `AnimationController`, ticker scheduling, and frame-driven updates. |
-| `dart run example/like_reactor.dart` | Interactive `AnimationController` particle reactor with overlapping keyboard and mouse-triggered heart bursts. |
-| `dart run example/select_demo.dart` | `Select` option list with keyboard and mouse selection. |
-| `dart run example/scrollbox_demo.dart` | `ScrollBox` viewport clipping, scrollbar, and wheel/keyboard scrolling. |
-| `dart run example/components_demo.dart` | `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`, and `Badge` on one screen, with Tab traversal and `s` to stop the spinner. |
-| `dart run example/data_table_demo.dart` | `DataTable` with fixed and flex columns, a windowed body, keyboard selection, and click-to-sort headers. |
-| `dart run example/listview_demo.dart` | Windowed `ListView` in both modes — selectable and plain scroll — over 500 rows, with live builder-call counters. |
-| `dart run example/textarea_demo.dart` | Multi-line `TextArea` editing with portable Ctrl+D submission. |
-| `dart run example/widgets_tour.dart` | Combined Select, ScrollBox, and TextArea tour with Ctrl+D submission. |
+## Start here
 
-### Pub search controls
+| Run | Learn |
+| --- | --- |
+| `dart run example/main.dart` | The canonical minimal application entry point. |
+| `dart run example/hello.dart` | The smallest stateless widget and renderer composition. |
+| `dart run example/counter.dart` | Stateful updates plus keyboard and pointer activation. |
+| `dart run example/hooks_counter.dart` | The same state pattern through opt-in `HookWidget` and `useState`. |
+
+## Core concepts
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/layout_basics.dart` | `Container`, `Row`, `Column`, spacing, and flex. |
+| `dart run example/layout_demo.dart` | A scrollable, static specimen sheet for alignment and nested flex layouts. |
+| `dart run example/inherited_example.dart` | Inherited dependencies and visible rebuild propagation. |
+| `dart run example/theme_demo.dart` | Whole-subtree `ThemeData` token changes; press `t` to swap presets. |
+| `dart run example/framework_primitives.dart` | Notifiers, shortcuts/actions, `GlobalKey`, rich text, and local pointer coordinates. |
+| `dart run example/image_demo.dart` | Embedded RGBA sizing and the deterministic drive-mode fallback. |
+
+## Controls and data
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/components_demo.dart` | A focused specimen of Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
+| `dart run example/focus_form.dart` | Structural focus cues, validated text input, Enter submission, and a clickable Save action. |
+| `dart run example/select_demo.dart` | Keyboard and pointer selection. |
+| `dart run example/scrollbox_demo.dart` | Viewport clipping, scrollbars, keyboard paging, and wheel input. |
+| `dart run example/listview_demo.dart` | Selectable and plain virtual lists over 500 rows. |
+| `dart run example/data_table_demo.dart` | Windowed rows, selection, and keyboard or pointer sorting. |
+| `dart run example/textarea_demo.dart` | Multi-line editing and portable Ctrl+D submission. |
+| `dart run example/widgets_tour.dart` | Select, ScrollBox, and TextArea in one interaction flow. |
+
+## Complete apps
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/chat_demo.dart` | Scrollback, text submission, asynchronous state, and Noir's standard loading spinner. |
+| `dart run example/pub_search.dart` | A live pub.dev browser with completion, filters, paging, and package detail. Requires network access. |
+
+## Motion
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/pulse_animation.dart` | Fractional-cell progress and a pauseable reversing `AnimationController`. |
+| `dart run example/like_reactor.dart` | Deterministic particles, overlapping bursts, and bounded animation lifecycle. |
+
+## Advanced and reference
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/parity_components_demo.dart` | A dense, reference-only inventory of the phase-two component surface. Start with the focused control demos above. |
+| `dart run example/bindings_validation.dart` | Advanced renderer/buffer and ABI-unstable FFI validation. Requires a real terminal at least 120×40. |
+
+### Pub Search controls
 
 The pub search example starts with a live search for `noir`. After three
 characters, the query waits 300 ms and performs a fresh pub.dev name and topic

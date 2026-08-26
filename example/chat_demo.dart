@@ -48,13 +48,9 @@ const _defaultMessages = <ChatMessage>[
   ChatMessage.assistant('Ready when you are.'),
 ];
 
-class _ChatDemoAppState extends State<ChatDemoApp>
-    with SingleTickerProviderStateMixin<ChatDemoApp> {
-  static const _spinnerFrames = ['|', '/', '-', r'\'];
-
+class _ChatDemoAppState extends State<ChatDemoApp> {
   late final TextEditingController _inputController;
   late final FocusNode _inputFocus;
-  late final AnimationController _spinner;
   late final List<ChatMessage> _messages;
   late final ScrollController _transcriptController;
 
@@ -69,43 +65,14 @@ class _ChatDemoAppState extends State<ChatDemoApp>
     _inputController = TextEditingController();
     _transcriptController = ScrollController();
     _inputFocus = FocusNode();
-    _spinner =
-        AnimationController(
-            vsync: this,
-            duration: const Duration(milliseconds: 640),
-            debugLabel: 'chat loading spinner',
-          )
-          ..addListener(_handleSpinnerTick)
-          ..addStatusListener(_handleSpinnerStatus);
-    if (_thinking && widget.enableAnimation) {
-      _spinner.forward(from: 0);
-    }
   }
 
   @override
   void dispose() {
-    _spinner
-      ..removeListener(_handleSpinnerTick)
-      ..removeStatusListener(_handleSpinnerStatus)
-      ..dispose();
     _inputFocus.dispose();
     _inputController.dispose();
     _transcriptController.dispose();
     super.dispose();
-  }
-
-  void _handleSpinnerTick() {
-    if (mounted && _thinking) {
-      setState(() {});
-    }
-  }
-
-  void _handleSpinnerStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed &&
-        _thinking &&
-        widget.enableAnimation) {
-      _spinner.forward(from: 0);
-    }
   }
 
   KeyEventResult _handleRootKey(FocusNode node, KeyEvent event) {
@@ -141,9 +108,6 @@ class _ChatDemoAppState extends State<ChatDemoApp>
       _messages.add(ChatMessage.user(prompt));
     });
     _scrollToLatest();
-    if (widget.enableAnimation) {
-      _spinner.forward(from: 0);
-    }
     unawaited(_completeAssistantTurn(turn, prompt));
   }
 
@@ -164,8 +128,6 @@ class _ChatDemoAppState extends State<ChatDemoApp>
       _messages.add(ChatMessage.assistant(reply));
     });
     _scrollToLatest();
-    _spinner.stop();
-    _spinner.reset();
   }
 
   void _scrollToLatest() {
@@ -190,16 +152,6 @@ class _ChatDemoAppState extends State<ChatDemoApp>
     }
     return 'I received "$normalized". This simulated reply keeps the demo '
         'local while exercising async UI updates.';
-  }
-
-  String get _spinnerGlyph {
-    if (!widget.enableAnimation) {
-      return _spinnerFrames.first;
-    }
-    final index =
-        (_spinner.value * _spinnerFrames.length).floor() %
-        _spinnerFrames.length;
-    return _spinnerFrames[index];
   }
 
   @override
@@ -228,7 +180,8 @@ class _ChatDemoAppState extends State<ChatDemoApp>
                   children: [
                     // Newest-first keeps the active turn visible while the
                     // ScrollBox still exposes older history.
-                    if (_thinking) _ThinkingBlock(frame: _spinnerGlyph),
+                    if (_thinking)
+                      _ThinkingBlock(animated: widget.enableAnimation),
                     for (var i = _messages.length - 1; i >= 0; i--)
                       _MessageBlock(
                         key: ValueKey('message-$i'),
@@ -318,21 +271,30 @@ class _MessageBlock extends StatelessWidget {
 }
 
 class _ThinkingBlock extends StatelessWidget {
-  const _ThinkingBlock({required this.frame});
+  const _ThinkingBlock({required this.animated});
 
-  final String frame;
+  final bool animated;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(top: 1),
-    child: Text(
-      'Noir is thinking $frame',
-      style: TextStyle(
-        color: Theme.of(context).warning,
-        fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) {
+    final warning = Theme.of(context).warning;
+    return Container(
+      margin: const EdgeInsets.only(top: 1),
+      child: Row(
+        spacing: 1,
+        children: [
+          Text(
+            'Noir is thinking',
+            style: TextStyle(color: warning, fontWeight: FontWeight.bold),
+          ),
+          if (animated)
+            Spinner(color: warning)
+          else
+            Text(SpinnerFrames.dots.first, style: TextStyle(color: warning)),
+        ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _PromptBox extends StatelessWidget {

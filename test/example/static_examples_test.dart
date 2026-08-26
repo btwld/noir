@@ -96,7 +96,7 @@ void main() {
     try {
       final frame = _render(app);
       expect(frame, BufferMatchers.containsText('Noir Flex Layout Showcase'));
-      expect(frame, BufferMatchers.containsText('Sections'));
+      expect(frame, BufferMatchers.containsText('Static specimen index'));
       expect(frame, BufferMatchers.containsText('MainAxisAlignment Examples'));
       expect(frame, BufferMatchers.containsText('Flex Layout Demo'));
       expect(

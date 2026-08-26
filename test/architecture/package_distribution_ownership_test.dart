@@ -359,6 +359,19 @@ void main() {
 
     expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
     expect(catalogEntries, unorderedEquals(shippedExamples));
+    for (final example in shippedExamples) {
+      expect(readme, contains('example/$example'), reason: example);
+    }
+    for (final heading in <String>[
+      '## Start here',
+      '## Core concepts',
+      '## Controls and data',
+      '## Complete apps',
+      '## Motion',
+      '## Advanced and reference',
+    ]) {
+      expect(exampleGuide, contains(heading));
+    }
   });
 
   test('example guide explains optional quiet build-hook status', () {
@@ -587,9 +600,20 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
+  test(
+    'website application and its design record stay outside the Dart package archive',
+    () {
+      final pubignoreLines = _read('.pubignore').split('\n');
+
+      expect(pubignoreLines, contains('/website/'));
+      expect(pubignoreLines, contains('/.impeccable/'));
+      expect(pubignoreLines, contains('/DESIGN.md'));
+    },
+  );
+
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
-        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir-hooks/SKILL.md skills/noir-hooks/agents/openai.yaml'
+        'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir/references/hooks.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
     final ignored = Process.runSync('git', [

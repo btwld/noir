@@ -17,8 +17,9 @@ test/failures/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/noir
-!.claude/skills/noir-hooks
+!.claude/skills/nextra-docs
 .context/
+.impeccable/
 
 # FVM Version Cache
 .fvm/

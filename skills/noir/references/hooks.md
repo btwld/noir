@@ -1,14 +1,3 @@
----
-name: noir-hooks
-description: >-
-  Build, review, and test hook-specific lifecycle code in Dart terminal apps
-  using package:noir/hooks.dart. Use when work centers on HookWidget,
-  HookBuilder, custom use-prefixed hooks, hook ordering, useState, useEffect
-  cleanup, hook-owned controllers or listenables, or asynchronous hook values.
-  Use the general Noir skill as well when the task includes screen design,
-  widgets, focus, keyboard, mouse, or application-level testing.
----
-
 # Noir hooks
 
 Keep hook code declarative, ordered, and explicit about resource ownership.
@@ -17,14 +6,14 @@ another hook library.
 
 ## Start from the canonical contract
 
-Read `../../doc/hooks.md` completely before changing hook behavior or writing
-lifecycle-sensitive application code. Load only the complementary guidance
-needed for the task:
+Read `../../../doc/hooks.md` completely before changing hook behavior or
+writing lifecycle-sensitive application code. Load only the complementary
+guidance needed for the task:
 
-- Screen composition and terminal visual review: `../noir/references/design.md`
-- Buttons, focus, keyboard, and pointer input: `../noir/references/inputs-and-focus.md`
-- Consumer and repository test strategy: `../noir/references/testing.md`
-- Live capture and input: `../noir/SKILL.md#see-and-drive-a-running-app-drive-mode`
+- Screen composition and terminal visual review: `design.md`
+- Buttons, focus, keyboard, and pointer input: `inputs-and-focus.md`
+- Consumer and repository test strategy: `testing.md`
+- Live capture and input: `../SKILL.md#see-and-drive-a-running-app-drive-mode`
 
 Verify signatures in `package:noir/hooks.dart` and a nearby working example.
 Do not import `package:noir/src/**`, `package:noir/noir_low_level.dart`, or

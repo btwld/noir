@@ -1,0 +1,93 @@
+---
+title: API
+description: Choose the narrowest supported Noir package surface for your work.
+---
+
+# API
+
+Most applications need only `package:noir/noir.dart`. Import a lower-level
+surface only when your code owns the corresponding framework or native
+responsibility.
+
+<dl className="api-surfaces">
+  <div>
+    <dt>
+      <code>package:noir/noir.dart</code>
+    </dt>
+    <dd>
+      <strong>Applications and ordinary widgets.</strong> Includes
+      <code>TuiApp</code>, the widget framework, layout, focus, input, painting
+      values, and standard controls.
+      <span className="api-surface-status">Supported high-level surface</span>
+    </dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/hooks.dart</code>
+    </dt>
+    <dd>
+      <strong>HookWidget and reusable lifecycle hooks.</strong> Import it
+      alongside <code>noir.dart</code> only when a hook owns a local lifecycle
+      concern.
+      <span className="api-surface-status">Supported opt-in surface</span>
+    </dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/noir_low_level.dart</code>
+    </dt>
+    <dd>
+      <strong>Advanced hosting and custom RenderObjects.</strong> Exposes
+      supported renderer, buffer, binding, and render-object protocols for code
+      that accepts their ownership responsibilities.
+      <span className="api-surface-status">Supported advanced surface</span>
+    </dd>
+  </div>
+  <div>
+    <dt>
+      <code>package:noir/noir_ffi.dart</code>
+    </dt>
+    <dd>
+      <strong>Guarded raw bindings.</strong> Tracks the OpenTUI C ABI and can
+      change when that ABI changes. Application code should prefer a higher
+      layer.
+      <span className="api-surface-status">ABI-unstable surface</span>
+    </dd>
+  </div>
+</dl>
+
+## Use the commands shipped with Noir
+
+| Command                                      | Purpose                                                        | What it does not prove                                       |
+| -------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `dart run noir:run <entrypoint> [arguments]` | Run an app with source watching and hot reload                 | Real-terminal behavior still depends on the current terminal |
+| `dart run noir:health_check`                 | Verify native-asset resolution and a headless render lifecycle | It does not enter raw mode or validate terminal protocols    |
+
+The development runner and its restart boundaries are in
+[Getting started](/docs/getting-started). Noir Driver is repository-only and is
+not a public widget-test harness; see [Testing](/docs/testing).
+
+## Read the published symbols
+
+Use the [generated API reference on pub.dev](https://pub.dev/documentation/noir/latest/)
+for published symbols and signatures. The repository can be ahead of the latest
+prerelease, so match the reference to the version in your `pubspec.lock`.
+
+## Evaluate repository source
+
+To try an unreleased API from a repository checkout, use a path dependency:
+
+```yaml
+dependencies:
+  noir:
+    path: ../noir
+```
+
+Do not copy generated bindings, bundled native artifacts, or framework-owned
+internals into an application to reach a newer feature. Either stay on the
+published surface or pin and evaluate one repository revision as a unit.
+
+For the ownership boundaries behind these surfaces, read
+[Architecture](/docs/architecture-api). Check
+[Platform support and limitations](/docs/platform-limitations) before choosing
+a deployment target.

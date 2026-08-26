@@ -5,7 +5,7 @@
                                                                                 
  ┌────────────────────────────────────────────────────────────────────────────┐ 
  │                                                                            │ 
- │Noir is thinking |                                                          │ 
+ │Noir is thinking ⠋                                                          │ 
  │                                                                            │ 
  │You: Show the latest validation state.                                      │ 
  │                                                                            │ 

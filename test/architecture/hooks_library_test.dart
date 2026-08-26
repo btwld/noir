@@ -105,66 +105,64 @@ void main() {
     expect(pubignore, isNot(contains('/lib/src/hooks/')));
   });
 
-  test('the Noir skill links to the root hooks guide', () {
+  test('the Noir skill owns hook guidance as a routed reference', () {
     final skillDirectory = Directory('skills/noir').absolute.uri;
-    final hooksGuide = File.fromUri(
+    final canonicalHooksGuide = File.fromUri(
       skillDirectory.resolve('../../doc/hooks.md'),
+    );
+    final hooksReference = File.fromUri(
+      skillDirectory.resolve('references/hooks.md'),
     );
     final skill = File.fromUri(
       skillDirectory.resolve('SKILL.md'),
     ).readAsStringSync();
 
-    expect(hooksGuide.existsSync(), isTrue);
+    expect(canonicalHooksGuide.existsSync(), isTrue);
+    expect(hooksReference.existsSync(), isTrue);
+    expect(skill, contains('`references/hooks.md`'));
     expect(skill, contains('`../../doc/hooks.md`'));
-  });
+    expect(skill, isNot(contains('noir-hooks')));
 
-  test('the repo-local hooks skill routes to canonical Noir guidance', () {
-    final skillDirectory = Directory('skills/noir-hooks').absolute.uri;
-    final generalSkill = File('skills/noir/SKILL.md').readAsStringSync();
-    final skillFile = File.fromUri(skillDirectory.resolve('SKILL.md'));
-    final metadataFile = File.fromUri(
-      skillDirectory.resolve('agents/openai.yaml'),
-    );
-
-    expect(skillFile.existsSync(), isTrue);
-    expect(metadataFile.existsSync(), isTrue);
-    expect(generalSkill, contains('`../noir-hooks/SKILL.md`'));
-
-    final skill = skillFile.readAsStringSync();
+    if (!hooksReference.existsSync()) return;
+    final hooks = hooksReference.readAsStringSync();
+    final referenceDirectory = Directory('skills/noir/references').absolute.uri;
     for (final path in <String>[
-      '../../doc/hooks.md',
-      '../noir/references/design.md',
-      '../noir/references/inputs-and-focus.md',
-      '../noir/references/testing.md',
-      '../noir/SKILL.md#see-and-drive-a-running-app-drive-mode',
+      '../../../doc/hooks.md',
+      'design.md',
+      'inputs-and-focus.md',
+      'testing.md',
+      '../SKILL.md#see-and-drive-a-running-app-drive-mode',
     ]) {
       final filePath = path.split('#').first;
       expect(
-        File.fromUri(skillDirectory.resolve(filePath)).existsSync(),
+        File.fromUri(referenceDirectory.resolve(filePath)).existsSync(),
         isTrue,
         reason: path,
       );
-      expect(skill, contains('`$path`'), reason: path);
+      expect(hooks, contains('`$path`'), reason: path);
     }
-    expect(skill, contains('package:noir/hooks.dart'));
-    expect(skill, contains('Call hooks unconditionally'));
-    expect(skill, contains('input callbacks'));
-    expect(skill, contains('effect'));
-    expect(skill, contains('retained hook state'));
+    expect(hooks, contains('package:noir/hooks.dart'));
+    expect(hooks, contains('Call hooks unconditionally'));
+    expect(hooks, contains('input callbacks'));
+    expect(hooks, contains('effect'));
+    expect(hooks, contains('retained hook state'));
   });
 
-  test('the hooks skill is exposed to local agent skill discovery', () {
+  test('hook guidance uses the existing Noir discovery entry points', () {
     for (final linkPath in <String>[
-      '.agents/skills/noir-hooks',
-      '.claude/skills/noir-hooks',
+      '.agents/skills/noir',
+      '.claude/skills/noir',
     ]) {
       final link = Link(linkPath);
       expect(link.existsSync(), isTrue, reason: linkPath);
       expect(
         link.targetSync(),
-        path.join('..', '..', 'skills', 'noir-hooks'),
+        path.join('..', '..', 'skills', 'noir'),
         reason: linkPath,
       );
     }
+    expect(Directory('skills/noir-hooks').existsSync(), isFalse);
+    expect(Link('.agents/skills/noir-hooks').existsSync(), isFalse);
+    expect(Link('.claude/skills/noir-hooks').existsSync(), isFalse);
   });
 }

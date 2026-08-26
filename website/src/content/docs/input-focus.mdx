@@ -1,0 +1,198 @@
+---
+title: Input and focus
+description: Route shortcuts, editable text, focus, pointer, and scroll input through Noir’s ordered input pipeline.
+---
+
+# Input and focus
+
+Noir gives each input event one ordered route. The first handler that consumes
+the event wins. Most input bugs come from putting a handler earlier in that
+route than the control that was meant to receive it.
+
+## Follow a key through the tree
+
+<ol className="concept-flow input-pipeline">
+  <li>
+    <strong>App handlers</strong>
+    <span>
+      Callbacks registered with <code>TuiApp.onKey</code>
+    </span>
+  </li>
+  <li>
+    <strong>Shortcuts and Actions</strong>
+    <span>A key combination becomes a semantic Intent</span>
+  </li>
+  <li>
+    <strong>Text insertion</strong>
+    <span>Printable input reaches a focused TextInput or TextArea</span>
+  </li>
+  <li>
+    <strong>Focus handlers</strong>
+    <span>
+      The focused node runs first, then the event bubbles through ancestors
+    </span>
+  </li>
+  <li>
+    <strong>Focus traversal</strong>
+    <span>Unconsumed Tab or Shift+Tab moves through the active scope</span>
+  </li>
+  <li>
+    <strong>Terminal fallback</strong>
+    <span>
+      Unconsumed Ctrl+C disposes the app and exits with interrupt status
+    </span>
+  </li>
+</ol>
+
+An app-level binding runs before the focused control. Do not bind a bare `q`
+there when a user might be typing into a field; the TextInput will never see
+that character. Prefer a modified shortcut such as Ctrl+Q, or scope the command
+to a subtree with `Shortcuts` and `Actions`.
+
+```dart
+final app = runTuiApp(const EditorApp(), enableMouse: true);
+app.onKey((event) {
+  if (!event.isPress ||
+      event.logicalKey != LogicalKeyboardKey.keyQ ||
+      !event.isControlPressed) {
+    return;
+  }
+  event.consume();
+  app.dispose();
+});
+```
+
+`TuiApp.onKey` is a void handler. Call `event.consume()` to stop the rest of the
+pipeline; returning from the callback without consuming lets later stages run.
+
+## Map keys to commands
+
+`Shortcuts` turns a key combination into an Intent. `Actions` decides what that
+intent does at the nearest matching point in the focused subtree:
+
+```dart
+final class SaveIntent extends Intent {
+  const SaveIntent();
+}
+
+class SaveShortcut extends StatelessWidget {
+  const SaveShortcut({required this.onSave, required this.child, super.key});
+
+  final VoidCallback onSave;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.keyS, control: true): SaveIntent(),
+      },
+      child: Actions(
+        actions: {
+          SaveIntent: CallbackAction<SaveIntent>((intent, context) {
+            onSave();
+            return KeyEventResult.handled;
+          }),
+        },
+        child: child,
+      ),
+    );
+  }
+}
+```
+
+This keeps the key combination separate from the application command. A Button,
+menu item, and shortcut can call the same `onSave` callback without duplicating
+the behavior.
+
+Use `Focus` or `FocusScope` for raw keys a focused region itself owns. Check
+press state and return `ignored` for everything else. `DismissOnEscape` wraps
+that rule so a parent can pass the dismissal callback and the child tree:
+
+```dart
+class DismissOnEscape extends StatelessWidget {
+  const DismissOnEscape({
+    required this.onDismiss,
+    required this.child,
+    super.key,
+  });
+
+  final VoidCallback onDismiss;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onKeyEvent: (_, event) {
+        if (!event.isPress ||
+            event.logicalKey != LogicalKeyboardKey.escape) {
+          return KeyEventResult.ignored;
+        }
+        onDismiss();
+        return KeyEventResult.handled;
+      },
+      child: child,
+    );
+  }
+}
+```
+
+This wrapper intercepts Escape as it bubbles. Give the child or region focus
+itself; an ancestor `Focus` with `autofocus: true` would steal primary focus
+from a nested `TextInput`.
+
+Tab traversal already works. Intercept Tab only when the normal traversal
+policy is not the behavior you want.
+
+## Give editable text an owner
+
+Use a `TextEditingController` when code must read or change text or selection.
+The state that creates it disposes it. Pass either `controller` or `value` to a
+TextInput or TextArea, never both.
+
+`TextInput.onSubmit` runs on Enter. `TextInput.maxLength` defaults to `100`;
+raise it when a field must accept a longer line. `TextArea.maxLength` is
+unbounded unless you set it. TextArea uses Enter for a newline and reports
+Ctrl+Enter when the terminal distinguishes it; provide another documented
+control key when submit must work across terminals.
+
+Focus-aware controls can create an internal node, but pass your own `FocusNode`
+when a parent needs to request focus, observe it, or coordinate several fields.
+The [State and lifecycle](/docs/state-lifecycle) guide shows controller and node
+ownership together.
+
+## Use local pointer coordinates
+
+`PointerListener` receives an event after render-tree hit testing chooses its
+subtree. `event.localPosition` is already measured from that widget’s top-left
+cell:
+
+```dart
+PointerListener(
+  onPointerDown: (event) {
+    if (event.button == MouseButton.left) {
+      onSelect(event.localPosition);
+    }
+  },
+  child: child,
+)
+```
+
+Do not reconstruct the widget’s absolute origin. The local coordinate remains
+correct when the widget moves inside a scrollable region or overlay. Enable
+mouse reporting once with `runTuiApp(app, enableMouse: true)`; request movement
+events separately only when the app needs hover or drag.
+
+## Let scrolling own its viewport
+
+`ScrollBox` wraps one overflowing child. `ListView` builds only visible rows,
+and `DataTable` uses a ListView body under its aligned header. Give a scrollable
+region focus when its arrows, PageUp, PageDown, Home, and End keys should not
+move another region.
+
+Stable `ValueKey`s belong in repository drive scripts, not in ordinary app
+input code. See [Testing](/docs/testing) for Driver inspection, the
+[Widget catalog](/docs/widget-catalog#input-and-selection) for the built-in
+interactive controls, and the repository’s
+[Focus Form](https://github.com/leoafarias/noir/blob/main/example/focus_form.dart)
+for a complete two-field flow.

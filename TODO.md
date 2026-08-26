@@ -239,12 +239,11 @@ authorization.
 - The line-oriented drive CLI trims outer command whitespace, so an exact key,
   type, or text locator cannot itself begin or end with whitespace. The Dart
   client preserves those values exactly.
-- `scripts/noir_drive.dart` has no automated coverage. The drive-mode seam it
-  drives is proven by `test/app/driver_test.dart` and
-  `test/driver_e2e_test.dart`, which spawns an unmodified consumer app under
-  `NOIR_DRIVE=1` and drives it over the VM service, and the client encoders and
-  capture parsing are proven by `test/driver_client_test.dart`. The CLI command
-  grammar itself is only exercised by running it.
+- Drive mode is covered in-process by `test/app/driver_test.dart` and against
+  an unmodified consumer by `test/driver_e2e_test.dart`. Client encoders and
+  capture parsing are covered by `test/driver_client_test.dart`, the CLI
+  grammar by `test/noir_drive_cli_test.dart`, and shipped examples by
+  `test/example/drive_catalog_test.dart`.
 - The packaged hot-reload runner is covered downstream by
   `test/bin/run_test.dart`, including a real source swap, Noir reassembly,
   compile-error recovery, diagnostics, argument forwarding, and process exit.

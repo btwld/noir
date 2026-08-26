@@ -20,10 +20,11 @@ class _FocusFormAppState extends State<FocusFormApp> {
   final FocusScopeNode _scopeNode = FocusScopeNode();
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _emailFocus = FocusNode();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
 
-  String _name = '';
-  String _email = '';
-  String _status = 'Tab moves focus. Enter on Email saves.';
+  String _status = 'Tab moves focus. Enter in a field or Save submits.';
+  static final _validEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   void initState() {
@@ -36,6 +37,8 @@ class _FocusFormAppState extends State<FocusFormApp> {
   void dispose() {
     _nameFocus.removeListener(_handleFocusChanged);
     _emailFocus.removeListener(_handleFocusChanged);
+    _nameController.dispose();
+    _emailController.dispose();
     _nameFocus.dispose();
     _emailFocus.dispose();
     _scopeNode.dispose();
@@ -61,9 +64,29 @@ class _FocusFormAppState extends State<FocusFormApp> {
   }
 
   void _submit() {
-    setState(() {
-      _status = 'Saved: $_name - $_email';
-    });
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final nameError = name.isEmpty ? 'Enter your name.' : null;
+    final emailError = _validEmail.hasMatch(email)
+        ? null
+        : 'Enter an email like name@example.com.';
+
+    final errors = [
+      if (nameError != null) 'Name error: $nameError',
+      if (emailError != null) 'Email error: $emailError',
+    ];
+    final status = errors.isEmpty ? 'Saved: $name - $email' : errors.join('\n');
+    setState(() => _status = status);
+
+    FocusNode? invalidFocus;
+    if (nameError != null) {
+      invalidFocus = _nameFocus;
+    } else if (emailError != null) {
+      invalidFocus = _emailFocus;
+    }
+    if (invalidFocus != null && !invalidFocus.hasFocus) {
+      invalidFocus.requestFocus();
+    }
   }
 
   @override
@@ -81,21 +104,30 @@ class _FocusFormAppState extends State<FocusFormApp> {
             key: const ValueKey<String>('name'),
             label: 'Name',
             focusNode: _nameFocus,
-            value: _name,
+            controller: _nameController,
             autofocus: true,
             placeholder: 'Enter name',
-            onChanged: (value) => setState(() => _name = value),
+            onSubmit: _submit,
           ),
           _buildField(
             key: const ValueKey<String>('email'),
             label: 'Email',
             focusNode: _emailFocus,
-            value: _email,
+            controller: _emailController,
             placeholder: 'Enter email',
-            onChanged: (value) => setState(() => _email = value),
             onSubmit: _submit,
           ),
-          DemoPanel(width: 54, height: 3, child: Text(_status)),
+          Button(
+            key: const ValueKey<String>('save'),
+            label: 'Save',
+            onPressed: _submit,
+          ),
+          DemoPanel(
+            title: 'Status',
+            width: 54,
+            height: _status.contains('\n') ? 4 : 3,
+            child: Text(_status),
+          ),
         ],
       ),
     ),
@@ -105,8 +137,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
     required Key key,
     required String label,
     required FocusNode focusNode,
-    required String value,
-    required ValueChanged<String> onChanged,
+    required TextEditingController controller,
     required String placeholder,
     VoidCallback? onSubmit,
     bool autofocus = false,
@@ -118,11 +149,10 @@ class _FocusFormAppState extends State<FocusFormApp> {
     child: TextInput(
       key: key,
       focusNode: focusNode,
+      controller: controller,
       autofocus: autofocus,
-      value: value,
       placeholder: placeholder,
       maxLength: 40,
-      onChanged: onChanged,
       onSubmit: onSubmit,
     ),
   );

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nextra Docs"
+  short_description: "Build and maintain current Nextra 4 documentation"
+  default_prompt: "Use $nextra-docs to build or update a current Nextra 4 documentation site."

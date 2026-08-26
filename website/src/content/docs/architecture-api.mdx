@@ -1,0 +1,101 @@
+---
+title: Architecture
+description: Follow one event through Noir’s retained widget tree, cell layout, display list, compositor, and native boundary.
+---
+
+# Architecture
+
+Noir separates what an application declares from the state and native
+resources the framework must preserve. That separation is why a callback can
+change one value without rebuilding a terminal session from scratch.
+
+> Widgets declare. Elements preserve identity. RenderObjects layout and record
+> paint. The compositor talks to OpenTUI. The native layer owns FFI, memory,
+> ABI, and binaries.
+
+## Follow one increment through Noir
+
+Start with the Counter’s increment method:
+
+```dart
+void _increment() {
+  setState(() {
+    _count++;
+  });
+}
+```
+
+That method crosses the framework in a defined order:
+
+<ol className="concept-flow architecture-layers">
+  <li>
+    <strong>The event changes State</strong>
+    <span>
+      <code>_increment</code> mutates <code>_count</code> and marks its element
+      dirty.
+    </span>
+  </li>
+  <li>
+    <strong>The Element preserves identity</strong>
+    <span>
+      The existing State remains attached while type, key, and position still
+      match.
+    </span>
+  </li>
+  <li>
+    <strong>Widgets declare the next tree</strong>
+    <span>
+      <code>build</code> returns immutable configuration containing the new
+      count.
+    </span>
+  </li>
+  <li>
+    <strong>RenderObjects resolve the frame</strong>
+    <span>
+      Constraints become cell sizes, positions, hit-test geometry, and recorded
+      paint.
+    </span>
+  </li>
+  <li>
+    <strong>The compositor reaches OpenTUI</strong>
+    <span>
+      Display lists update buffers; the native layer owns FFI handles and
+      memory.
+    </span>
+  </li>
+</ol>
+
+The declaration can be short because the retained layers own the work that
+must persist between declarations.
+
+## Separate identity from configuration
+
+A `StatefulWidget` is replaceable configuration. Its Element owns the stable
+place in the tree, and that place retains the `State` object. If a rebuild puts
+the same widget type and key at the same position, Noir updates the
+configuration and keeps the state. Change that identity and Noir disposes the
+old state before mounting a new one.
+
+Inherited dependencies also belong to the element tree. When an
+`InheritedWidget` reports a meaningful update, dependent elements rebuild
+without application code maintaining a second subscription graph.
+
+Hot reload uses the same boundary. The Dart VM swaps compatible code, Noir
+calls `reassemble` on retained state, then rebuilds, lays out, and paints. It
+does not rerun `main()` or `initState()`.
+
+## Keep FFI and paint below widgets
+
+A widget never calls FFI directly. A custom render object lays out and hit
+tests in its own layer, then records paint through `PaintingContext`; it does
+not take a `Buffer` as its normal paint surface. The compositor is the bridge
+that applies those recordings to OpenTUI buffers.
+
+Explicit lifecycle methods remain the primary resource owner. Finalizers can
+limit damage after a missed cleanup, but they do not replace deterministic
+`dispose` or native handle release.
+
+Most applications stay entirely in `package:noir/noir.dart`. Use the
+[API surface guide](/api) to choose an import. If your goal is to find a
+control or composition, start with the [Widget catalog](/docs/widget-catalog)
+instead of dropping to a lower layer.

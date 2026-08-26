@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entrypoint": "example/pulse_animation.dart",
+  "output": ".context/demos/pulse-animation.cast",
+  "title": "Noir · Terminal-native motion",
+  "width": 56,
+  "height": 18,
+  "durationMs": 4400,
+  "fps": 30,
+  "actions": [
+    {"atMs": 1300, "key": "space"},
+    {"atMs": 1900, "key": "space"}
+  ]
+}

@@ -2,12 +2,11 @@
 name: noir
 description: >-
   Build, review, and test Dart terminal applications with package:noir, a
-  Flutter-inspired declarative widget framework backed by OpenTUI. Use for
-  Noir app and example code involving widget layout, text and styling, themes,
-  state, animation, focus, keyboard or mouse input, scrolling, forms, lists,
-  tables, lifecycle, hot reload, drive mode, and application-facing tests.
-  Trigger on package:noir imports, including package:noir/hooks.dart, or Dart
-  TUI work in a Noir project. Do not use for Noir framework internals or the
+  Flutter-inspired framework, and its opt-in package:noir/hooks.dart surface.
+  Use for Noir widgets, layout, styling, state, animation, focus, input,
+  scrolling, forms, lifecycle, hot reload, drive mode, application tests,
+  HookWidget, HookBuilder, custom hooks, hook ordering, effects, or hook-owned
+  resources. Do not use for Noir framework internals or the
   TypeScript/React/Solid OpenTUI APIs.
 ---
 
@@ -59,7 +58,7 @@ almost never need the low-level or FFI import.
 | Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
 | Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
 | Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
-| Opt-in widget lifecycle hooks and effect rules | `../noir-hooks/SKILL.md`, then `../../doc/hooks.md` |
+| Opt-in widget lifecycle hooks and effect rules | `references/hooks.md`, then `../../doc/hooks.md` |
 | Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
 | Consumer-facing test strategy and supported seams | `references/testing.md` |
 
@@ -207,7 +206,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
-| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `../../doc/hooks.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `references/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
