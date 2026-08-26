@@ -1,17 +1,14 @@
 import Link from 'next/link';
 
+import { HighlightedCode } from '../components/HighlightedCode';
 import { InstallCommand } from '../components/InstallCommand';
 import { PrereleaseNotice } from '../components/PrereleaseNotice';
-import { TerminalDemo } from '../components/TerminalDemo';
-
-const counterPoster = `NOIR COUNTER
-
-You have pushed the button
-this many times:
-
-            3
-
-Up/+ add | Down/- subtract | Enter/Space | Ctrl+C     +`;
+import { TerminalFrame } from '../components/TerminalFrame';
+import {
+  counterFrameAfterIncrement,
+  expectedCounterBoundary,
+} from '../lib/counter-example';
+import { counterStateHtml } from '../lib/counter-highlight';
 
 export default function HomePage() {
   return (
@@ -19,30 +16,88 @@ export default function HomePage() {
       <section className="home-intro" aria-labelledby="home-title">
         <h1 id="home-title">Build reactive terminal UIs in Dart.</h1>
         <p className="home-summary">
-          Noir brings Flutter-like widgets, state, layout, focus, and input to
-          Dart terminal apps. Native OpenTUI rendering stays behind explicit
-          framework boundaries.
+          Noir gives terminal apps a Flutter-like widget tree, retained state,
+          cell-based layout, focus, input, and animation. OpenTUI handles the
+          native renderer behind the framework.
         </p>
         <PrereleaseNotice />
         <InstallCommand />
         <p className="home-command-note">
-          Working from a repository checkout? Run{' '}
-          <code>dart run example/counter.dart</code> to try Counter.
+          Requires Dart 3.10 or later.{' '}
+          <Link href="/docs/getting-started">Build your first Noir app</Link>.
         </p>
       </section>
 
-      <section
-        className="home-terminal"
-        aria-label="Recorded Noir Counter example"
-      >
-        <TerminalDemo
-          castUrl="/demos/counter.cast"
-          cols={64}
-          id="home-counter"
-          poster={counterPoster}
-          rows={18}
-          title="Counter — a stateful terminal frame"
+      <section className="home-proof" aria-labelledby="proof-title">
+        <div className="home-proof-copy">
+          <h2 id="proof-title">
+            One callback becomes the next terminal frame.
+          </h2>
+          <p>
+            Change retained state from an event. Noir rebuilds the matching
+            widget subtree, lays it out in cells, and records the next frame.
+          </p>
+          <HighlightedCode
+            caption="Counter state after one increment"
+            html={counterStateHtml}
+          />
+          <Link href="/docs/getting-started">
+            Build this counter and hot-reload it
+          </Link>
+        </div>
+        <TerminalFrame
+          boundary={expectedCounterBoundary}
+          command="dart run noir:run bin/noir_demo.dart"
+          output={counterFrameAfterIncrement}
+          title="Counter after one activation"
         />
+      </section>
+
+      <section className="capability-index" aria-labelledby="capability-title">
+        <h2 id="capability-title">
+          The terminal pieces are already in the tree.
+        </h2>
+        <p>
+          Compose the app from public widgets instead of rebuilding layout,
+          editing, focus, scrolling, and document behavior around raw escape
+          output.
+        </p>
+        <div>
+          <article>
+            <h3>Layout in cells</h3>
+            <p>
+              Row, Column, Flex, Stack, Wrap, overlays, borders, and scrolling
+              use integer terminal geometry.
+            </p>
+            <Link href="/docs/widgets-layout">Learn the layout model</Link>
+          </article>
+          <article>
+            <h3>Input with ownership</h3>
+            <p>
+              Focus traversal, shortcuts, editable text, pointer hit testing,
+              and wheel input share one ordered pipeline.
+            </p>
+            <Link href="/docs/input-focus">Route input correctly</Link>
+          </article>
+          <article>
+            <h3>Controls and data</h3>
+            <p>
+              Buttons, fields, selects, tabs, sliders, lists, and data tables
+              keep values explicit and keyboard behavior predictable.
+            </p>
+            <Link href="/docs/widget-catalog">Browse the widget catalog</Link>
+          </article>
+          <article>
+            <h3>Terminal documents</h3>
+            <p>
+              CodeView, DiffView, MarkdownView, rich tables, hyperlinks, and
+              terminal images live on the same retained render path.
+            </p>
+            <Link href="/docs/widget-catalog#documents-and-media">
+              Find document widgets
+            </Link>
+          </article>
+        </div>
       </section>
 
       <section
@@ -50,38 +105,42 @@ export default function HomePage() {
         aria-labelledby="architecture-title"
       >
         <h2 id="architecture-title">
-          From widget declaration to terminal output.
+          A familiar model, carried to terminal cells.
         </h2>
-        <ol>
-          <li>
-            <strong>Widgets</strong> declare immutable configuration.
-          </li>
-          <li>
-            <strong>Elements</strong> preserve identity and dependencies.
-          </li>
-          <li>
-            <strong>RenderObjects</strong> lay out, hit-test, and record paint.
-          </li>
-          <li>
-            <strong>The compositor</strong> carries display lists to OpenTUI
-            buffers.
-          </li>
-          <li>
-            <strong>The native layer</strong> owns FFI, handles, ABI, and
-            binaries.
-          </li>
-        </ol>
+        <p className="framework-path">
+          <span>Widgets</span>
+          <span className="path-arrow" aria-hidden="true">
+            →
+          </span>
+          <span>Elements</span>
+          <span className="path-arrow" aria-hidden="true">
+            →
+          </span>
+          <span>RenderObjects</span>
+          <span className="path-arrow" aria-hidden="true">
+            →
+          </span>
+          <span>Display lists</span>
+          <span className="path-arrow" aria-hidden="true">
+            →
+          </span>
+          <span>OpenTUI</span>
+        </p>
+        <p>
+          <Link href="/docs/architecture-api">
+            Follow an event through Noir’s retained architecture
+          </Link>
+        </p>
       </section>
 
       <nav className="next-reads" aria-label="Choose a next reading path">
-        <h2>Where do you want to go next?</h2>
-        <Link href="/docs/getting-started">How do I run my first app?</Link>
-        <Link href="/examples#counter">
-          How does state flow through a real example?
+        <h2>Start with the work in front of you.</h2>
+        <Link href="/docs/getting-started">
+          Build and hot-reload a first app
         </Link>
-        <Link href="/docs/architecture-api">
-          Which public API tier should I import?
-        </Link>
+        <Link href="/docs/widget-catalog">Find the widget for a UI job</Link>
+        <Link href="/docs/testing">Choose an application test boundary</Link>
+        <Link href="/api">Choose a public package surface</Link>
       </nav>
     </main>
   );

@@ -36,10 +36,12 @@ behind explicit supported package boundaries.
 
 ## Operating Context
 
-Readers evaluate Noir from a browser, install it through Dart tooling, develop
-inside a terminal and editor, and test applications through Noir's headless
-widget, buffer, input, and binding harnesses. They may arrive with Flutter
-knowledge, terminal UI experience, or neither.
+Readers evaluate Noir from a browser, install it through Dart tooling, and
+develop inside a terminal and editor. Application authors test owned logic
+with Dart and can mount the public lifecycle headlessly. Noir contributors
+also use the repository's four layer-specific harnesses and its separate,
+repository-only Driver. Readers may arrive with Flutter knowledge, terminal UI
+experience, or neither.
 
 ## Capabilities and Constraints
 

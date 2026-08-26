@@ -1,0 +1,152 @@
+---
+title: Widget catalog
+description: Find the public Noir widget that matches a layout, input, data, document, overlay, media, or feedback job.
+---
+
+# Widget catalog
+
+Start with the job the interface must do. These are the supported widgets in
+`package:noir/noir.dart`; use the [generated API reference](https://pub.dev/documentation/noir/latest/)
+for every constructor parameter and published signature.
+
+## Layout and composition
+
+| Need                                    | Start with                     | Important distinction                                   |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------------- |
+| Horizontal or vertical children         | `Row`, `Column`, `Flex`        | `spacing` inserts whole cells between children          |
+| One child owns leftover space           | `Expanded`, `Flexible`         | Expanded fills its share; Flexible may use less         |
+| Padding, alignment, or exact extent     | `Padding`, `Align`, `SizedBox` | Keep each relationship in the widget that owns it       |
+| Minimum or maximum size                 | `ConstrainedBox`               | A constraint is a range, not a promised size            |
+| Fill, border, and child composition     | `Container`, `DecoratedBox`    | Use Container for composition; DecoratedBox only paints |
+| Overlapping children                    | `Stack`, `Positioned`          | Positions are integer cell offsets                      |
+| Children that continue onto another run | `Wrap`                         | Use Row when wrapping would be surprising               |
+
+Read [Widgets and layout](/docs/widgets-layout) before fixing widths throughout
+a screen. Terminal proportions make one row of spacing visually larger than
+one column.
+
+## Text, status, and feedback
+
+| Need                 | Widget                         | Notes                                                                    |
+| -------------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| Plain or styled text | `Text`, `RichText`, `TextSpan` | Width follows terminal graphemes, not Dart string length                 |
+| Large glyph heading  | `AsciiFont`                    | Uses Noir’s original terminal-safe font families                         |
+| Compact state label  | `Badge`                        | Variants provide semantic defaults through Theme                         |
+| Completion fraction  | `ProgressBar`                  | Width is explicit and resolves to eighth-cell steps                      |
+| Ongoing work         | `Spinner`                      | Remove it when work ends; use `SpinnerFrames.line` for ASCII-only output |
+| Section rule         | `Divider`                      | Prefer one structural divider to borders around every child              |
+| Shared visual values | `Theme`                        | Read values with `Theme.of(context)`                                     |
+
+Use a ProgressBar for measurable work and a Spinner when progress is unknown:
+
+```dart
+Row(
+  spacing: 1,
+  children: [
+    if (totalBytes == null)
+      const Spinner(frames: SpinnerFrames.line)
+    else
+      ProgressBar(value: downloadedBytes / totalBytes, width: 24),
+    Text(status),
+  ],
+)
+```
+
+## Input and selection
+
+| Need                        | Widget                 | Interaction model                                             |
+| --------------------------- | ---------------------- | ------------------------------------------------------------- |
+| Activate one command        | `Button`               | Enter, Space, or primary pointer activation                   |
+| Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state         |
+| Value on a range            | `Slider`               | Arrow-key and pointer adjustment                              |
+| One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                     |
+| Multi-line editing          | `TextArea`             | Enter inserts a newline; `maxLength` is unbounded by default  |
+| Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms            |
+| Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels |
+| Local raw key ownership     | `Focus`, `FocusScope`  | Return `ignored` for keys the region does not own             |
+| Semantic key commands       | `Shortcuts`, `Actions` | Map keys to Intents, then Intents to application commands     |
+| Pointer hit region          | `PointerListener`      | Read `MouseEvent.localPosition` after hit testing             |
+
+`Select` and `TabSelect` share typed options but express different spatial
+models:
+
+```dart
+Select<String>(
+  options: const [
+    SelectOption(name: 'Development', value: 'dev'),
+    SelectOption(name: 'Production', value: 'prod'),
+  ],
+  height: 2,
+  autofocus: true,
+  onSelect: (_, option) {
+    final environment = option.value;
+    if (environment != null) applyEnvironment(environment);
+  },
+)
+```
+
+`Select.height` is visible rows and defaults to `8`. Set it to the option count
+for a short list. `SelectOption.value` is nullable.
+
+See [Input and focus](/docs/input-focus) for event order, controller ownership,
+and focus traversal.
+
+## Scrolling and data
+
+| Need                  | Widget      | Choose it when…                                                |
+| --------------------- | ----------- | -------------------------------------------------------------- |
+| One oversized child   | `ScrollBox` | The content already exists as one widget subtree               |
+| Repeated visible rows | `ListView`  | Rows should be built only for the visible window               |
+| Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting |
+| Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection     |
+
+`DataTable` virtualizes its body and reports sort requests; your data owner does
+the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells and
+supports document-style selection. They solve different table problems.
+
+## Overlays and menus
+
+`OverlayPortal` shows a logical descendant above the root tree while preserving
+its inherited context. `MenuAnchor` adds launcher-relative placement, outside
+click dismissal, and menu ownership. Use the portal for custom transient
+content and the anchor for a menu.
+
+Noir currently has one framework-owned root overlay. It does not expose public
+`OverlayEntry`, nested overlays, transforms, linked layers, menu cascades, or
+overlay animation APIs.
+
+## Documents and media
+
+| Need                        | Widget or type                        | Boundary                                                                              |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------- |
+| Selectable source           | `CodeView`                            | Plain text by default; supply a `CodeHighlighter` for syntax ranges                   |
+| Unified or split patch      | `DiffView`, `UnifiedDiffParser`       | Caller chooses view mode and owns any source action                                   |
+| GitHub-flavoured Markdown   | `MarkdownView`                        | Standalone mode scrolls; embedded mode delegates scrolling to a parent                |
+| Terminal image              | `Image`, `TerminalImage`              | File, network, encoded bytes, or RGBA; protocol support still depends on the terminal |
+| Semantic terminal link      | linked `TextSpan`                     | The terminal decides whether and how the link is presented                            |
+| Explicit selected-text copy | `SelectedText` and document callbacks | OSC52 acceptance depends on terminal policy                                           |
+
+For example, a standalone Markdown document owns focus, selection, and its
+scrolling viewport:
+
+```dart
+MarkdownView(
+  markdown: releaseNotes,
+  autofocus: true,
+)
+```
+
+Check [Platform support and limitations](/docs/platform-limitations) before
+depending on terminal images, semantic links, or OSC52 clipboard behavior.
+
+## State and motion
+
+`StatefulWidget` and `State` are the normal retained state boundary.
+`ValueNotifier` and `ChangeNotifier` separate testable state from one widget.
+`AnimationController`, `TickerProviderStateMixin`, and
+`SingleTickerProviderStateMixin` drive time-based values. The optional
+`package:noir/hooks.dart` surface offers the same ownership model through
+composable hooks.
+
+Read [State and lifecycle](/docs/state-lifecycle) for deterministic cleanup or
+[Hooks](/docs/hooks) when one lifecycle concern should be reusable.

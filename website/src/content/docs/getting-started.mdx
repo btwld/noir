@@ -1,25 +1,36 @@
 ---
 title: Getting started
-description: Install Noir, run a small stateful app, and see how one event becomes a terminal frame.
+description: Build, run, interact with, and hot-reload a small stateful Noir app.
 ---
+
+import {
+  counterFrameAfterIncrement,
+  expectedCounterBoundary,
+} from '../../lib/counter-example';
 
 # Getting started
 
-Noir is a Flutter-like reactive terminal UI framework for Dart, powered by
-OpenTUI. This guide starts with a small stateful app, then shows the same local
-state with Hooks.
+You’ll build a counter, run it in a terminal, then change its label without
+losing the count. You need Dart 3.10 or later on macOS, Linux, or Windows.
 
 <PrereleaseNotice />
 
-## Add Noir to a Dart package
+## Create the project
 
-Run the install command from your package directory:
+Create a Dart console application and move into it:
+
+```sh
+dart create -t console noir_demo
+cd noir_demo
+```
+
+Add Noir from pub.dev:
 
 <InstallCommand />
 
-## Run your first app
+## Build the counter
 
-Save this as `bin/noir_demo.dart`:
+Replace `bin/noir_demo.dart` with this complete app:
 
 ```dart
 import 'package:noir/noir.dart';
@@ -36,85 +47,82 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    spacing: 1,
-    children: [
-      Text('Count: $_count'),
-      Button(
-        autofocus: true,
-        label: '+ Add one',
-        onPressed: () => setState(() => _count++),
-      ),
-    ],
-  );
-}
-```
-
-Run it:
-
-```sh
-dart run bin/noir_demo.dart
-```
-
-Press Enter or Space to update the count. With mouse reporting enabled, you
-can also click the button. Press Ctrl+C to exit.
-
-The event calls `setState`, which marks the retained state as changed. Noir
-rebuilds that declaration, lays it out in terminal cells, and records the next
-frame.
-
-For the complete repository example—with Up, Down, `+`, `-`, Enter, Space, and
-pointer handling—run:
-
-```sh
-dart run example/counter.dart
-```
-
-[Read the complete Counter source](https://github.com/leoafarias/noir/blob/main/example/counter.dart).
-
-## Express the same state with Hooks
-
-`StatefulWidget` is Noir’s foundational state model. Its state class makes
-lifecycle ownership explicit. Hooks are an opt-in way to express the same
-local state when composable lifecycle helpers make the component easier to
-read.
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir/hooks.dart';
-
-class HooksCounterApp extends HookWidget {
-  const HooksCounterApp({super.key});
+  void _increment() {
+    setState(() {
+      _count++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final count = useState<int>(0);
-    return Button(label: '+ Add one', onPressed: () => count.value++);
+    return Container(
+      padding: const EdgeInsets.all(1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 1,
+        children: [
+          Text('Count: $_count'),
+          Button(
+            autofocus: true,
+            label: '+ Add one',
+            onPressed: _increment,
+          ),
+        ],
+      ),
+    );
   }
 }
 ```
 
-Hooks ship in the main Noir package but stay outside the default
-`package:noir/noir.dart` namespace. Read the
-[Hooks Counter source](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
-and the [Hooks guide](/docs/hooks) before adding effects or controller hooks.
+`runTuiApp` mounts the widget tree and owns the terminal session. Mouse input is
+opt-in; the `enableMouse` argument lets the Button receive a left click.
 
-## Work from a source checkout
+## Run it with hot reload
 
-The repository can be ahead of the latest published prerelease. To evaluate an
-unreleased API beside a checkout, use a path dependency:
+Start the entry point through Noir’s development runner:
 
-```yaml
-dependencies:
-  noir:
-    path: ../noir
+```sh
+dart run noir:run bin/noir_demo.dart
 ```
 
-## Keep going
+You should see the count above a focused button. Press Enter or Space, or click
+the button. Each activation changes the count by one.
 
-- Learn how terminal cells compose in [Widgets and layout](/docs/widgets-layout).
-- Follow state through identity and disposal in
-  [State and lifecycle](/docs/state-lifecycle).
-- See these ideas in six complete apps on [Examples](/examples).
+<TerminalFrame
+  title="Counter after one activation"
+  output={counterFrameAfterIncrement}
+  command="dart run noir:run bin/noir_demo.dart"
+  boundary={expectedCounterBoundary}
+/>
+
+If the keyboard does nothing, focus the terminal window. The Button has
+`autofocus: true`, so Noir gives it primary focus when the tree mounts. Press
+Ctrl+C to exit; Noir restores the terminal modes it owns.
+
+For a normal launch without the source watcher, run
+`dart run bin/noir_demo.dart` instead.
+
+## Change the running app
+
+Leave the development runner open. Change `Count:` to `Total:` in the `Text`
+widget and save the file. The running frame should update to `Total: 1`; the
+current value and focus stay in place.
+
+The runner watches Dart files under `lib/` and beside the entry point. It asks
+the Dart VM to swap the changed sources, then tells Noir to rebuild, lay out,
+and paint the retained tree. If an edit does not compile, the last good app
+keeps running. Fix the source and save again.
+
+Hot reload does not rerun `main()` or `initState()`, and some structural Dart
+changes need a full restart. Runner diagnostics go to
+`.dart_tool/noir/run.log`, outside the alternate-screen UI.
+
+`_increment` changes `_count` inside `setState`. Noir keeps the matching `State`
+object, calls `build` again, and paints the next frame. The widget declaration
+changes; the state that owns the count does not.
+
+Next, use [Widgets and layout](/docs/widgets-layout) to compose a larger screen,
+or read [State and lifecycle](/docs/state-lifecycle) before adding controllers,
+subscriptions, or animation. The repository’s
+[complete Counter](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
+adds arrow keys, `+`, `-`, and explicit pointer handling.

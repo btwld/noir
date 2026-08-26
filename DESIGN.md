@@ -1,65 +1,54 @@
 ---
 name: Noir Website
-description: Quiet Signal is Noir's browser documentation system, not terminal-widget rendering guidance.
+description: Ink and Signal is Noir's browser documentation system, not terminal-widget rendering guidance.
 colors:
   ink: "#11110f"
   paper: "#fbfbf8"
   quiet: "#5f5f58"
   rule: "#d4d4cb"
-  terminal: "#090909"
-  terminal-ink: "#f6f6ee"
+  signal: "#244fd7"
+  terminal: "#090a0a"
+  terminal-ink: "#f5f5ed"
 typography:
   display:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
     fontSize: "clamp(3rem, 7.2vw, 6rem)"
     fontWeight: 500
-    lineHeight: 0.96
-    letterSpacing: "-0.04em"
+    lineHeight: 1.04
+    letterSpacing: "-0.03em"
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(2.5rem, 4vw, 4rem)"
+    fontSize: "clamp(2.4rem, 3.6vw, 3.65rem)"
     fontWeight: 500
-    lineHeight: 1.02
-    letterSpacing: "-0.04em"
+    lineHeight: 1.08
+    letterSpacing: "-0.03em"
   section-heading:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
     fontSize: "clamp(1.65rem, 2.5vw, 2.3rem)"
     fontWeight: 500
-    lineHeight: 1.12
-    letterSpacing: "-0.025em"
+    lineHeight: 1.18
+    letterSpacing: "-0.02em"
   body:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "1.075rem"
-    lineHeight: 1.65
+    fontSize: "1.1rem"
+    lineHeight: 1.7
   ui-label:
     fontFamily: "ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
   mono:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    fontSize: "0.82rem"
-    letterSpacing: "0.01em"
-  meta-label:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    fontSize: "0.77rem"
-    letterSpacing: "0.04em"
+    fontSize: "0.86rem"
+    lineHeight: 1.7
 rounded:
   square: "0"
 spacing:
   page-inline: "clamp(1.25rem, 5vw, 4rem)"
-  command-content: "0.65rem 0.8rem"
-  ruled-slab: "0.85rem 0"
-  reading-row: "0.75rem 0"
-  section-breath: "clamp(3rem, 8vw, 7rem)"
+  section-breath: "clamp(4rem, 10vw, 8.5rem)"
+  heading-gap: "1.4rem"
 components:
-  action-button:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.paper}"
-    typography: "{typography.mono}"
-    rounded: "{rounded.square}"
-    padding: "0.58rem 0.72rem"
-  action-button-hover:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
+  terminal-frame:
+    backgroundColor: "{colors.terminal}"
+    textColor: "{colors.terminal-ink}"
     rounded: "{rounded.square}"
   install-command:
     backgroundColor: "{colors.paper}"
@@ -71,244 +60,161 @@ components:
     textColor: "{colors.ink}"
     typography: "{typography.ui-label}"
     rounded: "{rounded.square}"
-    padding: "{spacing.ruled-slab}"
-  terminal-recording:
-    backgroundColor: "{colors.terminal}"
-    textColor: "{colors.terminal-ink}"
-    typography: "{typography.mono}"
-    rounded: "{rounded.square}"
-  site-nav-link:
-    textColor: "{colors.quiet}"
-    typography: "{typography.ui-label}"
-  next-question-link:
+  process-flow:
+    backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
-    typography: "{typography.body}"
-    padding: "0.82rem 0"
-  architecture-signal:
-    textColor: "{colors.ink}"
-    typography: "{typography.body}"
     rounded: "{rounded.square}"
 ---
 
-# Design System: Noir Website
+# Design system: Noir website
 
-## Overview
+## Creative direction
 
-**Creative North Star: "Quiet Signal"**
+**Ink and Signal** pairs an editorial reading surface with verified terminal
+evidence. Warm paper and serif type make long technical explanations calm. A
+near-black terminal frame interrupts that calm only when readers need to see
+what Noir actually produces. Thin rules expose structure; one restrained blue
+signal marks process steps and evidence boundaries.
 
-Quiet Signal is the visual system for Noir's browser documentation website. It
-turns a technical evaluation into calm editorial reading: warm paper, near-black
-type, generous empty space, and hairline rules establish confidence without
-marketing gloss. It is deliberately a website system, not a description of
-Noir's terminal-widget rendering UI, visual language, or native compositor.
+This is a browser documentation system. It does not prescribe the appearance
+of applications built with Noir.
 
-The homepage proves the product in a restrained order: install Noir, see a
-retained terminal frame, then select a concrete next question. The terminal
-recording is evidence rather than decoration—the one dark anchor in an otherwise
-black-and-white reading surface. The site uses no gradients, bento layouts, or
-stock imagery. It ships one hand-authored vector app icon and six reviewed
-asciicast text recordings; no shipping raster asset exists, so raster prompt or
-provenance data is neither present nor required.
+The design should feel like Noir itself: a declarative surface with visible,
+precise machinery underneath. It must not become a generic prose template, a
+gallery of animated demos, or a website dressed up as a terminal.
 
-**Key Characteristics:**
+## The visual grammar
 
-- Editorial serif reading paired with utilitarian sans and monospace details.
-- Warm neutral contrast, 1px rules, and square geometry instead of cards or
-  shadows.
-- Terminal recordings act as proof-bearing anchors, with one active player at
-  a time.
-- Direct prerelease disclosure and question-led documentation paths.
+The paper field is the default. Serif is for explanation, monospace is for
+code and operations, and system sans is for navigation and compact metadata.
+Noir's name and major promises carry the largest type. Article titles remain
+strong, but code and terminal output become the visual proof.
 
-## Colors
+The terminal surface is black, square, and static. It shows a real headless
+capture or a clearly labelled expected frame beside the code and command that
+produce it. It is never decorative chrome and never implies a real-terminal
+protocol check. The documentation does not need a separate Examples route or
+an embedded playback system; complete repository examples can be linked from
+the guide that explains their behavior.
 
-The palette is a warm monochrome system: contrast, not hue, establishes
-hierarchy.
+Blue is a signal, not a theme color. Use it for process numbers or a small
+evidence marker. Links, headings, cards, and whole page regions do not become
+blue by default.
 
-### Primary
+## Typography and measure
 
-- **Printed Ink** (the ink token): carries primary reading text, solid action
-  controls, and the strongest rules.
+- Display and page titles use the configured Georgia stack with moderate
+  tracking (`-0.03em`) and enough leading that large type can breathe.
+- Body copy uses the same serif stack at 1.1rem / 1.75 leading and stays near
+  65–68 characters per line. Paragraphs and headings are separated by more
+  space above a heading than below it.
+- Navigation and evidence labels use system sans.
+- Commands, source, terminal frames, and compact process numbers use monospace.
+- Heading order carries document structure; size must not substitute for a
+  missing semantic level.
 
-### Neutral
+Code blocks may exceed the prose measure when the example needs it. Tables and
+reference ledgers use the available article width so comparisons remain
+scannable.
 
-- **Warm Paper** (the paper token): the uninterrupted reading field and the
-  inversion state for actions.
-- **Quiet Text** (the quiet token): supports navigation, notes, and secondary
-  documentation context without becoming a second accent.
-- **Hairline Rule** (the rule token): separates notices, rows, and editorial
-  sections while keeping the page open.
-- **Terminal Field** (the terminal token) and **Terminal Ink** (the
-  terminal-ink token): confine the dark evidence frame to captured terminal
-  content.
+## Page compositions by reader intent
 
-Dark mode reassigns the same semantic CSS custom properties rather than adding
-a second visual identity. New work must consume the semantic properties instead
-of baking the light values into components.
+The four documentation modes share tokens, not a single repeated layout.
 
-**The One Dark Anchor Rule.** On a light page, reserve a solid dark field for
-terminal evidence. Do not create competing dark cards, decorative backdrops, or
-colored callouts.
+### Tutorial
 
-## Typography
+Lead with the outcome and prerequisites. Give the reader a complete runnable
+file, the exact command, an expected static frame, one observable change, and a
+short explanation of what Noir retained. The Getting started page is the model.
 
-**Display Font:** Georgia (with Times New Roman and serif fallbacks)
+### How-to guide
 
-**Body Font:** Georgia (with Times New Roman and serif fallbacks)
+How-to examples are widgets with `const` constructors, named callbacks, and a
+block `build` method—not helper functions that return `Widget`. Extract a
+`StatelessWidget` or `StatefulWidget` whenever the snippet owns layout or
+lifecycle. Keep constructor-only fragments on reference pages.
 
-**Label / Mono Font:** system sans for navigation and utility labels; the
-configured system monospace stack for commands, metadata, and terminal output.
+### Explanation
 
-**Character:** The serif face makes framework documentation read like an
-edited technical essay. Sans is deliberately quiet, while monospace marks an
-operation, a command, or machine evidence rather than trying to make the whole
-site look like a terminal.
+Use one concrete event to reveal the retained architecture. Process rows can
+show the transition from callback to state, element, render object, display
+list, and native compositor. The prose should explain why the boundary exists,
+not reproduce the API catalog.
 
-### Hierarchy
+### Reference
 
-- **Display:** the home-page promise; compact, tightly tracked, and allowed to
-  occupy the first reading beat.
-- **Page Title:** the documentation-page entry point; large but subordinate to
-  the homepage promise.
-- **Section Heading:** major sectional turns such as the ownership explanation
-  and next-reading choice.
-- **Body:** continuous prose; individual documentation paragraphs and list
-  items are held to a readable 68ch maximum.
-- **UI Label:** navigation and utility context; subdued rather than
-  display-like.
-- **Mono** and **Meta Label:** commands, action labels, terminal material, and
-  compact uppercase status markers.
+Favor dense comparison tables and concise boundary notes. A reader should be
+able to choose a widget, platform, package surface, or command without reading
+an essay. Reference pages may link to guides for rationale.
 
-**The Serif / Mono Relay Rule.** Use serif for explanation, monospace for an
-operation or captured output, and system sans for navigation. Do not turn
-reader-facing prose into terminal chrome.
+## Homepage sequence
 
-## Layout
+The landing page follows this order:
 
-The home canvas is centered at a 76rem maximum width, with responsive inline
-padding from 1.25rem to 4rem and a deliberately deep opening margin. The
-introductory argument narrows further, keeping the promise, summary, status,
-and install action in a focused column before the terminal frame opens to the
-full content width. Long-form documentation constrains prose and list measures
-to 68ch; example explanations use 65ch.
+1. State what Noir is and disclose the prerelease boundary.
+2. Offer the install command and first-app path.
+3. Put a syntax-highlighted widget `State` beside the frame it produces.
+4. Index the capabilities that distinguish Noir from raw terminal output.
+5. Compress the retained architecture into one readable path.
+6. Route readers by the job they need to do next.
 
-Vertical rhythm is slow and sectional. The terminal evidence and the ownership
-signal each receive the established section-breath interval; thin horizontal
-rules make lists feel like an annotated ledger instead of a set of cards. The
-architecture list is a two-column label-and-explanation grid on wide screens,
-then becomes stacked reading rows at the real 700px breakpoint. At that same
-breakpoint, the top navigation keeps the GitHub destination while its ordinary
-section links collapse out of view.
-
-For a top-level Noir documentation landing page, preserve the proven sequence:
-short promise → copyable install command → reviewed retained-rendering evidence
-→ a safe, specific next question. It is a conversion-to-comprehension path, not
-a mandate to repeat the home-page composition on every article.
-
-## Elevation & Depth
-
-This is a flat system: the website defines no box-shadow vocabulary. Depth comes
-from whitespace, 1px rule placement, type scale, and the terminal's deliberate
-black field against paper. The terminal frame is an evidence boundary, not a
-raised card.
-
-**The Flat Evidence Rule.** If a surface needs separation, use a rule, spacing,
-or the existing terminal contrast before adding a shadow, blur, tint, or
-floating-panel effect.
-
-## Shapes
-
-Geometry is rectangular and exact. Code blocks, terminal recordings, install
-commands, inline code, and ruled reading rows use square corners; borders are
-hairline and functional. The design favors column, row, and frame silhouettes
-over pills, rounded containers, badges, or ornamental clipping.
-
-**The Square Boundary Rule.** A boundary should read as a document rule or a
-terminal frame. Rounded treatment is not part of the incumbent website's
-component language.
+The code/frame proof is the distinctive center of the page. Homepage Dart uses
+the same Shiki themes as the documentation (`github-light` / `github-dark`) so
+keywords, types, and callbacks are readable without turning the specimen into
+a second terminal. Capability rows are an index, not marketing cards.
 
 ## Components
 
-### Buttons
+### Terminal frame
 
-Action buttons are compact monospace rectangles. Their default is a Printed Ink
-field with Warm Paper text; hover reverses the field and text while retaining
-the border. The shared visible focus treatment is a 3px current-color outline
-with a 3px offset. Use these for explicit actions such as copying an install
-command or starting a reviewed recording.
+A figure with a short caption, verbatim cell output, the producing command,
+and an evidence boundary. Keep output selectable. Preserve whitespace. If the
+frame is expected rather than captured, say so. Animation belongs only where
+motion itself is the behavior under discussion and a static sequence would be
+misleading.
 
-### Install Command
+### Process flow
 
-The install command is a single bordered horizontal control: selectable
-monospace command text, then a Copy button divided by a left rule. It stays
-inline while it fits and becomes a flexible row on compact screens; command
-text may wrap rather than forcing horizontal overflow.
+Numbered ruled rows communicate ordered ownership or event movement. Each row
+contains one action and one consequence. Use the component for layout protocol,
+input routing, and architecture because those are actual sequences—not merely
+because a page has several points.
 
-### Prerelease Notice
+### Comparison table
 
-The prerelease notice is an editorial aside, not an alert card. Two Hairline
-Rules enclose a small system-sans statement, led by an uppercase monospace
-status label. At the compact breakpoint, its label and explanation stack so the
-limitation remains easy to read.
+Use tables for exact mappings: need to widget, test goal to harness, package
+surface to responsibility, and platform to boundary. Table text uses compact
+system sans while surrounding explanation remains serif.
 
-### Terminal Recording
+### Install command and notices
 
-The terminal recording is the signature website component: a square black
-figure with a caption, source-backed still poster, explicit playback action,
-and direct .cast download. It begins as a still frame; reduced-motion users keep
-that still frame until they choose playback, and a failed player returns to the
-same evidence with an honest status note. This describes the website's recording
-presenter only, never Noir's terminal widget styling.
+The install command is one bordered copyable row. A prerelease notice is an
+editorial aside between rules, not a tinted alert card. Both reflow without
+horizontal scrolling on compact screens.
 
-### Site Navigation
+### Navigation and next steps
 
-Top navigation uses small quiet system-sans links with no decorative
-underlines. Hover restores Printed Ink; keyboard focus uses the global visible
-outline. Compact navigation reduces visual choices without hiding the GitHub
-destination.
+The active route uses a narrow ink marker instead of a filled block. Section
+labels describe reader intent: Start, Build, Understand, and Reference. Final
+links name a concrete next task rather than saying only “Learn more.”
 
-### Architecture Signal
+## Shape, spacing, and motion
 
-The ownership explanation is a ruled ledger: mono owner names form the left
-column and serif explanations form the right. Each row has a bottom rule and
-the whole list begins with a top rule. On compact screens, label then
-explanation become a readable vertical pair.
+Geometry is square. Separation comes from whitespace, 1px rules, and the
+black evidence surface; the system has no shadow or elevation vocabulary.
+Vertical rhythm is generous on the homepage and in article headings, and tighter
+in tables and process rows. At narrow widths, split compositions stack in
+reading order.
 
-### Next-Question Links
+The website uses no ambient motion. Respect `prefers-reduced-motion`, and do
+not use a recording when static code and a captured frame communicate the same
+fact more clearly.
 
-Next-reading choices are full-width serif questions between rules, each ending
-with a simple arrow. They should name a real reader decision instead of using a
-generic call to action.
+## Accessibility and dark mode
 
-### Code Blocks
-
-Documentation code blocks keep Nextra's paired light and dark syntax surfaces
-so every token remains legible in either theme. The black Terminal Field is
-reserved for recorded evidence. Inline code stays on the reading surface inside
-a small square rule rather than becoming a colored chip.
-
-## Do's and Don'ts
-
-### Do:
-
-- **Do** use the paper, ink, quiet-text, and hairline-rule system to create
-  hierarchy before adding a new visual treatment.
-- **Do** make terminal evidence real, reviewed, and legible as a still poster
-  before playback; retain a direct source or .cast path where the component
-  provides one.
-- **Do** lead a landing page from installation to retained-rendering evidence
-  to a specific, safe next question.
-- **Do** keep prerequisites and prerelease limits direct, ruled, and adjacent
-  to the behavior they qualify.
-- **Do** preserve semantic CSS variables so the existing dark mode remains an
-  inversion of the same system.
-
-### Don't:
-
-- **Don't** add gradients, bento grids, stock imagery, decorative raster
-  imagery, or a second visual anchor that competes with the terminal evidence.
-- **Don't** add shadows, rounded cards, pills, glass, blur, or hover lift to
-  simulate depth that the system intentionally avoids.
-- **Don't** use a terminal-looking surface as decoration or imply unverified
-  live-terminal behavior; the recording pane is evidence with explicit limits.
-- **Don't** apply this website document as a style specification for Noir's
-  terminal widgets, render objects, compositor, or native layer.
+Keyboard focus uses a 3px current-color outline with offset. Skip navigation,
+semantic headings, figure captions, table headers, and link text must remain
+available without color. Dark mode reassigns semantic paper, ink, quiet, rule,
+and signal tokens while keeping the black terminal evidence surface distinct.
+Dark paper is `#161614` so `#090a0a` terminal frames still interrupt the
+reading surface.

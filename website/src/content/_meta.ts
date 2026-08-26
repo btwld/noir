@@ -3,7 +3,6 @@ const pages = {
     display: 'hidden',
   },
   docs: 'Docs',
-  examples: 'Examples',
   api: 'API',
 };
 

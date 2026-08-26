@@ -1,71 +1,121 @@
 ---
 title: Hooks
-description: Use Noir’s optional HookWidget surface without hiding state ownership or effect cleanup.
+description: Use Noir’s opt-in HookWidget surface without hiding state identity, external resources, or cleanup.
 ---
 
 # Hooks
 
-Hooks are an opt-in way to compose local state and lifecycle behavior. Import
-the normal widget surface first, then add `package:noir/hooks.dart`:
+Hooks package one local state or lifecycle concern into a reusable function.
+They are optional, and they run on Noir’s normal retained widget lifecycle.
+
+## Import the opt-in surface
+
+Hooks ship in the Noir package but stay outside the default namespace:
 
 ```dart
 import 'package:noir/noir.dart';
 import 'package:noir/hooks.dart';
 ```
 
-The Hooks library ships in the main Noir package and is built only on the
-supported high-level widget API.
+Files that do not use `HookWidget`, `HookBuilder`, or a `use...` function need
+only `package:noir/noir.dart`.
 
-## Start with a HookWidget
+## Tie cleanup to the resource
 
-The [Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
-keeps `useState` at the top level of `build` and changes its value from a Button
-callback.
+This widget owns an observed count and a periodic timer. The effect starts the
+timer, and the returned callback cancels it when the interval changes or the
+widget leaves the tree:
 
 ```dart
-class HooksCounterApp extends HookWidget {
-  const HooksCounterApp({super.key});
+import 'dart:async';
+
+import 'package:noir/hooks.dart';
+import 'package:noir/noir.dart';
+
+class PollingBadge extends HookWidget {
+  const PollingBadge({required this.interval, super.key});
+
+  final Duration interval;
 
   @override
   Widget build(BuildContext context) {
-    final count = useState<int>(0);
-    return Button(label: '+ Add one', onPressed: () => count.value++);
+    final ticks = useState<int>(0);
+
+    useEffect(() {
+      final timer = Timer.periodic(interval, (_) {
+        ticks.value++;
+      });
+      return timer.cancel;
+    }, <Object?>[interval]);
+
+    return Row(
+      spacing: 1,
+      children: [
+        const Badge(label: 'POLLING', variant: BadgeVariant.info),
+        Text('${ticks.value} checks'),
+      ],
+    );
   }
 }
 ```
 
-`useState` owns and observes a `ValueNotifier`. Changing `count.value` rebuilds
-the `HookWidget`. This is the hook form of [Counter’s `setState`](/examples#counter),
-not a replacement for Noir’s foundational state model.
+`useState` owns and observes a `ValueNotifier`. Changing `ticks.value` requests
+a rebuild. The Timer callback runs after the effect has returned, so the state
+change is valid.
 
-## Keep hook order stable
+Effects run synchronously during build. Use them to acquire, synchronize, and
+release external resources—not to handle a Button press. An effect or cleanup
+must not synchronously update an observed hook value.
 
-Stateful hooks use call order as identity. Call them unconditionally and in the
-same order on every build. Do not call a hook from an event handler, effect,
-cleanup function, or another lifecycle callback. Top-level custom hooks should
-begin with `use`.
+## Preserve hook order
 
-`useContext` and `useTickerProvider` are build-only lookups, so they do not
-consume hook slots. A hook key changes only that slot. Noir snapshots key lists,
-which prevents later caller mutation from changing stored identity.
+Stateful hooks use call order as identity. Call them unconditionally at the top
+level of `build`, in the same order on every build. Do not call a hook from a
+branch, loop, event callback, effect, or cleanup function.
 
-## Use effects for external resources
+Keys identify an individual hook slot. When the keys for `useEffect` change,
+Noir installs the new effect and releases the previous resource. Without keys,
+the cleanup and effect run on every build. An empty key list keeps the resource
+for the life of that mounted hook slot.
 
-`useEffect` runs synchronously. Use it to synchronize an external resource and
-return its cleanup—not to handle a button press. Without keys, cleanup runs and
-the effect starts again on every build. With keys, Noir replaces the effect only
-when those keys change. Cleanup also runs when the hook disappears or the widget
-is disposed.
+Top-level custom hooks should begin with `use`. Keep owned notifiers private
+when callers need only a value and callback:
 
-An effect or cleanup must not request a synchronous hook rebuild. Schedule a
-later update from a timer, future, stream, or user event instead.
+```dart
+typedef CounterState = ({int value, VoidCallback increment});
 
-## Pick the smallest hook that owns the job
+CounterState useCounter([int initialValue = 0]) {
+  final counter = useState(initialValue);
+  return (value: counter.value, increment: () => counter.value++);
+}
+```
 
-Core hooks include `useState`, `useEffect`, `useMemoized`, `useCallback`, and
-`useRef`. Noir also provides `useAnimationController`,
-`useTextEditingController`, `useFocusNode`, `useScrollController`, and
-`useViewportController`.
+## Match the hook to the job
 
-Keep a future or stream outside `build`, or retain it with `useMemoized`, so a
-rebuild does not restart the work.
+| Need                                        | Start with                                                           |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| Observed local value                        | `useState`                                                           |
+| Retained object, Future, or Stream identity | `useMemoized`                                                        |
+| Acquire and release an external resource    | `useEffect`                                                          |
+| Read a Listenable and rebuild               | `useListenable` or `useValueListenable`                              |
+| Editable text, focus, or scrolling          | `useTextEditingController`, `useFocusNode`, or `useScrollController` |
+| Time-based values                           | `useAnimationController` and `useAnimation`                          |
+| Mutable bookkeeping that must not rebuild   | `useRef`                                                             |
+
+Create a Future or Stream outside `build`, or retain it with `useMemoized`.
+Creating it on every build restarts the asynchronous work.
+
+## When a State class is clearer
+
+Use a state class when several lifecycle methods, related resources, or a
+longer transition are easier to understand together. Use a hook when one
+concern can be named and composed without hiding who owns it. `HookBuilder` is
+available when only a small stable subtree needs hooks; Noir does not expose a
+`StatefulHookWidget`.
+
+Hot reload forwards `reassemble` to retained hook state. An ordinary build
+reports reordered or conditional stateful hooks instead of silently accepting
+the new identity. Read [State and lifecycle](/docs/state-lifecycle) for the
+underlying ownership model, and run the repository’s
+[Hooks Counter](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart)
+for a complete input-driven app.

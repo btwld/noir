@@ -1,43 +1,115 @@
 ---
 title: Platform support and limitations
-description: Check Noir’s prerelease platform floor and known native limitations before choosing a deployment target.
+description: Check Noir’s prerelease targets, native floors, terminal protocol dependencies, and known user-visible limits.
 ---
 
 # Platform support and limitations
 
-Noir is a prerelease, not a stable 1.0 release. It currently targets macOS,
-Linux, and Windows on x64 and arm64. Android, iOS, and web are not supported.
+Noir is an alpha prerelease, not a stable 1.0 release. Check the target OS,
+architecture, terminal features, and current limitations before distributing an
+application.
 
 <PrereleaseNotice>
-  Release operations and the direct real-terminal parity matrix remain separate
-  from ordinary headless verification.
+  Source can be ahead of the latest package on pub.dev, and open release gates
+  are not implied complete by this website.
 </PrereleaseNotice>
 
-## Check the macOS floor
+## Supported targets
 
-The bundled macOS libraries require macOS 13.0 or later. Dart 3.10 native-asset
-hooks declare a macOS 12 target, so a normal CLI build can succeed before the
-native loader reports an incompatibility on macOS 12.
+| Platform          | Architectures | Current boundary              |
+| ----------------- | ------------- | ----------------------------- |
+| macOS             | x64, arm64    | macOS 13.0 or later           |
+| Linux             | x64, arm64    | glibc 2.17 or later           |
+| Windows           | x64, arm64    | Desktop terminal applications |
+| Android, iOS, web | —             | Not supported                 |
 
-Run `dart run noir:health_check` to verify headless native-asset resolution. It
-does not validate real terminal escape rendering.
+Run the packaged health check on the machine that will run the application:
 
-## Account for known native boundaries
+```sh
+dart run noir:health_check
+```
 
-- Kitty, Sixel, and OSC52 acceptance depends on the terminal or multiplexer.
-  The current candidate has not completed the separately authorized matrix for
-  direct terminal checks.
-- A source run beginning with a zero-width grapheme can diverge from the pinned
-  native `bufferDrawText` paint path, even though Noir keeps source-correct
-  layout semantics.
-- A decorated box that straddles a clipped viewport edge can paint its border
-  outside the native scissor rectangle.
-- On an observed macOS/iTerm path, alternate-screen teardown can restore the
-  launch cursor imperfectly. Apps must still dispose `TuiApp` so Noir releases
-  owned resources and terminal modes.
-- Hot reload rebuilds, lays out, and paints retained state. It does not rerun
-  `main()` or `initState`, and some structural Dart changes require a restart.
+The command verifies native-asset resolution and a headless buffer/render
+lifecycle. It does not open a real terminal, read raw input, or prove escape
+rendering.
 
-The repository’s `TODO.md` is the source of truth for current release gates,
-bundled artifacts, and accepted residual risks. This page is not a release
-approval.
+On macOS, Dart 3.10 native-asset hooks can build with a macOS 12 target even
+though Noir’s bundled OpenTUI libraries require macOS 13. A build can therefore
+succeed on macOS 12 and fail later when the native library loads.
+
+## Account for terminal capabilities
+
+Some output crosses a protocol negotiated with the user’s terminal or
+multiplexer. Noir can generate or request the behavior; the receiving terminal
+still decides whether it works.
+
+| Feature                 | Noir behavior                                                        | External dependency                             |
+| ----------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| Terminal images         | Chooses Kitty, Sixel, or block fallback through `ImageProtocol.auto` | Terminal and multiplexer protocol support       |
+| OSC52 clipboard         | Emits copy requests for explicit document selection                  | Terminal, tmux, or Screen acceptance and policy |
+| Enhanced keyboard input | Can request Kitty keyboard reporting                                 | Terminal support and encoding                   |
+| Mouse input             | Enables reporting when requested by `runTuiApp`                      | Terminal reporting and a real input session     |
+| Color and links         | Records 24-bit color and semantic hyperlinks                         | Terminal rendering support                      |
+
+Headless tests and Noir Driver are useful for layout, paint cells, cursor state,
+and parsed input. They cannot replace a real-terminal check for these protocol
+boundaries.
+
+## Known user-visible limits
+
+<dl className="limitation-list">
+  <div>
+    <dt>Leading zero-width text</dt>
+    <dd>
+      A text run that begins with a zero-width grapheme can differ between
+      Noir’s source-correct layout and the pinned native paint path. Avoid
+      isolating a leading zero-width grapheme into its own styled run.
+    </dd>
+  </div>
+  <div>
+    <dt>Border clipping</dt>
+    <dd>
+      A decorated box that straddles a clipped viewport edge can paint its full
+      border outside the native scissor rectangle. Keep bordered regions inside
+      the viewport when exact clipping matters.
+    </dd>
+  </div>
+  <div>
+    <dt>macOS terminal teardown</dt>
+    <dd>
+      On an observed iTerm path, alternate-screen teardown can restore the
+      launch cursor imperfectly. Always dispose <code>TuiApp</code>; skipping
+      cleanup does not avoid the limitation and leaves terminal modes owned.
+    </dd>
+  </div>
+  <div>
+    <dt>Hot reload</dt>
+    <dd>
+      Reload does not rerun <code>main()</code> or <code>initState()</code>.
+      Live stack signatures, enum-to-class changes, and native library changes
+      can require a full restart. See
+      <a href="/docs/getting-started#change-the-running-app">Getting started</a>
+      for the development-runner loop.
+    </dd>
+  </div>
+  <div>
+    <dt>Drive mode</dt>
+    <dd>
+      <code>NOIR_DRIVE=1</code> is headless. It is not evidence of raw-mode or
+      terminal-protocol behavior. See
+      <a href="/docs/testing">Testing</a> for where Driver fits.
+    </dd>
+  </div>
+  <div>
+    <dt>Native error detail</dt>
+    <dd>
+      Some low-level native failures cannot be reported precisely to Dart. Keep
+      application recovery at the supported widget or hosting boundary where
+      possible.
+    </dd>
+  </div>
+</dl>
+
+The pinned OpenTUI source and bundled native libraries are framework-owned.
+Applications should not rebuild, replace, or patch those artifacts as part of a
+normal installation.

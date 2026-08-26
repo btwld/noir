@@ -1,55 +1,124 @@
 ---
 title: State and lifecycle
-description: Preserve identity with State, update through setState, and dispose owned resources explicitly.
+description: Update retained state and release controllers, focus nodes, subscriptions, and animations in their owning State.
 ---
 
 # State and lifecycle
 
-A `StatefulWidget` describes configuration. Its retained `State` object owns
-local mutable values and resources. When a rebuild produces the same widget
-type and key in the same place, Noir preserves that state.
+A widget is immutable configuration. Its `State` object owns values and
+resources that must survive rebuilds. Noir retains that state while the
+widget’s type, key, and position still identify the same place in the tree.
 
-## Update state from an event
+## Let one State own the field
 
-Counter makes the sequence visible:
-
-1. A focused key or left-pointer event calls a state method.
-2. The method changes `_count` inside `setState`.
-3. Noir rebuilds that widget subtree, then lays out and paints a new terminal
-   frame.
+Construct controllers and focus nodes as `State` fields when they do not depend
+on `BuildContext`. The same state reads the text, updates the applied filter,
+and releases both resources in `dispose`:
 
 ```dart
-void _incrementCounter() => setState(() => _count++);
+class FilterField extends StatefulWidget {
+  const FilterField({super.key});
+
+  @override
+  State<FilterField> createState() => _FilterFieldState();
+}
+
+class _FilterFieldState extends State<FilterField> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  String _applied = 'No filter';
+
+  void _apply() {
+    final value = _controller.text.trim();
+    setState(() {
+      _applied = value.isEmpty ? 'No filter' : value;
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 1,
+      children: [
+        TextInput(
+          controller: _controller,
+          focusNode: _focusNode,
+          autofocus: true,
+          placeholder: 'package name',
+          onSubmit: _apply,
+        ),
+        Button(label: 'Apply filter', onPressed: _apply),
+        Text('Filter: $_applied'),
+      ],
+    );
+  }
+}
 ```
 
-The full example gives its pointer target a stable
-`ValueKey<String>('increment')`, so headless tests can target the real control
-without depending on terminal coordinates.
+The rule is mechanical: the layer that constructs a `FocusNode`,
+`TextEditingController`, `ScrollController`, notifier, subscription, or
+`AnimationController` also disposes it. Finalizers are a safety net, not the
+normal lifecycle.
 
-## Dispose what the state owns
+## Rebuild after the value changes
 
-Create a controller, focus node, subscription, or animation in the state that
-owns it, then release it from `dispose`. Chat creates a
-`TextEditingController`, transcript `ScrollController`, and `FocusNode` in
-`initState`; Pulse owns an `AnimationController` and its listener. Both examples
-dispose those resources explicitly.
+Call `setState` after the underlying value changes. Keep its callback
+synchronous and limited to state mutation; do network, file, or parsing work
+outside it.
 
-`initState`, `didChangeDependencies`, `didUpdateWidget`, `deactivate`,
-`dispose`, and `mounted` follow Noir’s documented lifecycle contract. Finalizers
-are a safety net, not the primary owner.
+The Filter’s Button and `TextInput.onSubmit` both call `_apply`. Noir marks the
+matching element dirty, calls `build`, lays out the changed subtree, and paints
+the next frame. It does not replace `_FilterFieldState`, so the controller and
+focus node keep their identity.
 
-## Choose a state class or a hook
-
-`HookWidget` uses Noir’s normal retained widget lifecycle. Choose a state class
-when it makes ownership easiest to see. Choose a hook when reusable lifecycle
-behavior is the clearer unit. In either form, handle input in the event
-callback—not in an effect.
+For delayed or asynchronous work, check that the state still exists before
+updating it:
 
 ```dart
-final count = useState<int>(0);
-Button(label: '+ Add one', onPressed: () => count.value++);
+final result = await catalog.search(query);
+if (!mounted) return;
+setState(() => _results = result);
 ```
 
-Read [Hooks](/docs/hooks) for call-order identity, cleanup, and controller
-hooks. Then compare [Counter](/examples#counter) with the
-[Hooks Counter source](https://github.com/leoafarias/noir/blob/main/example/hooks_counter.dart).
+When a newer request can supersede an older one, add a request generation as
+well as the `mounted` check. That prevents a slow earlier response from
+replacing newer state.
+
+## Use the lifecycle method that matches the change
+
+| Lifecycle               | Use it for                                                               |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `initState`             | One-time construction and listener registration                          |
+| `didChangeDependencies` | Work derived from inherited values such as Theme                         |
+| `didUpdateWidget`       | Reconcile resources when a parent supplies new configuration             |
+| `reassemble`            | Re-derive cached values after hot reload when `initState` will not rerun |
+| `deactivate`            | Temporary removal from the active tree; do not dispose yet               |
+| `dispose`               | Deterministic listener removal and resource release                      |
+
+Hot reload calls `reassemble` on retained state, then rebuilds, lays out, and
+paints the tree. Override it only when code in `initState` produced a cached
+value that must be recalculated; call `super.reassemble()` first.
+
+## Choose the smallest clear owner
+
+- Keep short-lived UI values in the nearest `State` that owns them.
+- Use `ValueNotifier` or `ChangeNotifier` when behavior should be testable or
+  shared independently of one widget.
+- Use `InheritedWidget` to make stable data available to descendants without
+  threading it through every constructor.
+- Use a `HookWidget` when one reusable lifecycle concern is clearer as a hook
+  than as several fields and lifecycle methods.
+
+Hooks use the same retained model; they do not bypass ownership. Read
+[Hooks](/docs/hooks) for hook order and cleanup. The repository’s
+[Pulse](https://github.com/leoafarias/noir/blob/main/example/pulse_animation.dart)
+shows an `AnimationController` from initialization through tick handling and
+disposal.

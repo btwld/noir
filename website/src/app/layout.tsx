@@ -27,9 +27,6 @@ const navbar = (
     <Link className="site-nav-link" href="/docs/getting-started">
       Docs
     </Link>
-    <Link className="site-nav-link" href="/examples">
-      Examples
-    </Link>
     <Link className="site-nav-link" href="/api">
       API
     </Link>
