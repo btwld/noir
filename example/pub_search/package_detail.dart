@@ -351,7 +351,7 @@ Widget _releaseRow(
         text: TextSpan(
           children: [
             TextSpan(
-              text: latest ? '● ' : '  ',
+              text: latest ? '${Icons.bulletSmall} ' : '  ',
               style: TextStyle(color: latest ? theme.accent : theme.textMuted),
             ),
             TextSpan(
@@ -709,7 +709,10 @@ List<Widget> _dependencyRows(
       ),
     ),
     for (final detail in details)
-      Text('  ↳ $detail', style: TextStyle(color: theme.textMuted)),
+      Text(
+        '  ${Icons.arrowBranchDown} $detail',
+        style: TextStyle(color: theme.textMuted),
+      ),
   ];
 }
 

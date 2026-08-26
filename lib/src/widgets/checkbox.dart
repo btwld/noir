@@ -12,10 +12,10 @@ import 'text_style.dart';
 import 'theme.dart';
 
 /// Geometric shapes, not the ballot box `☐`/`☑`: `☑` carries the Unicode
-/// `Emoji` property and `☐` does not, so terminals that resolve emoji through
-/// a fallback font widen only the checked glyph and shift the label by a cell
-/// as the value changes. [Icons.square] and [Icons.squareOutline] share one
-/// width class, so the pair stays the same width in every terminal.
+/// `Emoji` property and `☐` does not, so some environments can give only the
+/// checked glyph a two-cell emoji presentation and shift the label as the value
+/// changes. [Icons.square] and [Icons.squareOutline] share one width class, so
+/// the pair stays the same width under the catalog's terminal-width policy.
 const String _unchecked = Icons.squareOutline;
 const String _checked = Icons.square;
 

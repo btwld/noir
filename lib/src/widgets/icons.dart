@@ -25,20 +25,18 @@ library;
 /// which is a separate question, and the two failure modes are not equally
 /// severe.
 ///
-/// - **Narrow** — one cell in every terminal. Everything from [check] through
-///   [minus].
+/// - **Narrow** — not East-Asian-ambiguous, so expected to stay one cell across
+///   normal terminal width modes. Everything from [check] through [minus].
 /// - **Ambiguous** — one cell unless the terminal is configured to double East
 ///   Asian ambiguous width (an iTerm2 option, common in CJK locales).
 ///   Everything from [square] through [infinity].
 ///
-/// **The absolute rule is the one this catalog enforces by construction: no
-/// member carries the Unicode `Emoji` property.** Those widen through an emoji
-/// fallback font in ordinary, correctly configured terminals, so an emoji glyph
-/// beside a non-emoji one changes width as a value flips and the label beside
-/// it jumps a cell. That is a live bug on a normal machine, and it is what took
-/// `☑`, `▶`, and `♥` out of this catalog.
-/// `test/architecture/icon_call_site_test.dart` rejects such a character
-/// anywhere in authored source, not only here.
+/// **The conservative rule this catalog enforces is that no non-ASCII member
+/// carries the Unicode `Emoji` property.** Those characters have an emoji
+/// presentation available, and some terminal/font environments may choose it
+/// and occupy two cells. Excluding them avoids an environment-dependent width
+/// change when a value flips. ASCII keycap bases are safe when rendered alone,
+/// so [asterisk] remains available even though `*` carries the property.
 ///
 /// **Mixing narrow with ambiguous is weaker than that, and is a preference
 /// rather than a guarantee.** It costs a cell only under ambiguous-doubling —
@@ -54,10 +52,9 @@ library;
 ///
 /// ## What is missing, and why
 ///
-/// Characters carrying the Unicode `Emoji` property are excluded, even when the
-/// standard calls them narrow: terminals routinely resolve them through an
-/// emoji fallback font at double width. That rules out some obvious choices,
-/// each of which has a stand-in here:
+/// Non-ASCII characters carrying the Unicode `Emoji` property are excluded
+/// conservatively, even when their default Unicode presentation is text. That
+/// rules out some obvious choices, each of which has a stand-in here:
 ///
 /// | Wanted | Excluded because | Use instead |
 /// |---|---|---|
@@ -221,7 +218,8 @@ abstract final class Icons {
   static const String arrowWavyRight = '↝'; // U+219D
 
   /// Heavy north-east arrow marking a link that leaves the application. `↗`
-  /// carries the Unicode `Emoji` property and would widen unpredictably.
+  /// carries the Unicode `Emoji` property and may receive a two-cell emoji
+  /// presentation in some environments.
   static const String arrowUpRight = '➚'; // U+279A
 
   // ----------------------------------------------------------------------
@@ -265,7 +263,7 @@ abstract final class Icons {
   static const String power = '⏻'; // U+23FB
 
   // ----------------------------------------------------------------------
-  // Shapes — narrow. Use these when a marker must never widen.
+  // Shapes — narrow. Use these to avoid East-Asian-ambiguous width.
   // ----------------------------------------------------------------------
 
   /// Hollow rounded square.
@@ -363,6 +361,9 @@ abstract final class Icons {
 
   /// Fork, marking a branch or a diverged history.
   static const String branch = '⑂'; // U+2442
+
+  /// Plus sign, marking an add or expand action.
+  static const String plus = '+'; // U+002B
 
   /// True minus sign, wider than the ASCII hyphen.
   static const String minus = '−'; // U+2212

@@ -6,11 +6,10 @@ import '../helpers/buffer_capture.dart';
 /// Checks the [Icons] width-group rule where it actually matters: the rendered
 /// glyphs of a control whose value flips.
 ///
-/// `icon_width_class_test.dart` proves each declared group is uniform, and
-/// `icon_call_site_test.dart` proves no call site paints an emoji character.
-/// Neither reads what a widget actually puts on screen, so a future edit could
-/// pair two glyphs from different groups and still pass both. This test
-/// captures the real frames and compares the glyphs the user sees.
+/// `icon_width_class_test.dart` proves each declared group is uniform, but it
+/// does not read what a widget actually puts on screen. A future edit could
+/// pair two glyphs from different groups and still pass it. This test captures
+/// the real frames and compares the glyphs the user sees.
 void main() {
   group('state pairs stay inside one Icons width group', () {
     test('Checkbox paints the same width class for both values', () {

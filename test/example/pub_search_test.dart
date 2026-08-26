@@ -331,6 +331,8 @@ void main() {
     expect(text, contains('docs ready'));
     expect(text, contains('no docs'));
     expect(text, contains('docs unknown'));
+    expect(text, contains('${Icons.bulletSmall} 0.0.1-alpha.1'));
+    expect(text, isNot(contains('${Icons.circle} 0.0.1-alpha.1')));
     expect(text, isNot(contains('○')));
     expect(text, isNot(contains(RegExp(r'\bactive\b'))));
     expect(text, isNot(contains('/api/archives/')));

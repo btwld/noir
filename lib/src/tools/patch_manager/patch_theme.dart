@@ -75,6 +75,7 @@ class PatchTheme {
 
   /// Selection caret, drawn against a blank cell on unselected rows. Both are
   /// narrow, so the selected row does not shift against its neighbours — `▶`
-  /// carries the Unicode `Emoji` property and would have.
+  /// carries the Unicode `Emoji` property and may receive a two-cell emoji
+  /// presentation in some environments.
   static const String caret = Icons.pointerRight;
 }

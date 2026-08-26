@@ -330,13 +330,15 @@ driving a live app; automated assertions belong in ordinary tests
   measure a string yourself before laying it out.
 - **Take glyphs from `Icons`, not from a literal.** `Icons.check`,
   `Icons.caretRight`, `Icons.triangleUp`, `Icons.arrowDown` and friends are
-  verified one cell wide and free of the Unicode `Emoji` property, which
-  terminals widen through a fallback font on an ordinary machine. `⚠`, `▶`,
-  `◀`, `✔`, `☑`, `♥`, and `↗` carry that property and are deliberately absent;
-  painting one anywhere fails an architecture test. Members are also grouped
-  narrow versus East-Asian-ambiguous — prefer one group for a state pair or a
-  fixed column when the choice is free, but that one costs a cell only in a
-  terminal that doubles ambiguous width, where Noir's borders already shift.
+  verified one cell wide. Non-ASCII members are free of the Unicode `Emoji`
+  property, avoiding an environment-dependent emoji presentation; ASCII
+  keycap bases such as `*` remain safe when used alone. `⚠`, `▶`, `◀`, `✔`,
+  `☑`, `♥`, and `↗` carry that property and are deliberately absent. Use named
+  members for standalone chrome and status markers; ordinary text can still
+  contain emoji. Members are also grouped narrow versus East-Asian-ambiguous —
+  prefer one group for a state pair or fixed column when the choice is free,
+  but that one costs a cell only in a terminal that doubles ambiguous width,
+  where Noir's borders already shift.
 - **The cursor is not part of the character buffer.** `TextInput`/`TextArea`
   render the caret through terminal cursor state rather than a character cell.
   Design tests around controller selection and observable callbacks instead of

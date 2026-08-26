@@ -10,10 +10,11 @@ import 'package:test/test.dart';
 /// Two properties decide whether a terminal agrees with Noir's own
 /// `terminalCellWidth`:
 ///
-/// - Unicode `Emoji` — terminals resolve these through an emoji fallback font
-///   at double width even when the standard calls them narrow. Always
-///   rejected. ASCII is exempt: `#`, `*`, and the digits carry the property
-///   only as keycap bases and are never widened alone.
+/// - Unicode `Emoji` — those characters have an emoji presentation available,
+///   and some terminal/font environments may choose it at double width.
+///   Non-ASCII members are rejected conservatively. ASCII is exempt: `#`, `*`,
+///   and the digits carry the property only as keycap bases and remain ordinary
+///   ASCII when rendered alone.
 /// - East Asian Width `Ambiguous` — one cell unless the terminal is
 ///   configured to double it. Allowed, because Noir's box-drawing borders and
 ///   block-element progress bars are already ambiguous, but never mixed with
@@ -102,6 +103,7 @@ void main() {
     'refresh',
     'undo',
     'branch',
+    'plus',
     'minus',
   };
   const ambiguousGroup = <String>{
@@ -157,6 +159,11 @@ void main() {
     expect(narrowGroup.intersection(ambiguousGroup), isEmpty);
   });
 
+  test('the catalog includes paired add and remove marks', () {
+    expect(declared, containsPair('plus', '+'));
+    expect(declared, containsPair('minus', '−'));
+  });
+
   test('every Icons constant occupies exactly one cell', () {
     for (final entry in declared.entries) {
       expect(
@@ -172,7 +179,7 @@ void main() {
     }
   });
 
-  test('no Icons constant carries the Unicode Emoji property', () {
+  test('no non-ASCII Icons constant carries the Unicode Emoji property', () {
     for (final entry in declared.entries) {
       final codePoint = entry.value.runes.single;
       expect(
@@ -186,8 +193,8 @@ void main() {
         isFalse,
         reason:
             'Icons.${entry.key} (U+${codePoint.toRadixString(16).toUpperCase()}) '
-            'carries the Emoji property; terminals widen it through an emoji '
-            'fallback font. Pick a non-emoji glyph.',
+            'carries the Emoji property and may receive a two-cell emoji '
+            'presentation. Pick a non-emoji glyph.',
       );
     }
   });

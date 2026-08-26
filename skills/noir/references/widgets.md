@@ -392,7 +392,7 @@ const Spinner({
 
 ### Icons
 
-118 named one-cell glyphs. Values are plain `String`s — render with `Text`
+119 named one-cell glyphs. Values are plain `String`s — render with `Text`
 and color through `TextStyle`. There is no `Icon` widget and no `IconTheme`:
 a glyph has no size to inherit on a cell grid, and `ThemeData` already
 carries the colors.
@@ -401,10 +401,11 @@ carries the colors.
 Text(Icons.check, style: TextStyle(color: theme.success))
 ```
 
-**The absolute rule: no member carries the Unicode `Emoji` property.**
-Terminals widen those through a fallback font on an ordinary machine, so an
-emoji glyph beside a non-emoji one changes width as a value flips. Never paint
-one — `icon_call_site_test.dart` rejects it anywhere in authored source.
+**The conservative rule: no non-ASCII member carries the Unicode `Emoji`
+property.** Those characters have an emoji presentation available, and some
+terminal/font environments may choose it at two-cell width. ASCII keycap bases
+such as `*` remain ordinary one-cell text when rendered alone. Use `Icons` for
+standalone chrome and status markers; ordinary text can still contain emoji.
 
 Members are also grouped narrow versus East-Asian-ambiguous. Mixing *those*
 is weaker: it costs a cell only under ambiguous-doubling, and there Noir's
@@ -412,7 +413,8 @@ box-drawing borders and progress bars have already shifted. Prefer one group
 for a fixed column or a state pair when the choice is free; a hint string can
 mix them, since nothing is aligned to it.
 
-**Narrow** (one cell in every terminal):
+**Narrow** (not East-Asian-ambiguous; expected to stay one cell across normal
+terminal width modes):
 
 | Family | Members |
 |---|---|
@@ -425,7 +427,7 @@ mix them, since nothing is aligned to it.
 | Shapes | `squareRounded` `rectangle` `rectangleOutline` `bar` `barOutline` `lozenge` `lozengeOutline` `fisheye` `circleDotted` `circleSmall` |
 | Bullets | `bulletSmall` `bulletOutline` `bulletTriangular` `bulletHyphen` |
 | Stars | `sparkle` `sparkleOutline` `starHollow` `starSmall` |
-| Objects | `search` `home` `pencil` `scissors` `bell` `hourglass` `hourglassOutline` `refresh` `undo` `branch` `minus` |
+| Objects | `search` `home` `pencil` `scissors` `bell` `hourglass` `hourglassOutline` `refresh` `undo` `branch` `plus` `minus` |
 
 **Ambiguous** (one cell unless the terminal doubles East Asian ambiguous
 width — the same terminals where box-drawing borders shift):
@@ -439,9 +441,9 @@ width — the same terminals where box-drawing borders shift):
 | Punctuation | `bullet` `dot` `ellipsis` `dashEm` `dashEn` |
 | Math | `degree` `plusMinus` `times` `divide` `notEqual` `lessEqual` `greaterEqual` `approxEqual` `identical` `infinity` |
 
-Characters carrying the Unicode `Emoji` property are excluded, because
-terminals resolve them through an emoji fallback font at double width even
-when the standard calls them narrow. Stand-ins:
+Non-ASCII characters carrying the Unicode `Emoji` property are excluded
+conservatively because their presentation and width can vary by environment.
+Stand-ins:
 
 | Wanted | Use instead |
 |---|---|
