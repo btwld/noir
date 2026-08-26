@@ -14,7 +14,7 @@ typography:
     fontSize: "clamp(3rem, 7.2vw, 6rem)"
     fontWeight: 500
     lineHeight: 0.96
-    letterSpacing: "-0.045em"
+    letterSpacing: "-0.04em"
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
     fontSize: "clamp(2.5rem, 4vw, 4rem)"
@@ -115,7 +115,8 @@ provenance data is neither present nor required.
 - Editorial serif reading paired with utilitarian sans and monospace details.
 - Warm neutral contrast, 1px rules, and square geometry instead of cards or
   shadows.
-- One reviewed terminal recording as the proof-bearing visual anchor.
+- Terminal recordings act as proof-bearing anchors, with one active player at
+  a time.
 - Direct prerelease disclosure and question-led documentation paths.
 
 ## Colors
@@ -138,15 +139,15 @@ hierarchy.
   sections while keeping the page open.
 - **Terminal Field** (the terminal token) and **Terminal Ink** (the
   terminal-ink token): confine the dark evidence frame to captured terminal
-  content and code blocks.
+  content.
 
 Dark mode reassigns the same semantic CSS custom properties rather than adding
 a second visual identity. New work must consume the semantic properties instead
 of baking the light values into components.
 
 **The One Dark Anchor Rule.** On a light page, reserve a solid dark field for
-terminal evidence or code. Do not create competing dark cards, decorative
-backdrops, or colored callouts.
+terminal evidence. Do not create competing dark cards, decorative backdrops, or
+colored callouts.
 
 ## Typography
 
@@ -171,7 +172,7 @@ site look like a terminal.
 - **Section Heading:** major sectional turns such as the ownership explanation
   and next-reading choice.
 - **Body:** continuous prose; individual documentation paragraphs and list
-  items are held to a readable 72ch maximum.
+  items are held to a readable 68ch maximum.
 - **UI Label:** navigation and utility context; subdued rather than
   display-like.
 - **Mono** and **Meta Label:** commands, action labels, terminal material, and
@@ -188,7 +189,7 @@ padding from 1.25rem to 4rem and a deliberately deep opening margin. The
 introductory argument narrows further, keeping the promise, summary, status,
 and install action in a focused column before the terminal frame opens to the
 full content width. Long-form documentation constrains prose and list measures
-to 72ch; example explanations use 65ch.
+to 68ch; example explanations use 65ch.
 
 Vertical rhythm is slow and sectional. The terminal evidence and the ownership
 signal each receive the established section-breath interval; thin horizontal
@@ -229,11 +230,11 @@ component language.
 
 ### Buttons
 
-Action buttons are compact monospace rectangles. Their default is Printed Ink
-on Warm Paper; hover reverses the field and text while retaining the border.
-The shared visible focus treatment is a 3px current-color outline with a 3px
-offset. Use these for explicit actions such as copying an install command or
-starting a reviewed recording.
+Action buttons are compact monospace rectangles. Their default is a Printed Ink
+field with Warm Paper text; hover reverses the field and text while retaining
+the border. The shared visible focus treatment is a 3px current-color outline
+with a 3px offset. Use these for explicit actions such as copying an install
+command or starting a reviewed recording.
 
 ### Install Command
 

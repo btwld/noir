@@ -63,7 +63,7 @@ suite, but they do not prove real-terminal or raw-mode behavior.
 <ExampleSection
   id="chat"
   title="Chat"
-  proves="A text controller, asynchronous state, ScrollBox, and the standard Spinner form a complete prompt-to-reply flow."
+  proves="A text controller, asynchronous state, ScrollBox, and the standard Spinner carry a prompt from input to reply."
   run="dart run example/chat_demo.dart"
   controls="Type a prompt and press Enter; PageUp and PageDown move transcript history; Tab follows focus traversal; Escape exits."
   sourceHref="https://github.com/leoafarias/noir/blob/main/example/chat_demo.dart"
@@ -93,7 +93,7 @@ suite, but they do not prove real-terminal or raw-mode behavior.
       navigable while PageUp and PageDown reach history.
     </li>
     <li>
-      The mounted <code>Spinner</code> exposes pending work; the assistant reply
+      The mounted <code>Spinner</code> shows pending work; the assistant reply
       clears thinking and records the next frame.
     </li>
   </ol>
@@ -104,7 +104,7 @@ suite, but they do not prove real-terminal or raw-mode behavior.
   title="Components"
   proves="Built-in controls keep values explicit, move focus predictably, and show how a Spinner starts and stops with its widget lifecycle."
   run="dart run example/components_demo.dart"
-  controls="Tab and Shift+Tab move focus; Enter, Space, and left click activate a focused control; s toggles the spinner; q exits."
+  controls="Tab and Shift+Tab move focus; Enter, Space, and a left click activate a focused control; s toggles the spinner; q exits."
   sourceHref="https://github.com/leoafarias/noir/blob/main/example/components_demo.dart"
   testHref="https://github.com/leoafarias/noir/blob/main/test/example/component_examples_test.dart"
   guideHref="/docs/input-focus"
@@ -168,13 +168,12 @@ suite, but they do not prove real-terminal or raw-mode behavior.
       chooser, and scrollable detail pane.
     </li>
     <li>
-      Query, request generation, result state, selected package, and detail
-      state compose into one search or package-detail surface.
+      Query, request generation, results, the selected package, and package
+      details share one search or detail surface.
     </li>
     <li>
-      This recording deliberately injects a local <code>PubCatalog</code>{' '}
-      fixture, so its results are deterministic and are not evidence of a live
-      network response.
+      This recording uses a local <code>PubCatalog</code> fixture, so its
+      results are deterministic and are not evidence of a live network response.
     </li>
   </ol>
 </ExampleSection>
@@ -213,8 +212,8 @@ suite, but they do not prove real-terminal or raw-mode behavior.
       footprint.
     </li>
     <li>
-      The controller stops once no frame work remains, then restarts for the
-      next activation; disposal clears owned simulation state and listeners.
+      The controller stops once no frame is pending, then restarts for the next
+      activation; disposal clears owned simulation state and listeners.
     </li>
   </ol>
 </ExampleSection>

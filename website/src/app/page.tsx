@@ -15,7 +15,7 @@ Up/+ add | Down/- subtract | Enter/Space | Ctrl+C     +`;
 
 export default function HomePage() {
   return (
-    <main className="home-page">
+    <main className="home-page" id="nextra-skip-nav" tabIndex={-1}>
       <section className="home-intro" aria-labelledby="home-title">
         <h1 id="home-title">Build reactive terminal UIs in Dart.</h1>
         <p className="home-summary">

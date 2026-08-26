@@ -112,6 +112,13 @@ async function runSmoke() {
       'none',
       'keyboard focus must have a visible outline',
     );
+    await page.keyboard.press('Enter');
+    await page.waitForURL('**/#nextra-skip-nav');
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.id),
+      'nextra-skip-nav',
+      'the homepage skip link must move focus to the main content',
+    );
 
     await page.getByRole('link', { name: /How does state flow/ }).click();
     await page.waitForURL('**/examples#counter');
@@ -191,6 +198,16 @@ async function runSmoke() {
     );
 
     await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto(`${baseUrl}/api`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page
+        .locator('.api-surfaces > div')
+        .first()
+        .evaluate((element) => getComputedStyle(element).display),
+      'block',
+      'the API chooser must stack when the documentation sidebar narrows its article',
+    );
+
     await page.goto(`${baseUrl}/docs/architecture-api`, {
       waitUntil: 'networkidle',
     });
@@ -204,6 +221,23 @@ async function runSmoke() {
     );
 
     await page.goto(`${baseUrl}/examples`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+      true,
+      'the Examples page must not overflow when the documentation sidebar narrows its article',
+    );
+    assert.equal(
+      await page
+        .locator('.example-brief')
+        .first()
+        .evaluate((element) => getComputedStyle(element).display),
+      'block',
+      'example controls must stack when the documentation sidebar narrows the article',
+    );
     await playButtons.nth(1).click();
     await page.locator('.terminal-player > *').waitFor({ state: 'attached' });
     assert.equal(await page.locator('.terminal-player').count(), 1);

@@ -576,12 +576,22 @@ main[data-pagefind-body='true'] :not(pre) > code {
 }
 
 @media (max-width: 1100px) {
-  .api-surfaces-detailed > div {
+  .api-surfaces > div {
     display: block;
   }
 
-  .api-surfaces-detailed dd {
+  .api-surfaces dd {
     margin-top: 0.45rem;
+  }
+
+  .example-brief {
+    display: block;
+  }
+
+  .example-brief > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    padding-left: 0;
   }
 }
 
@@ -617,24 +627,6 @@ main[data-pagefind-body='true'] :not(pre) > code {
   .architecture-signal strong {
     display: block;
     margin-bottom: 0.25rem;
-  }
-
-  .example-brief {
-    display: block;
-  }
-
-  .example-brief > div + div {
-    border-left: 0;
-    border-top: 1px solid var(--rule);
-    padding-left: 0;
-  }
-
-  .api-surfaces > div {
-    display: block;
-  }
-
-  .api-surfaces dd {
-    margin-top: 0.45rem;
   }
 
   .example-section {
