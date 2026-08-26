@@ -14,6 +14,24 @@
   visibility; menu controller replacement preserves open state. This is not
   Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
   nested overlay, transform, `LayerLink`, animation, or cascade API.
+- Added `Icons`, a catalog of 119 named single-cell glyph strings for marks,
+  carets, pointers, chevrons, arrows, keyboard keys, shapes, bullets, stars,
+  and status markers. There is no `Icon` widget, `IconData`, or `IconTheme`: a
+  terminal icon is a character, so `Text(Icons.check)` is the whole API and
+  `TextStyle` already carries the color. No non-ASCII member carries the
+  Unicode `Emoji` property: those characters have an emoji presentation
+  available and may occupy two cells in some terminal/font environments; `⚠`,
+  `▶`, `✔`, `☑`, and `♥` are excluded for that reason and the catalog documents
+  a stand-in for each. ASCII keycap bases such as `*` remain safe when rendered
+  alone. Members are grouped narrow versus East-Asian-ambiguous so a state pair
+  or fixed column can be drawn from one class. Architecture tests enforce the
+  catalog policy and keep migrated standalone chrome on named members while
+  allowing emoji in ordinary text. `Checkbox`, `Switch`, `DataTable`,
+  `ListView`, `Select`, and `TabSelect` now resolve their glyphs through `Icons`
+  without changing what they paint. Patch Manager status/caret glyphs, Like
+  Reactor particles, the Pub search release marker, and two Pub search link
+  labels moved off characters with environment-dependent width or
+  presentation.
 - Reworked Pub search package details around a responsive hierarchy: package
   state, publication metadata, install command, and headline metrics now lead
   the page; 44-cell summary groups pair on wide terminals and stack on narrow

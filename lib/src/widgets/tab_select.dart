@@ -14,6 +14,7 @@ import '../rendering/object.dart';
 import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
+import 'icons.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'select.dart';
@@ -495,11 +496,11 @@ final class _RenderTabSelect<T> extends RenderBox {
     }
     if (_showScrollArrows && _options.length > _metrics.visibleTabs) {
       if (_metrics.scrollOffset > 0) {
-        context.canvas.drawText('‹', origin, _descriptionColor);
+        context.canvas.drawText(Icons.chevronLeft, origin, _descriptionColor);
       }
       if (_metrics.scrollOffset + _metrics.visibleTabs < _options.length) {
         context.canvas.drawText(
-          '›',
+          Icons.chevronRight,
           Offset(origin.dx + size.width - 1, origin.dy),
           _descriptionColor,
         );
@@ -511,8 +512,8 @@ final class _RenderTabSelect<T> extends RenderBox {
 String _truncate(String value, int cells) {
   if (cells <= 0) return '';
   if (terminalStringWidth(value) <= cells) return value;
-  if (cells == 1) return '…';
-  return '${sliceByCells(value, cells - 1)}…';
+  if (cells == 1) return Icons.ellipsis;
+  return '${sliceByCells(value, cells - 1)}${Icons.ellipsis}';
 }
 
 void _validateTabWidth(int? value) {

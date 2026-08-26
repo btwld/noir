@@ -59,7 +59,10 @@ void main() {
       first.particles.map((particle) => particle.cellX(56)),
       orderedEquals(second.particles.map((particle) => particle.cellX(56))),
     );
-    expect(first.particles.map((particle) => particle.glyph), contains('♥'));
+    expect(
+      first.particles.map((particle) => particle.glyph),
+      contains(Icons.sparkle),
+    );
     second.clear();
     expect(second.particles, isEmpty);
 
@@ -97,7 +100,7 @@ void main() {
         final footprintTop = heart.top - 1;
         final stageTop = footprintTop - _particleStageHeight - 1;
         final particleBottom = frame
-            .findText('♥')
+            .findText(Icons.sparkle)
             .map((position) => position.y)
             .reduce(math.max);
 
@@ -191,7 +194,7 @@ void main() {
       final morphed = app.captureFrame();
 
       expect(moved.toText(), isNot(initial.toText()));
-      expect(morphed.findText('♡'), isNotEmpty);
+      expect(morphed.findText(Icons.sparkleOutline), isNotEmpty);
       expect(morphed, BufferMatchers.containsText('NOIR · LIKE REACTOR'));
     } finally {
       app.dispose();

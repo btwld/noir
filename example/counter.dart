@@ -138,7 +138,10 @@ class _IncrementButton extends StatelessWidget {
       height: 3,
       alignment: Alignment.center,
       color: _materialBlue,
-      child: const Text('+', style: TextStyle(fontWeight: FontWeight.bold)),
+      child: const Text(
+        Icons.plus,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
     ),
   );
 }

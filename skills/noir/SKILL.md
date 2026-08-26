@@ -189,6 +189,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Status tag | `Badge` | `references/widgets.md` |
 | Fraction of work | `ProgressBar` | `references/widgets.md` |
 | One-cell activity glyph | `Spinner` | `references/widgets.md` |
+| Named status / caret / arrow glyph | `Icons` | `references/widgets.md` |
 | Single-line text field | `TextInput` | `references/inputs-and-focus.md` |
 | Multi-line editor | `TextArea` | `references/inputs-and-focus.md` |
 | Closed set of named options | `Select<T>` | `references/inputs-and-focus.md` |
@@ -327,6 +328,17 @@ driving a live app; automated assertions belong in ordinary tests
 - **Wide characters take 2 cells.** CJK and many emoji occupy two columns. Noir
   handles width internally; use `terminalStringWidth(...)` if you need to
   measure a string yourself before laying it out.
+- **Take glyphs from `Icons`, not from a literal.** `Icons.check`,
+  `Icons.caretRight`, `Icons.triangleUp`, `Icons.arrowDown` and friends are
+  verified one cell wide. Non-ASCII members are free of the Unicode `Emoji`
+  property, avoiding an environment-dependent emoji presentation; ASCII
+  keycap bases such as `*` remain safe when used alone. `⚠`, `▶`, `◀`, `✔`,
+  `☑`, `♥`, and `↗` carry that property and are deliberately absent. Use named
+  members for standalone chrome and status markers; ordinary text can still
+  contain emoji. Members are also grouped narrow versus East-Asian-ambiguous —
+  prefer one group for a state pair or fixed column when the choice is free,
+  but that one costs a cell only in a terminal that doubles ambiguous width,
+  where Noir's borders already shift.
 - **The cursor is not part of the character buffer.** `TextInput`/`TextArea`
   render the caret through terminal cursor state rather than a character cell.
   Design tests around controller selection and observable callbacks instead of

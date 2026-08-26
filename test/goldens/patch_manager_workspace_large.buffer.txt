@@ -6,13 +6,13 @@
  │Changed Files                           │ │Diff Review                                                                                  │ 
  │▎ D app.dart          lib     +3 -2  !  │ │lib/app.dart                                                                                 │ 
  │▎ L current.link  links link target  U  │ │hunk 1 of 1  3 changes  +3 -2                                                                │ 
- │▎ B logo.png      asset binary file  M  │ │ ◆ 1 staged   ✗ 0 skipped   ○ 2 pending                                                      │ 
+ │▎ B logo.png      asset binary file  M  │ │ ⧫ 1 staged   ✗ 0 skipped   ◌ 2 pending                                                      │ 
  │▎ T notes draft.txt           +2 -0  U  │ │                                                                                             │ 
  │▎ B raw logo. asse untracked binary  U  │ │╭──────────────────────────────────────────────────────────────────────────────────────────╮ │ 
  │▎ T truncated.t docs preview 1 line  U  │ ││ ! @@ -1,12 +1,14 @@                                                 stage hunk   failed  │ │ 
  │                                        │ ││       1  void main() {                                                                   │ │ 
- │                                        │ ││ ▶ -   2    print('old');                                                                 │ │ 
- │                                        │ ││ ▶ +   2    print('new');                                                                 │ │ 
+ │                                        │ ││ ► -   2    print('old');                                                                 │ │ 
+ │                                        │ ││ ► +   2    print('new');                                                                 │ │ 
  │                                        │ ││       3  }                                                                               │ │ 
  │                                        │ ││       4                                                                                  │ │ 
  │                                        │ ││       5  void layout() {                                                                 │ │ 

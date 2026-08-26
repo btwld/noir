@@ -4,16 +4,17 @@ import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
 import 'activatable.dart';
 import 'focus_node_owner_mixin.dart';
+import 'icons.dart';
 import 'input.dart';
 import 'row_column.dart';
 import 'text.dart';
 import 'text_style.dart';
 import 'theme.dart';
 
-/// Single-cell circles from the geometric-shapes block, so the label never
-/// shifts as the value changes.
-const String _off = '○'; // U+25CB
-const String _on = '●'; // U+25CF
+/// [Icons.circleOutline] and [Icons.circle] share one width class, so the
+/// label never shifts as the value changes.
+const String _off = Icons.circleOutline;
+const String _on = Icons.circle;
 
 /// A two-state toggle with an optional label, flipped by Space, Enter, or a
 /// click.

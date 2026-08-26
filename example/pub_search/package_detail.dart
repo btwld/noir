@@ -294,7 +294,9 @@ Widget _buildOverview(PubPackageSnapshot package, ThemeData theme) => Column(
       _fact(
         theme,
         'CHANGELOG',
-        package.changelogUrl.isEmpty ? null : 'View changelog ↗',
+        package.changelogUrl.isEmpty
+            ? null
+            : 'View changelog ${Icons.arrowUpRight}',
         uri: package.changelogUrl,
       ),
       _fact(theme, 'HOMEPAGE', package.homepage),
@@ -321,7 +323,7 @@ Widget _buildVersions(PubPackageSnapshot package, ThemeData theme) => Column(
         if (package.changelogUrl.isNotEmpty)
           RichText(
             text: TextSpan(
-              text: 'View changelog ↗',
+              text: 'View changelog ${Icons.arrowUpRight}',
               uri: _semanticHttpUri(package.changelogUrl),
             ),
           ),
@@ -349,7 +351,7 @@ Widget _releaseRow(
         text: TextSpan(
           children: [
             TextSpan(
-              text: latest ? '● ' : '  ',
+              text: latest ? '${Icons.bulletSmall} ' : '  ',
               style: TextStyle(color: latest ? theme.accent : theme.textMuted),
             ),
             TextSpan(
@@ -707,7 +709,10 @@ List<Widget> _dependencyRows(
       ),
     ),
     for (final detail in details)
-      Text('  ↳ $detail', style: TextStyle(color: theme.textMuted)),
+      Text(
+        '  ${Icons.arrowBranchDown} $detail',
+        style: TextStyle(color: theme.textMuted),
+      ),
   ];
 }
 

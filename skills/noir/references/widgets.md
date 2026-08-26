@@ -8,7 +8,7 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 - [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
 - [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `MenuAnchor`
 - [Theme](#theme): `Theme`, `ThemeData`
-- [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`
+- [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`, `Icons`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
 - [Painting](#painting): `Color`, `BoxDecoration`, `Border`, `Image`, `TerminalImage`
 - [Text](#text): `Text`, `TextStyle`, `TextStyles`, `RichText` / `TextSpan`, `AsciiFont`
@@ -389,6 +389,73 @@ const Spinner({
   this.interval = const Duration(milliseconds: 80),
 })
 ```
+
+### Icons
+
+119 named one-cell glyphs. Values are plain `String`s — render with `Text`
+and color through `TextStyle`. There is no `Icon` widget and no `IconTheme`:
+a glyph has no size to inherit on a cell grid, and `ThemeData` already
+carries the colors.
+
+```dart
+Text(Icons.check, style: TextStyle(color: theme.success))
+```
+
+**The conservative rule: no non-ASCII member carries the Unicode `Emoji`
+property.** Those characters have an emoji presentation available, and some
+terminal/font environments may choose it at two-cell width. ASCII keycap bases
+such as `*` remain ordinary one-cell text when rendered alone. Use `Icons` for
+standalone chrome and status markers; ordinary text can still contain emoji.
+
+Members are also grouped narrow versus East-Asian-ambiguous. Mixing *those*
+is weaker: it costs a cell only under ambiguous-doubling, and there Noir's
+box-drawing borders and progress bars have already shifted. Prefer one group
+for a fixed column or a state pair when the choice is free; a hint string can
+mix them, since nothing is aligned to it.
+
+**Narrow** (not East-Asian-ambiguous; expected to stay one cell across normal
+terminal width modes):
+
+| Family | Members |
+|---|---|
+| Marks | `check` `checkNot` `close` `closeHeavy` `closeThin` `bang` `query` `asterisk` |
+| Carets | `caretUp` `caretDown` `caretLeft` `caretRight` `caretUpOutline` `caretDownOutline` `caretLeftOutline` `caretRightOutline` `caretUpMedium` `caretDownMedium` `caretLeftMedium` `caretRightMedium` |
+| Pointers | `pointerRight` `pointerLeft` `pointerRightOutline` `pointerLeftOutline` |
+| Chevrons | `chevronLeft` `chevronRight` `chevronDoubleLeft` `chevronDoubleRight` |
+| Arrows | `arrowUpDouble` `arrowDownDouble` `arrowLeftDouble` `arrowRightDouble` `arrowUpToBar` `arrowDownToBar` `arrowLeftBlocked` `arrowRightBlocked` `arrowBranchDown` `arrowBranchUp` `arrowWavyRight` `arrowUpRight` |
+| Keyboard | `enter` `enterKeypad` `escape` `backspace` `deleteForward` `tab` `tabBack` `control` `option` `command` `capsLock` `power` |
+| Shapes | `squareRounded` `rectangle` `rectangleOutline` `bar` `barOutline` `lozenge` `lozengeOutline` `fisheye` `circleDotted` `circleSmall` |
+| Bullets | `bulletSmall` `bulletOutline` `bulletTriangular` `bulletHyphen` |
+| Stars | `sparkle` `sparkleOutline` `starHollow` `starSmall` |
+| Objects | `search` `home` `pencil` `scissors` `bell` `hourglass` `hourglassOutline` `refresh` `undo` `branch` `plus` `minus` |
+
+**Ambiguous** (one cell unless the terminal doubles East Asian ambiguous
+width — the same terminals where box-drawing borders shift):
+
+| Family | Members |
+|---|---|
+| Shapes | `square` `circle` `diamond` `triangleUp` `triangleDown` `squareOutline` `circleOutline` `diamondOutline` `triangleUpOutline` `triangleDownOutline` |
+| Circles | `bullseye` `circleLarge` `circleHalfLeft` `circleHalfRight` |
+| Status | `info` `star` `starOutline` |
+| Arrows / keys | `arrowUp` `arrowDown` `arrowLeft` `arrowRight` `shift` |
+| Punctuation | `bullet` `dot` `ellipsis` `dashEm` `dashEn` |
+| Math | `degree` `plusMinus` `times` `divide` `notEqual` `lessEqual` `greaterEqual` `approxEqual` `identical` `infinity` |
+
+Non-ASCII characters carrying the Unicode `Emoji` property are excluded
+conservatively because their presentation and width can vary by environment.
+Stand-ins:
+
+| Wanted | Use instead |
+|---|---|
+| `⚠` warning | `triangleUpOutline` or `bang` |
+| `▶` `◀` | `pointerRight` / `pointerLeft` |
+| `✔` heavy check | `check` |
+| `☑` ballot box | `square` / `squareOutline` |
+| `♥` heart | `sparkle` |
+| `⚙` gear | `asterisk` |
+| `⏸` `⏹` media | `bar` / `rectangle` |
+
+Nerd Font private-use glyphs are absent: Noir does not assume a patched font.
 
 ---
 

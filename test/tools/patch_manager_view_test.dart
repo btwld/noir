@@ -483,7 +483,7 @@ void main() {
         final addedText = buffer.findText("print('new')").single;
         final line = buffer.toLines()[addedText.y];
 
-        expect(line, contains('▶ +'));
+        expect(line, contains('${PatchTheme.caret} +'));
         expect(line, isNot(contains('> +')));
       } finally {
         capture.dispose();

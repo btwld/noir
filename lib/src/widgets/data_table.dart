@@ -13,6 +13,7 @@ import '../render/geometry.dart';
 import 'align.dart';
 import 'container.dart';
 import 'flexible.dart';
+import 'icons.dart';
 import 'input.dart';
 import 'list_view.dart';
 import 'pointer_listener.dart';
@@ -26,8 +27,8 @@ import 'viewport.dart';
 
 /// Glyphs marking which way the sorted column is ordered, matching the ones
 /// `Select` uses for its scroll indicator.
-const String _ascending = '▲';
-const String _descending = '▼';
+const String _ascending = Icons.triangleUp;
+const String _descending = Icons.triangleDown;
 
 /// One column of a [DataTable].
 ///

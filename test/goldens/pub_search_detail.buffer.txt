@@ -24,7 +24,7 @@
   │                                                                                              │  
   │PROJECT LINKS                                                                                 │  
   │PUB.DEV          https://pub.dev/packages/noir                                                │  
-  │CHANGELOG        View changelog ↗                                                             │  
+  │CHANGELOG        View changelog ➚                                                             │  
   │HOMEPAGE         https://github.com/leoafarias/noir                                           │  
   │REPOSITORY       https://github.com/leoafarias/noir                                           │  
   └──────────────────────────────────────────────────────────────────────────────────────────────┘  

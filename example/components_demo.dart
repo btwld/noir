@@ -67,7 +67,7 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
         Badge(label: _statusLabel, variant: _statusVariant),
         // A spinner animates for as long as it is mounted, so stopping
         // it means taking it out of the tree.
-        if (_spinning) const Spinner() else const Text('·'),
+        if (_spinning) const Spinner() else const Text(Icons.dot),
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

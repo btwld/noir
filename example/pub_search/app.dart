@@ -901,7 +901,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     };
     return Button(
       key: key,
-      label: '$label: ${value.toUpperCase()} ▾',
+      label: '$label: ${value.toUpperCase()} ${Icons.caretDown}',
       focusNode: focusNode,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       color: color,

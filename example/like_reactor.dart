@@ -183,12 +183,14 @@ class LikeParticle {
   /// Normalized lifetime progress in the inclusive range 0–1.
   double get progress => (_age / lifetime).clamp(0.0, 1.0);
 
-  /// Heart-to-spark glyph for the particle's current lifetime phase.
+  /// Glyph for the particle's current lifetime phase, fading from a solid
+  /// sparkle to a faint dot. All four are narrow [Icons] members, so a
+  /// particle keeps the same cell width for its whole flight.
   String get glyph {
-    if (progress < 0.55) return '♥';
-    if (progress < 0.82) return '♡';
-    if (progress < 0.94) return '✦';
-    return '·';
+    if (progress < 0.55) return Icons.sparkle;
+    if (progress < 0.82) return Icons.sparkleOutline;
+    if (progress < 0.94) return Icons.starSmall;
+    return Icons.bulletSmall;
   }
 
   /// Projects this particle onto a horizontal terminal cell.

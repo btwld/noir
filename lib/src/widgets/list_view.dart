@@ -14,6 +14,7 @@ import 'container.dart';
 import 'flexible.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
+import 'icons.dart';
 import 'input.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
@@ -391,12 +392,17 @@ class _ListViewState extends State<ListView>
 
   /// Arrow for one row of the indicator gutter. The bottom row wins when the
   /// list is only one row tall and can scroll both ways.
+  ///
+  /// The arrows are ambiguous-width and the blank is narrow, so this gutter
+  /// mixes Icons width groups, matching `Select`. See the note there: the cost
+  /// lands only under ambiguous-doubling, where the surrounding chrome has
+  /// already shifted.
   String _indicatorGlyph(int row) {
     final isLast = row == _visibleRows - 1;
     if (isLast && _viewport.scrollOffset < _viewport.maxScrollOffset) {
-      return '▼';
+      return Icons.triangleDown;
     }
-    if (row == 0 && _viewport.scrollOffset > 0) return '▲';
+    if (row == 0 && _viewport.scrollOffset > 0) return Icons.triangleUp;
     return ' ';
   }
 }
