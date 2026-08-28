@@ -63,6 +63,10 @@ final class ImageLoadException implements Exception {
   String toString() => 'ImageLoadException(${code.name}, $source): $message';
 }
 
+/// Network load timeout used by [Image.network]. Tests may shorten this.
+@visibleForTesting
+Duration debugNetworkImageTimeout = const Duration(seconds: 15);
+
 /// Displays a decoded image through terminal-native protocols or block cells.
 class Image extends StatefulWidget {
   /// Displays a borrowed decoded [image]. The widget never disposes it.
@@ -503,14 +507,15 @@ final class _NetworkImageSource extends _ImageSource {
         message: 'Only HTTP and HTTPS image URIs are supported',
       );
     }
-    final client = io.HttpClient();
+    final timeout = debugNetworkImageTimeout;
+    final client = io.HttpClient()..connectionTimeout = timeout;
     void cancelRequest() => client.close(force: true);
     token.addCancelCallback(cancelRequest);
     try {
       token.throwIfCancelled();
-      final request = await client.getUrl(uri);
+      final request = await client.getUrl(uri).timeout(timeout);
       headers.forEach(request.headers.set);
-      final response = await request.close();
+      final response = await request.close().timeout(timeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         await response.drain<void>();
         throw ImageLoadException(

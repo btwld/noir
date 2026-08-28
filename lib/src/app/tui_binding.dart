@@ -343,6 +343,9 @@ final class TuiBinding {
 
   /// Resize the renderer and schedule a frame if dimensions changed.
   void handleResize(int width, int height) {
+    if (_disposed || _disposing) {
+      return;
+    }
     if (_session.resize(width, height)) {
       _scheduler.scheduleFrame();
     }

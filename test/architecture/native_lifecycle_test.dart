@@ -66,6 +66,20 @@ void main() {
     }
   });
 
+  test('renderer finalizer swallows destroy failures', () {
+    final source = File('lib/src/core/renderer.dart').readAsStringSync();
+    final start = source.indexOf(
+      'static final Finalizer<RendererHandle> _finalizer',
+    );
+    final end = source.indexOf('final OpenTuiBindings _bindings');
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, greaterThan(start));
+    final body = source.substring(start, end);
+    expect(body, contains('try {'));
+    expect(body, contains('} on Object {'));
+    expect(body, contains('destroyRenderer(handle)'));
+  });
+
   test('Renderer owns one disposed guard for both raw capabilities', () {
     final source = File('lib/src/core/renderer.dart').readAsStringSync();
 

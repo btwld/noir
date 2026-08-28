@@ -190,11 +190,13 @@ class _ScrollBoxState extends State<ScrollBox>
     super.didUpdateWidget(oldWidget);
     syncFocusNode(oldWidget.focusNode);
     if (oldWidget.controller != widget.controller) {
+      final next = widget.controller ?? ScrollController();
+      final nextOwned = widget.controller == null;
+      next.addListener(_handleScrollChange);
       _controller.removeListener(_handleScrollChange);
       if (_ownsController) _controller.dispose();
-      _controller = widget.controller ?? ScrollController();
-      _ownsController = widget.controller == null;
-      _controller.addListener(_handleScrollChange);
+      _controller = next;
+      _ownsController = nextOwned;
     }
   }
 

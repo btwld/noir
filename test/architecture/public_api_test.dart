@@ -23,11 +23,6 @@ void main() {
       },
       'src/app/app.dart': {'TuiApp', 'runTuiApp'},
       'src/app/hot_reload.dart': {'registerHotReloadExtension'},
-      'src/core/capabilities.dart': {
-        'ColorSupport',
-        'TerminalCapabilities',
-        'TerminalSize',
-      },
       'src/core/color.dart': {'Color'},
       'src/core/terminal_style.dart': {
         'Attr',
@@ -378,17 +373,9 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(242),
-      reason: 'The high-level surface is locked at exactly 242 symbols.',
+      hasLength(239),
+      reason: 'The high-level surface is locked at exactly 239 symbols.',
     );
-  });
-
-  test('capability helpers expose only the current high-level surface', () {
-    final source = File('lib/src/core/capabilities.dart').readAsStringSync();
-
-    expect(source, contains('detectCapabilities()'));
-    expect(source, isNot(contains('getTerminalCapabilities()')));
-    expect(source, isNot(contains('class CapabilityTester')));
   });
 }
 

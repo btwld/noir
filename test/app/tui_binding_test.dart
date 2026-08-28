@@ -146,6 +146,15 @@ void main() {
     expect(() => binding.handleResize(5, 2), returnsNormally);
     expect(binding.debugHasScheduledFrame, isFalse);
   });
+
+  test('handleResize after dispose is a no-op', () {
+    final binding = TuiBinding(width: 5, height: 2, headless: true)
+      ..runApp(const Text('ok'));
+    binding.dispose();
+
+    expect(() => binding.handleResize(9, 4), returnsNormally);
+    expect(binding.debugHasScheduledFrame, isFalse);
+  });
 }
 
 class _CounterApp extends StatefulWidget {

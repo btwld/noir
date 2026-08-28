@@ -156,7 +156,7 @@ Inside this repo, `example/` has a runnable reference for every major feature
 | `MaterialApp`/`Scaffold` | `runTuiApp(widget)` | No design system; just a root |
 | Pixel images | `Image` / `TerminalImage` with negotiated Kitty, Sixel, or block fallback | Protocol support and pixel resolution vary by terminal |
 | Gestures (`GestureDetector`) | `PointerListener` + mouse events | Terminal mouse reporting |
-| `MediaQuery` | `TerminalCapabilities` / resize callbacks | Terminal size & color support |
+| `MediaQuery` | session size / `handleResize` | Terminal size is integer cells |
 
 Noir provides familiar layout building blocks including `Row`, `Column`,
 `Container`, `Padding`, `SizedBox`, `Align`, `Expanded`, `Flexible`,

@@ -729,7 +729,7 @@ void main() {
         ..typeText('s');
       await _settle(app);
       expect(catalog.searchCalls, hasLength(1));
-      expect(_render(app), contains('CHOOSE SORT'));
+      expect(_render(app), contains('Sort menu'));
     } finally {
       app.dispose();
     }
@@ -758,83 +758,77 @@ void main() {
     }
   });
 
-  test(
-    'chooser launchers name their action and use two-cell padding',
-    () async {
-      final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
-      final app = createTuiTestApp(
-        PubSearchApp(catalog: catalog, onQuit: () {}),
-        width: 100,
-        height: 32,
-      );
+  test('menu launchers name their action and use two-cell padding', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
 
-      try {
-        await _settle(app);
-        final frame = app.captureFrame();
-        final text = frame.toText();
+    try {
+      await _settle(app);
+      final frame = app.captureFrame();
+      final text = frame.toText();
 
-        expect(text, contains('Sort: TOP ▾'));
-        expect(text, contains('Filter: ANY ▾'));
-        expect(text, isNot(contains('SORT [TOP ▾]')));
-        for (final label in ['Sort: TOP ▾', 'Filter: ANY ▾']) {
-          final position = frame.findText(label).single;
-          final trailing = position.x + terminalStringWidth(label);
-          expect(
-            frame.getBackgroundColor(position.x - 2, position.y),
-            _painted(pubTheme.surfaceVariant),
-          );
-          expect(
-            frame.getBackgroundColor(trailing + 1, position.y),
-            _painted(pubTheme.surfaceVariant),
-          );
-        }
-      } finally {
-        app.dispose();
+      expect(text, contains('Sort: TOP ▾'));
+      expect(text, contains('Filter: ANY ▾'));
+      expect(text, isNot(contains('SORT [TOP ▾]')));
+      for (final label in ['Sort: TOP ▾', 'Filter: ANY ▾']) {
+        final position = frame.findText(label).single;
+        final trailing = position.x + terminalStringWidth(label);
+        expect(
+          frame.getBackgroundColor(position.x - 2, position.y),
+          _painted(pubTheme.surfaceVariant),
+        );
+        expect(
+          frame.getBackgroundColor(trailing + 1, position.y),
+          _painted(pubTheme.surfaceVariant),
+        );
       }
-    },
-  );
+    } finally {
+      app.dispose();
+    }
+  });
 
-  test(
-    'Tab gives chooser launchers distinct idle and focused styles',
-    () async {
-      final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
-      final app = createTuiTestApp(
-        PubSearchApp(catalog: catalog, onQuit: () {}),
-        width: 100,
-        height: 32,
-      );
+  test('Tab gives menu launchers distinct idle and focused styles', () async {
+    final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
 
-      try {
-        await _settle(app);
-        var sort = _tabStyle(app, 'Sort: TOP ▾');
-        var filter = _tabStyle(app, 'Filter: ANY ▾');
-        expect(sort.background, _painted(pubTheme.surfaceVariant));
-        expect(sort.foreground, _painted(pubTheme.textMuted));
-        expect(sort.bold, isFalse);
-        expect(filter.background, _painted(pubTheme.surfaceVariant));
+    try {
+      await _settle(app);
+      var sort = _tabStyle(app, 'Sort: TOP ▾');
+      var filter = _tabStyle(app, 'Filter: ANY ▾');
+      expect(sort.background, _painted(pubTheme.surfaceVariant));
+      expect(sort.foreground, _painted(pubTheme.textMuted));
+      expect(sort.bold, isFalse);
+      expect(filter.background, _painted(pubTheme.surfaceVariant));
 
-        app.mockInput.pressTab();
-        await _settle(app);
-        sort = _tabStyle(app, 'Sort: TOP ▾');
-        filter = _tabStyle(app, 'Filter: ANY ▾');
-        expect(sort.background, _painted(pubTheme.accent));
-        expect(sort.foreground, _painted(pubTheme.accentForeground));
-        expect(sort.bold, isTrue);
-        expect(filter.background, _painted(pubTheme.surfaceVariant));
+      app.mockInput.pressTab();
+      await _settle(app);
+      sort = _tabStyle(app, 'Sort: TOP ▾');
+      filter = _tabStyle(app, 'Filter: ANY ▾');
+      expect(sort.background, _painted(pubTheme.accent));
+      expect(sort.foreground, _painted(pubTheme.accentForeground));
+      expect(sort.bold, isTrue);
+      expect(filter.background, _painted(pubTheme.surfaceVariant));
 
-        app.mockInput.pressTab();
-        await _settle(app);
-        sort = _tabStyle(app, 'Sort: TOP ▾');
-        filter = _tabStyle(app, 'Filter: ANY ▾');
-        expect(sort.background, _painted(pubTheme.surfaceVariant));
-        expect(filter.background, _painted(pubTheme.accent));
-        expect(filter.foreground, _painted(pubTheme.accentForeground));
-        expect(filter.bold, isTrue);
-      } finally {
-        app.dispose();
-      }
-    },
-  );
+      app.mockInput.pressTab();
+      await _settle(app);
+      sort = _tabStyle(app, 'Sort: TOP ▾');
+      filter = _tabStyle(app, 'Filter: ANY ▾');
+      expect(sort.background, _painted(pubTheme.surfaceVariant));
+      expect(filter.background, _painted(pubTheme.accent));
+      expect(filter.foreground, _painted(pubTheme.accentForeground));
+      expect(filter.bold, isTrue);
+    } finally {
+      app.dispose();
+    }
+  });
 
   test('search help advertises only available page commands', () async {
     const cases = [
@@ -1737,7 +1731,7 @@ void main() {
   );
 
   test(
-    'result shortcut filter picker sends its selection to the catalog',
+    'result shortcut filter menu sends its selection to the catalog',
     () async {
       final catalog = _FakePubCatalog()
         ..searchResults.addAll([
@@ -1760,7 +1754,7 @@ void main() {
           ..pressTab()
           ..typeText('f');
         await _settle(app);
-        expect(_render(app), contains('CHOOSE FILTER'));
+        expect(_render(app), contains('Filter menu'));
 
         app.mockInput
           ..pressArrow(ArrowDirection.down)
@@ -1776,7 +1770,7 @@ void main() {
     },
   );
 
-  test('clicking the Sort value opens and applies one picker option', () async {
+  test('clicking the Sort value opens and applies one menu option', () async {
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
         _page(['noir']),
@@ -1793,7 +1787,7 @@ void main() {
       final sort = app.captureFrame().findText('Sort: TOP ▾').single;
       app.mockMouse.click(sort.x, sort.y);
       await _settle(app);
-      expect(_render(app), contains('CHOOSE SORT'));
+      expect(_render(app), contains('Sort menu'));
 
       final text = app.captureFrame().findText('RELEVANCE').single;
       app.mockMouse.click(text.x, text.y);
@@ -1813,7 +1807,7 @@ void main() {
   });
 
   test(
-    'sort picker overlays mounted results and closes on an outside click',
+    'sort menu overlays mounted results and closes on an outside click',
     () async {
       final catalog = _FakePubCatalog()
         ..searchResults.add(_page(['overlay_result']));
@@ -1830,17 +1824,17 @@ void main() {
         await _settle(app);
 
         final frame = app.captureFrame();
-        final chooser = frame.findText('CHOOSE SORT').single;
+        final menu = frame.findText('Sort menu').single;
         expect(frame.toText(), contains('PAGE'));
-        expect(chooser.y, greaterThan(sort.y));
-        expect(chooser.x, lessThan(sort.x + 8));
-        expect(chooser.x + 48, lessThanOrEqualTo(frame.width));
+        expect(menu.y, greaterThan(sort.y));
+        expect(menu.x, lessThan(sort.x + 8));
+        expect(menu.x + 48, lessThanOrEqualTo(frame.width));
 
-        app.mockMouse.click(frame.width - 3, chooser.y);
+        app.mockMouse.click(frame.width - 3, menu.y);
         await _settle(app);
         expect(catalog.detailCalls, isEmpty);
         expect(catalog.searchCalls, hasLength(1));
-        expect(_render(app), isNot(contains('CHOOSE SORT')));
+        expect(_render(app), isNot(contains('Sort menu')));
         expect(_render(app), contains('overlay_result'));
 
         final launcher = _tabStyle(app, 'Sort: TOP ▾');
@@ -1853,7 +1847,7 @@ void main() {
     },
   );
 
-  test('filter picker stays inside the right terminal edge', () async {
+  test('filter menu stays inside the right terminal edge', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -1867,23 +1861,23 @@ void main() {
       await _settle(app);
 
       final frame = app.captureFrame();
-      final chooser = frame.findText('CHOOSE FILTER').single;
-      final chooserLeft = [
+      final menu = frame.findText('Filter menu').single;
+      final menuLeft = [
         for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, chooser.y) == '┌') x,
+          if (frame.getChar(x, menu.y) == '┌') x,
       ].single;
-      final chooserRight = [
+      final menuRight = [
         for (var x = 0; x < frame.width; x++)
-          if (frame.getChar(x, chooser.y) == '┐') x,
+          if (frame.getChar(x, menu.y) == '┐') x,
       ].single;
-      expect(chooserLeft, greaterThanOrEqualTo(0));
-      expect(chooserRight, lessThan(frame.width));
+      expect(menuLeft, greaterThanOrEqualTo(0));
+      expect(menuRight, lessThan(frame.width));
     } finally {
       app.dispose();
     }
   });
 
-  test('open sort picker follows a same-frame resize', () async {
+  test('open sort menu follows a same-frame resize', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -1896,65 +1890,62 @@ void main() {
       final sort = app.captureFrame().findText('Sort: TOP ▾').single;
       app.mockMouse.click(sort.x, sort.y);
       await _settle(app);
-      expect(_render(app), contains('CHOOSE SORT'));
+      expect(_render(app), contains('Sort menu'));
 
       app
         ..resize(60, 18)
         ..pumpFrame();
-      expect(_render(app), contains('CHOOSE SORT'));
+      expect(_render(app), contains('Sort menu'));
       final frame = app.captureFrame();
-      final chooser = frame.findText('CHOOSE SORT').single;
-      expect(chooser.y, lessThan(frame.height));
-      expect(chooser.x, lessThan(frame.width));
+      final menu = frame.findText('Sort menu').single;
+      expect(menu.y, lessThan(frame.height));
+      expect(menu.x, lessThan(frame.width));
+    } finally {
+      app.dispose();
+    }
+  });
+
+  test('clicking the Filter value opens and applies one menu option', () async {
+    final catalog = _FakePubCatalog()
+      ..searchResults.addAll([
+        _page(['noir']),
+        _page(['filtered']),
+      ]);
+    final app = createTuiTestApp(
+      PubSearchApp(catalog: catalog, onQuit: () {}),
+      width: 100,
+      height: 32,
+    );
+
+    try {
+      await _settle(app);
+      final filter = app.captureFrame().findText('Filter: ANY ▾').single;
+      app.mockMouse.click(filter.x, filter.y);
+      await _settle(app);
+      expect(_render(app), contains('Filter menu'));
+      final active = _tabStyle(app, 'Filter: ANY ▾');
+      expect(active.background, _painted(pubTheme.selectedBackground));
+      expect(active.foreground, _painted(pubTheme.selectedForeground));
+
+      final dart = app.captureFrame().findText('DART').single;
+      app.mockMouse.click(dart.x, dart.y);
+      await _settle(app);
+
+      expect(catalog.searchCalls, hasLength(2));
+      expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
+      expect(_render(app), contains('Filter: DART ▾'));
+      expect(_render(app), contains('filtered'));
+      final style = _tabStyle(app, 'Filter: DART ▾');
+      expect(style.background, _painted(pubTheme.accent));
+      expect(style.foreground, _painted(pubTheme.accentForeground));
+      expect(style.bold, isTrue);
     } finally {
       app.dispose();
     }
   });
 
   test(
-    'clicking the Filter value opens and applies one picker option',
-    () async {
-      final catalog = _FakePubCatalog()
-        ..searchResults.addAll([
-          _page(['noir']),
-          _page(['filtered']),
-        ]);
-      final app = createTuiTestApp(
-        PubSearchApp(catalog: catalog, onQuit: () {}),
-        width: 100,
-        height: 32,
-      );
-
-      try {
-        await _settle(app);
-        final filter = app.captureFrame().findText('Filter: ANY ▾').single;
-        app.mockMouse.click(filter.x, filter.y);
-        await _settle(app);
-        expect(_render(app), contains('CHOOSE FILTER'));
-        final active = _tabStyle(app, 'Filter: ANY ▾');
-        expect(active.background, _painted(pubTheme.selectedBackground));
-        expect(active.foreground, _painted(pubTheme.selectedForeground));
-
-        final dart = app.captureFrame().findText('DART').single;
-        app.mockMouse.click(dart.x, dart.y);
-        await _settle(app);
-
-        expect(catalog.searchCalls, hasLength(2));
-        expect(catalog.searchCalls.last.filter, PackageSearchFilter.dart);
-        expect(_render(app), contains('Filter: DART ▾'));
-        expect(_render(app), contains('filtered'));
-        final style = _tabStyle(app, 'Filter: DART ▾');
-        expect(style.background, _painted(pubTheme.accent));
-        expect(style.foreground, _painted(pubTheme.accentForeground));
-        expect(style.bold, isTrue);
-      } finally {
-        app.dispose();
-      }
-    },
-  );
-
-  test(
-    'keyboard sort picker applies exact criteria and restores focus',
+    'keyboard sort menu applies exact criteria and restores focus',
     () async {
       final refresh = Completer<PackageSearchPage>();
       final catalog = _FakePubCatalog()
@@ -1978,7 +1969,7 @@ void main() {
           ..pressEnter();
         await _settle(app);
 
-        expect(_render(app), contains('CHOOSE SORT'));
+        expect(_render(app), contains('Sort menu'));
         expect(_render(app), contains('Pub.dev ranking'));
         expect(_render(app), contains('Most downloads'));
 
@@ -2015,7 +2006,7 @@ void main() {
   );
 
   test(
-    'picker refresh uses the edited query and preserves the visible topic',
+    'menu refresh uses the edited query and preserves the visible topic',
     () async {
       final catalog = _FakePubCatalog()
         ..suggestions.add(const PubSuggestion.topic('terminal', 12))
@@ -2070,7 +2061,7 @@ void main() {
     },
   );
 
-  test('empty picker refresh keeps focus on its sort launcher', () async {
+  test('empty menu refresh keeps focus on its sort launcher', () async {
     final refresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
@@ -2109,7 +2100,7 @@ void main() {
     }
   });
 
-  test('failed picker refresh keeps focus on its filter launcher', () async {
+  test('failed menu refresh keeps focus on its filter launcher', () async {
     final refresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
@@ -2152,7 +2143,7 @@ void main() {
     }
   });
 
-  test('Space opens filter picker and one click applies its option', () async {
+  test('Space opens filter menu and one click applies its option', () async {
     final refresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([
@@ -2173,7 +2164,7 @@ void main() {
         ..typeText(' ');
       await _settle(app);
 
-      expect(_render(app), contains('CHOOSE FILTER'));
+      expect(_render(app), contains('Filter menu'));
       expect(_render(app), contains('All packages'));
       expect(_render(app), contains('Dart SDK'));
       expect(_render(app), contains('Flutter SDK'));
@@ -2199,7 +2190,7 @@ void main() {
     }
   });
 
-  test('same-value and cancelled picker choices issue no request', () async {
+  test('same-value and cancelled menu choices issue no request', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -2217,7 +2208,7 @@ void main() {
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(1));
-      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(_render(app), isNot(contains('Sort menu')));
       expect(
         _render(app),
         contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
@@ -2241,7 +2232,7 @@ void main() {
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(1));
-      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(_render(app), isNot(contains('Sort menu')));
       expect(
         _render(app),
         contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
@@ -2254,7 +2245,7 @@ void main() {
       await _settle(app);
 
       expect(catalog.searchCalls, hasLength(1));
-      expect(_render(app), isNot(contains('CHOOSE SORT')));
+      expect(_render(app), isNot(contains('Sort menu')));
       expect(
         _render(app),
         contains('Enter/Space/click choose sort  Tab filter  Esc quit'),
@@ -2264,7 +2255,7 @@ void main() {
     }
   });
 
-  test('result shortcuts open sort and filter pickers', () async {
+  test('result shortcuts open sort and filter menus', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(
       PubSearchApp(catalog: catalog, onQuit: () {}),
@@ -2280,7 +2271,7 @@ void main() {
         ..pressTab()
         ..typeText('s');
       await _settle(app);
-      expect(_render(app), contains('CHOOSE SORT'));
+      expect(_render(app), contains('Sort menu'));
 
       app.mockInput.pressEscape();
       await _settle(app);
@@ -2290,14 +2281,14 @@ void main() {
         ..typeText('f');
       await _settle(app);
 
-      expect(_render(app), contains('CHOOSE FILTER'));
+      expect(_render(app), contains('Filter menu'));
       expect(catalog.searchCalls, hasLength(1));
     } finally {
       app.dispose();
     }
   });
 
-  test('empty results keep both picker launchers in traversal', () async {
+  test('empty results keep both menu launchers in traversal', () async {
     final refresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
       ..searchResults.addAll([_page([]), refresh.future]);
@@ -2337,7 +2328,7 @@ void main() {
   });
 
   test(
-    'picker replaces search loading copy with one updating indicator',
+    'menu replaces search loading copy with one updating indicator',
     () async {
       final nextPage = Completer<PackageSearchPage>();
       final catalog = _FakePubCatalog()
@@ -2361,7 +2352,7 @@ void main() {
           ..typeText('s');
         await _settle(app);
 
-        expect(_render(app), contains('CHOOSE SORT'));
+        expect(_render(app), contains('Sort menu'));
         expect(_render(app), contains('Updating results…'));
         expect(_render(app), isNot(contains('Searching pub.dev…')));
         expect(_spinnerPositions(app), hasLength(1));
@@ -2372,7 +2363,7 @@ void main() {
     },
   );
 
-  test('a second picker choice wins over an earlier search', () async {
+  test('a second menu choice wins over an earlier search', () async {
     final firstRefresh = Completer<PackageSearchPage>();
     final secondRefresh = Completer<PackageSearchPage>();
     final catalog = _FakePubCatalog()
@@ -2631,7 +2622,7 @@ void main() {
     }
   });
 
-  test('keeps launcher and picker help variants within 80 columns', () async {
+  test('keeps launcher and menu help variants within 80 columns', () async {
     final catalog = _FakePubCatalog()..searchResults.add(_page(['noir']));
     final app = createTuiTestApp(PubSearchApp(catalog: catalog, onQuit: () {}));
 
@@ -3288,8 +3279,8 @@ void main() {
         contains('Enter/Space/click choose filter  Tab search  Esc quit'),
       );
 
-      // The empty chooser refresh retains its launcher focus, so Enter opens
-      // the filter picker again without an intervening traversal step.
+      // The empty menu refresh retains its launcher focus, so Enter opens
+      // the filter menu again without an intervening traversal step.
       app.mockInput.pressEnter();
       await _settle(app);
       app.mockInput

@@ -2,46 +2,30 @@
 
 ## 0.0.1-alpha.3
 
-- Added a package-owned root overlay with `OverlayPortal`,
-  `OverlayPortalController`, `MenuAnchor`, and `MenuController`. Overlay
-  children stay logical descendants of their portal while one external render
-  edge is hosted above the application. `MenuAnchor` places an unstyled menu in
-  integer cells, follows the launcher in the same frame after resize or
-  movement, and uses a modal outside pointer barrier: left-button down closes
-  the topmost menu, other outside pointer events are consumed without closing,
-  and `TuiApp.onMouse` may still observe the raw event at app priority. Hide
-  destroys overlay `State`; controller replacement does not transfer portal
-  visibility; menu controller replacement preserves open state. This is not
-  Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
-  nested overlay, transform, `LayerLink`, animation, or cascade API.
-- Added `Icons`, a catalog of 119 named single-cell glyph strings for marks,
-  carets, pointers, chevrons, arrows, keyboard keys, shapes, bullets, stars,
-  and status markers. There is no `Icon` widget, `IconData`, or `IconTheme`: a
-  terminal icon is a character, so `Text(Icons.check)` is the whole API and
-  `TextStyle` already carries the color. No non-ASCII member carries the
-  Unicode `Emoji` property: those characters have an emoji presentation
-  available and may occupy two cells in some terminal/font environments; `⚠`,
-  `▶`, `✔`, `☑`, and `♥` are excluded for that reason and the catalog documents
-  a stand-in for each. ASCII keycap bases such as `*` remain safe when rendered
-  alone. Members are grouped narrow versus East-Asian-ambiguous so a state pair
-  or fixed column can be drawn from one class. Architecture tests enforce the
-  catalog policy and keep migrated standalone chrome on named members while
-  allowing emoji in ordinary text. `Checkbox`, `Switch`, `DataTable`,
-  `ListView`, `Select`, and `TabSelect` now resolve their glyphs through `Icons`
-  without changing what they paint. Patch Manager status/caret glyphs, Like
-  Reactor particles, the Pub search release marker, and two Pub search link
-  labels moved off characters with environment-dependent width or
-  presentation.
-- Reworked Pub search package details around a responsive hierarchy: package
-  state, publication metadata, install command, and headline metrics now lead
-  the page; 44-cell summary groups pair on wide terminals and stack on narrow
-  ones; Versions uses a friendly release ledger instead of archive metadata;
-  Dependencies uses the available width; and Health prioritizes rendered GFM
-  reports and advisories ahead of technical diagnostics. Sort and Filter now
-  use launcher-anchored `MenuAnchor` menus.
-
-## 0.0.1-alpha.2
-
+- Added `Theme` / `ThemeData` and a first component tier: `ListView`,
+  `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
+  `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as
+  `explicit ?? Theme.of(context).token`. `ThemeData.dark` is the unthemed
+  look. Nullable `backgroundColor` still uses `Theme.maybeOf` so "no fill"
+  stays expressible.
+- `Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
+  click. A null callback disables them. `ListView` is windowed; omit
+  `selectedIndex` for plain scroll. `DataTable` shares one column list
+  between header and body, with `columnSpacing` (default 1).
+- A focused `ListView`, `Select`, or `DataTable` paints
+  `selectedBackground`; unfocused, the highlight mutes to `surfaceVariant`.
+- `Select`, `TextInput`, `TextArea`, and `ScrollBox` take nullable colors
+  and resolve them through `Theme` the same way.
+- `runTuiApp` is one line: `runTuiApp(const MyApp(), enableMouse: true)`.
+  It registers hot reload itself and no longer takes `width`/`height`.
+  `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
+  the loop). A mid-build exit throws. Drive mode follows an in-app exit.
+  Examples and the patch manager quit through the tree.
+- Examples share `example/src/demo_scaffold.dart` for chrome. Panel titles
+  sit on `Border.title`. `DataTable` no longer inserts a `Divider` under
+  the header. The authoring skill catalogs the new widgets and how to
+  compose them.
+- `scripts/noir_drive.dart` accepts `key space`.
 - Added the packaged `dart run noir:run` development command. It launches a
   Noir entry point with inherited terminal I/O, watches Dart sources, performs
   VM source reload plus Noir reassembly, preserves the last good app after a
@@ -100,33 +84,49 @@
   lifetimes, file and HTTP(S) loading, fit/cover/fill geometry, Kitty/Sixel/
   block protocol selection, measured terminal pixel sizing, cancellation, and
   retained-success replacement behavior.
+- Added a package-owned root overlay with `OverlayPortal`,
+  `OverlayPortalController`, `MenuAnchor`, and `MenuController`. Overlay
+  children stay logical descendants of their portal while one external render
+  edge is hosted above the application. `MenuAnchor` places an unstyled menu in
+  integer cells, follows the launcher in the same frame after resize or
+  movement, and uses a modal outside pointer barrier: left-button down closes
+  the topmost menu, other outside pointer events are consumed without closing,
+  and `TuiApp.onMouse` may still observe the raw event at app priority. Hide
+  destroys overlay `State`; controller replacement does not transfer portal
+  visibility; menu controller replacement preserves open state. This is not
+  Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
+  nested overlay, transform, `LayerLink`, animation, or cascade API.
+- Added `Icons`, a catalog of 119 named single-cell glyph strings for marks,
+  carets, pointers, chevrons, arrows, keyboard keys, shapes, bullets, stars,
+  and status markers. There is no `Icon` widget, `IconData`, or `IconTheme`: a
+  terminal icon is a character, so `Text(Icons.check)` is the whole API and
+  `TextStyle` already carries the color. No non-ASCII member carries the
+  Unicode `Emoji` property: those characters have an emoji presentation
+  available and may occupy two cells in some terminal/font environments; `⚠`,
+  `▶`, `✔`, `☑`, and `♥` are excluded for that reason and the catalog documents
+  a stand-in for each. ASCII keycap bases such as `*` remain safe when rendered
+  alone. Members are grouped narrow versus East-Asian-ambiguous so a state pair
+  or fixed column can be drawn from one class. Architecture tests enforce the
+  catalog policy and keep migrated standalone chrome on named members while
+  allowing emoji in ordinary text. `Checkbox`, `Switch`, `DataTable`,
+  `ListView`, `Select`, and `TabSelect` now resolve their glyphs through `Icons`
+  without changing what they paint. Patch Manager status/caret glyphs, Like
+  Reactor particles, the Pub search release marker, and two Pub search link
+  labels moved off characters with environment-dependent width or
+  presentation.
+- Reworked Pub search package details around a responsive hierarchy: package
+  state, publication metadata, install command, and headline metrics now lead
+  the page; 44-cell summary groups pair on wide terminals and stack on narrow
+  ones; Versions uses a friendly release ledger instead of archive metadata;
+  Dependencies uses the available width; and Health prioritizes rendered GFM
+  reports and advisories ahead of technical diagnostics. Sort and Filter now
+  use launcher-anchored `MenuAnchor` menus.
+- Removed the unused `ColorSupport`, `TerminalCapabilities`, `TerminalSize`, and
+  `CapabilitiesDetection` helpers. This is a breaking prerelease change:
+  there is no compatibility shim.
 
 ## 0.0.1-alpha.1
 
-- Added `Theme` / `ThemeData` and a first component tier: `ListView`,
-  `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
-  `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as
-  `explicit ?? Theme.of(context).token`. `ThemeData.dark` is the unthemed
-  look. Nullable `backgroundColor` still uses `Theme.maybeOf` so "no fill"
-  stays expressible.
-- `Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
-  click. A null callback disables them. `ListView` is windowed; omit
-  `selectedIndex` for plain scroll. `DataTable` shares one column list
-  between header and body, with `columnSpacing` (default 1).
-- A focused `ListView`, `Select`, or `DataTable` paints
-  `selectedBackground`; unfocused, the highlight mutes to `surfaceVariant`.
-- `Select`, `TextInput`, `TextArea`, and `ScrollBox` take nullable colors
-  and resolve them through `Theme` the same way.
-- `runTuiApp` is one line: `runTuiApp(const MyApp(), enableMouse: true)`.
-  It registers hot reload itself and no longer takes `width`/`height`.
-  `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
-  the loop). A mid-build exit throws. Drive mode follows an in-app exit.
-  Examples and the patch manager quit through the tree.
-- Examples share `example/src/demo_scaffold.dart` for chrome. Panel titles
-  sit on `Border.title`. `DataTable` no longer inserts a `Divider` under
-  the header. The authoring skill catalogs the new widgets and how to
-  compose them.
-- `scripts/noir_drive.dart` accepts `key space`.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

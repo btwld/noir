@@ -97,7 +97,7 @@ void main() {
     session.close();
 
     expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-    expect(session.renderer, same(renderer));
+    expect(session.renderer, isNull);
     expect(() => renderer.nextBuffer.clear(Color.black), returnsNormally);
 
     renderer.dispose();
@@ -209,6 +209,63 @@ void main() {
     session.close();
 
     expect(platform.canceledSignals, contains(TerminalSignal.resize));
+  });
+
+  test('resize after close is a no-op and does not touch the renderer', () {
+    final renderer = Renderer.create(5, 2, testing: true);
+    final session = TerminalSession(
+      width: 5,
+      height: 2,
+      headless: true,
+      inputDispatcher: _dispatcher(),
+      renderer: renderer,
+      scheduleFrame: () {},
+      platform: _FakeTerminalPlatform(),
+    );
+
+    session.close();
+
+    expect(session.resize(9, 4), isFalse);
+    expect(session.width, 5);
+    expect(session.height, 2);
+    expect(session.renderer, isNull);
+    expect(renderer.nextBuffer.width, 5);
+    expect(renderer.nextBuffer.height, 2);
+
+    renderer.dispose();
+  });
+
+  test('late resize signal after close does not throw or schedule', () {
+    final platform = _FakeTerminalPlatform(
+      stdoutHasTerminal: true,
+      terminalColumns: 10,
+      terminalLines: 4,
+    );
+    var scheduledFrames = 0;
+    final session = TerminalSession(
+      width: 5,
+      height: 2,
+      headless: false,
+      inputDispatcher: _dispatcher(),
+      scheduleFrame: () => scheduledFrames++,
+      platform: platform,
+      inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      rendererFactory: (width, height) =>
+          Renderer.create(width, height, testing: true),
+    );
+
+    session.close();
+    scheduledFrames = 0;
+    final closedWidth = session.width;
+    final closedHeight = session.height;
+    platform
+      ..terminalColumns = 18
+      ..terminalLines = 6;
+    expect(() => platform.emit(TerminalSignal.resize), returnsNormally);
+    expect(() => session.resize(18, 6), returnsNormally);
+    expect(session.width, closedWidth);
+    expect(session.height, closedHeight);
+    expect(scheduledFrames, 0);
   });
 
   test(

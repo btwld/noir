@@ -245,6 +245,9 @@ class TerminalSession {
   /// or already-applied dimensions return `false`. Renderer failures escape
   /// before either published session dimension changes.
   bool resize(int width, int height) {
+    if (_closed || _closing) {
+      return false;
+    }
     if (width <= 0 || height <= 0) {
       return false;
     }
@@ -309,6 +312,7 @@ class TerminalSession {
       _inputDriver = null;
       _capabilitySubscription = null;
       _interruptKeySubscription = null;
+      _renderer = null;
       _ownsRenderer = false;
       _useTerminalSession = false;
       _terminalSetupAttempted = false;

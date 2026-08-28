@@ -29,9 +29,6 @@ export 'src/animation/ticker.dart'
 export 'src/app/app.dart' show TuiApp, runTuiApp;
 // Opt-in hot-reload service extension for development builds.
 export 'src/app/hot_reload.dart' show registerHotReloadExtension;
-// Terminal capabilities (high-level helpers users genuinely need)
-export 'src/core/capabilities.dart'
-    show ColorSupport, TerminalCapabilities, TerminalSize;
 // Color
 export 'src/core/color.dart' show Color;
 // Cursor style enum (the controller itself is in noir_low_level)
