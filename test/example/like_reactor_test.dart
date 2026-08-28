@@ -149,11 +149,14 @@ void main() {
       );
 
       try {
-        await _settle(app);
+        app.pumpFrame();
+        // Autofocus is installed in a microtask. Keep wall-clock frame timers
+        // out of this test because every animation time below is explicit.
+        await Future<void>.microtask(() {});
         final compact = _heartBounds(app.captureFrame());
 
         app.mockInput.typeText(' ');
-        await _settle(app);
+        app.pumpFrame();
         final full = _heartBounds(app.captureFrame());
 
         expect(simulation.burstCount, 2);
