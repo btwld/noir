@@ -62,10 +62,18 @@ class MockInput {
     });
   }
 
-  void pressKittyKey(int keyCode, {int modifiers = 0, int? eventType}) {
+  void pressKittyKey(
+    int keyCode, {
+    int modifiers = 0,
+    int? eventType,
+    String? associatedText,
+  }) {
     final modifierField = modifiers + 1;
     final eventSuffix = eventType == null ? '' : ':$eventType';
-    _feedString('\x1b[$keyCode;$modifierField${eventSuffix}u');
+    final textSuffix = associatedText == null
+        ? ''
+        : ';${associatedText.runes.join(':')}';
+    _feedString('\x1b[$keyCode;$modifierField$eventSuffix${textSuffix}u');
   }
 
   void pressModifyOtherKey(int keyCode, {int modifiers = 0}) {

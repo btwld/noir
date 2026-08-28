@@ -147,6 +147,11 @@ class TerminalSession {
       if (_useTerminalSession) {
         _terminalSetupAttempted = true;
         _renderer!.setupTerminal();
+        // OpenTUI requests modifyOtherKeys mode 1. Mode 2 also encodes
+        // well-known controls such as Ctrl+C, keeping them in the input stream
+        // instead of letting POSIX ISIG intercept them under multiplexers.
+        _platform.stdoutWrite(_modifyOtherKeysMode2);
+        _platform.stdoutFlush();
         _renderer!.queryPixelResolution();
       }
       _installSignalHandlers();
@@ -162,6 +167,8 @@ class TerminalSession {
   }
 
   static const int _capabilityRoutingPriority = InputPriority.app + 1;
+  static const String _modifyOtherKeysMode2 = '\x1b[>4;2m';
+  static const String _resetKeyboardProtocols = '\x1b[<u\x1b[>4;0m';
   // Terminal shutdown is the final fallback so app, focus, and widget
   // handlers can consume Ctrl+C first when they intentionally override it.
   static const int _interruptKeyRoutingPriority = InputPriority.widget - 1;
@@ -415,7 +422,7 @@ class TerminalSession {
     for (final sequence in const [
       '\x1b[?1049l\x1b[?25h\x1b[0m',
       '\x1b[?1000l\x1b[?1006l',
-      '\x1b[<u',
+      _resetKeyboardProtocols,
     ]) {
       attempt(() => _platform.stdoutWrite(sequence));
     }

@@ -473,11 +473,27 @@ final class _ExtendSelectionIntent extends Intent {
   final _SelectionMove move;
 }
 
+final class _NullCharacterActivator extends ShortcutActivator {
+  const _NullCharacterActivator(this._activator);
+
+  final ShortcutActivator _activator;
+
+  @override
+  bool accepts(KeyEvent event) =>
+      event.character == null && _activator.accepts(event);
+}
+
 const Map<ShortcutActivator, Intent> _documentSelectionShortcuts =
     <ShortcutActivator, Intent>{
       CharacterActivator('a', control: true): _SelectAllIntent(),
+      _NullCharacterActivator(
+        SingleActivator(LogicalKeyboardKey.keyA, control: true),
+      ): _SelectAllIntent(),
       CharacterActivator('a', meta: true): _SelectAllIntent(),
       CharacterActivator('c', control: true): _CopySelectionIntent(),
+      _NullCharacterActivator(
+        SingleActivator(LogicalKeyboardKey.keyC, control: true),
+      ): _CopySelectionIntent(),
       CharacterActivator('c', meta: true): _CopySelectionIntent(),
       SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
       SingleActivator(LogicalKeyboardKey.arrowLeft, shift: true):

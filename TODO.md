@@ -197,6 +197,9 @@ authorization.
 - The pinned native lifecycle has an exact-cursor restoration limitation on an
   observed macOS/iTerm path. Noir retains exception-safe cleanup and does not
   duplicate native ownership with an ANSI workaround.
+- For alpha.3, forced Kitty graphics through tmux are unsupported. The initial
+  placement can overlap existing content and remain displaced until a resize;
+  `ImageProtocol.auto` uses block cells under tmux and is the supported path.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
 - A decorated box that straddles a clipped viewport edge paints its full

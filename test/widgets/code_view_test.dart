@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
+import '../helpers/tui_test_app.dart';
 
 void main() {
   test('CodeView paints line gutters and synchronous highlight ranges', () {
@@ -52,6 +53,73 @@ void main() {
     await driver.sendCharacter('c', modifiers: KeyModifiers.ctrl);
     expect(copied, selected);
     expect(copySucceeded, isFalse);
+  });
+
+  test('legacy Ctrl bytes select, copy, and preserve copy fallback', () async {
+    SelectedText? selected;
+    SelectedText? copied;
+    bool? copySucceeded;
+    var bubbledCopies = 0;
+    final app = createTuiTestApp(
+      Focus(
+        onKeyEvent: (node, event) {
+          if (event.isControlPressed &&
+              event.logicalKey == LogicalKeyboardKey.keyC) {
+            bubbledCopies++;
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: CodeView(
+          code: 'A😀B',
+          autofocus: true,
+          onSelectionChanged: (value) => selected = value,
+          onCopy: (value, {required success}) {
+            copied = value;
+            copySucceeded = success;
+          },
+        ),
+      ),
+    );
+    addTearDown(app.dispose);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    app.mockInput.pressCtrl('c');
+    await Future<void>.delayed(Duration.zero);
+    expect(bubbledCopies, 1);
+    expect(copied, isNull);
+
+    app.mockInput.pressKittyKey(
+      'a'.codeUnitAt(0),
+      modifiers: KeyModifiers.ctrl,
+      associatedText: 'q',
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(selected, isNull);
+
+    app.mockInput.pressCtrl('a');
+    await Future<void>.delayed(Duration.zero);
+    expect(selected?.text, 'A😀B');
+    expect(
+      selected?.selection,
+      const TextSelection(baseOffset: 0, extentOffset: 4),
+    );
+
+    app.mockInput.pressKittyKey(
+      'c'.codeUnitAt(0),
+      modifiers: KeyModifiers.ctrl,
+      associatedText: 'x',
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(copied, isNull);
+    expect(bubbledCopies, 2);
+
+    app.mockInput.pressCtrl('c');
+    await Future<void>.delayed(Duration.zero);
+    expect(copied, selected);
+    expect(copySucceeded, isTrue);
+    expect(bubbledCopies, 2);
   });
 
   test(
