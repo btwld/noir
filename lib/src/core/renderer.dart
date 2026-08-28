@@ -45,7 +45,7 @@ class Renderer {
         final bindings = OpenTuiBindings();
         bindings.destroyRenderer(handle);
       } on Object {
-        // Best-effort: a finalizer must not throw on the finalizer isolate.
+        // Best-effort: Dart finalization callbacks must not throw.
       }
     },
   );

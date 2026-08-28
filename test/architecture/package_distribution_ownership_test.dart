@@ -142,6 +142,41 @@ void main() {
     expect(changelog.toLowerCase(), isNot(contains('muse')));
   });
 
+  test('current alpha changelog records its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final currentStart = changelog.indexOf('## $packageVersion');
+    final publishedStart = changelog.indexOf('## 0.0.1-alpha.1');
+
+    expect(currentStart, greaterThanOrEqualTo(0));
+    expect(publishedStart, greaterThan(currentStart));
+    final currentAlpha = changelog.substring(currentStart, publishedStart);
+
+    expect(
+      changelog,
+      isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
+    );
+    for (final heading in const ['Added', 'Changed', 'Fixed', 'Removed']) {
+      expect(
+        RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
+        hasLength(1),
+        reason: heading,
+      );
+    }
+    for (final contract in const [
+      'Ctrl+A',
+      'Ctrl+C',
+      'modifyOtherKeys',
+      'through tmux',
+      'Forced Kitty graphics',
+      'unsupported for alpha.3',
+      'package:noir/noir_ffi.dart',
+      'scissor-',
+      'opacity-stack',
+    ]) {
+      expect(currentAlpha, contains(contract), reason: contract);
+    }
+  });
+
   test('published alpha.1 and alpha.0 changelog sections stay pinned', () {
     final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
     expect(_changelogSection(changelog, '0.0.1-alpha.1'), _publishedAlpha1);

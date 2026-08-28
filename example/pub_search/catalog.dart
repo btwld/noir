@@ -64,8 +64,6 @@ final class PubApiCatalog implements PubCatalog {
 
   final PubClient _client;
   var _closed = false;
-  Future<List<String>?>? _packageNames;
-  Future<Map<String, int>?>? _topicCounts;
 
   @override
   Future<PackageSearchPage> search(
@@ -110,9 +108,8 @@ final class PubApiCatalog implements PubCatalog {
     // Attach recovery to both requests before awaiting either one. A partial
     // endpoint failure should not discard useful suggestions from the other
     // hosted list, while two failures still become one safe boundary error.
-    // Successful corpora stay cached so later prefixes do not refetch.
-    final packageNamesRequest = _packageNamesCorpus();
-    final topicCountsRequest = _topicCountsCorpus();
+    final packageNamesRequest = _optional(_client.packageNameCompletion());
+    final topicCountsRequest = _optional(_client.topicNameCompletion());
     final packageNames = await packageNamesRequest;
     final topicCounts = await topicCountsRequest;
     if (packageNames == null && topicCounts == null) {
@@ -166,37 +163,7 @@ final class PubApiCatalog implements PubCatalog {
   void close() {
     if (_closed) return;
     _closed = true;
-    _packageNames = null;
-    _topicCounts = null;
     _client.close();
-  }
-
-  Future<List<String>?> _packageNamesCorpus() {
-    final inFlight = _packageNames;
-    if (inFlight != null) return inFlight;
-    late final Future<List<String>?> future;
-    future = _optional(_client.packageNameCompletion()).then((value) {
-      if (value == null && identical(_packageNames, future)) {
-        _packageNames = null;
-      }
-      return value;
-    });
-    _packageNames = future;
-    return future;
-  }
-
-  Future<Map<String, int>?> _topicCountsCorpus() {
-    final inFlight = _topicCounts;
-    if (inFlight != null) return inFlight;
-    late final Future<Map<String, int>?> future;
-    future = _optional(_client.topicNameCompletion()).then((value) {
-      if (value == null && identical(_topicCounts, future)) {
-        _topicCounts = null;
-      }
-      return value;
-    });
-    _topicCounts = future;
-    return future;
   }
 
   Future<T?> _optional<T>(Future<T> request) async {

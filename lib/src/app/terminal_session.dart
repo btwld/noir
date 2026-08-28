@@ -168,7 +168,8 @@ class TerminalSession {
 
   static const int _capabilityRoutingPriority = InputPriority.app + 1;
   static const String _modifyOtherKeysMode2 = '\x1b[>4;2m';
-  static const String _resetKeyboardProtocols = '\x1b[<u\x1b[>4;0m';
+  static const String _popKittyKeyboard = '\x1b[<u';
+  static const String _resetModifyOtherKeys = '\x1b[>4;0m';
   // Terminal shutdown is the final fallback so app, focus, and widget
   // handlers can consume Ctrl+C first when they intentionally override it.
   static const int _interruptKeyRoutingPriority = InputPriority.widget - 1;
@@ -420,9 +421,12 @@ class TerminalSession {
     }
 
     for (final sequence in const [
-      '\x1b[?1049l\x1b[?25h\x1b[0m',
+      // Kitty keeps separate keyboard-mode stacks for the main and alternate
+      // screens, so pop the entry before leaving the alternate screen.
+      _popKittyKeyboard,
+      _resetModifyOtherKeys,
       '\x1b[?1000l\x1b[?1006l',
-      _resetKeyboardProtocols,
+      '\x1b[?1049l\x1b[?25h\x1b[0m',
     ]) {
       attempt(() => _platform.stdoutWrite(sequence));
     }

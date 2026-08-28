@@ -308,23 +308,20 @@ void main() {
       catalog.close();
     });
 
-    test(
-      'reuses hosted completion corpora across sequential prefixes',
-      () async {
-        final client = _FakePubClient();
-        final catalog = PubApiCatalog(client: client);
+    test('starts fresh completion requests for sequential successes', () async {
+      final client = _FakePubClient();
+      final catalog = PubApiCatalog(client: client);
 
-        await catalog.complete('noi');
-        await catalog.complete('term');
+      await catalog.complete('noi');
+      await catalog.complete('term');
 
-        expect(client.packageCompletionCalls, 1);
-        expect(client.topicCompletionCalls, 1);
-        catalog.close();
-      },
-    );
+      expect(client.packageCompletionCalls, 2);
+      expect(client.topicCompletionCalls, 2);
+      catalog.close();
+    });
 
     test(
-      'shares in-flight completion corpora across overlapping invocations',
+      'starts fresh completion requests for overlapping invocations',
       () async {
         final names = Completer<List<String>>();
         final topics = Completer<Map<String, int>>();
@@ -336,15 +333,15 @@ void main() {
         final first = catalog.complete('noi');
         final second = catalog.complete('noir');
 
-        expect(client.packageCompletionCalls, 1);
-        expect(client.topicCompletionCalls, 1);
+        expect(client.packageCompletionCalls, 2);
+        expect(client.topicCompletionCalls, 2);
 
         names.complete(['noir', 'noir_router']);
         topics.complete({'terminal': 12});
         await Future.wait([first, second]);
 
-        expect(client.packageCompletionCalls, 1);
-        expect(client.topicCompletionCalls, 1);
+        expect(client.packageCompletionCalls, 2);
+        expect(client.topicCompletionCalls, 2);
         catalog.close();
       },
     );
@@ -388,7 +385,7 @@ void main() {
       client.topicCountsError = null;
       final retried = await catalog.complete('term');
       expect(retried.map((item) => item.name), ['terminal']);
-      expect(client.packageCompletionCalls, 1);
+      expect(client.packageCompletionCalls, 2);
       expect(client.topicCompletionCalls, 2);
       catalog.close();
     });

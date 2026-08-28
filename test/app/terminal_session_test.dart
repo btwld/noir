@@ -127,7 +127,13 @@ void main() {
 
       session.close();
 
-      expect(platform.writes.join(), contains('\x1b[>4;0m'));
+      expect(platform.writes, [
+        '\x1b[>4;2m',
+        '\x1b[<u',
+        '\x1b[>4;0m',
+        '\x1b[?1000l\x1b[?1006l',
+        '\x1b[?1049l\x1b[?25h\x1b[0m',
+      ]);
       expect(platform.stdoutFlushes, 2);
     },
   );
@@ -696,7 +702,7 @@ void main() {
 
     expect(session.close, throwsA(same(stopError)));
     expect(driver.stops, 1);
-    expect(platform.writes, hasLength(4));
+    expect(platform.writes, hasLength(5));
     expect(platform.stdoutFlushes, 2);
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
@@ -705,7 +711,7 @@ void main() {
     final canceledSignals = List<TerminalSignal>.from(platform.canceledSignals);
     expect(session.close, returnsNormally);
     expect(driver.stops, 1);
-    expect(platform.writes, hasLength(4));
+    expect(platform.writes, hasLength(5));
     expect(platform.stdoutFlushes, 2);
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
@@ -736,8 +742,11 @@ void main() {
 
       expect(session.close, returnsNormally);
 
-      expect(platform.stdoutWriteAttempts, 4);
-      expect(platform.writes, hasLength(3));
+      expect(platform.stdoutWriteAttempts, 5);
+      expect(platform.writes, hasLength(4));
+      expect(platform.writes, isNot(contains('\x1b[<u')));
+      expect(platform.writes, contains('\x1b[>4;0m'));
+      expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
       expect(platform.stdoutFlushes, 2);
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
@@ -776,7 +785,7 @@ void main() {
       expect(uncaughtErrors, isEmpty);
       expect(platform.cancelAttempts, 4);
       expect(driver.stops, 1);
-      expect(platform.writes, hasLength(4));
+      expect(platform.writes, hasLength(5));
       expect(() => renderer!.nextBuffer, throwsStateError);
     },
   );
