@@ -41,8 +41,12 @@ class Renderer {
   /// This releases native resources when users forget to dispose the renderer.
   static final Finalizer<RendererHandle> _finalizer = Finalizer<RendererHandle>(
     (handle) {
-      final bindings = OpenTuiBindings();
-      bindings.destroyRenderer(handle);
+      try {
+        final bindings = OpenTuiBindings();
+        bindings.destroyRenderer(handle);
+      } on Object {
+        // Best-effort: Dart finalization callbacks must not throw.
+      }
     },
   );
 

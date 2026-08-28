@@ -6,14 +6,45 @@ Update it only with evidence from the exact reviewed tree.
 Noir is **not** cleared for publication, a tag, GitHub release, native build,
 manual workflow dispatch, or public repository visibility until the applicable
 open items below are closed. The previous pub.dev publications recorded below
-are complete; `0.0.1-alpha.2` is not published.
+are complete. Unpublished `0.0.1-alpha.2` is skipped: that work first ships in
+`0.0.1-alpha.3`.
 
-This alpha.3 development tree is not eligible to land or release until the
-reviewed alpha.2 candidate completes the blocking operations below. The
-alpha.2 evidence remains recorded verbatim; alpha.3 verification must be added
-from its own exact candidate tree rather than reusing those results.
+## Open gates — `0.0.1-alpha.3`
 
-## Blocking prerequisite — alpha.2 OpenTUI component parity program
+These must be closed on the **exact** alpha.3 candidate SHA. Do not reuse a
+nearby green CI run, a cancelled HEAD run, or earlier alpha.2 tree evidence.
+
+- [x] **OpenTUI component parity (Phases 1–2)**: Image, ASCII-font licensing,
+      Stack/Positioned, Wrap, TabSelect, Slider, TextTable, semantic
+      hyperlinks, OSC52, document selection, CodeView, DiffView, MarkdownView,
+      and the Patch Manager presentation migration shipped in this alpha.3
+      tree. The historical phase-gate write-ups remain in the recorded
+      baseline below.
+- [x] **Independent behavior and full-diff review** of the pre-alpha.3
+      parity work. Alpha.3 still needs its own exact-tree verification below.
+- [ ] **Parity external gates**: obtain explicit authorization before direct
+      Kitty, Sixel, tmux, Screen, OSC52, resize/crop, or other real-terminal
+      checks, then record the results from the exact alpha.3 candidate tree.
+      Until that decision, these remain open rather than silently residual.
+- [ ] **Recovery bundle and clean-clone verification**: restore the
+      committed alpha.3 candidate and pinned OpenTUI gitlink into a fresh
+      checkout, run the verification commands below, and verify all six
+      bundled binaries against `native_manifest.json`.
+- [ ] **Clean-tree publish dry-run** with zero warnings and the intended
+      archive contents, repeated from the clean clone.
+- [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
+      headless, so this is the only path that exercises a real TTY:
+      `dart run noir:run example/counter.dart`, edit a `build()` body, and
+      confirm the repaint without a restart. Runner diagnostics are recorded
+      in `.dart_tool/noir/run.log`.
+- [ ] **Publish `0.0.1-alpha.3` to pub.dev** as a separate deliberate action
+      after the candidate checks above are complete. Do not publish
+      `0.0.1-alpha.2`.
+- [ ] **Repository visibility, tag, and GitHub release** — each remains a
+      separate, deliberate decision. The repository stays private through
+      this alpha. First GitHub release is deferred to beta.1.
+
+## Done — recorded baseline (alpha.2 work ships first in alpha.3)
 
 - [x] **Phase 1 Image automated gate**: `TerminalImage`, all five source
       forms, ownership/cancellation, fit modes, display-list/native drawing,
@@ -35,33 +66,9 @@ from its own exact candidate tree rather than reusing those results.
       1685-test full serial suite pass. Both FFI generators are byte-idempotent;
       the authored ASCII glyph source, ABI, all six bundled binaries, package
       contents, and diff whitespace validate.
-- [ ] **Parity external gates**: obtain explicit authorization before direct
-      Kitty, Sixel, tmux, Screen, OSC52, resize/crop, or other real-terminal
-      checks, then record the results from the exact candidate tree.
-
-## Blocking prerequisite — remaining alpha.2 release operations
-
-- [x] **Independent behavior and full-diff review** of the alpha.2 parity
-      candidate accepted the exact implementation and evidence snapshot with
-      no unresolved blocker or material drift.
-- [ ] **Recovery bundle and clean-clone verification**: restore the committed
-      alpha.2 candidate and pinned OpenTUI gitlink into a fresh checkout, run
-      the verification commands below, and verify all six bundled binaries
-      against `native_manifest.json`.
-- [ ] **Clean-tree publish dry-run** with zero warnings and the intended
-      archive contents, repeated from the clean clone.
-- [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
-      headless, so this is the only path that exercises a real TTY:
-      `dart run noir:run example/counter.dart`, edit a `build()` body, and
-      confirm the repaint without a restart. Runner diagnostics are recorded
-      in `.dart_tool/noir/run.log`.
-- [ ] **Publish `0.0.1-alpha.2` to pub.dev** as a separate deliberate action
-      after the candidate checks above are complete.
-- [ ] **Repository visibility, tag, and GitHub release** — each remains a
-      separate, deliberate decision. The repository is private today.
-
-## Done — alpha.2 candidate preparation and recorded baseline
-
+- [x] **Independent behavior and full-diff review** of the pre-alpha.3
+      parity candidate accepted the exact implementation and evidence
+      snapshot with no unresolved blocker or material drift.
 - [x] **Locator-based drive refinement**: drive mode retains its seven-method
       byte-input surface while adding parser-backed Shift+Tab/Home/End/Delete,
       structured exact-key/text/focus snapshots with private driver-owned text
@@ -190,6 +197,9 @@ authorization.
 - The pinned native lifecycle has an exact-cursor restoration limitation on an
   observed macOS/iTerm path. Noir retains exception-safe cleanup and does not
   duplicate native ownership with an ANSI workaround.
+- For alpha.3, forced Kitty graphics through tmux are unsupported. The initial
+  placement can overlap existing content and remain displaced until a resize;
+  `ImageProtocol.auto` uses block cells under tmux and is the supported path.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
 - A decorated box that straddles a clipped viewport edge paints its full

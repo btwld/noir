@@ -15,7 +15,6 @@ export 'src/animation/ticker.dart' show TickerScheduler;
 export 'src/app/tui_binding.dart' show TuiBinding;
 // Renderer and buffer primitives.
 export 'src/core/buffer.dart' show Buffer, DirectBufferAccess;
-export 'src/core/capabilities.dart' show CapabilitiesDetection;
 export 'src/core/clipboard.dart' show ClipboardSupport, TerminalClipboardTarget;
 // Cursor management (controller + extension on Renderer)
 export 'src/core/cursor.dart' show CursorController, CursorManagement;

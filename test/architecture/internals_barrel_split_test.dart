@@ -208,7 +208,6 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
   'src/animation/ticker.dart': {'TickerScheduler'},
   'src/app/tui_binding.dart': {'TuiBinding'},
   'src/core/buffer.dart': {'Buffer', 'DirectBufferAccess'},
-  'src/core/capabilities.dart': {'CapabilitiesDetection'},
   'src/core/clipboard.dart': {'ClipboardSupport', 'TerminalClipboardTarget'},
   'src/core/cursor.dart': {'CursorController', 'CursorManagement'},
   'src/core/input.dart': {

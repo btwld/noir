@@ -6,6 +6,7 @@ import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart' show RenderImage;
 import 'package:noir/src/core/terminal_image.dart'
     show maxTerminalImageEncodedBytes;
+import 'package:noir/src/widgets/image.dart' show debugNetworkImageTimeout;
 import 'package:test/test.dart';
 
 import '../helpers/test_element_host.dart';
@@ -85,6 +86,37 @@ void main() {
         (value) => value.code,
         'code',
         ImageLoadErrorCode.unsupportedUrlScheme,
+      ),
+    );
+    host.dispose();
+  });
+
+  test('network timeouts become a typed network error', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+    server.listen((request) {
+      // Leave the request unanswered so connect succeeds and the
+      // response future hangs until the load timeout.
+    });
+    debugNetworkImageTimeout = const Duration(milliseconds: 200);
+    addTearDown(() => debugNetworkImageTimeout = const Duration(seconds: 15));
+    final failed = Completer<Object>();
+    final host = TestElementHost()
+      ..mount(
+        Image.network(
+          Uri.parse('http://127.0.0.1:${server.port}/slow'),
+          onError: (error, _) => failed.complete(error),
+        ),
+      );
+
+    final error = await failed.future.timeout(const Duration(seconds: 3));
+
+    expect(
+      error,
+      isA<ImageLoadException>().having(
+        (value) => value.code,
+        'code',
+        ImageLoadErrorCode.network,
       ),
     );
     host.dispose();

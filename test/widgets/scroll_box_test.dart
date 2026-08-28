@@ -3,6 +3,8 @@ import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
+import '../helpers/listenable_liveness.dart';
+import '../helpers/test_element_host.dart';
 
 void main() {
   group('ScrollBox', () {
@@ -84,4 +86,45 @@ void main() {
       expect(calls, 1);
     });
   });
+
+  test(
+    'an unusable controller replacement leaves the previous controller attached',
+    () {
+      final original = ScrollController();
+      final host = TestElementHost()
+        ..mount(
+          ScrollBox(
+            controller: original,
+            showScrollbar: false,
+            child: const Text('x'),
+          ),
+        );
+      original.updateMaxScrollExtent(10);
+      expect(original.hasListeners, isTrue);
+
+      final disposed = ScrollController()..dispose();
+      expect(
+        () => host.update(
+          ScrollBox(
+            controller: disposed,
+            showScrollbar: false,
+            child: const Text('x'),
+          ),
+        ),
+        throwsStateError,
+      );
+
+      expect(isLive(original), isTrue);
+      expect(
+        original.hasListeners,
+        isTrue,
+        reason:
+            'the previous controller must stay subscribed after a failed swap',
+      );
+
+      host.dispose();
+      expect(isLive(original), isTrue);
+      original.dispose();
+    },
+  );
 }

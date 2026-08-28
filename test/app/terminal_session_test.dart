@@ -97,11 +97,46 @@ void main() {
     session.close();
 
     expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-    expect(session.renderer, same(renderer));
+    expect(session.renderer, isNull);
     expect(() => renderer.nextBuffer.clear(Color.black), returnsNormally);
 
     renderer.dispose();
   });
+
+  test(
+    'interactive session requests all modified keys and resets on close',
+    () {
+      final renderer = Renderer.create(8, 2, testing: true);
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      addTearDown(renderer.dispose);
+
+      final session = TerminalSession(
+        width: 8,
+        height: 2,
+        headless: false,
+        inputDispatcher: _dispatcher(),
+        renderer: renderer,
+        scheduleFrame: () {},
+        platform: platform,
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      );
+      addTearDown(session.close);
+
+      expect(platform.writes, ['\x1b[>4;2m']);
+      expect(platform.stdoutFlushes, 1);
+
+      session.close();
+
+      expect(platform.writes, [
+        '\x1b[>4;2m',
+        '\x1b[<u',
+        '\x1b[>4;0m',
+        '\x1b[?1000l\x1b[?1006l',
+        '\x1b[?1049l\x1b[?25h\x1b[0m',
+      ]);
+      expect(platform.stdoutFlushes, 2);
+    },
+  );
 
   test(
     'resize ignores non-positive sizes and resizes renderer for positives',
@@ -209,6 +244,63 @@ void main() {
     session.close();
 
     expect(platform.canceledSignals, contains(TerminalSignal.resize));
+  });
+
+  test('resize after close is a no-op and does not touch the renderer', () {
+    final renderer = Renderer.create(5, 2, testing: true);
+    final session = TerminalSession(
+      width: 5,
+      height: 2,
+      headless: true,
+      inputDispatcher: _dispatcher(),
+      renderer: renderer,
+      scheduleFrame: () {},
+      platform: _FakeTerminalPlatform(),
+    );
+
+    session.close();
+
+    expect(session.resize(9, 4), isFalse);
+    expect(session.width, 5);
+    expect(session.height, 2);
+    expect(session.renderer, isNull);
+    expect(renderer.nextBuffer.width, 5);
+    expect(renderer.nextBuffer.height, 2);
+
+    renderer.dispose();
+  });
+
+  test('late resize signal after close does not throw or schedule', () {
+    final platform = _FakeTerminalPlatform(
+      stdoutHasTerminal: true,
+      terminalColumns: 10,
+      terminalLines: 4,
+    );
+    var scheduledFrames = 0;
+    final session = TerminalSession(
+      width: 5,
+      height: 2,
+      headless: false,
+      inputDispatcher: _dispatcher(),
+      scheduleFrame: () => scheduledFrames++,
+      platform: platform,
+      inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      rendererFactory: (width, height) =>
+          Renderer.create(width, height, testing: true),
+    );
+
+    session.close();
+    scheduledFrames = 0;
+    final closedWidth = session.width;
+    final closedHeight = session.height;
+    platform
+      ..terminalColumns = 18
+      ..terminalLines = 6;
+    expect(() => platform.emit(TerminalSignal.resize), returnsNormally);
+    expect(() => session.resize(18, 6), returnsNormally);
+    expect(session.width, closedWidth);
+    expect(session.height, closedHeight);
+    expect(scheduledFrames, 0);
   });
 
   test(
@@ -610,8 +702,8 @@ void main() {
 
     expect(session.close, throwsA(same(stopError)));
     expect(driver.stops, 1);
-    expect(platform.writes, hasLength(3));
-    expect(platform.stdoutFlushes, 1);
+    expect(platform.writes, hasLength(5));
+    expect(platform.stdoutFlushes, 2);
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
@@ -619,8 +711,8 @@ void main() {
     final canceledSignals = List<TerminalSignal>.from(platform.canceledSignals);
     expect(session.close, returnsNormally);
     expect(driver.stops, 1);
-    expect(platform.writes, hasLength(3));
-    expect(platform.stdoutFlushes, 1);
+    expect(platform.writes, hasLength(5));
+    expect(platform.stdoutFlushes, 2);
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(platform.canceledSignals, canceledSignals);
@@ -633,7 +725,7 @@ void main() {
       final platform = _FakeTerminalPlatform(
         stdoutHasTerminal: true,
         stdoutWriteError: writeError,
-        stdoutWriteErrorAttempt: 1,
+        stdoutWriteErrorAttempt: 2,
       );
       final renderer = Renderer.create(6, 2, testing: true);
       addTearDown(renderer.dispose);
@@ -650,9 +742,12 @@ void main() {
 
       expect(session.close, returnsNormally);
 
-      expect(platform.stdoutWriteAttempts, 3);
-      expect(platform.writes, hasLength(2));
-      expect(platform.stdoutFlushes, 1);
+      expect(platform.stdoutWriteAttempts, 5);
+      expect(platform.writes, hasLength(4));
+      expect(platform.writes, isNot(contains('\x1b[<u')));
+      expect(platform.writes, contains('\x1b[>4;0m'));
+      expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
+      expect(platform.stdoutFlushes, 2);
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
       expect(() => renderer.nextBuffer, returnsNormally);
@@ -690,7 +785,7 @@ void main() {
       expect(uncaughtErrors, isEmpty);
       expect(platform.cancelAttempts, 4);
       expect(driver.stops, 1);
-      expect(platform.writes, hasLength(3));
+      expect(platform.writes, hasLength(5));
       expect(() => renderer!.nextBuffer, throwsStateError);
     },
   );

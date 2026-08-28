@@ -20,6 +20,15 @@ void main() {
     expect(body, contains('_owner.pipelineOwner.flushLayout'));
     expect(body, contains('_owner.pipelineOwner.flushPaint'));
     expect(body, contains('void _drawFrame(Duration timestamp)'));
+    expect(
+      body,
+      matches(
+        RegExp(
+          r'void handleResize\(int width, int height\) \{\s*'
+          r'if \(_disposed \|\| _disposing\) \{\s*return;\s*\}',
+        ),
+      ),
+    );
   });
 
   test('TuiApp is the narrow owning facade returned by runTuiApp', () {

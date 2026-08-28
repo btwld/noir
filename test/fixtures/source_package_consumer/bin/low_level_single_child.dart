@@ -53,10 +53,6 @@ final class ConsumerProxyBox extends RenderProxyBox {
 /// Type-checks advanced binding injection and Buffer's high-level companion
 /// option type without executing native code.
 TuiBinding createConsumerBinding(Renderer renderer, InputManager inputManager) {
-  final TerminalCapabilities capabilities = CapabilitiesDetection(
-    renderer,
-  ).detectCapabilities();
-  capabilities.toString();
   renderer.nextBuffer.drawBox(
     0,
     0,

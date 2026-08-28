@@ -2,7 +2,6 @@
 Axis
 Buffer
 BuildOwner
-CapabilitiesDetection
 ClipboardSupport
 CursorController
 CursorManagement

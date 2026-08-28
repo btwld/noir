@@ -36,7 +36,7 @@ enum PubLoadState {
   error,
 }
 
-enum _SearchChooser { sort, filter }
+enum _SearchMenu { sort, filter }
 
 const _sortOptions = <SelectOption<PackageSort>>[
   SelectOption(
@@ -146,7 +146,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   final _resultsFocus = FocusNode(debugLabel: 'pub results');
   final _sortFocus = FocusNode(debugLabel: 'pub sort');
   final _filterFocus = FocusNode(debugLabel: 'pub filter');
-  final _chooserFocus = FocusNode(debugLabel: 'pub chooser');
+  final _menuFocus = FocusNode(debugLabel: 'pub menu');
   final _sortMenu = MenuController();
   final _filterMenu = MenuController();
   final _detailStatusFocus = FocusNode(debugLabel: 'pub detail status');
@@ -170,8 +170,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
   PubPackageSnapshot? _package;
   PackageSort _sort = PackageSort.top;
   PackageSearchFilter _filter = PackageSearchFilter.any;
-  _SearchChooser? _chooser;
-  var _chooserHighlightedIndex = 0;
+  _SearchMenu? _activeMenu;
+  var _menuHighlightedIndex = 0;
   _SearchCriteria? _requestedCriteria;
   _SearchCriteria? _searchPageCriteria;
   var _suggestions = const <PubSuggestion>[];
@@ -204,7 +204,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
     for (final node in _chromeFocusNodes) {
       node.addListener(_handleFocusChanged);
     }
-    _chooserFocus.addListener(_handleChooserFocusChanged);
+    _menuFocus.addListener(_handleMenuFocusChanged);
     // A queued auto-search is already a request, so the first paint is the
     // searching surface rather than an idle prompt against a prefilled query.
     // Drive-mode catalog launches must not hit pub.dev; skip the queue there.
@@ -247,8 +247,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     _package = null;
     _sort = PackageSort.top;
     _filter = PackageSearchFilter.any;
-    _chooser = null;
-    _chooserHighlightedIndex = 0;
+    _activeMenu = null;
+    _menuHighlightedIndex = 0;
     _sortMenu.close();
     _filterMenu.close();
     _requestedCriteria = null;
@@ -278,8 +278,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
       node.removeListener(_handleFocusChanged);
       node.dispose();
     }
-    _chooserFocus
-      ..removeListener(_handleChooserFocusChanged)
+    _menuFocus
+      ..removeListener(_handleMenuFocusChanged)
       ..dispose();
     _detailStatusFocus.dispose();
     _detailScroll.dispose();
@@ -298,9 +298,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
     setState(() {});
   }
 
-  void _handleChooserFocusChanged() {
-    if (!mounted || _chooserFocus.hasFocus || _chooser == null) return;
-    _cancelChooser();
+  void _handleMenuFocusChanged() {
+    if (!mounted || _menuFocus.hasFocus || _activeMenu == null) return;
+    _closeActiveMenu();
   }
 
   void _handleQueryChanged() {
@@ -422,7 +422,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         _page = _searchPage?.page ?? 1;
       });
       // Ordinary error copy advertises Enter as retry, so return ownership to
-      // the query. A chooser refresh retains its launcher ownership instead.
+      // the query. A menu refresh retains its launcher ownership instead.
       if (!preserveFocusOnEmptyOrError) _searchFocus.requestFocus();
     }
   }
@@ -487,54 +487,54 @@ class _PubSearchAppState extends State<PubSearchApp> {
     }
   }
 
-  void _openChooser(_SearchChooser chooser) {
-    if (_chooser == chooser) return;
-    final previous = _chooser;
+  void _openSearchMenu(_SearchMenu kind) {
+    if (_activeMenu == kind) return;
+    final previous = _activeMenu;
     if (previous != null) {
       _menuFor(previous).close();
     }
-    _menuFor(chooser).open();
+    _menuFor(kind).open();
   }
 
-  void _cancelChooser() {
-    final chooser = _chooser;
-    if (chooser == null) return;
-    _menuFor(chooser).close();
+  void _closeActiveMenu() {
+    final kind = _activeMenu;
+    if (kind == null) return;
+    _menuFor(kind).close();
   }
 
   void _confirmSort(PackageSort sort) {
     final changed = sort != _sort;
     setState(() => _sort = sort);
     _sortMenu.close();
-    if (changed) _refreshForChooser();
+    if (changed) _refreshForMenu();
   }
 
   void _confirmFilter(PackageSearchFilter filter) {
     final changed = filter != _filter;
     setState(() => _filter = filter);
     _filterMenu.close();
-    if (changed) _refreshForChooser();
+    if (changed) _refreshForMenu();
   }
 
-  void _handleChooserOpened(_SearchChooser chooser) {
+  void _handleMenuOpened(_SearchMenu kind) {
     setState(() {
-      _chooser = chooser;
+      _activeMenu = kind;
       _autofocusResults = false;
-      _chooserHighlightedIndex = switch (chooser) {
-        _SearchChooser.sort => _indexOfOption(_sortOptions, _sort),
-        _SearchChooser.filter => _indexOfOption(_filterOptions, _filter),
+      _menuHighlightedIndex = switch (kind) {
+        _SearchMenu.sort => _indexOfOption(_sortOptions, _sort),
+        _SearchMenu.filter => _indexOfOption(_filterOptions, _filter),
       };
     });
   }
 
-  void _handleChooserClosed(_SearchChooser chooser) {
-    if (_chooser != chooser) return;
-    setState(() => _chooser = null);
+  void _handleMenuClosed(_SearchMenu kind) {
+    if (_activeMenu != kind) return;
+    setState(() => _activeMenu = null);
   }
 
-  MenuController _menuFor(_SearchChooser chooser) => switch (chooser) {
-    _SearchChooser.sort => _sortMenu,
-    _SearchChooser.filter => _filterMenu,
+  MenuController _menuFor(_SearchMenu kind) => switch (kind) {
+    _SearchMenu.sort => _sortMenu,
+    _SearchMenu.filter => _filterMenu,
   };
 
   int _indexOfOption<T>(List<SelectOption<T>> options, T value) {
@@ -545,7 +545,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   String _optionName<T>(List<SelectOption<T>> options, T value) =>
       options[_indexOfOption(options, value)].name;
 
-  void _refreshForChooser() {
+  void _refreshForMenu() {
     unawaited(
       _runSearch(
         query: _queryController.text,
@@ -601,10 +601,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
-    if (_chooser != null) {
+    if (_activeMenu != null) {
       if (event.logicalKey == LogicalKeyboardKey.escape ||
           event.logicalKey == LogicalKeyboardKey.tab) {
-        _cancelChooser();
+        _closeActiveMenu();
         return KeyEventResult.handled;
       }
       return KeyEventResult.ignored;
@@ -657,10 +657,10 @@ class _PubSearchAppState extends State<PubSearchApp> {
     if (_suggestionsVisible) return KeyEventResult.ignored;
     switch (event.character) {
       case 's':
-        _openChooser(_SearchChooser.sort);
+        _openSearchMenu(_SearchMenu.sort);
         return KeyEventResult.handled;
       case 'f':
-        _openChooser(_SearchChooser.filter);
+        _openSearchMenu(_SearchMenu.filter);
         return KeyEventResult.handled;
       case 'n':
         _nextPage();
@@ -683,7 +683,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
   );
 
   String get _searchHint {
-    if (_chooser != null) {
+    if (_activeMenu != null) {
       return '↑↓ choose  Enter/click apply  Tab/Esc cancel';
     }
     if (_sortFocus.hasFocus) {
@@ -777,21 +777,21 @@ class _PubSearchAppState extends State<PubSearchApp> {
               Row(
                 spacing: 3,
                 children: [
-                  _chooserAnchor(
-                    chooser: _SearchChooser.sort,
+                  _menuAnchor(
+                    kind: _SearchMenu.sort,
                     label: 'Sort',
                     value: _optionName(_sortOptions, _sort),
                     launcherKey: const ValueKey<String>('sort'),
-                    title: 'CHOOSE SORT',
+                    title: 'Sort menu',
                     options: _sortOptions,
                     onConfirm: _confirmSort,
                   ),
-                  _chooserAnchor(
-                    chooser: _SearchChooser.filter,
+                  _menuAnchor(
+                    kind: _SearchMenu.filter,
                     label: 'Filter',
                     value: _optionName(_filterOptions, _filter),
                     launcherKey: const ValueKey<String>('filter'),
-                    title: 'CHOOSE FILTER',
+                    title: 'Filter menu',
                     options: _filterOptions,
                     onConfirm: _confirmFilter,
                   ),
@@ -842,8 +842,8 @@ class _PubSearchAppState extends State<PubSearchApp> {
     );
   }
 
-  Widget _chooserAnchor<T>({
-    required _SearchChooser chooser,
+  Widget _menuAnchor<T>({
+    required _SearchMenu kind,
     required String label,
     required String value,
     required Key launcherKey,
@@ -851,40 +851,40 @@ class _PubSearchAppState extends State<PubSearchApp> {
     required List<SelectOption<T>> options,
     required void Function(T value) onConfirm,
   }) {
-    final focusNode = switch (chooser) {
-      _SearchChooser.sort => _sortFocus,
-      _SearchChooser.filter => _filterFocus,
+    final focusNode = switch (kind) {
+      _SearchMenu.sort => _sortFocus,
+      _SearchMenu.filter => _filterFocus,
     };
     return MenuAnchor(
-      controller: _menuFor(chooser),
+      controller: _menuFor(kind),
       childFocusNode: focusNode,
-      onOpen: () => _handleChooserOpened(chooser),
-      onClose: () => _handleChooserClosed(chooser),
+      onOpen: () => _handleMenuOpened(kind),
+      onClose: () => _handleMenuClosed(kind),
       menuChildren: [
-        _chooserPanel(
+        _menuPanel(
           title: title,
-          child: _chooserSelect(options: options, onConfirm: onConfirm),
+          child: _menuSelect(options: options, onConfirm: onConfirm),
         ),
       ],
-      builder: (context, menu, child) => _chooserLauncher(
+      builder: (context, menu, child) => _menuLauncher(
         key: launcherKey,
         theme: Theme.of(context),
         label: label,
         value: value,
         focusNode: focusNode,
-        active: _chooser == chooser,
+        active: _activeMenu == kind,
         onActivate: () {
           if (menu.isOpen) {
             menu.close();
             return;
           }
-          _openChooser(chooser);
+          _openSearchMenu(kind);
         },
       ),
     );
   }
 
-  Widget _chooserLauncher({
+  Widget _menuLauncher({
     required ThemeData theme,
     required String label,
     required String value,
@@ -927,47 +927,46 @@ class _PubSearchAppState extends State<PubSearchApp> {
           };
     return DemoPanel(
       title: _suggestionsVisible ? 'SUGGESTIONS' : 'RESULTS',
-      focused: _chooser == null && _resultsFocus.hasFocus,
+      focused: _activeMenu == null && _resultsFocus.hasFocus,
       child: child,
     );
   }
 
-  Widget _chooserPanel({required String title, required Widget child}) =>
-      SizedBox(
-        width: 48,
-        child: DemoPanel(
-          title: title,
-          focused: _chooserFocus.hasFocus,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_searchState == PubLoadState.loading) ...[
-                const Row(
-                  spacing: 1,
-                  children: [Spinner(), Text('Updating results…')],
-                ),
-                const SizedBox(height: 1),
-              ],
-              child,
-            ],
-          ),
-        ),
-      );
+  Widget _menuPanel({required String title, required Widget child}) => SizedBox(
+    width: 48,
+    child: DemoPanel(
+      title: title,
+      focused: _menuFocus.hasFocus,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_searchState == PubLoadState.loading) ...[
+            const Row(
+              spacing: 1,
+              children: [Spinner(), Text('Updating results…')],
+            ),
+            const SizedBox(height: 1),
+          ],
+          child,
+        ],
+      ),
+    ),
+  );
 
-  Widget _chooserSelect<T>({
+  Widget _menuSelect<T>({
     required List<SelectOption<T>> options,
     required void Function(T value) onConfirm,
   }) => Select<T>(
-    focusNode: _chooserFocus,
+    focusNode: _menuFocus,
     autofocus: true,
-    selectedIndex: _chooserHighlightedIndex,
+    selectedIndex: _menuHighlightedIndex,
     height: options.length,
     options: options,
     backgroundColor: Color.transparent,
     onChanged: (index, option) {
-      if (index == _chooserHighlightedIndex) return;
-      setState(() => _chooserHighlightedIndex = index);
+      if (index == _menuHighlightedIndex) return;
+      setState(() => _menuHighlightedIndex = index);
     },
     onSelect: (index, option) {
       final value = option.value;
@@ -977,9 +976,9 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Widget _buildSearchLoading(BuildContext context) {
     final previous = _searchPage;
-    final showResultsProgress = _chooser == null;
+    final showResultsProgress = _activeMenu == null;
     final hasPreviousResults = previous != null && previous.packages.isNotEmpty;
-    // Keep the last Select mounted so result-scoped picker shortcuts and
+    // Keep the last Select mounted so result-scoped menu shortcuts and
     // package activation remain available while paging is suppressed for the
     // pending request.
     return Column(
@@ -1065,7 +1064,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         const SizedBox(height: 1),
         Select<String>(
           focusNode: _resultsFocus,
-          autofocus: _autofocusResults && _chooser == null,
+          autofocus: _autofocusResults && _activeMenu == null,
           selectedIndex: _selectedIndex,
           height: page.packages.length,
           showScrollIndicator: true,

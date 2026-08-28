@@ -173,23 +173,16 @@ void main() {
       multiLine: true,
     ).firstMatch(catalog);
     expect(fields, isNotNull, reason: 'locate PubApiCatalog instance fields');
+    final instanceFields = fields!.group(1)!;
     expect(
-      fields!.group(1),
-      isNot(
-        matches(
-          RegExp(
-            r'^\s*(?:final|var)?\s*'
-            r'(?:Future\s*<\s*(?:List\s*<\s*String\s*>|'
-            r'Map\s*<\s*String\s*,\s*int\s*>)\s*>|'
-            r'List\s*<\s*String\s*>|Map\s*<\s*String\s*,\s*int\s*>)'
-            r'\s*\?\s+_[A-Za-z]*(?:package|topic)[A-Za-z]*\s*;',
-            caseSensitive: false,
-            multiLine: true,
-          ),
-        ),
-      ),
-      reason:
-          'PubApiCatalog must not retain nullable completion datasets or futures',
+      instanceFields,
+      isNot(contains('Future<')),
+      reason: 'PubApiCatalog must not retain completion request futures',
+    );
+    expect(
+      instanceFields,
+      isNot(anyOf(contains('List<String>'), contains('Map<String, int>'))),
+      reason: 'PubApiCatalog must not retain completion datasets',
     );
   });
 

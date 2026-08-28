@@ -2,131 +2,95 @@
 
 ## 0.0.1-alpha.3
 
-- Added a package-owned root overlay with `OverlayPortal`,
-  `OverlayPortalController`, `MenuAnchor`, and `MenuController`. Overlay
-  children stay logical descendants of their portal while one external render
-  edge is hosted above the application. `MenuAnchor` places an unstyled menu in
-  integer cells, follows the launcher in the same frame after resize or
-  movement, and uses a modal outside pointer barrier: left-button down closes
-  the topmost menu, other outside pointer events are consumed without closing,
-  and `TuiApp.onMouse` may still observe the raw event at app priority. Hide
-  destroys overlay `State`; controller replacement does not transfer portal
-  visibility; menu controller replacement preserves open state. This is not
-  Flutter overlay/menu parity: there is no public `Overlay`/`OverlayEntry`,
-  nested overlay, transform, `LayerLink`, animation, or cascade API.
-- Added `Icons`, a catalog of 119 named single-cell glyph strings for marks,
-  carets, pointers, chevrons, arrows, keyboard keys, shapes, bullets, stars,
-  and status markers. There is no `Icon` widget, `IconData`, or `IconTheme`: a
-  terminal icon is a character, so `Text(Icons.check)` is the whole API and
-  `TextStyle` already carries the color. No non-ASCII member carries the
-  Unicode `Emoji` property: those characters have an emoji presentation
-  available and may occupy two cells in some terminal/font environments; `⚠`,
-  `▶`, `✔`, `☑`, and `♥` are excluded for that reason and the catalog documents
-  a stand-in for each. ASCII keycap bases such as `*` remain safe when rendered
-  alone. Members are grouped narrow versus East-Asian-ambiguous so a state pair
-  or fixed column can be drawn from one class. Architecture tests enforce the
-  catalog policy and keep migrated standalone chrome on named members while
-  allowing emoji in ordinary text. `Checkbox`, `Switch`, `DataTable`,
-  `ListView`, `Select`, and `TabSelect` now resolve their glyphs through `Icons`
-  without changing what they paint. Patch Manager status/caret glyphs, Like
-  Reactor particles, the Pub search release marker, and two Pub search link
-  labels moved off characters with environment-dependent width or
-  presentation.
-- Reworked Pub search package details around a responsive hierarchy: package
-  state, publication metadata, install command, and headline metrics now lead
-  the page; 44-cell summary groups pair on wide terminals and stack on narrow
-  ones; Versions uses a friendly release ledger instead of archive metadata;
-  Dependencies uses the available width; and Health prioritizes rendered GFM
-  reports and advisories ahead of technical diagnostics. Sort and Filter now
-  use launcher-anchored `MenuAnchor` menus.
+This release includes the work from the unpublished alpha.2 candidate; no
+`0.0.1-alpha.2` package was published.
 
-## 0.0.1-alpha.2
+### Added
 
-- Added the packaged `dart run noir:run` development command. It launches a
-  Noir entry point with inherited terminal I/O, watches Dart sources, performs
-  VM source reload plus Noir reassembly, preserves the last good app after a
-  rejected edit, forwards arguments and exit status, and keeps diagnostics in
-  `.dart_tool/noir/run.log`.
+- Added `Theme` / `ThemeData` and the first themed component tier:
+  `ListView`, `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`,
+  `Spinner`, `Badge`, and `DataTable`. Existing inputs, selects, and scroll
+  views also resolve omitted colors through the nearest theme.
 - Added the opt-in `package:noir/hooks.dart` library with `HookWidget`, state
-  and effect primitives, listenable and async observation, and Noir controller
-  and animation hooks. Keyed effects defer old cleanup until later hook slots
-  rewire, and `useValueChanged` receives the previous input and callback result.
-  Synchronous effect callbacks and cleanup fail fast if they request a hook
-  rebuild; non-rebuilding reference writes and later asynchronous updates stay
-  supported.
-- Added the Pub search example, a live pub.dev browser demonstrating an
-  injected async data source behind an application-owned `PubCatalog` seam,
-  explicit loading/empty/error/ready states, stale-response suppression, paging,
-  launcher-anchored sort and filter menus above retained results, and a four-tab
-  package detail view built with `TabSelect`. Its tests inject a fake catalog,
-  so every async path stays deterministic without network access. Drive locators
-  `query`, `sort`, `filter`, `tabs`, and `detail` mark the controls a driver
-  would click or wait for; drive sessions skip the queued auto-search so they
-  stay offline while `main()` still uses the live catalog.
-- A focused supplied `FocusNode` now remains attached and focused when its
-  `Focus` widget relocates within one build. The transfer is limited to an
-  inactive element owned by the same focus manager; active duplicates and
-  cross-manager reuse remain rejected, and permanent removal still detaches.
-- `Select`'s scroll indicator now describes the rows layout actually granted
-  rather than the constructor `height` hint, so a list constrained shorter than
-  its hint shows its up/down arrows, positions the down arrow on the last
-  painted row, and draws no arrow at all when no option row was painted.
-- Added whole-cell `Stack`/`Positioned` overlay layout and horizontal or
-  vertical `Wrap` runs with spacing and alignment.
-- Added horizontal `TabSelect` with fixed or label-sized cells, optional
-  pointer-focus preservation, and selected-label terminal attributes;
-  controlled horizontal/vertical `Slider`; and `AsciiFont` with seven
-  Noir-designed treatments of an original printable-ASCII alphabet.
-- Added static rich-text `TextTable` with wrapping, proportional or balanced
-  column fitting, padding, gaps, borders, pointer/keyboard grid selection, and
-  explicit copy. The existing virtualized interactive `DataTable` remains a
-  separate component.
-- Added selectable `CodeView`, unified/split `DiffView`, and GitHub-flavoured
-  `MarkdownView`, including async-safe highlighting, shared line gutters,
-  grapheme-safe keyboard/pointer selection, explicit OSC52 copy, semantic
-  terminal hyperlinks, and semantic URL arrays in driver cell captures.
-  `MarkdownView` unwraps GitHub `<details>` wrappers outside fenced samples,
-  leaves GFM text unescaped so table cells keep `>=` / `<`, keeps headings
-  tight with the following block, omits empty table columns, paints
-  content-mode tables to their grid width, and can embed
-  inside a parent `ScrollBox` without a nested viewport. The pub search Health
-  tab renders pana report summaries and advisory bodies through that embedded
-  document, and search results shrink to the returned package rows.
-- Rebuilt Patch Manager's tracked-file diff presentation on `DiffView` while
-  retaining its staging parser, interactive cards, actions, focus, locks, and
-  scroll anchors.
+  and effect primitives, async and listenable observation, and hooks for Noir
+  controllers and animations.
+- Added whole-cell `Stack` / `Positioned` and `Wrap`; horizontal `TabSelect`;
+  horizontal and vertical `Slider`; seven original `AsciiFont` treatments;
+  and rich, selectable `TextTable` grids.
+- Added selectable `CodeView`, unified and split `DiffView`, and
+  GitHub-flavoured `MarkdownView` with grapheme-safe selection, OSC52 copy,
+  async highlighting, GFM tables, and semantic terminal hyperlinks.
 - Added `TerminalImage` and the stateful `Image` widget for PNG, JPEG, WebP,
-  first-frame GIF, and raw RGBA sources. Images support borrowed/owned
-  lifetimes, file and HTTP(S) loading, fit/cover/fill geometry, Kitty/Sixel/
-  block protocol selection, measured terminal pixel sizing, cancellation, and
-  retained-success replacement behavior.
+  first-frame GIF, and raw RGBA sources. They negotiate Kitty, Sixel, or block
+  rendering and support measured pixel sizing, fit modes, cancellation, and
+  explicit ownership.
+- Added the root `OverlayPortal` / `OverlayPortalController` surface and
+  launcher-anchored `MenuAnchor` / `MenuController` menus. This prerelease API
+  does not claim Flutter's nested overlay, transform, animation, or cascade
+  behavior.
+- Added `Icons`, a width-audited catalog of 119 single-cell glyph strings.
+  Terminal icons remain plain text (`Text(Icons.check)`), not an `Icon` widget
+  or `IconData` hierarchy.
+- Added the packaged `dart run noir:run` development command. It watches Dart
+  sources, performs VM reload plus Noir reassembly, preserves the last good app
+  after rejected edits, forwards arguments and exit status, and records
+  diagnostics in `.dart_tool/noir/run.log`.
+- Added headless drive mode, with a repository-only Dart client and CLI,
+  parser-backed key and pointer input, exact key/type/text locators, focus
+  snapshots, and production hit-test-path clicks. `scripts/noir_drive.dart`
+  accepts `key space`.
+- Added six guarded raw scissor- and opacity-stack operations to
+  `package:noir/noir_ffi.dart`. These expose pinned OpenTUI availability only:
+  its opacity stack does not fade ordinary text and cannot underpin an
+  `Opacity` widget.
+- Added the live Pub search example with injected test data, stale-response
+  suppression, paging, completion suggestions, anchored sort/filter menus,
+  responsive package details, and rendered health and advisory documents.
+
+### Changed
+
+- Simplified startup to `runTuiApp(const MyApp(), enableMouse: true)`.
+  `runTuiApp` owns hot-reload registration and terminal dimensions;
+  `TuiApp.exit(context)` now performs in-tree disposal and exit-code handling.
+- Added `BuildContext.mounted` and `State.reassemble()`, hardened the State
+  teardown window, made exact-type inherited lookups truly exact, and made
+  framework-owned focus and text-controller replacement transactional.
+- Focus nodes can move between inactive elements in the same focus manager
+  without losing focus. Focused lists, selects, and tables use the selected
+  theme color and mute that highlight when focus moves elsewhere.
+- Standardized example chrome around terminal-native titled regions and moved
+  Patch Manager's tracked-file presentation to `DiffView` without changing its
+  staging and action model.
+
+### Fixed
+
+- Restored legacy raw Ctrl+A selection and Ctrl+C copy in document views while
+  preserving enhanced key reports with associated text. Interactive sessions
+  request xterm `modifyOtherKeys` mode 2 so Ctrl+C remains application input
+  through tmux, then restore xterm and Kitty keyboard modes independently.
+- Tightened renderer and terminal lifecycle cleanup: late resizes are ignored,
+  closed sessions release renderer references, borrowed native buffer views are
+  invalidated after render attempts, stale native draw stacks are cleared, and
+  best-effort finalization cannot leak a cleanup exception.
+- Fixed flex overflow, decorated-child, and clipped-buffer painting at viewport
+  boundaries; image replacement and cancellation ownership; one-ticker
+  `Spinner` behavior; swapped `ListView` viewport anchoring; and `Select` scroll
+  indicators under tighter layout constraints.
+- Pub search completion starts fresh hosted requests for each eligible prefix,
+  keeps either successful endpoint when the other fails, and does not retain a
+  stale completion corpus.
+- `ImageProtocol.auto` uses block cells under tmux. Forced Kitty graphics
+  through tmux remain unsupported for alpha.3 because placement may stay
+  displaced until a resize.
+
+### Removed
+
+- **Breaking prerelease change:** removed the unused `ColorSupport`,
+  `TerminalCapabilities`, `TerminalSize`, and `CapabilitiesDetection` helpers
+  without compatibility shims.
 
 ## 0.0.1-alpha.1
 
-- Added `Theme` / `ThemeData` and a first component tier: `ListView`,
-  `Checkbox`, `Switch`, `Button`, `Divider`, `ProgressBar`, `Spinner`,
-  `Badge`, and `DataTable`. Built-in widgets resolve omitted colors as
-  `explicit ?? Theme.of(context).token`. `ThemeData.dark` is the unthemed
-  look. Nullable `backgroundColor` still uses `Theme.maybeOf` so "no fill"
-  stays expressible.
-- `Checkbox`, `Switch`, and `Button` activate on Space, Enter, or a left
-  click. A null callback disables them. `ListView` is windowed; omit
-  `selectedIndex` for plain scroll. `DataTable` shares one column list
-  between header and body, with `columnSpacing` (default 1).
-- A focused `ListView`, `Select`, or `DataTable` paints
-  `selectedBackground`; unfocused, the highlight mutes to `surfaceVariant`.
-- `Select`, `TextInput`, `TextArea`, and `ScrollBox` take nullable colors
-  and resolve them through `Theme` the same way.
-- `runTuiApp` is one line: `runTuiApp(const MyApp(), enableMouse: true)`.
-  It registers hot reload itself and no longer takes `width`/`height`.
-  `TuiApp.exit(context)` ends the app (dispose, set the exit code, drain
-  the loop). A mid-build exit throws. Drive mode follows an in-app exit.
-  Examples and the patch manager quit through the tree.
-- Examples share `example/src/demo_scaffold.dart` for chrome. Panel titles
-  sit on `Border.title`. `DataTable` no longer inserts a `Divider` under
-  the header. The authoring skill catalogs the new widgets and how to
-  compose them.
-- `scripts/noir_drive.dart` accepts `key space`.
 - The native-asset build hook now declares `native_manifest.json` and the
   selected bundled library as file-system dependencies. Dart can therefore
   invalidate cached hook output, repeat SHA-256 verification, and regenerate

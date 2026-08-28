@@ -83,6 +83,14 @@ boundaries.
     </dd>
   </div>
   <div>
+    <dt>Forced Kitty graphics through tmux (alpha.3)</dt>
+    <dd>
+      This combination is unsupported because initial image placement can
+      overlap existing content until a resize. Use <code>ImageProtocol.auto</code>
+      under tmux; it selects block rendering.
+    </dd>
+  </div>
+  <div>
     <dt>Hot reload</dt>
     <dd>
       Reload does not rerun <code>main()</code> or <code>initState()</code>.

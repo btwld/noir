@@ -52,6 +52,10 @@ void main() {
         'Icons.arrowBranchDown',
       ],
       'README.md': ['Text(Icons.plus)'],
+      'lib/src/widgets/code_view.dart': <String>[],
+      'lib/src/widgets/markdown_view.dart': <String>[],
+      'lib/src/widgets/text_table.dart': <String>[],
+      'lib/src/widgets/diff_view.dart': <String>[],
     };
     const forbiddenLiterals = <String, List<String>>{
       'lib/src/widgets/checkbox.dart': ["_unchecked = '□'", "_checked = '■'"],
@@ -86,6 +90,10 @@ void main() {
         "'  ↳ ",
       ],
       'README.md': ["Text('+')"],
+      'lib/src/widgets/code_view.dart': ["'▲'", "'▼'", "'▶'"],
+      'lib/src/widgets/markdown_view.dart': ["'▲'", "'▼'", "'▶'"],
+      'lib/src/widgets/text_table.dart': ["'▲'", "'▼'", "'▶'"],
+      'lib/src/widgets/diff_view.dart': ["'▲'", "'▼'", "'▶'"],
     };
     final violations = <String>[];
 

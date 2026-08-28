@@ -120,39 +120,26 @@ String debugResolveBufferCell(Buffer buffer, int cellIndex) {
   }
 }
 
-/// High-level wrapper for OpenTUI's optimized buffer operations.
+/// Native OpenTUI cell grid borrowed from a [Renderer].
 ///
-/// The Buffer class provides a convenient Dart interface for all OpenTUI
-/// drawing operations, including text rendering, shape drawing, and advanced
-/// compositing. Buffers represent 2D grids of terminal cells, each containing
-/// a character, foreground color, background color, and text attributes.
+/// Each cell stores a character, packed RGBA foreground and background, and a
+/// `u32` attribute word. Widgets do not paint through this type; they record
+/// into a [PaintingContext]. Obtain a buffer from [Renderer.nextBuffer] only
+/// on the advanced `package:noir/noir_low_level.dart` path.
 ///
-/// **Lifecycle**: Buffer instances obtained from [Renderer.nextBuffer] are only
-/// valid until the next call to [Renderer.render()]. After render, the buffer
-/// is invalidated and all operations will throw [StateError].
-///
-/// Use Buffer when:
-/// - Building terminal-based user interfaces
-/// - Creating text-mode games and graphics
-/// - Implementing off-screen rendering for complex layouts
-/// - Building layered rendering systems with multiple buffers
+/// **Lifecycle**: the instance is valid until the next [Renderer.render] or
+/// until the owner is disposed. Later operations throw [StateError].
+/// Coordinates and extents must fit unsigned 32-bit ABI values.
 ///
 /// Example:
 /// ```dart
 /// final buffer = renderer.nextBuffer;
 ///
-/// // Clear to dark background
 /// buffer.clear(Color.rgb(0.1, 0.13, 0.17));
-///
-/// // Draw a bordered panel
 /// buffer.drawBox(5, 2, 30, 15,
 ///     BoxOptions(title: 'Settings'),
 ///     Color.cyan, Color.darkGray);
-///
-/// // Add content text
 /// buffer.drawText('Welcome to OpenTUI!', 10, 5, Color.white);
-///
-/// // Create a progress bar
 /// buffer.fillRect(10, 8, 20, 1, Color.green);
 /// ```
 class Buffer {
@@ -326,12 +313,8 @@ class Buffer {
   ///
   /// Example:
   /// ```dart
-  /// // Fill a 20x10 panel background
   /// buffer.fillRect(5, 2, 20, 10, Color.darkGray);
-  ///
-  /// // Create a progress bar
-  /// final progress = 0.7; // 70%
-  /// buffer.fillRect(10, 8, (progress * 30).round(), 1, Color.green);
+  /// buffer.fillRect(10, 8, 21, 1, Color.green);
   /// ```
   ///
   /// [x], [y], [width], and [height] must fit unsigned 32-bit values;
@@ -787,31 +770,33 @@ class DirectBufferAccess {
     _chars[index] = char.runes.first;
   }
 
-  /// Get foreground color at the specified coordinates.
+  /// Packed RGBA foreground at cell ([x], [y]).
+  ///
+  /// Out-of-range coordinates throw from the shared cell-index check.
   Color getForeground(int x, int y) {
     final index = _getIndex(x, y);
     return _readRgba(_foregrounds, index);
   }
 
-  /// Set foreground color at the specified coordinates.
+  /// Stores packed RGBA foreground at cell ([x], [y]).
   void setForeground(int x, int y, Color color) {
     final index = _getIndex(x, y);
     _writeRgba(_foregrounds, index, color);
   }
 
-  /// Get background color at the specified coordinates.
+  /// Packed RGBA background at cell ([x], [y]).
   Color getBackground(int x, int y) {
     final index = _getIndex(x, y);
     return _readRgba(_backgrounds, index);
   }
 
-  /// Set background color at the specified coordinates.
+  /// Stores packed RGBA background at cell ([x], [y]).
   void setBackground(int x, int y, Color color) {
     final index = _getIndex(x, y);
     _writeRgba(_backgrounds, index, color);
   }
 
-  /// Get text attributes at the specified coordinates.
+  /// `u32` attribute word at cell ([x], [y]).
   int getAttributes(int x, int y) {
     final index = _getIndex(x, y);
     return _attributes[index];

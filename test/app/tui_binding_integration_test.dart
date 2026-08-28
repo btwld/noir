@@ -355,8 +355,8 @@ void main() {
       expect(stateDisposals, 1);
       expect(driver.starts, 1);
       expect(driver.stops, 1);
-      expect(platform.stdoutWriteAttempts, 3);
-      expect(platform.stdoutFlushes, 1);
+      expect(platform.stdoutWriteAttempts, 5);
+      expect(platform.stdoutFlushes, 2);
       expect(() => renderer!.nextBuffer, throwsStateError);
       expect(WidgetInspectorService.instance.rootElement, isNull);
     },
@@ -394,8 +394,8 @@ void main() {
 
       expect(stateDisposals, 1);
       expect(driver.stops, 1);
-      expect(platform.stdoutWriteAttempts, 3);
-      expect(platform.stdoutFlushes, 1);
+      expect(platform.stdoutWriteAttempts, 5);
+      expect(platform.stdoutFlushes, 2);
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
       expect(binding.buildOwner.pipelineOwner.debugNeedsLayout, isFalse);
@@ -406,7 +406,7 @@ void main() {
       expect(binding.dispose, returnsNormally);
       expect(stateDisposals, 1);
       expect(driver.stops, 1);
-      expect(platform.stdoutWriteAttempts, 3);
+      expect(platform.stdoutWriteAttempts, 5);
     },
   );
 
@@ -442,8 +442,8 @@ void main() {
 
     expect(stateDisposals, 1);
     expect(driver.stops, 1);
-    expect(platform.stdoutWriteAttempts, 3);
-    expect(platform.stdoutFlushes, 1);
+    expect(platform.stdoutWriteAttempts, 5);
+    expect(platform.stdoutFlushes, 2);
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);

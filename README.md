@@ -413,10 +413,13 @@ corrupt package.
 
 - Kitty, Sixel, and OSC52 acceptance depends on the terminal or multiplexer.
   Automated coverage verifies protocol selection, deterministic block fallback,
-  clipping, sizing, and OSC52 argument/status behavior, but this candidate has
-  not yet run the separately authorized direct-terminal, tmux, or Screen matrix.
-  Automatic image mode uses blocks under tmux; unavailable Sixel (including a
-  missing pixel-resolution measurement) falls back to blocks.
+  clipping, sizing, and OSC52 argument/status behavior. The complete
+  direct-terminal, tmux, and Screen matrix on the exact candidate remains a
+  release gate. Automatic image mode uses blocks under tmux; unavailable Sixel
+  (including a missing pixel-resolution measurement) falls back to blocks.
+  For alpha.3, forcing Kitty graphics through tmux is unsupported because the
+  initial placement can overlap existing content until a resize. Use automatic
+  image mode under tmux.
 - Dart 3.10 supplies a macOS deployment target of 12 to native-asset hooks,
   while the bundled OpenTUI libraries require macOS 13. Because
   `dart build cli` does not expose a deployment-target override, Noir documents
