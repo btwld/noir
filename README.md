@@ -327,6 +327,9 @@ matches the behavior you are building:
   [DataTable](example/data_table_demo.dart),
   [TextArea](example/textarea_demo.dart), and
   [Widgets tour](example/widgets_tour.dart).
+- Composition patterns: [Confirmation dialog](example/dialog_demo.dart),
+  [Package autocomplete](example/autocomplete_demo.dart), and
+  [Tree file picker](example/file_picker_demo.dart).
 - Complete apps: [Chat](example/chat_demo.dart) and the live
   [pub.dev search](example/pub_search.dart).
 - Motion: [Pulse](example/pulse_animation.dart) and

@@ -46,6 +46,9 @@ question each example answers; it is not a required sequence.
 | `dart run example/data_table_demo.dart` | Windowed rows, selection, and keyboard or pointer sorting. |
 | `dart run example/textarea_demo.dart` | Multi-line editing and portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Select, ScrollBox, and TextArea in one interaction flow. |
+| `dart run example/dialog_demo.dart` | A centered confirmation overlay with a pointer barrier, closed-loop focus, and focus restoration. |
+| `dart run example/autocomplete_demo.dart` | Debounced package suggestions with stale-response protection and an attached borderless list. |
+| `dart run example/file_picker_demo.dart` | A modal flattened file tree, disclosure controls, preview pane, and guarded Open action. |
 
 ## Complete apps
 
@@ -96,6 +99,26 @@ data mode. The adapter is isolated behind `PubCatalog` so tests can inject a
 fake and keep async, empty, error, retry, paging, and stale-response behavior
 deterministic without network access. Drive locators for the example are
 `query`, `sort`, `filter`, `tabs`, and `detail`.
+
+### Composition example controls
+
+The dialog example opens from `Review deploy`. Tab and Shift+Tab stay inside
+the confirmation while it is visible, Escape cancels, and either button or a
+click completes the action. Its transparent full-terminal pointer barrier
+keeps the undimmed deployment screen visible without letting it receive input.
+
+The autocomplete example starts with the deterministic query `noi`. Type to
+replace or refine the query, wait for the application-owned debounce, then Tab
+into the attached suggestions. Arrows move the highlight, Enter or a click
+chooses, and Escape first clears suggestions and then exits. The controller
+demonstrates request generations so an older asynchronous response cannot
+replace a newer query.
+
+The file picker opens on launch with an in-memory project tree, so it never
+reads the host file system. Up/Down move through visible rows, Right expands a
+folder, and Left collapses it or moves to its parent. Enter toggles a folder;
+Tab reaches Cancel and Open. Escape closes the picker and restores focus to
+`Open a file`.
 
 ## Drive mode
 

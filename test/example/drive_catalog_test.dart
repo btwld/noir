@@ -115,6 +115,56 @@ void main() {
       );
       expect(frame.contains('Saved:'), isFalse);
     });
+
+    test('dialog locators confirm a deployment through the modal', () async {
+      final driver = await NoirDriver.launch('example/dialog_demo.dart');
+      addTearDown(driver.quit);
+
+      await driver.clickLocator(const DriverLocator.byKey('open-dialog'));
+      expect((await driver.capture()).contains('Confirm deployment'), isTrue);
+
+      await driver.clickLocator(const DriverLocator.byKey('confirm-deploy'));
+      final frame = await driver.capture();
+      expect(frame.contains('Confirm deployment'), isFalse);
+      expect(
+        frame.contains('Deployment scheduled for noir 0.0.1-alpha.3.'),
+        isTrue,
+      );
+    });
+
+    test(
+      'autocomplete chooses the next suggestion through parsed keys',
+      () async {
+        final driver = await NoirDriver.launch(
+          'example/autocomplete_demo.dart',
+        );
+        addTearDown(driver.quit);
+
+        await driver.waitForText('noir_cli');
+        await driver.sendKey('tab');
+        await driver.sendKey('down');
+        await driver.sendKey('enter');
+
+        expect((await driver.capture()).contains('Selected  noir_cli'), isTrue);
+      },
+    );
+
+    test(
+      'file picker opens the next file through its closed focus loop',
+      () async {
+        final driver = await NoirDriver.launch('example/file_picker_demo.dart');
+        addTearDown(driver.quit);
+
+        await driver.sendKey('down');
+        await driver.sendKey('tab');
+        await driver.sendKey('tab');
+        await driver.sendKey('enter');
+
+        final frame = await driver.capture();
+        expect(frame.contains('Open file'), isFalse);
+        expect(frame.contains('Opened lib/src/widgets/overlay.dart'), isTrue);
+      },
+    );
   });
 }
 
