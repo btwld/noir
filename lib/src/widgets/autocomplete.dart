@@ -187,11 +187,13 @@ class _AutocompleteState<T> extends State<Autocomplete<T>>
   @override
   void initState() {
     super.initState();
-    _validateConfiguration();
     final supplied = widget.optionsFocusNode;
     _optionsFocusNode =
         supplied ?? FocusNode(debugLabel: 'Autocomplete Options');
     _ownsOptionsFocusNode = supplied == null;
+    // Initialize every owned field before validation so failed mounts can
+    // dispose both nodes during framework rollback.
+    _validateConfiguration();
   }
 
   @override
