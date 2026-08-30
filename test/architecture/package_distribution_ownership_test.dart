@@ -654,12 +654,14 @@ void main() {
     },
   );
 
-  test('website catalog and layout guidance use the public Panel', () {
+  test('website catalog and layout guidance use public Panel and Modal', () {
     final catalog = _read('website/src/content/docs/widget-catalog.mdx');
     final layout = _read('website/src/content/docs/widgets-layout.mdx');
 
     expect(catalog, contains('`Panel`'));
+    expect(catalog, contains('`Modal`'));
     expect(layout, contains('Panel('));
+    expect(layout, contains('Modal('));
     expect(layout, isNot(contains('class LogPanel')));
   });
 
@@ -855,6 +857,8 @@ void main() {
       'Badge',
       'DataTable',
       'Panel',
+      'Modal',
+      'ModalController',
     ]) {
       expect(skill, contains('`$name`'), reason: 'SKILL.md catalog: $name');
     }
@@ -865,6 +869,7 @@ void main() {
     expect(widgetsGuide, contains('const ProgressBar({'));
     expect(widgetsGuide, contains('const Spinner({'));
     expect(widgetsGuide, contains('const Panel({'));
+    expect(widgetsGuide, contains('const Modal({'));
     expect(inputsGuide, contains('const ListView({'));
     expect(inputsGuide, contains('const Checkbox({'));
     expect(inputsGuide, contains('const Switch({'));
@@ -904,6 +909,8 @@ void main() {
     expect(designGuide, contains('Theme.of(context)'));
     expect(designGuide, contains('Use `Panel`'));
     expect(designGuide, isNot(contains('There is no public `Panel`')));
+    expect(designGuide, contains('Use `Modal`'));
+    expect(designGuide, isNot(contains('There is no public modal')));
     expect(designGuide, contains('80×24'));
     expect(designGuide, contains('8px grid'));
     expect(designGuide, isNot(contains('MaterialApp')));

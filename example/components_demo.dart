@@ -4,9 +4,8 @@
 // activates the focused one, and a left click does the same. Press t to swap
 // the complete palette, s to stop or restart the spinner, and q to quit.
 //
-// Keeps one compact category visible at a time: the public Panel foundation
-// states or the Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and
-// Badge controls.
+// Keeps one compact category visible at a time: public controls, Panel
+// foundation states, or Modal overlay behavior.
 
 import 'package:noir/noir.dart';
 
@@ -14,11 +13,12 @@ import 'src/demo_scaffold.dart';
 
 void main() => runTuiApp(const ComponentsDemoApp(), enableMouse: true);
 
-enum _ComponentCategory { controls, foundation }
+enum _ComponentCategory { controls, foundation, overlays }
 
 const _categories = <SelectOption<_ComponentCategory>>[
   SelectOption(name: 'Controls', value: _ComponentCategory.controls),
   SelectOption(name: 'Foundation', value: _ComponentCategory.foundation),
+  SelectOption(name: 'Overlays', value: _ComponentCategory.overlays),
 ];
 
 const _emberPalette = ThemeData(
@@ -41,16 +41,42 @@ class ComponentsDemoApp extends StatefulWidget {
 }
 
 class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
+  final _modalController = ModalController();
+  final _modalLauncherFocus = FocusNode(debugLabel: 'modal-launcher');
+  final _modalCancelFocus = FocusNode(debugLabel: 'modal-cancel');
+  final _modalConfirmFocus = FocusNode(debugLabel: 'modal-confirm');
+
   bool _wrap = true;
   bool _verbose = false;
   bool _spinning = true;
   bool _emberActive = false;
   int _steps = 3;
+  int _modalOpens = 0;
+  int _modalCloses = 0;
+  int _backgroundPresses = 0;
+  String _modalResult = 'none';
   _ComponentCategory _category = _ComponentCategory.controls;
 
   static const _totalSteps = 10;
 
   double get _progress => _steps / _totalSteps;
+
+  @override
+  void dispose() {
+    _modalLauncherFocus.dispose();
+    _modalCancelFocus.dispose();
+    _modalConfirmFocus.dispose();
+    super.dispose();
+  }
+
+  void _handleModalOpened() => setState(() => _modalOpens++);
+
+  void _handleModalClosed() => setState(() => _modalCloses++);
+
+  void _finishModal(String result) {
+    setState(() => _modalResult = result);
+    _modalController.close();
+  }
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
     if (!event.isPress) return KeyEventResult.ignored;
@@ -87,22 +113,66 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
     child: Focus(
       canRequestFocus: false,
       onKeyEvent: _onAppKey,
-      child: _ComponentSheet(
-        category: _category,
-        paletteLabel: _emberActive ? 'EMBER' : 'DARK',
-        statusLabel: _statusLabel,
-        statusVariant: _statusVariant,
-        spinning: _spinning,
-        wrap: _wrap,
-        verbose: _verbose,
-        steps: _steps,
-        totalSteps: _totalSteps,
-        progress: _progress,
-        onCategoryChanged: (next) => setState(() => _category = next),
-        onWrapChanged: (next) => setState(() => _wrap = next),
-        onVerboseChanged: (next) => setState(() => _verbose = next),
-        onStep: _steps == _totalSteps ? null : () => setState(() => _steps++),
-        onReset: _steps == 0 ? null : () => setState(() => _steps = 0),
+      child: Modal(
+        controller: _modalController,
+        initialFocusNode: _modalCancelFocus,
+        onOpen: _handleModalOpened,
+        onClose: _handleModalClosed,
+        modalBuilder: (context) => Panel(
+          title: 'Review changes',
+          width: 42,
+          focused: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Tab and Shift+Tab stay inside.'),
+              const Text('Background pointer actions are blocked.'),
+              const SizedBox(height: 1),
+              Row(
+                spacing: 1,
+                children: [
+                  Button(
+                    key: const ValueKey<String>('modal-cancel'),
+                    label: 'Cancel',
+                    focusNode: _modalCancelFocus,
+                    onPressed: () => _finishModal('cancelled'),
+                  ),
+                  Button(
+                    key: const ValueKey<String>('modal-confirm'),
+                    label: 'Confirm',
+                    focusNode: _modalConfirmFocus,
+                    onPressed: () => _finishModal('approved'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        child: _ComponentSheet(
+          category: _category,
+          paletteLabel: _emberActive ? 'EMBER' : 'DARK',
+          statusLabel: _statusLabel,
+          statusVariant: _statusVariant,
+          spinning: _spinning,
+          wrap: _wrap,
+          verbose: _verbose,
+          steps: _steps,
+          totalSteps: _totalSteps,
+          progress: _progress,
+          modalOpens: _modalOpens,
+          modalCloses: _modalCloses,
+          modalResult: _modalResult,
+          backgroundPresses: _backgroundPresses,
+          modalLauncherFocus: _modalLauncherFocus,
+          onCategoryChanged: (next) => setState(() => _category = next),
+          onWrapChanged: (next) => setState(() => _wrap = next),
+          onVerboseChanged: (next) => setState(() => _verbose = next),
+          onStep: _steps == _totalSteps ? null : () => setState(() => _steps++),
+          onReset: _steps == 0 ? null : () => setState(() => _steps = 0),
+          onOpenModal: _modalController.open,
+          onBackgroundPressed: () => setState(() => _backgroundPresses++),
+        ),
       ),
     ),
   );
@@ -120,11 +190,18 @@ class _ComponentSheet extends StatelessWidget {
     required this.steps,
     required this.totalSteps,
     required this.progress,
+    required this.modalOpens,
+    required this.modalCloses,
+    required this.modalResult,
+    required this.backgroundPresses,
+    required this.modalLauncherFocus,
     required this.onCategoryChanged,
     required this.onWrapChanged,
     required this.onVerboseChanged,
     required this.onStep,
     required this.onReset,
+    required this.onOpenModal,
+    required this.onBackgroundPressed,
   });
 
   final _ComponentCategory category;
@@ -137,11 +214,18 @@ class _ComponentSheet extends StatelessWidget {
   final int steps;
   final int totalSteps;
   final double progress;
+  final int modalOpens;
+  final int modalCloses;
+  final String modalResult;
+  final int backgroundPresses;
+  final FocusNode modalLauncherFocus;
   final ValueChanged<_ComponentCategory> onCategoryChanged;
   final ValueChanged<bool> onWrapChanged;
   final ValueChanged<bool> onVerboseChanged;
   final VoidCallback? onStep;
   final VoidCallback? onReset;
+  final VoidCallback onOpenModal;
+  final VoidCallback onBackgroundPressed;
 
   @override
   Widget build(BuildContext context) => DemoScaffold(
@@ -174,6 +258,7 @@ class _ComponentSheet extends StatelessWidget {
         switch (category) {
           _ComponentCategory.controls => _buildControls(context),
           _ComponentCategory.foundation => _buildFoundation(context),
+          _ComponentCategory.overlays => _buildOverlays(),
         },
       ],
     ),
@@ -280,5 +365,39 @@ class _ComponentSheet extends StatelessWidget {
       ),
       const Panel(focused: true, child: Text('Untitled focus remains visible')),
     ],
+  );
+
+  Widget _buildOverlays() => Panel(
+    title: 'Modal behavior',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Modal supplies behavior; Panel supplies visible chrome.'),
+        Row(
+          spacing: 1,
+          children: [
+            Button(
+              key: const ValueKey<String>('open-modal'),
+              label: 'Open modal',
+              focusNode: modalLauncherFocus,
+              onPressed: onOpenModal,
+            ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Button(
+                  key: const ValueKey<String>('modal-background'),
+                  label: 'Background action',
+                  onPressed: onBackgroundPressed,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text('Result: $modalResult'),
+        Text('Transitions: $modalOpens open / $modalCloses close'),
+        Text('Background presses: $backgroundPresses'),
+      ],
+    ),
   );
 }

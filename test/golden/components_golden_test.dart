@@ -4,6 +4,7 @@ import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../helpers/golden_testing.dart';
+import '../helpers/tui_test_app.dart';
 
 final _updateGoldens = Platform.environment['UPDATE_GOLDENS'] == '1';
 
@@ -163,5 +164,77 @@ void main() {
         updateGoldens: _updateGoldens,
       );
     });
+
+    test('modal content inherits default and alternate palettes', () async {
+      const alternate = ThemeData(
+        surface: Color(0.12, 0.06, 0.08),
+        surfaceVariant: Color(0.18, 0.09, 0.11),
+        text: Color(0.98, 0.9, 0.84),
+        textMuted: Color(0.72, 0.58, 0.55),
+        border: Color(0.42, 0.22, 0.24),
+        accent: Color(1, 0.55, 0.35),
+        accentForeground: Color(0.14, 0.05, 0.02),
+      );
+      for (final entry in const <String, ThemeData>{
+        'default': ThemeData.dark,
+        'alternate': alternate,
+      }.entries) {
+        final controller = ModalController();
+        final app = createTuiTestApp(
+          Theme(
+            data: entry.value,
+            child: Modal(
+              controller: controller,
+              modalBuilder: (context) => const Panel(
+                title: 'Modal',
+                width: 30,
+                focused: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Behavior without built-in chrome'),
+                    Row(
+                      spacing: 1,
+                      children: [
+                        Button(label: 'Cancel', onPressed: _noop),
+                        Button(label: 'Confirm', onPressed: _noop),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              child: const Panel(
+                title: 'Base',
+                child: Text('Background remains visible'),
+              ),
+            ),
+          ),
+          width: 34,
+          height: 12,
+        );
+        try {
+          await _settle(app);
+          controller.open();
+          await _settle(app);
+          await tester.expectCapturedGolden(
+            app.captureFrame(),
+            'components_modal_${entry.key}',
+            updateGoldens: _updateGoldens,
+          );
+        } finally {
+          app.dispose();
+        }
+      }
+    });
   });
+}
+
+Future<void> _settle(TuiTestApp app) async {
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
+  app.pumpFrame();
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
+  app.pumpFrame();
 }

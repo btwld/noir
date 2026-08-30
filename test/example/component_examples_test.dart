@@ -96,6 +96,91 @@ void main() {
     },
   );
 
+  test(
+    'components demo exercises modal focus, palette, and pointer blocking',
+    () async {
+      final app = createTuiTestApp(
+        const ComponentsDemoApp(),
+        width: 64,
+        height: 18,
+      );
+      try {
+        await _settle(app);
+
+        // Move from the first control to the category tabs, then select the
+        // third specimen without depending on private widget state.
+        app.mockInput
+          ..pressShiftTab()
+          ..pressArrow(ArrowDirection.right)
+          ..pressArrow(ArrowDirection.right);
+        await _settle(app);
+
+        var frame = app.captureFrame();
+        expect(frame.toText(), contains('Modal behavior'));
+        expect(frame.toText(), contains('Background presses: 0'));
+        final background = frame.findText('Background action').single;
+
+        // Tab from the category selector to the launcher and open by key.
+        app.mockInput
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+
+        frame = app.captureFrame();
+        expect(frame.toText(), contains('Review changes'));
+        expect(frame.toText(), contains('Tab and Shift+Tab stay inside.'));
+        final darkTitle = frame.findText('Review changes').single;
+        final darkTitleColor = frame.getForegroundColor(
+          darkTitle.x,
+          darkTitle.y,
+        );
+
+        // The overlay inherits the live palette while it remains mounted.
+        app.mockInput.typeText('t');
+        await _settle(app);
+        frame = app.captureFrame();
+        final emberTitle = frame.findText('Review changes').single;
+        expect(
+          frame.getForegroundColor(emberTitle.x, emberTitle.y),
+          isNot(darkTitleColor),
+        );
+
+        // The old background location is still covered by the modal barrier.
+        app.mockMouse.click(
+          background.x + 'Background action'.length - 1,
+          background.y,
+        );
+        await _settle(app);
+        frame = app.captureFrame();
+        expect(frame.toText(), contains('Review changes'));
+
+        // Initial focus is Cancel. Two forward steps wrap back to it.
+        app.mockInput
+          ..pressTab()
+          ..pressTab()
+          ..pressEnter();
+        await _settle(app);
+        frame = app.captureFrame();
+        expect(frame.toText(), isNot(contains('Review changes')));
+        expect(frame.toText(), contains('Result: cancelled'));
+        expect(frame.toText(), contains('Transitions: 1 open / 1 close'));
+        expect(frame.toText(), contains('Background presses: 0'));
+
+        // Reopen from the restored launcher and exercise the confirm action.
+        app.mockInput.pressEnter();
+        await _settle(app);
+        final confirm = app.captureFrame().findText('Confirm').single;
+        app.mockMouse.click(confirm.x, confirm.y);
+        await _settle(app);
+        frame = app.captureFrame();
+        expect(frame.toText(), contains('Result: approved'));
+        expect(frame.toText(), contains('Transitions: 2 open / 2 close'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
   test('data table demo sorts by a clicked header and opens a row', () async {
     final app = createTuiTestApp(
       const DataTableDemoApp(),

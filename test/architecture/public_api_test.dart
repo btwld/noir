@@ -216,6 +216,7 @@ void main() {
         'MenuAnchorChildBuilder',
         'MenuController',
       },
+      'src/widgets/modal.dart': {'Modal', 'ModalController'},
       'src/widgets/overlay.dart': {
         'OverlayPortal',
         'OverlayPortalController',
@@ -374,8 +375,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(240),
-      reason: 'The high-level surface is locked at exactly 240 symbols.',
+      hasLength(242),
+      reason: 'The high-level surface is locked at exactly 242 symbols.',
     );
   });
 }

@@ -207,6 +207,7 @@ export 'src/widgets/markdown_view.dart'
     show MarkdownBlockRenderer, MarkdownThemeData, MarkdownView;
 export 'src/widgets/menu_anchor.dart'
     show MenuAnchor, MenuAnchorChildBuilder, MenuController;
+export 'src/widgets/modal.dart' show Modal, ModalController;
 export 'src/widgets/overlay.dart'
     show OverlayPortal, OverlayPortalController, WidgetBuilder;
 export 'src/widgets/padding.dart' show Padding;

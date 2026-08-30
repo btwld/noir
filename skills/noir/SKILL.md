@@ -178,7 +178,9 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Inset a child | `Padding` | `references/widgets.md` |
 | Position a child in a box | `Align` | `references/widgets.md` |
 | Overlay or absolutely position children | `Stack`, `Positioned` | `references/widgets.md` |
-| Host a popup above the app | `OverlayPortal`, `MenuAnchor` | `references/widgets.md` |
+| Host custom transient content above the app | `OverlayPortal` | `references/widgets.md` |
+| Trap focus in a centered modal flow | `Modal`, `ModalController` | `references/widgets.md` |
+| Anchor a menu to its launcher | `MenuAnchor`, `MenuController` | `references/widgets.md` |
 | Flow children into runs | `Wrap` | `references/widgets.md` |
 | Constrain min/max | `ConstrainedBox` | `references/widgets.md` |
 | Plain or styled text | `Text`, `TextStyle`, `TextStyles` | `references/widgets.md` |

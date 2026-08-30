@@ -107,10 +107,55 @@ supports document-style selection. They solve different table problems.
 
 ## Overlays and menus
 
-`OverlayPortal` shows a logical descendant above the root tree while preserving
-its inherited context. `MenuAnchor` adds launcher-relative placement, outside
-click dismissal, and menu ownership. Use the portal for custom transient
-content and the anchor for a menu.
+| Need                            | Widget          | Boundary                                                        |
+| ------------------------------- | --------------- | --------------------------------------------------------------- |
+| Custom transient content        | `OverlayPortal` | Caller owns placement, input, focus, and dismissal              |
+| Centered blocking interaction   | `Modal`         | Closed focus loop and pointer barrier; caller supplies chrome   |
+| Commands anchored to a launcher | `MenuAnchor`    | Follows launcher geometry and owns outside-click menu dismissal |
+
+`Modal` keeps its ordinary child mounted, centers a fresh `modalBuilder`
+subtree while open, loops Tab and Shift+Tab over live modal controls, restores
+the captured focus node on close, and blocks every outside pointer event.
+Escape dismisses by default; outside primary-button dismissal is opt-in.
+Compose a `Panel` inside the builder because Modal deliberately has no visual
+style of its own.
+
+```dart
+final modal = ModalController();
+
+Modal(
+  controller: modal,
+  initialFocusNode: cancelFocus,
+  modalBuilder: (context) => Panel(
+    title: 'Discard changes?',
+    child: Row(
+      spacing: 1,
+      children: [
+        Button(
+          label: 'Cancel',
+          focusNode: cancelFocus,
+          onPressed: modal.close,
+        ),
+        Button(
+          label: 'Discard',
+          onPressed: () {
+            discardChanges();
+            modal.close();
+          },
+        ),
+      ],
+    ),
+  ),
+  child: Button(label: 'Open', onPressed: modal.open),
+)
+```
+
+One `ModalController` attaches to one live Modal. `open()` throws while
+detached, `close()` is a detached no-op, and replacing the controller preserves
+an open subtree without transition callbacks. Calling `open()` again promotes
+that modal and reestablishes focus inside it. When a top modal closes, the modal
+revealed below preserves a valid restored focus or repairs to an available
+descendant.
 
 Noir currently has one framework-owned root overlay. It does not expose public
 `OverlayEntry`, nested overlays, transforms, linked layers, menu cascades, or

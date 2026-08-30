@@ -97,17 +97,46 @@ Use the grid as the design constraint:
 fill that share. `SizedBox` sets an exact extent; `ConstrainedBox` adds a
 minimum or maximum without promising an exact result.
 
-| When the relationship is…             | Start with                      |
-| ------------------------------------- | ------------------------------- |
-| A horizontal or vertical sequence     | `Row` or `Column`               |
-| One child owns leftover space         | `Expanded` or `Flexible`        |
-| Children continue onto another run    | `Wrap`                          |
-| Children overlap at cell offsets      | `Stack` and `Positioned`        |
-| One child is larger than its viewport | `ScrollBox`                     |
-| Content appears above the root tree   | `OverlayPortal` or `MenuAnchor` |
+| When the relationship is…             | Start with               |
+| ------------------------------------- | ------------------------ |
+| A horizontal or vertical sequence     | `Row` or `Column`        |
+| One child owns leftover space         | `Expanded` or `Flexible` |
+| Children continue onto another run    | `Wrap`                   |
+| Children overlap at cell offsets      | `Stack` and `Positioned` |
+| One child is larger than its viewport | `ScrollBox`              |
+| Custom content appears above the root | `OverlayPortal`          |
+| A centered flow blocks the background | `Modal`                  |
+| A command list follows its launcher   | `MenuAnchor`             |
 
 The [Widget catalog](/docs/widget-catalog) covers the rest of the public
 composition surface.
+
+## Put modal behavior around a Panel
+
+`Modal` owns centered root-overlay placement, a closed Tab loop, focus
+restoration, Escape dismissal, and the background pointer barrier. It does not
+own colors, borders, or a title. Keep those responsibilities visible by
+composing a shrink-wrapped Panel:
+
+```dart
+Modal(
+  controller: modalController,
+  modalBuilder: (context) => Panel(
+    title: 'Confirm deployment',
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Deploy the reviewed revision?'),
+        Button(label: 'Cancel', onPressed: modalController.close),
+      ],
+    ),
+  ),
+  child: Button(label: 'Review', onPressed: modalController.open),
+)
+```
+
+Omitting a fixed Panel height lets the modal fit its content and remain
+centered as the terminal resizes.
 
 ## Put borders around regions, not every widget
 

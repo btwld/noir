@@ -84,6 +84,7 @@ final ActionCallback<ActivateIntent> consumerAction = (intent, context) =>
 
 Widget consumerOverlayAndMenu() {
   final portal = OverlayPortalController(debugLabel: 'consumer');
+  final modal = ModalController();
   final menu = MenuController();
   const WidgetBuilder overlayBuilder = _overlayChild;
   return Column(
@@ -92,6 +93,12 @@ Widget consumerOverlayAndMenu() {
         controller: portal,
         overlayChildBuilder: overlayBuilder,
         child: const Text('portal-child'),
+      ),
+      Modal(
+        controller: modal,
+        modalBuilder: (context) =>
+            const Panel(title: 'Modal', child: Text('modal-child')),
+        child: Text(modal.isOpen ? 'open-modal' : 'closed-modal'),
       ),
       MenuAnchor(
         controller: menu,
