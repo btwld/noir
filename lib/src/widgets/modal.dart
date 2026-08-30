@@ -256,6 +256,8 @@ class _ModalState extends State<Modal> with FocusNodeOwnerStateMixin<Modal> {
     if (!scope.isAttached) {
       return;
     }
+    // Batched portals can mount by element depth instead of open-call order.
+    _portalController.show();
     final preferred = widget.initialFocusNode;
     if (preferred != null &&
         preferred.isAttached &&

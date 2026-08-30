@@ -315,6 +315,76 @@ void main() {
     }
   });
 
+  test('batched opens keep focus and pointer top order aligned', () async {
+    final shallowController = ModalController();
+    final deepController = ModalController();
+    final shallowAction = FocusNode(debugLabel: 'shallow-action');
+    final deepAction = FocusNode(debugLabel: 'deep-action');
+    final app = createTuiTestApp(
+      Column(
+        children: [
+          Modal(
+            controller: shallowController,
+            initialFocusNode: shallowAction,
+            dismissOnOutsideClick: true,
+            modalBuilder: (context) => Button(
+              label: 'Shallow action',
+              focusNode: shallowAction,
+              onPressed: () {},
+            ),
+            child: const Text('Shallow host'),
+          ),
+          Padding(
+            padding: EdgeInsets.zero,
+            child: Modal(
+              controller: deepController,
+              initialFocusNode: deepAction,
+              dismissOnOutsideClick: true,
+              modalBuilder: (context) => Button(
+                label: 'Deep action',
+                focusNode: deepAction,
+                onPressed: () {},
+              ),
+              child: const Text('Deep host'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    try {
+      await _settle(app);
+
+      // Dirty elements rebuild by depth, so this reverse-depth batch exercises
+      // ordering by open call rather than incidental widget-tree placement.
+      deepController.open();
+      shallowController.open();
+      await _settle(app);
+      expect(shallowAction.hasFocus, isTrue);
+
+      final outside = MouseEvent(
+        type: MouseEventType.down,
+        button: MouseButton.left,
+        x: 0,
+        y: 0,
+      );
+      app.binding.inputManager.dispatchMouse(outside);
+      await _settle(app);
+
+      expect(outside.isConsumed, isTrue);
+      expect(
+        shallowController.isOpen,
+        isFalse,
+        reason: 'the last opened modal must also be pointer-topmost',
+      );
+      expect(deepController.isOpen, isTrue);
+    } finally {
+      app.dispose();
+      shallowAction.dispose();
+      deepAction.dispose();
+    }
+  });
+
   test(
     'reopening a lower modal promotes its focus and keyboard boundary',
     () async {
