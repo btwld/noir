@@ -16,8 +16,11 @@ void main() {
   test('mouse-capable example entrypoints ask runTuiApp for mouse once', () {
     for (final path in <String>[
       'example/chat_demo.dart',
+      'example/autocomplete_demo.dart',
       'example/components_demo.dart',
       'example/data_table_demo.dart',
+      'example/dialog_demo.dart',
+      'example/file_picker_demo.dart',
       'example/focus_form.dart',
       'example/like_reactor.dart',
       'example/layout_demo.dart',
@@ -55,6 +58,7 @@ void main() {
         'example/select_demo.dart': <String>["ValueKey<String>('fruit')"],
         'example/scrollbox_demo.dart': <String>["ValueKey<String>('content')"],
         'example/components_demo.dart': <String>[
+          "ValueKey<String>('component-category')",
           "ValueKey<String>('wrap')",
           "ValueKey<String>('verbose')",
           "ValueKey<String>('step')",
@@ -92,6 +96,22 @@ void main() {
         'example/pub_search/package_detail.dart': <String>[
           "ValueKey<String>('tabs')",
           "ValueKey<String>('detail')",
+        ],
+        'example/dialog_demo.dart': <String>[
+          "ValueKey<String>('refresh-release')",
+          "ValueKey<String>('open-dialog')",
+          "ValueKey<String>('cancel-deploy')",
+          "ValueKey<String>('confirm-deploy')",
+        ],
+        'example/autocomplete_demo.dart': <String>[
+          "ValueKey<String>('package-query')",
+          "ValueKey<String>('package-suggestions')",
+        ],
+        'example/file_picker_demo.dart': <String>[
+          "ValueKey<String>('open-file-picker')",
+          "ValueKey<String>('file-tree')",
+          "ValueKey<String>('cancel-file-picker')",
+          "ValueKey<String>('open-selected-file')",
         ],
       };
 

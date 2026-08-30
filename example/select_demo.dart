@@ -70,7 +70,7 @@ class _SelectDemoAppState extends State<SelectDemoApp> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DemoPanel(
+            Panel(
               title: 'Fruit',
               focused: _focusNode.hasFocus,
               child: Select<String>(

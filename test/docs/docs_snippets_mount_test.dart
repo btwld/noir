@@ -46,26 +46,6 @@ class StatusRegion extends StatelessWidget {
   }
 }
 
-class LogPanel extends StatelessWidget {
-  const LogPanel({required this.log, super.key});
-
-  final Widget log;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      constraints: const BoxConstraints(minWidth: 18),
-      decoration: BoxDecoration(
-        color: theme.surfaceVariant,
-        border: Border.all(color: theme.border, title: ' Build log '),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: log,
-    );
-  }
-}
-
 class FilterField extends StatefulWidget {
   const FilterField({super.key});
 
@@ -210,9 +190,13 @@ void main() {
     );
   });
 
-  test('LogPanel paints the border title', () {
+  test('Panel paints the border title', () {
     expect(
-      capture.capture(const LogPanel(log: Text('ok'))).toText(),
+      capture
+          .capture(
+            const Panel(title: 'Build log', width: 24, child: Text('ok')),
+          )
+          .toText(),
       contains('Build log'),
     );
   });

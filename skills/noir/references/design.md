@@ -99,12 +99,17 @@ Focused lists, selects, and tables already paint `selectedBackground` and
 mute to `surfaceVariant` when they do not own the keyboard. Do not
 reimplement that with extra boxes.
 
-Hand-roll a bordered region with `Container` + `BoxDecoration` +
-`Theme.of(context).border`. Put the region's name on `Border.title`
-(`title: ' Name '`) so it sits in the top edge, not on an inner row.
-There is no public `Panel`, modal, or command-palette widget. In-repo examples
-share `example/src/demo_scaffold.dart` for application-specific chrome. Use
-`Stack`/`Positioned` for deliberate overlays and `Wrap` for cell-based runs.
+Use `Panel` for a themed bordered region. It puts the region name on
+`Border.title`, uses `surfaceVariant` with `border` or focused `accent` chrome,
+and adds a structural focus marker. Pass `focused` from the focus owner; the
+panel itself is visual and does not request focus. Its explicit `color` and
+`borderColor` parameters win over theme tokens. Use `Container` with
+`BoxDecoration` only when the region deliberately needs different geometry.
+
+There is no public modal or command-palette widget. In-repo examples share
+`example/src/demo_scaffold.dart` only for application-specific page chrome.
+Use `Stack`/`Positioned` for deliberate overlays and `Wrap` for cell-based
+runs.
 
 ## Type and copy
 

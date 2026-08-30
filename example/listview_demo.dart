@@ -97,7 +97,7 @@ class _ListViewDemoAppState extends State<ListViewDemoApp> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DemoPanel(
+        Panel(
           title: label,
           focused: focused,
           width: 24,

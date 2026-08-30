@@ -46,7 +46,7 @@ class _ScrollDemoAppState extends State<ScrollDemoApp> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DemoPanel(
+            Panel(
               title: 'Lines',
               width: 42,
               height: 10,

@@ -122,7 +122,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
             label: 'Save',
             onPressed: _submit,
           ),
-          DemoPanel(
+          Panel(
             title: 'Status',
             width: 54,
             height: _status.contains('\n') ? 4 : 3,
@@ -141,7 +141,7 @@ class _FocusFormAppState extends State<FocusFormApp> {
     required String placeholder,
     VoidCallback? onSubmit,
     bool autofocus = false,
-  }) => DemoPanel(
+  }) => Panel(
     title: label,
     focused: focusNode.hasFocus,
     width: 54,

@@ -101,6 +101,7 @@ shrink-wrapped:
 | `Text` / `RichText` | Grapheme- and cell-aware. Clamp overflow in tables and one-line fields. |
 | `AsciiFont` | Natural multi-row glyph box with seven generated treatments of Noir's built-in alphabet. |
 | `Theme` / `ThemeData` | Flat tokens. `dark` is the unthemed look. |
+| `Panel` | One bordered region. Title on `Border.title`; shrink-wrap unless `width` / `height` define a viewport. `focused` adds accent chrome and a structural marker but owns no focus. |
 | `Divider` | One-cell band of `ThemeData.border`. Specimen, not a page rule. |
 | `Badge` | One row. Horizontal pad 1. |
 | `ProgressBar` | One row. Eighth-cell steps. |
@@ -120,7 +121,6 @@ shrink-wrapped:
 | `Focus` / `FocusScope` | Focused lists use `selectedBackground`. Accent border marks keyboard ownership. |
 | `PointerListener` | `MouseEvent.localPosition` only. |
 | Example `DemoScaffold` | Surface fills the terminal. Title inset 2, 1. Not a public `Scaffold`. |
-| Example `DemoPanel` | Title on `Border.title`. Shrink-wrap unless the child is a viewport. Not a public `Panel`. |
 
 Exempt: `counter`, `like_reactor`, `inherited_example`, `bindings_validation`.
 `layout_*` and `chat_demo` keep their own frames.
@@ -132,7 +132,8 @@ match stay. Example chrome stays example-local.
 
 | Piece | Action |
 |---|---|
-| `DemoScaffold` / `DemoPanel` | Title on `Border.title`. Shrink-wrap unless viewport. |
+| `DemoScaffold` | Keep application-specific page chrome example-local. |
+| `Panel` | Use the public themed region; title on `Border.title`, shrink-wrapped unless it contains a viewport. |
 | `hello` | Reference two-up. |
 | `Button` / `Badge` / `Checkbox` / `Switch` / `ProgressBar` / `Spinner` | Present in `components_demo` inside titled panels. |
 | `Divider` | One specimen rule inside the controls panel. |
@@ -143,7 +144,7 @@ match stay. Example chrome stays example-local.
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
 | Phase-2 parity components | `parity_components_demo` demonstrates every new non-image component. |
-| `Theme` | `theme_demo` specimens in a `DemoPanel`. |
+| `Theme` | `theme_demo` and the component sheet re-skin public `Panel` specimens without component sub-themes. |
 | `Focus` / `PointerListener` | `focus_form`. |
 | `framework_primitives` | Scaffold only. |
 | Exempt | listed above. |

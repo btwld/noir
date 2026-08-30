@@ -1,19 +1,14 @@
 /// Shared chrome for the Noir example apps.
 ///
-/// Every demo used to hand-roll the same three shapes — a padded surface with
-/// a bold title and muted hint, a bordered panel, and a focused-panel accent —
-/// each with its own color literals. This file is the one copy: all chrome
+/// Every demo used to hand-roll the same padded surface with a bold title and
+/// muted hint. This file keeps that application-specific page frame in one
+/// place; reusable bordered regions use Noir's public [Panel]. All chrome
 /// colors come from `Theme.of(context)`, so the demos render on
 /// `ThemeData.dark` by default and re-skin together under any `Theme`.
 ///
 /// The card is content-sized vertically. Horizontal room comes from the
 /// scaffold owning the terminal (`alignment: topLeft`) and a 2-cell side
-/// inset so the page title is not glued to the edge. A panel title lives
-/// on the top border (`Border.title`, `┌─ Name ─┐`); the body starts on
-/// the first inner row. Horizontal pad 1 is free (maxed with the border).
-/// Do not set [DemoPanel.height] unless the child is a viewport. The
-/// panel fill is [ThemeData.surfaceVariant] — the token whose job is a
-/// nested region.
+/// inset so the page title is not glued to the edge.
 ///
 /// Content colors (chat speakers, layout blocks, particles) stay in each demo:
 /// there the color is the subject, not the frame.
@@ -75,60 +70,6 @@ class DemoScaffold extends StatelessWidget {
           child,
         ],
       ),
-    );
-  }
-}
-
-/// A bordered, optionally titled panel whose border turns to the theme accent
-/// and gains a `›` marker while [focused] is true — the demos' shared
-/// "this pane owns the keyboard" affordance. The marker remains visible when
-/// the panel has no title, so focus never relies on color alone.
-class DemoPanel extends StatelessWidget {
-  /// Wraps [child] in a themed border, titled when [title] is non-null.
-  const DemoPanel({
-    required this.child,
-    this.title,
-    this.focused = false,
-    this.width,
-    this.height,
-    super.key,
-  });
-
-  /// Label drawn on the top border; omitted when null.
-  final String? title;
-
-  /// Whether to paint the border and title in the theme accent.
-  final bool focused;
-
-  /// Fixed width in cells, or null to size to content.
-  final int? width;
-
-  /// Fixed height in cells, or null to size to content.
-  final int? height;
-
-  /// Panel content below the optional title.
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final title = this.title;
-    final borderTitle = switch ((title, focused)) {
-      (final title?, true) => ' › $title ',
-      (final title?, false) => ' $title ',
-      (null, true) => ' › ',
-      (null, false) => null,
-    };
-    final chrome = focused ? theme.accent : theme.border;
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: theme.surfaceVariant,
-        border: Border.all(color: chrome, title: borderTitle),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: child,
     );
   }
 }

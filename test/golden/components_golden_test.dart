@@ -130,5 +130,38 @@ void main() {
         updateGoldens: _updateGoldens,
       );
     });
+
+    test('panels show default focused and alternate-palette states', () async {
+      await tester.expectGoldenMulti(
+        {
+          'default': const Panel(
+            title: 'Panel',
+            width: 26,
+            child: Text('Default chrome'),
+          ),
+          'focused': const Panel(
+            title: 'Panel',
+            focused: true,
+            width: 26,
+            child: Text('Focused chrome'),
+          ),
+          'alternate': const Theme(
+            data: ThemeData(
+              surfaceVariant: Color.blue,
+              border: Color.green,
+              accent: Color.magenta,
+            ),
+            child: Panel(
+              title: 'Panel',
+              focused: true,
+              width: 26,
+              child: Text('Alternate palette'),
+            ),
+          ),
+        },
+        'components_panel_states',
+        updateGoldens: _updateGoldens,
+      );
+    });
   });
 }

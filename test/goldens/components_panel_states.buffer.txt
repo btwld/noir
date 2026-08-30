@@ -1,0 +1,39 @@
+=== TEST: default ===
+┌─ Panel ────────────────┐        
+│Default chrome          │        
+└────────────────────────┘        
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+=== TEST: focused ===
+┌─ › Panel ──────────────┐        
+│Focused chrome          │        
+└────────────────────────┘        
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+=== TEST: alternate ===
+┌─ › Panel ──────────────┐        
+│Alternate palette       │        
+└────────────────────────┘        
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  

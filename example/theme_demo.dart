@@ -77,7 +77,7 @@ class _ThemedPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DemoPanel(
+          Panel(
             title: 'surfaceVariant',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

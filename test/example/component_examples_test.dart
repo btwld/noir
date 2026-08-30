@@ -56,6 +56,46 @@ void main() {
     }
   });
 
+  test(
+    'components demo switches category and recolors the same sheet',
+    () async {
+      final app = createTuiTestApp(
+        const ComponentsDemoApp(),
+        width: 64,
+        height: 18,
+      );
+      try {
+        await _settle(app);
+        final dark = app.captureFrame();
+        final darkTitle = dark.findText('Components demo').single;
+        expect(dark.toText(), contains('soft wrap'));
+
+        app.mockInput
+          ..pressShiftTab()
+          ..pressArrow(ArrowDirection.right);
+        await _settle(app);
+
+        final foundation = app.captureFrame();
+        expect(foundation.toText(), contains('Panel states'));
+        expect(foundation.toText(), contains('Accent border + marker'));
+        expect(foundation.toText(), isNot(contains('soft wrap')));
+
+        app.mockInput.typeText('t');
+        await _settle(app);
+        final alternate = app.captureFrame();
+        final alternateTitle = alternate.findText('Components demo').single;
+        expect(
+          alternate.getForegroundColor(alternateTitle.x, alternateTitle.y),
+          isNot(dark.getForegroundColor(darkTitle.x, darkTitle.y)),
+          reason: 'the palette switch recolors the complete specimen tree',
+        );
+        expect(alternate.toText(), contains('Panel states'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
   test('data table demo sorts by a clicked header and opens a row', () async {
     final app = createTuiTestApp(
       const DataTableDemoApp(),
@@ -179,7 +219,7 @@ void main() {
 }
 
 /// The package name in the table's first body row, immediately under the
-/// header. A titled DemoPanel may put a box-drawing cell in column 0.
+/// header. A titled Panel may put a box-drawing cell in column 0.
 String _firstBodyRow(TuiTestApp app) {
   final frame = app.captureFrame();
   final header = frame.findText('package').single;

@@ -210,6 +210,7 @@ export 'src/widgets/menu_anchor.dart'
 export 'src/widgets/overlay.dart'
     show OverlayPortal, OverlayPortalController, WidgetBuilder;
 export 'src/widgets/padding.dart' show Padding;
+export 'src/widgets/panel.dart' show Panel;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/progress_bar.dart' show ProgressBar;
 export 'src/widgets/rich_text.dart' show RichText;

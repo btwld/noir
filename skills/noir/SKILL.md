@@ -133,7 +133,9 @@ Inside this repo, `example/` has a runnable reference for every major feature
 `textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
 `data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
 `inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
-`chat_demo.dart`, `widgets_tour.dart`) — read one before inventing a pattern.
+`chat_demo.dart`, `widgets_tour.dart`, `dialog_demo.dart`,
+`autocomplete_demo.dart`, `file_picker_demo.dart`) — read one before inventing
+a pattern.
 
 ## Mental model
 
@@ -159,7 +161,7 @@ Inside this repo, `example/` has a runnable reference for every major feature
 | `MediaQuery` | session size / `handleResize` | Terminal size is integer cells |
 
 Noir provides familiar layout building blocks including `Row`, `Column`,
-`Container`, `Padding`, `SizedBox`, `Align`, `Expanded`, `Flexible`,
+`Container`, `Panel`, `Padding`, `SizedBox`, `Align`, `Expanded`, `Flexible`,
 `ConstrainedBox`, `DecoratedBox`, `Stack`, `Positioned`, `Wrap`, `Text`, and
 `RichText`. There is no `GestureDetector`; terminal pointer input is exposed
 through `PointerListener` and cell-local `MouseEvent.localPosition`.
@@ -169,6 +171,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Need | Widget(s) | Reference |
 |---|---|---|
 | Box with padding/color/border/size | `Container` | `references/widgets.md` |
+| Themed titled region | `Panel` | `references/widgets.md` |
 | Horizontal / vertical layout | `Row`, `Column` (both extend the abstract `Flex`) | `references/widgets.md` |
 | Share remaining space | `Expanded`, `Flexible` | `references/widgets.md` |
 | Fixed gap or size | `SizedBox` | `references/widgets.md` |
