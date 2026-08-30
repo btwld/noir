@@ -8,7 +8,7 @@ the focus system they plug into, raw key/mouse events, and the
 
 - [How a key reaches your code](#how-a-key-reaches-your-code)
 - [The value-vs-controller rule](#the-value-vs-controller-rule)
-- [TextInput](#textinput) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
+- [TextInput](#textinput) · [Autocomplete](#autocomplete) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
 - [Focus: Focus / FocusScope / FocusNode](#focus)
 - [Raw input: KeyEvent / MouseEvent](#raw-input)
 - [PointerListener](#pointerlistener)
@@ -111,6 +111,58 @@ TextInput(
   onSubmit: _save,
 )
 ```
+
+## Autocomplete
+
+A controlled `TextInput` with one attached suggestion or status surface. The
+caller owns the required `TextEditingController`, options, status, selection,
+and any debounce, filtering, or asynchronous request freshness. `Autocomplete`
+owns only focus, keyboard and pointer interaction, and presentation.
+
+```dart
+const Autocomplete<T>({
+  required TextEditingController controller,
+  required List<T> options,
+  required AutocompleteStatus status, // idle | loading | ready | empty | error
+  required AutocompleteOptionBuilder<T> optionBuilder,
+  required ValueChanged<String> onChanged,
+  required ValueChanged<T> onSelected,
+  required VoidCallback onDismiss,
+  FocusNode? focusNode,
+  FocusNode? optionsFocusNode,
+  String? placeholder,
+  bool autofocus = false,
+  int maxOptionsHeight = 5,
+  bool showScrollIndicator = false,
+  WidgetBuilder? loadingBuilder,
+  WidgetBuilder? emptyBuilder,
+  WidgetBuilder? errorBuilder,
+  Color? inputBackgroundColor,
+  Color? optionsBackgroundColor,
+  Color? selectedBackgroundColor,
+  Key? key,
+})
+```
+
+```dart
+Autocomplete<String>(
+  controller: _queryController,
+  status: _status,
+  options: _matches,
+  autofocus: true,
+  optionBuilder: (context, option, highlighted) => Text(option),
+  onChanged: _search,
+  onSelected: _choose,
+  onDismiss: _hideSuggestions,
+)
+```
+
+`ready` requires at least one option. Tab follows normal traversal from the
+field into the attached list; arrows move its highlight. Enter in either focus
+role and a primary click select through the same callback. Escape dismisses a
+visible presentation and restores field focus; while `idle`, Escape remains
+unhandled for an ancestor. Omitted focus nodes are owned by the component;
+supplied nodes and the controller remain caller-owned.
 
 ## TextArea
 

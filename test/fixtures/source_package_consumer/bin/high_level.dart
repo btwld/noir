@@ -116,4 +116,17 @@ Widget consumerOverlayAndMenu() {
   );
 }
 
+Widget consumerAutocomplete() {
+  final controller = TextEditingController();
+  return Autocomplete<String>(
+    controller: controller,
+    options: const ['alpha', 'beta'],
+    status: AutocompleteStatus.ready,
+    optionBuilder: (context, option, highlighted) => Text(option),
+    onChanged: (value) {},
+    onSelected: (option) {},
+    onDismiss: () {},
+  );
+}
+
 Widget _overlayChild(BuildContext context) => const Text('overlay');

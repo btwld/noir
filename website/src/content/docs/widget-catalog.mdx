@@ -61,6 +61,7 @@ Row(
 | Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state         |
 | Value on a range            | `Slider`               | Arrow-key and pointer adjustment                              |
 | One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                     |
+| Attached suggestions        | `Autocomplete<T>`      | Caller controls options, status, selection, and async work    |
 | Multi-line editing          | `TextArea`             | Enter inserts a newline; `maxLength` is unbounded by default  |
 | Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms            |
 | Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels |
@@ -88,6 +89,11 @@ Select<String>(
 
 `Select.height` is visible rows and defaults to `8`. Set it to the option count
 for a short list. `SelectOption.value` is nullable.
+
+`Autocomplete` keeps request policy outside the widget. Supply an explicit
+`AutocompleteStatus` and options from the application; Tab enters a ready
+list, Enter or a primary click selects, and Escape dismisses the attached
+surface while leaving idle Escape available to an ancestor.
 
 See [Input and focus](/docs/input-focus) for event order, controller ownership,
 and focus traversal.

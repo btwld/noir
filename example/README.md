@@ -47,7 +47,7 @@ question each example answers; it is not a required sequence.
 | `dart run example/textarea_demo.dart` | Multi-line editing and portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Select, ScrollBox, and TextArea in one interaction flow. |
 | `dart run example/dialog_demo.dart` | A public `Modal` confirmation flow with `Panel` chrome, a pointer barrier, closed-loop focus, and focus restoration. |
-| `dart run example/autocomplete_demo.dart` | Debounced package suggestions with stale-response protection and an attached borderless list. |
+| `dart run example/autocomplete_demo.dart` | Public controlled `Autocomplete` behavior composed with example-owned debounce, stale-response protection, and package data. |
 | `dart run example/file_picker_demo.dart` | A public `Modal` containing a flattened file tree, disclosure controls, preview pane, and guarded Open action. |
 
 ### Component sheet controls

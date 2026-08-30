@@ -110,6 +110,7 @@ shrink-wrapped:
 | `Button` | One row, fill not border. Horizontal pad 1. |
 | `Checkbox` / `Switch` | One row. Narrow ASCII glyphs. |
 | `TextInput` | One row. No chrome pad. |
+| `Autocomplete` | Controlled field plus one attached state or option surface. Async search and option data stay caller-owned. |
 | `TextArea` | `height` is visible rows. |
 | `Select` | `height` is visible options. Highlight mutes when unfocused. |
 | `TabSelect` | Fixed-width or label-sized horizontal tabs with an optional underline and description row. |
@@ -140,6 +141,7 @@ match stay. Example chrome stays example-local.
 | `Button` / `Badge` / `Checkbox` / `Switch` / `ProgressBar` / `Spinner` | Present in `components_demo` inside titled panels. |
 | `Divider` | One specimen rule inside the controls panel. |
 | `TextInput` | `focus_form` fields are titled panels of height 3. |
+| `Autocomplete` | `autocomplete_demo` composes the public controlled field/list behavior with example-owned debounce and stale-response protection. |
 | `Select` | `select_demo` and `widgets_tour`: titled panel. |
 | `ListView` | `listview_demo`: one titled panel per list. |
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |

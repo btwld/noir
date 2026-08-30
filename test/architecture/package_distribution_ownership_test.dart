@@ -654,12 +654,13 @@ void main() {
     },
   );
 
-  test('website catalog and layout guidance use public Panel and Modal', () {
+  test('website catalog uses public Panel, Modal, and Autocomplete', () {
     final catalog = _read('website/src/content/docs/widget-catalog.mdx');
     final layout = _read('website/src/content/docs/widgets-layout.mdx');
 
     expect(catalog, contains('`Panel`'));
     expect(catalog, contains('`Modal`'));
+    expect(catalog, contains('`Autocomplete<T>`'));
     expect(layout, contains('Panel('));
     expect(layout, contains('Modal('));
     expect(layout, isNot(contains('class LogPanel')));
@@ -848,6 +849,8 @@ void main() {
       'Theme',
       'ThemeData',
       'ListView',
+      'Autocomplete',
+      'AutocompleteStatus',
       'Checkbox',
       'Switch',
       'Button',
@@ -870,6 +873,7 @@ void main() {
     expect(widgetsGuide, contains('const Spinner({'));
     expect(widgetsGuide, contains('const Panel({'));
     expect(widgetsGuide, contains('const Modal({'));
+    expect(inputsGuide, contains('const Autocomplete<T>({'));
     expect(inputsGuide, contains('const ListView({'));
     expect(inputsGuide, contains('const Checkbox({'));
     expect(inputsGuide, contains('const Switch({'));

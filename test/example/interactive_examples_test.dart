@@ -109,7 +109,6 @@ void main() {
         ],
         'example/autocomplete_demo.dart': <String>[
           "ValueKey<String>('package-query')",
-          "ValueKey<String>('package-suggestions')",
         ],
         'example/file_picker_demo.dart': <String>[
           "ValueKey<String>('open-file-picker')",
