@@ -67,6 +67,11 @@ void main() {
           "ValueKey<String>('modal-background')",
           "ValueKey<String>('modal-cancel')",
           "ValueKey<String>('modal-confirm')",
+          "ValueKey<String>('component-autocomplete-ready')",
+          "ValueKey<String>('component-autocomplete-loading')",
+          "ValueKey<String>('component-autocomplete-empty')",
+          "ValueKey<String>('component-autocomplete-error')",
+          "ValueKey<String>('component-tree')",
         ],
         'example/data_table_demo.dart': <String>["ValueKey<String>('table')"],
         'example/listview_demo.dart': <String>[
@@ -109,7 +114,6 @@ void main() {
         ],
         'example/autocomplete_demo.dart': <String>[
           "ValueKey<String>('package-query')",
-          "ValueKey<String>('package-suggestions')",
         ],
         'example/file_picker_demo.dart': <String>[
           "ValueKey<String>('open-file-picker')",

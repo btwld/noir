@@ -116,4 +116,35 @@ Widget consumerOverlayAndMenu() {
   );
 }
 
+Widget consumerAutocomplete() {
+  final controller = TextEditingController();
+  return Autocomplete<String>(
+    controller: controller,
+    options: const ['alpha', 'beta'],
+    status: AutocompleteStatus.ready,
+    optionBuilder: (context, option, highlighted) => Text(option),
+    onChanged: (value) {},
+    onSelected: (option) {},
+    onDismiss: () {},
+  );
+}
+
+Widget consumerTreeView() {
+  final controller = TreeViewController<String>(
+    roots: [
+      TreeNode<String>.branch(
+        id: 'root',
+        value: 'Root',
+        children: [TreeNode<String>.leaf(id: 'child', value: 'Child')],
+      ),
+    ],
+  );
+  return TreeView<String>(
+    controller: controller,
+    itemBuilder: (context, node, selected) => Text(node.value),
+    onSelectionChanged: (node) {},
+    onActivate: (node) {},
+  );
+}
+
 Widget _overlayChild(BuildContext context) => const Text('overlay');

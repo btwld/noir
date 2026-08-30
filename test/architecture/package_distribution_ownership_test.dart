@@ -654,15 +654,30 @@ void main() {
     },
   );
 
-  test('website catalog and layout guidance use public Panel and Modal', () {
+  test('website catalog uses the public composed components', () {
     final catalog = _read('website/src/content/docs/widget-catalog.mdx');
     final layout = _read('website/src/content/docs/widgets-layout.mdx');
 
     expect(catalog, contains('`Panel`'));
     expect(catalog, contains('`Modal`'));
+    expect(catalog, contains('`Autocomplete<T>`'));
+    expect(catalog, contains('`TreeView`'));
+    expect(catalog, contains('`TreeViewController`'));
     expect(layout, contains('Panel('));
     expect(layout, contains('Modal('));
     expect(layout, isNot(contains('class LogPanel')));
+  });
+
+  test('data-selection examples retain application-owned behavior', () {
+    final autocomplete = _read('example/autocomplete_demo.dart');
+    final filePicker = _read('example/file_picker_demo.dart');
+
+    expect(autocomplete, contains('Autocomplete<PackageSuggestion>'));
+    expect(autocomplete, contains('class PackageAutocompleteController'));
+    expect(filePicker, contains('TreeView<DemoFileNode>'));
+    expect(filePicker, contains('TreeViewController<DemoFileNode>'));
+    expect(filePicker, isNot(contains('class FilePickerController')));
+    expect(filePicker, isNot(contains('class DemoFileEntry')));
   });
 
   test('development guidance is excluded while examples stay publishable', () {
@@ -848,6 +863,11 @@ void main() {
       'Theme',
       'ThemeData',
       'ListView',
+      'Autocomplete',
+      'AutocompleteStatus',
+      'TreeView',
+      'TreeViewController',
+      'TreeNode',
       'Checkbox',
       'Switch',
       'Button',
@@ -870,7 +890,11 @@ void main() {
     expect(widgetsGuide, contains('const Spinner({'));
     expect(widgetsGuide, contains('const Panel({'));
     expect(widgetsGuide, contains('const Modal({'));
+    expect(inputsGuide, contains('const Autocomplete<T>({'));
     expect(inputsGuide, contains('const ListView({'));
+    expect(inputsGuide, contains('TreeNode<T>.leaf({'));
+    expect(inputsGuide, contains('TreeViewController<T>({'));
+    expect(inputsGuide, contains('const TreeView<T>({'));
     expect(inputsGuide, contains('const Checkbox({'));
     expect(inputsGuide, contains('const Switch({'));
     expect(inputsGuide, contains('const Button({'));

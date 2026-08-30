@@ -61,6 +61,7 @@ Row(
 | Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state         |
 | Value on a range            | `Slider`               | Arrow-key and pointer adjustment                              |
 | One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                     |
+| Attached suggestions        | `Autocomplete<T>`      | Caller controls options, status, selection, and async work    |
 | Multi-line editing          | `TextArea`             | Enter inserts a newline; `maxLength` is unbounded by default  |
 | Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms            |
 | Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels |
@@ -89,6 +90,11 @@ Select<String>(
 `Select.height` is visible rows and defaults to `8`. Set it to the option count
 for a short list. `SelectOption.value` is nullable.
 
+`Autocomplete` keeps request policy outside the widget. Supply an explicit
+`AutocompleteStatus` and options from the application; Tab enters a ready
+list, Enter or a primary click selects, and Escape dismisses the attached
+surface while leaving idle Escape available to an ancestor.
+
 See [Input and focus](/docs/input-focus) for event order, controller ownership,
 and focus traversal.
 
@@ -98,12 +104,18 @@ and focus traversal.
 | --------------------- | ----------- | -------------------------------------------------------------- |
 | One oversized child   | `ScrollBox` | The content already exists as one widget subtree               |
 | Repeated visible rows | `ListView`  | Rows should be built only for the visible window               |
+| Hierarchical rows     | `TreeView`  | Stable caller IDs need expansion and keyboard navigation       |
 | Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting |
 | Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection     |
 
 `DataTable` virtualizes its body and reports sort requests; your data owner does
 the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells and
 supports document-style selection. They solve different table problems.
+
+`TreeViewController` owns generic roots, expansion, and selection; path,
+filesystem, or other domain behavior stays in the application. TreeView uses
+Up/Down for visible selection, Right/Left for hierarchy navigation, and one
+Enter/primary-click activation route.
 
 ## Overlays and menus
 

@@ -1,11 +1,12 @@
 // Run with: dart run example/components_demo.dart
 //
 // Tab and Shift+Tab move between the interactive controls; Space or Enter
-// activates the focused one, and a left click does the same. Press t to swap
-// the complete palette, s to stop or restart the spinner, and q to quit.
+// activates the focused one, and a left click does the same. Press Ctrl+T to
+// swap the complete palette, Ctrl+S to stop or restart the spinner, and Ctrl+Q
+// to quit.
 //
 // Keeps one compact category visible at a time: public controls, Panel
-// foundation states, or Modal overlay behavior.
+// foundation states, Modal overlay behavior, or data-selection states.
 
 import 'package:noir/noir.dart';
 
@@ -13,12 +14,13 @@ import 'src/demo_scaffold.dart';
 
 void main() => runTuiApp(const ComponentsDemoApp(), enableMouse: true);
 
-enum _ComponentCategory { controls, foundation, overlays }
+enum _ComponentCategory { controls, foundation, overlays, data }
 
 const _categories = <SelectOption<_ComponentCategory>>[
   SelectOption(name: 'Controls', value: _ComponentCategory.controls),
   SelectOption(name: 'Foundation', value: _ComponentCategory.foundation),
   SelectOption(name: 'Overlays', value: _ComponentCategory.overlays),
+  SelectOption(name: 'Data', value: _ComponentCategory.data),
 ];
 
 const _emberPalette = ThemeData(
@@ -79,15 +81,17 @@ class _ComponentsDemoAppState extends State<ComponentsDemoApp> {
   }
 
   KeyEventResult _onAppKey(FocusNode node, KeyEvent event) {
-    if (!event.isPress) return KeyEventResult.ignored;
-    switch (event.character) {
-      case 'q':
+    if (!event.isPress || !event.isControlPressed) {
+      return KeyEventResult.ignored;
+    }
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyQ:
         TuiApp.exit(context);
         return KeyEventResult.handled;
-      case 's':
+      case LogicalKeyboardKey.keyS:
         setState(() => _spinning = !_spinning);
         return KeyEventResult.handled;
-      case 't':
+      case LogicalKeyboardKey.keyT:
         setState(() => _emberActive = !_emberActive);
         return KeyEventResult.handled;
       default:
@@ -230,7 +234,9 @@ class _ComponentSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DemoScaffold(
     title: 'Components demo',
-    hint: 'Tab move · Space/Enter activate · t palette · s spinner · q quit',
+    hint:
+        'Tab move · Space/Enter activate · Ctrl+T palette · Ctrl+S spinner · '
+        'Ctrl+Q quit',
     titleTrailing: [
       Badge(label: paletteLabel),
       Badge(label: statusLabel, variant: statusVariant),
@@ -259,6 +265,7 @@ class _ComponentSheet extends StatelessWidget {
           _ComponentCategory.controls => _buildControls(context),
           _ComponentCategory.foundation => _buildFoundation(context),
           _ComponentCategory.overlays => _buildOverlays(),
+          _ComponentCategory.data => const _DataComponentsSpecimen(),
         },
       ],
     ),
@@ -400,4 +407,147 @@ class _ComponentSheet extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _DataComponentsSpecimen extends StatefulWidget {
+  const _DataComponentsSpecimen();
+
+  @override
+  State<_DataComponentsSpecimen> createState() =>
+      _DataComponentsSpecimenState();
+}
+
+class _DataComponentsSpecimenState extends State<_DataComponentsSpecimen> {
+  final _ready = TextEditingController(text: 'ready');
+  final _loading = TextEditingController(text: 'loading');
+  final _empty = TextEditingController(text: 'empty');
+  final _error = TextEditingController(text: 'error');
+  final _tree = TreeViewController<String>(
+    roots: [
+      TreeNode<String>.branch(
+        id: 'src',
+        value: 'src / expanded',
+        children: [
+          TreeNode<String>.leaf(
+            id: 'src/noir.dart',
+            value: 'noir.dart / selected',
+          ),
+        ],
+      ),
+      TreeNode<String>.branch(
+        id: 'archive',
+        value: 'archive / collapsed',
+        children: [
+          TreeNode<String>.leaf(id: 'archive/old.dart', value: 'old.dart'),
+        ],
+      ),
+    ],
+    initiallyExpanded: const ['src'],
+    initialSelection: 'src/noir.dart',
+  );
+
+  void _ignoreValue(String _) {}
+
+  void _ignoreDismiss() {}
+
+  Widget _autocomplete({
+    required Key key,
+    required TextEditingController controller,
+    required AutocompleteStatus status,
+    List<String> options = const [],
+  }) => Autocomplete<String>(
+    key: key,
+    controller: controller,
+    options: options,
+    status: status,
+    maxOptionsHeight: 2,
+    optionBuilder: (context, option, highlighted) {
+      final theme = Theme.of(context);
+      return Text(
+        option,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: highlighted ? theme.selectedForeground : theme.text,
+          fontWeight: highlighted ? FontWeight.bold : FontWeight.normal,
+        ),
+      );
+    },
+    onChanged: _ignoreValue,
+    onSelected: _ignoreValue,
+    onDismiss: _ignoreDismiss,
+  );
+
+  @override
+  Widget build(BuildContext context) => Row(
+    spacing: 1,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(
+        child: Panel(
+          title: 'Autocomplete states',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _autocomplete(
+                key: const ValueKey<String>('component-autocomplete-ready'),
+                controller: _ready,
+                status: AutocompleteStatus.ready,
+                options: const ['noir', 'noir_cli'],
+              ),
+              _autocomplete(
+                key: const ValueKey<String>('component-autocomplete-loading'),
+                controller: _loading,
+                status: AutocompleteStatus.loading,
+              ),
+              _autocomplete(
+                key: const ValueKey<String>('component-autocomplete-empty'),
+                controller: _empty,
+                status: AutocompleteStatus.empty,
+              ),
+              _autocomplete(
+                key: const ValueKey<String>('component-autocomplete-error'),
+                controller: _error,
+                status: AutocompleteStatus.error,
+              ),
+            ],
+          ),
+        ),
+      ),
+      Expanded(
+        child: Panel(
+          title: 'Tree states',
+          child: TreeView<String>(
+            key: const ValueKey<String>('component-tree'),
+            controller: _tree,
+            height: 9,
+            itemBuilder: (context, node, selected) {
+              final theme = Theme.of(context);
+              return Text(
+                node.value,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? theme.selectedForeground : theme.text,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ],
+  );
+
+  @override
+  void dispose() {
+    _ready.dispose();
+    _loading.dispose();
+    _empty.dispose();
+    _error.dispose();
+    _tree.dispose();
+    super.dispose();
+  }
 }

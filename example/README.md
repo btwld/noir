@@ -38,7 +38,7 @@ question each example answers; it is not a required sequence.
 
 | Run | Learn |
 | --- | --- |
-| `dart run example/components_demo.dart` | A two-palette sheet for `Panel`, `Modal`, Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
+| `dart run example/components_demo.dart` | A two-palette sheet for `Panel`, `Modal`, `Autocomplete`, `TreeView`, Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
 | `dart run example/focus_form.dart` | Structural focus cues, validated text input, Enter submission, and a clickable Save action. |
 | `dart run example/select_demo.dart` | Keyboard and pointer selection. |
 | `dart run example/scrollbox_demo.dart` | Viewport clipping, scrollbars, keyboard paging, and wheel input. |
@@ -47,17 +47,18 @@ question each example answers; it is not a required sequence.
 | `dart run example/textarea_demo.dart` | Multi-line editing and portable Ctrl+D submission. |
 | `dart run example/widgets_tour.dart` | Select, ScrollBox, and TextArea in one interaction flow. |
 | `dart run example/dialog_demo.dart` | A public `Modal` confirmation flow with `Panel` chrome, a pointer barrier, closed-loop focus, and focus restoration. |
-| `dart run example/autocomplete_demo.dart` | Debounced package suggestions with stale-response protection and an attached borderless list. |
-| `dart run example/file_picker_demo.dart` | A public `Modal` containing a flattened file tree, disclosure controls, preview pane, and guarded Open action. |
+| `dart run example/autocomplete_demo.dart` | Public controlled `Autocomplete` behavior composed with example-owned debounce, stale-response protection, and package data. |
+| `dart run example/file_picker_demo.dart` | A public `Modal` and generic `TreeView` composed with application-owned paths, preview copy, and guarded Open behavior. |
 
 ### Component sheet controls
 
 The component sheet starts on Controls. Shift+Tab reaches the category strip;
-Left/Right switches among Controls, the public `Panel` foundation states, and
-`Modal` behavior. The modal specimen demonstrates Cancel, Confirm, closed-loop
-Tab focus, and blocked background pointer input. Press `t` to apply the
-alternate palette to the same tree, `s` to stop or restart the spinner, and
-`q` to quit.
+Left/Right switches among Controls, the public `Panel` foundation states,
+`Modal` behavior, and Data. Data shows ready/loading/empty/error
+`Autocomplete` states beside collapsed/expanded/selected `TreeView` states.
+The modal specimen demonstrates Cancel, Confirm, closed-loop Tab focus, and
+blocked background pointer input. Press `Ctrl+T` to apply the alternate palette
+to the same tree, `Ctrl+S` to stop or restart the spinner, and `Ctrl+Q` to quit.
 
 ## Complete apps
 

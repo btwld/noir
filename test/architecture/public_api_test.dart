@@ -125,6 +125,11 @@ void main() {
       },
       'src/widgets/align.dart': {'Align'},
       'src/widgets/ascii_font.dart': {'AsciiFont', 'AsciiFontFamily'},
+      'src/widgets/autocomplete.dart': {
+        'Autocomplete',
+        'AutocompleteOptionBuilder',
+        'AutocompleteStatus',
+      },
       'src/widgets/badge.dart': {'Badge', 'BadgeVariant'},
       'src/widgets/button.dart': {'Button'},
       'src/widgets/checkbox.dart': {'Checkbox'},
@@ -271,6 +276,12 @@ void main() {
         'TextStyles',
       },
       'src/widgets/theme.dart': {'Theme', 'ThemeData'},
+      'src/widgets/tree_view.dart': {
+        'TreeNode',
+        'TreeView',
+        'TreeViewController',
+        'TreeViewItemBuilder',
+      },
       'src/widgets/viewport.dart': {'ViewportController'},
       'src/rendering/stack.dart': {'StackFit'},
       'src/rendering/wrap.dart': {'WrapAlignment', 'WrapCrossAlignment'},
@@ -375,8 +386,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(242),
-      reason: 'The high-level surface is locked at exactly 242 symbols.',
+      hasLength(249),
+      reason: 'The high-level surface is locked at exactly 249 symbols.',
     );
   });
 }

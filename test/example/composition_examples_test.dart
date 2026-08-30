@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:noir/noir.dart' show AutocompleteStatus;
 import 'package:test/test.dart';
 
 import '../../example/autocomplete_demo.dart';
@@ -22,7 +23,7 @@ void main() {
       await _flushAsync();
 
       expect(source.hasRequestFor('noir'), isFalse);
-      expect(controller.status, PackageSuggestionStatus.loading);
+      expect(controller.status, AutocompleteStatus.loading);
     });
 
     test('ignores a stale completion from an older query', () async {
@@ -57,7 +58,7 @@ void main() {
 
       expect(controller.query, 'noi');
       expect(controller.suggestions.map((item) => item.name), ['noir']);
-      expect(controller.status, PackageSuggestionStatus.ready);
+      expect(controller.status, AutocompleteStatus.ready);
     });
 
     test('clears suggestions below the two-character threshold', () async {
@@ -75,7 +76,7 @@ void main() {
 
       expect(controller.query, 'n');
       expect(controller.suggestions, isEmpty);
-      expect(controller.status, PackageSuggestionStatus.idle);
+      expect(controller.status, AutocompleteStatus.idle);
     });
 
     test('editing a chosen package clears the stale selection', () async {
@@ -87,7 +88,7 @@ void main() {
 
       controller.updateQuery('noi');
       await _flushAsync();
-      final selected = controller.choose(0);
+      final selected = controller.choose(controller.suggestions.first);
       expect(selected?.name, 'noir');
       expect(controller.selected?.name, 'noir');
 

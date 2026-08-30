@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
+import '../../example/components_demo.dart';
 import '../helpers/golden_testing.dart';
 import '../helpers/tui_test_app.dart';
 
@@ -227,6 +228,47 @@ void main() {
         }
       }
     });
+
+    test(
+      'component sheet shows data widgets across sizes and palettes',
+      () async {
+        for (final size in const [
+          (label: '64x18', width: 64, height: 18),
+          (label: '80x24', width: 80, height: 24),
+          (label: '100x30', width: 100, height: 30),
+        ]) {
+          for (final alternate in const [false, true]) {
+            final app = createTuiTestApp(
+              const ComponentsDemoApp(),
+              width: size.width,
+              height: size.height,
+            );
+            try {
+              await _settle(app);
+              app.mockInput
+                ..pressShiftTab()
+                ..pressArrow(ArrowDirection.right)
+                ..pressArrow(ArrowDirection.right)
+                ..pressArrow(ArrowDirection.right);
+              await _settle(app);
+              if (alternate) {
+                app.mockInput.pressCtrl('t');
+                await _settle(app);
+              }
+
+              await tester.expectCapturedGolden(
+                app.captureFrame(),
+                'components_data_${alternate ? 'alternate' : 'default'}_'
+                '${size.label}',
+                updateGoldens: _updateGoldens,
+              );
+            } finally {
+              app.dispose();
+            }
+          }
+        }
+      },
+    );
   });
 }
 

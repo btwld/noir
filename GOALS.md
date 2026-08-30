@@ -110,11 +110,13 @@ shrink-wrapped:
 | `Button` | One row, fill not border. Horizontal pad 1. |
 | `Checkbox` / `Switch` | One row. Narrow ASCII glyphs. |
 | `TextInput` | One row. No chrome pad. |
+| `Autocomplete` | Controlled field plus one attached state or option surface. Async search and option data stay caller-owned. |
 | `TextArea` | `height` is visible rows. |
 | `Select` | `height` is visible options. Highlight mutes when unfocused. |
 | `TabSelect` | Fixed-width or label-sized horizontal tabs with an optional underline and description row. |
 | `Slider` | One-cell track on its cross axis; value is caller-controlled. |
 | `ListView` | Same highlight rules. `selectedIndex == null` is plain scroll. |
+| `TreeView` | Virtualized visible preorder over stable caller IDs. The controller owns expansion/selection; the item builder owns label overflow. |
 | `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |
 | `TextTable` | Finite rich grid. `DataTable` remains the windowed interactive table. |
 | `CodeView` / `DiffView` / `MarkdownView` | Bounded selectable viewports; copy only on explicit Ctrl+C. |
@@ -140,13 +142,15 @@ match stay. Example chrome stays example-local.
 | `Button` / `Badge` / `Checkbox` / `Switch` / `ProgressBar` / `Spinner` | Present in `components_demo` inside titled panels. |
 | `Divider` | One specimen rule inside the controls panel. |
 | `TextInput` | `focus_form` fields are titled panels of height 3. |
+| `Autocomplete` | `autocomplete_demo` composes the public controlled field/list behavior with example-owned debounce and stale-response protection; `components_demo` shows ready/loading/empty/error states under both palettes. |
 | `Select` | `select_demo` and `widgets_tour`: titled panel. |
 | `ListView` | `listview_demo`: one titled panel per list. |
+| `TreeView` | `file_picker_demo` composes the public generic tree with application-owned paths, preview copy, and Open behavior; `components_demo` shows collapsed/expanded/selected states under both palettes. |
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
 | Phase-2 parity components | `parity_components_demo` demonstrates every new non-image component. |
-| `Theme` | `theme_demo` and the component sheet re-skin public `Panel` and `Modal` compositions without component sub-themes. |
+| `Theme` | `theme_demo` and the component sheet re-skin public `Panel`, `Modal`, `Autocomplete`, and `TreeView` compositions without component sub-themes. |
 | `Focus` / `PointerListener` | `focus_form`. |
 | `framework_primitives` | Scaffold only. |
 | Exempt | listed above. |

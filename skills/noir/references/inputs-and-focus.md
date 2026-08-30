@@ -8,7 +8,7 @@ the focus system they plug into, raw key/mouse events, and the
 
 - [How a key reaches your code](#how-a-key-reaches-your-code)
 - [The value-vs-controller rule](#the-value-vs-controller-rule)
-- [TextInput](#textinput) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
+- [TextInput](#textinput) · [Autocomplete](#autocomplete) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [TreeView](#treeview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
 - [Focus: Focus / FocusScope / FocusNode](#focus)
 - [Raw input: KeyEvent / MouseEvent](#raw-input)
 - [PointerListener](#pointerlistener)
@@ -111,6 +111,58 @@ TextInput(
   onSubmit: _save,
 )
 ```
+
+## Autocomplete
+
+A controlled `TextInput` with one attached suggestion or status surface. The
+caller owns the required `TextEditingController`, options, status, selection,
+and any debounce, filtering, or asynchronous request freshness. `Autocomplete`
+owns only focus, keyboard and pointer interaction, and presentation.
+
+```dart
+const Autocomplete<T>({
+  required TextEditingController controller,
+  required List<T> options,
+  required AutocompleteStatus status, // idle | loading | ready | empty | error
+  required AutocompleteOptionBuilder<T> optionBuilder,
+  required ValueChanged<String> onChanged,
+  required ValueChanged<T> onSelected,
+  required VoidCallback onDismiss,
+  FocusNode? focusNode,
+  FocusNode? optionsFocusNode,
+  String? placeholder,
+  bool autofocus = false,
+  int maxOptionsHeight = 5,
+  bool showScrollIndicator = false,
+  WidgetBuilder? loadingBuilder,
+  WidgetBuilder? emptyBuilder,
+  WidgetBuilder? errorBuilder,
+  Color? inputBackgroundColor,
+  Color? optionsBackgroundColor,
+  Color? selectedBackgroundColor,
+  Key? key,
+})
+```
+
+```dart
+Autocomplete<String>(
+  controller: _queryController,
+  status: _status,
+  options: _matches,
+  autofocus: true,
+  optionBuilder: (context, option, highlighted) => Text(option),
+  onChanged: _search,
+  onSelected: _choose,
+  onDismiss: _hideSuggestions,
+)
+```
+
+`ready` requires at least one option. Tab follows normal traversal from the
+field into the attached list; arrows move its highlight. Enter in either focus
+role and a primary click select through the same callback. Escape dismisses a
+visible presentation and restores field focus; while `idle`, Escape remains
+unhandled for an ancestor. Omitted focus nodes are owned by the component;
+supplied nodes and the controller remain caller-owned.
 
 ## TextArea
 
@@ -236,6 +288,82 @@ ListView(
 Give a stateful row `key: ValueKey(id)` so its `State` survives scrolling.
 The mouse wheel scrolls the window in both modes without moving the
 highlight.
+
+## TreeView
+
+A virtualized hierarchy over stable caller-provided equality keys. The
+controller owns roots, expanded IDs, and selected ID; the widget composes
+`ListView` and owns only focus/viewport resources that the caller omits.
+
+```dart
+TreeNode<T>.leaf({required Object id, required T value})
+TreeNode<T>.branch({
+  required Object id,
+  required T value,
+  Iterable<TreeNode<T>> children = const [],
+})
+
+TreeViewController<T>({
+  required List<TreeNode<T>> roots,
+  Iterable<Object> initiallyExpanded = const [],
+  Object? initialSelection,
+})
+
+const TreeView<T>({
+  required TreeViewController<T> controller,
+  required TreeViewItemBuilder<T> itemBuilder,
+  int height = 8,
+  int indentation = 2,
+  ViewportController? viewportController,
+  FocusNode? focusNode,
+  bool autofocus = false,
+  bool showScrollIndicator = false,
+  Color? backgroundColor,
+  Color? selectedBackgroundColor,
+  ValueChanged<TreeNode<T>>? onSelectionChanged,
+  ValueChanged<TreeNode<T>>? onActivate,
+  Key? key,
+})
+```
+
+```dart
+final tree = TreeViewController<String>(
+  roots: [
+    TreeNode<String>.branch(
+      id: 'docs',
+      value: 'Docs',
+      children: [
+        TreeNode<String>.leaf(id: 'docs/readme', value: 'README.md'),
+      ],
+    ),
+  ],
+);
+
+TreeView<String>(
+  controller: tree,
+  autofocus: true,
+  itemBuilder: (context, node, selected) => Text(
+    node.value,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+  ),
+  onActivate: (node) => open(node.id),
+)
+```
+
+IDs must be unique across the complete tree. `leaf` and an empty `branch` are
+different states, and node child/root collections are snapshotted. Up/Down
+move through visible rows; Right expands; Left collapses or selects the
+visible parent. Enter and a primary click select through the same route,
+toggle branches, and call `onActivate` for leaves. A null `onActivate` keeps
+leaf activation safely disabled and consumed while selection still works.
+
+`updateRoots` validates before mutation, prunes expansion that no longer names
+a branch, and repairs selection to a visible ancestor or clamped row. Direct
+controller changes do not call `onSelectionChanged`; that callback reports
+user input only. Supplied controller/focus/viewport objects stay caller-owned.
+`height` and `indentation` must be non-negative. Use `dispose()` on the
+controller when its owner unmounts.
 
 ## DataTable
 

@@ -195,11 +195,13 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | One-cell activity glyph | `Spinner` | `references/widgets.md` |
 | Named status / caret / arrow glyph | `Icons` | `references/widgets.md` |
 | Single-line text field | `TextInput` | `references/inputs-and-focus.md` |
+| Controlled field with attached suggestions | `Autocomplete`, `AutocompleteStatus` | `references/inputs-and-focus.md` |
 | Multi-line editor | `TextArea` | `references/inputs-and-focus.md` |
 | Closed set of named options | `Select<T>` | `references/inputs-and-focus.md` |
 | Horizontal tabs | `TabSelect<T>` | `references/widgets.md` |
 | Controlled numeric track | `Slider` | `references/widgets.md` |
 | Windowed builder list | `ListView` | `references/inputs-and-focus.md` |
+| Hierarchical virtual list | `TreeView`, `TreeViewController`, `TreeNode` | `references/inputs-and-focus.md` |
 | Aligned columns + windowed body | `DataTable`, `DataColumn` | `references/inputs-and-focus.md` |
 | Static rich-text grid | `TextTable` | `references/widgets.md` |
 | Selectable code, diff, or Markdown | `CodeView`, `DiffView`, `MarkdownView` | `references/widgets.md` |

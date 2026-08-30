@@ -57,8 +57,6 @@ final class DemoPackageSuggestionSource implements PackageSuggestionSource {
   ]);
 }
 
-enum PackageSuggestionStatus { idle, loading, ready, empty, error }
-
 /// Owns debounce and request freshness independently from terminal rendering.
 final class PackageAutocompleteController extends ChangeNotifier {
   PackageAutocompleteController({
@@ -73,33 +71,30 @@ final class PackageAutocompleteController extends ChangeNotifier {
   var _generation = 0;
   var _disposed = false;
   var _query = '';
-  var _status = PackageSuggestionStatus.idle;
+  var _status = AutocompleteStatus.idle;
   var _suggestions = const <PackageSuggestion>[];
-  var _highlightedIndex = 0;
   PackageSuggestion? _selected;
 
   String get query => _query;
-  PackageSuggestionStatus get status => _status;
+  AutocompleteStatus get status => _status;
   List<PackageSuggestion> get suggestions => _suggestions;
-  int get highlightedIndex => _highlightedIndex;
   PackageSuggestion? get selected => _selected;
-  bool get panelVisible => _status != PackageSuggestionStatus.idle;
+  bool get panelVisible => _status != AutocompleteStatus.idle;
 
   void updateQuery(String rawQuery) {
     final query = rawQuery.trim();
     final request = _invalidatePendingRequest();
     _query = query;
     _selected = null;
-    _highlightedIndex = 0;
 
     if (query.length < 2) {
-      _status = PackageSuggestionStatus.idle;
+      _status = AutocompleteStatus.idle;
       _suggestions = const [];
       notifyListeners();
       return;
     }
 
-    _status = PackageSuggestionStatus.loading;
+    _status = AutocompleteStatus.loading;
     _suggestions = const [];
     notifyListeners();
     _debounceTimer = Timer(debounce, () => unawaited(_load(query, request)));
@@ -110,36 +105,25 @@ final class PackageAutocompleteController extends ChangeNotifier {
       final suggestions = await source.suggest(query);
       if (_disposed || request != _generation) return;
       _suggestions = List<PackageSuggestion>.unmodifiable(suggestions);
-      _highlightedIndex = 0;
       _status = suggestions.isEmpty
-          ? PackageSuggestionStatus.empty
-          : PackageSuggestionStatus.ready;
+          ? AutocompleteStatus.empty
+          : AutocompleteStatus.ready;
       notifyListeners();
     } on Object {
       if (_disposed || request != _generation) return;
       _suggestions = const [];
-      _status = PackageSuggestionStatus.error;
+      _status = AutocompleteStatus.error;
       notifyListeners();
     }
   }
 
-  void highlight(int index) {
-    if (_suggestions.isEmpty) return;
-    final next = index.clamp(0, _suggestions.length - 1);
-    if (next == _highlightedIndex) return;
-    _highlightedIndex = next;
-    notifyListeners();
-  }
-
-  PackageSuggestion? choose(int index) {
-    if (index < 0 || index >= _suggestions.length) return null;
-    final suggestion = _suggestions[index];
+  PackageSuggestion? choose(PackageSuggestion suggestion) {
+    if (!_suggestions.contains(suggestion)) return null;
     _invalidatePendingRequest();
     _query = suggestion.name;
     _selected = suggestion;
-    _highlightedIndex = 0;
     _suggestions = const [];
-    _status = PackageSuggestionStatus.idle;
+    _status = AutocompleteStatus.idle;
     notifyListeners();
     return suggestion;
   }
@@ -148,8 +132,7 @@ final class PackageAutocompleteController extends ChangeNotifier {
     if (!panelVisible) return;
     _invalidatePendingRequest();
     _suggestions = const [];
-    _highlightedIndex = 0;
-    _status = PackageSuggestionStatus.idle;
+    _status = AutocompleteStatus.idle;
     notifyListeners();
   }
 
@@ -184,7 +167,6 @@ class AutocompleteDemoApp extends StatefulWidget {
 class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
   final _queryController = TextEditingController(text: 'noi');
   final _queryFocus = FocusNode(debugLabel: 'package-query');
-  final _suggestionsFocus = FocusNode(debugLabel: 'package-suggestions');
   late PackageAutocompleteController _controller;
 
   @override
@@ -192,7 +174,6 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
     super.initState();
     _createController();
     _queryFocus.addListener(_handleChanged);
-    _suggestionsFocus.addListener(_handleChanged);
   }
 
   void _createController() {
@@ -225,9 +206,6 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
     _queryFocus
       ..removeListener(_handleChanged)
       ..dispose();
-    _suggestionsFocus
-      ..removeListener(_handleChanged)
-      ..dispose();
     _queryController.dispose();
     super.dispose();
   }
@@ -236,8 +214,8 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
     if (mounted) setState(() {});
   }
 
-  void _choose(int index) {
-    final suggestion = _controller.choose(index);
+  void _choose(PackageSuggestion option) {
+    final suggestion = _controller.choose(option);
     if (suggestion == null) return;
     _queryController.text = suggestion.name;
     if (_queryFocus.isAttached) _queryFocus.requestFocus();
@@ -273,25 +251,28 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
           children: [
             SizedBox(
               width: 56,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Panel(
-                    title: 'Package',
-                    focused: _queryFocus.hasFocus,
-                    child: TextInput(
-                      key: const ValueKey<String>('package-query'),
-                      controller: _queryController,
-                      focusNode: _queryFocus,
-                      autofocus: true,
-                      backgroundColor: Color.transparent,
-                      onChanged: _controller.updateQuery,
-                      onSubmit: () => _choose(_controller.highlightedIndex),
-                    ),
-                  ),
-                  if (_controller.panelVisible)
-                    _buildSuggestionSurface(context),
-                ],
+              child: Panel(
+                title: 'Package',
+                focused: _queryFocus.hasFocus,
+                child: Autocomplete<PackageSuggestion>(
+                  key: const ValueKey<String>('package-query'),
+                  controller: _queryController,
+                  focusNode: _queryFocus,
+                  autofocus: true,
+                  inputBackgroundColor: Color.transparent,
+                  options: _controller.suggestions,
+                  status: _controller.status,
+                  optionBuilder: _buildSuggestionRow,
+                  onChanged: _controller.updateQuery,
+                  onSelected: _choose,
+                  onDismiss: _controller.hideSuggestions,
+                  loadingBuilder: (context) =>
+                      const Text(' Searching packages…'),
+                  emptyBuilder: (context) =>
+                      const Text(' No matching packages.'),
+                  errorBuilder: (context) =>
+                      const Text(' Suggestions unavailable.'),
+                ),
               ),
             ),
             _buildSummary(context),
@@ -305,36 +286,16 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
     ),
   );
 
-  Widget _buildSuggestionSurface(BuildContext context) {
+  Widget _buildSuggestionRow(
+    BuildContext context,
+    PackageSuggestion suggestion,
+    bool selected,
+  ) {
     final theme = Theme.of(context);
-    final child = switch (_controller.status) {
-      PackageSuggestionStatus.loading => const Text('  Searching packages…'),
-      PackageSuggestionStatus.empty => const Text('  No matching packages.'),
-      PackageSuggestionStatus.error => const Text('  Suggestions unavailable.'),
-      PackageSuggestionStatus.ready => ListView(
-        key: const ValueKey<String>('package-suggestions'),
-        itemCount: _controller.suggestions.length,
-        height: _controller.suggestions.length.clamp(1, 5),
-        selectedIndex: _controller.highlightedIndex,
-        focusNode: _suggestionsFocus,
-        backgroundColor: Color.transparent,
-        onChanged: _controller.highlight,
-        onSelect: _choose,
-        itemBuilder: _buildSuggestionRow,
-      ),
-      PackageSuggestionStatus.idle => const SizedBox.shrink(),
-    };
-
-    return Container(color: theme.surfaceVariant, child: child);
-  }
-
-  Widget _buildSuggestionRow(BuildContext context, int index, bool selected) {
-    final theme = Theme.of(context);
-    final suggestion = _controller.suggestions[index];
     final foreground = selected ? theme.selectedForeground : theme.text;
     final weight = selected ? FontWeight.bold : FontWeight.normal;
     return Container(
-      padding: const EdgeInsets.only(left: 3, right: 1),
+      padding: const EdgeInsets.only(left: 2, right: 1),
       child: Row(
         spacing: 1,
         children: [
@@ -376,12 +337,12 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
       );
     }
     return Text(switch (_controller.status) {
-      PackageSuggestionStatus.loading =>
+      AutocompleteStatus.loading =>
         'Searching the demo catalog for ${_controller.query}…',
-      PackageSuggestionStatus.error => 'Try editing the query to retry.',
-      PackageSuggestionStatus.empty => 'Try a broader package name.',
-      PackageSuggestionStatus.idle ||
-      PackageSuggestionStatus.ready => 'Choose a package to inspect.',
+      AutocompleteStatus.error => 'Try editing the query to retry.',
+      AutocompleteStatus.empty => 'Try a broader package name.',
+      AutocompleteStatus.idle ||
+      AutocompleteStatus.ready => 'Choose a package to inspect.',
     }, style: TextStyle(color: theme.textMuted));
   }
 }

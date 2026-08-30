@@ -121,6 +121,33 @@ void main() {
       expect(frame.contains('Transitions: 1 open / 1 close'), isTrue);
     });
 
+    test('components data category exposes both public data widgets', () async {
+      final driver = await NoirDriver.launch('example/components_demo.dart');
+      addTearDown(driver.quit);
+
+      await driver.sendKey('shift-tab');
+      await driver.sendKey('right');
+      await driver.sendKey('right');
+      await driver.sendKey('right');
+      await driver.waitFor(
+        const DriverLocator.byKey('component-autocomplete-ready'),
+      );
+      await driver.waitFor(const DriverLocator.byKey('component-tree'));
+
+      final frame = await driver.capture();
+      for (final text in const [
+        'Loading…',
+        'No options.',
+        'Options unavailable.',
+        'noir_cli',
+        'src / expanded',
+        'noir.dart / selected',
+        'archive / collapsed',
+      ]) {
+        expect(frame.contains(text), isTrue, reason: text);
+      }
+    });
+
     test('focus form Save key exposes both blank-field errors', () async {
       final driver = await NoirDriver.launch('example/focus_form.dart');
       addTearDown(driver.quit);

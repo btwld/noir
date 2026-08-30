@@ -126,6 +126,8 @@ export 'src/widgets/actions.dart'
     show Action, ActionCallback, Actions, CallbackAction;
 export 'src/widgets/align.dart' show Align;
 export 'src/widgets/ascii_font.dart' show AsciiFont, AsciiFontFamily;
+export 'src/widgets/autocomplete.dart'
+    show Autocomplete, AutocompleteOptionBuilder, AutocompleteStatus;
 export 'src/widgets/badge.dart' show Badge, BadgeVariant;
 export 'src/widgets/button.dart' show Button;
 export 'src/widgets/checkbox.dart' show Checkbox;
@@ -249,5 +251,7 @@ export 'src/widgets/text_table.dart'
         TextTableColumnWidthMode,
         TextTableWrapMode;
 export 'src/widgets/theme.dart' show Theme, ThemeData;
+export 'src/widgets/tree_view.dart'
+    show TreeNode, TreeView, TreeViewController, TreeViewItemBuilder;
 export 'src/widgets/viewport.dart' show ViewportController;
 export 'src/widgets/wrap.dart' show Wrap;
