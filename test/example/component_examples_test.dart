@@ -26,7 +26,7 @@ void main() {
       await _settle(app);
       expect(_render(app), contains('□ soft wrap'));
 
-      app.mockInput.typeText('q');
+      app.mockInput.pressCtrl('q');
       await _settle(app);
       expect(app.exitRequests, [0]);
     } finally {
@@ -80,7 +80,7 @@ void main() {
         expect(foundation.toText(), contains('Accent border + marker'));
         expect(foundation.toText(), isNot(contains('soft wrap')));
 
-        app.mockInput.typeText('t');
+        app.mockInput.pressCtrl('t');
         await _settle(app);
         final alternate = app.captureFrame();
         final alternateTitle = alternate.findText('Components demo').single;
@@ -136,7 +136,7 @@ void main() {
         );
 
         // The overlay inherits the live palette while it remains mounted.
-        app.mockInput.typeText('t');
+        app.mockInput.pressCtrl('t');
         await _settle(app);
         frame = app.captureFrame();
         final emberTitle = frame.findText('Review changes').single;
@@ -175,6 +175,94 @@ void main() {
         frame = app.captureFrame();
         expect(frame.toText(), contains('Result: approved'));
         expect(frame.toText(), contains('Transitions: 2 open / 2 close'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'components demo shows data states under both palettes at 64x18',
+    () async {
+      final app = createTuiTestApp(
+        const ComponentsDemoApp(),
+        width: 64,
+        height: 18,
+      );
+      try {
+        await _settle(app);
+        app.mockInput
+          ..pressShiftTab()
+          ..pressArrow(ArrowDirection.right)
+          ..pressArrow(ArrowDirection.right)
+          ..pressArrow(ArrowDirection.right);
+        await _settle(app);
+
+        final dark = app.captureFrame();
+        for (final text in const [
+          'Loading…',
+          'No options.',
+          'Options unavailable.',
+          'noir_cli',
+          'src / expanded',
+          'noir.dart / selected',
+          'archive / collapsed',
+        ]) {
+          expect(dark.toText(), contains(text), reason: text);
+        }
+        final darkLoading = dark.findText('Loading…').single;
+
+        app.mockInput.pressCtrl('t');
+        await _settle(app);
+        final alternate = app.captureFrame();
+        final alternateLoading = alternate.findText('Loading…').single;
+        expect(
+          alternate.getBackgroundColor(alternateLoading.x, alternateLoading.y),
+          isNot(dark.getBackgroundColor(darkLoading.x, darkLoading.y)),
+        );
+        expect(alternate.toText(), contains('archive / collapsed'));
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'components demo keeps data queries editable around its palette shortcut',
+    () async {
+      final app = createTuiTestApp(
+        const ComponentsDemoApp(),
+        width: 64,
+        height: 18,
+      );
+      try {
+        await _settle(app);
+        app.mockInput
+          ..pressShiftTab()
+          ..pressArrow(ArrowDirection.right)
+          ..pressArrow(ArrowDirection.right)
+          ..pressArrow(ArrowDirection.right);
+        await _settle(app);
+
+        app.mockInput.pressTab();
+        await _settle(app);
+
+        app.mockInput.typeText('t');
+        await _settle(app);
+
+        var frame = app.captureFrame();
+        expect(frame.toText(), contains('readyt'));
+        expect(frame.toText(), contains('DARK'));
+
+        app.mockInput
+          ..pressBackspace()
+          ..pressCtrl('t');
+        await _settle(app);
+
+        frame = app.captureFrame();
+        expect(frame.toText(), contains('EMBER'));
+        expect(frame.toText(), contains('ready'));
+        expect(frame.toText(), isNot(contains('readyt')));
       } finally {
         app.dispose();
       }

@@ -1,0 +1,133 @@
+0,0:#ffffffff|#090a0bff|0 * 100
+0,1:#ffffffff|#090a0bff|0 * 2
+2,1:#ffffffff|#090a0bff|1 * 15
+17,1:#ffffffff|#090a0bff|0
+18,1:#ffffffff|#999999ff|0
+19,1:#051a29ff|#999999ff|1 * 4
+23,1:#ffffffff|#999999ff|0
+24,1:#ffffffff|#090a0bff|0
+25,1:#ffffffff|#3399ffff|0
+26,1:#051a29ff|#3399ffff|1 * 7
+33,1:#ffffffff|#3399ffff|0
+34,1:#ffffffff|#090a0bff|0
+35,1:#66d9ffff|#090a0bff|0
+36,1:#ffffffff|#090a0bff|0 * 64
+0,2:#ffffffff|#090a0bff|0 * 2
+2,2:#999999ff|#090a0bff|0 * 79
+81,2:#ffffffff|#090a0bff|0 * 19
+0,3:#ffffffff|#090a0bff|0 * 100
+0,4:#ffffffff|#090a0bff|0 * 34
+34,4:#ffffffff|#3366ccff|0 * 6
+40,4:#ffffffff|#090a0bff|0 * 60
+0,5:#ffffffff|#090a0bff|0 * 100
+0,6:#ffffffff|#090a0bff|0 * 2
+2,6:#2e3847ff|#0f1013ff|0 * 48
+50,6:#ffffffff|#090a0bff|0
+51,6:#2e3847ff|#0f1013ff|0 * 47
+98,6:#ffffffff|#090a0bff|0 * 2
+0,7:#ffffffff|#090a0bff|0 * 2
+2,7:#2e3847ff|#0f1013ff|0
+3,7:#ffffffff|#090a0bff|0 * 46
+49,7:#2e3847ff|#0f1013ff|0
+50,7:#ffffffff|#090a0bff|0
+51,7:#2e3847ff|#0f1013ff|0
+52,7:#ffffffff|#090a0bff|0 * 45
+97,7:#2e3847ff|#0f1013ff|0
+98,7:#ffffffff|#090a0bff|0 * 2
+0,8:#ffffffff|#090a0bff|0 * 2
+2,8:#2e3847ff|#0f1013ff|0
+3,8:#ffffffff|#0f1013ff|1 * 4
+7,8:#ffffffff|#0f1013ff|0 * 42
+49,8:#2e3847ff|#0f1013ff|0
+50,8:#ffffffff|#090a0bff|0
+51,8:#2e3847ff|#0f1013ff|0
+52,8:#ffffffff|#0f1013ff|0 * 2
+54,8:#ffffffff|#0f1013ff|1
+55,8:#ffffffff|#0f1013ff|0
+56,8:#ffffffff|#0f1013ff|1
+57,8:#ffffffff|#0f1013ff|0
+58,8:#ffffffff|#0f1013ff|1 * 20
+78,8:#ffffffff|#0f1013ff|0 * 19
+97,8:#2e3847ff|#0f1013ff|0
+98,8:#ffffffff|#090a0bff|0 * 2
+0,9:#ffffffff|#090a0bff|0 * 2
+2,9:#2e3847ff|#0f1013ff|0
+3,9:#ffffffff|#0f1013ff|0 * 46
+49,9:#2e3847ff|#0f1013ff|0
+50,9:#ffffffff|#090a0bff|0
+51,9:#2e3847ff|#0f1013ff|0
+52,9:#ffffffff|#090a0bff|0 * 45
+97,9:#2e3847ff|#0f1013ff|0
+98,9:#ffffffff|#090a0bff|0 * 2
+0,10:#ffffffff|#090a0bff|0 * 2
+2,10:#2e3847ff|#0f1013ff|0
+3,10:#ffffffff|#090a0bff|0 * 46
+49,10:#2e3847ff|#0f1013ff|0
+50,10:#ffffffff|#090a0bff|0
+51,10:#2e3847ff|#0f1013ff|0
+52,10:#ffffffff|#090a0bff|0 * 45
+97,10:#2e3847ff|#0f1013ff|0
+98,10:#ffffffff|#090a0bff|0 * 2
+0,11:#ffffffff|#090a0bff|0 * 2
+2,11:#2e3847ff|#0f1013ff|0
+3,11:#ffffffff|#0f1013ff|0 * 46
+49,11:#2e3847ff|#0f1013ff|0
+50,11:#ffffffff|#090a0bff|0
+51,11:#2e3847ff|#0f1013ff|0
+52,11:#ffffffff|#090a0bff|0 * 45
+97,11:#2e3847ff|#0f1013ff|0
+98,11:#ffffffff|#090a0bff|0 * 2
+0,12:#ffffffff|#090a0bff|0 * 2
+2,12:#2e3847ff|#0f1013ff|0
+3,12:#ffffffff|#090a0bff|0 * 46
+49,12:#2e3847ff|#0f1013ff|0
+50,12:#ffffffff|#090a0bff|0
+51,12:#2e3847ff|#0f1013ff|0
+52,12:#ffffffff|#090a0bff|0 * 45
+97,12:#2e3847ff|#0f1013ff|0
+98,12:#ffffffff|#090a0bff|0 * 2
+0,13:#ffffffff|#090a0bff|0 * 2
+2,13:#2e3847ff|#0f1013ff|0
+3,13:#ffffffff|#0f1013ff|0 * 46
+49,13:#2e3847ff|#0f1013ff|0
+50,13:#ffffffff|#090a0bff|0
+51,13:#2e3847ff|#0f1013ff|0
+52,13:#ffffffff|#090a0bff|0 * 45
+97,13:#2e3847ff|#0f1013ff|0
+98,13:#ffffffff|#090a0bff|0 * 2
+0,14:#ffffffff|#090a0bff|0 * 2
+2,14:#2e3847ff|#0f1013ff|0
+3,14:#ffffffff|#090a0bff|0 * 46
+49,14:#2e3847ff|#0f1013ff|0
+50,14:#ffffffff|#090a0bff|0
+51,14:#2e3847ff|#0f1013ff|0
+52,14:#ffffffff|#090a0bff|0 * 45
+97,14:#2e3847ff|#0f1013ff|0
+98,14:#ffffffff|#090a0bff|0 * 2
+0,15:#ffffffff|#090a0bff|0 * 2
+2,15:#2e3847ff|#0f1013ff|0
+3,15:#ffffffff|#0f1013ff|0 * 46
+49,15:#2e3847ff|#0f1013ff|0
+50,15:#ffffffff|#090a0bff|0
+51,15:#2e3847ff|#0f1013ff|0
+52,15:#ffffffff|#090a0bff|0 * 45
+97,15:#2e3847ff|#0f1013ff|0
+98,15:#ffffffff|#090a0bff|0 * 2
+0,16:#ffffffff|#090a0bff|0 * 2
+2,16:#2e3847ff|#0f1013ff|0 * 48
+50,16:#ffffffff|#090a0bff|0
+51,16:#2e3847ff|#0f1013ff|0 * 47
+98,16:#ffffffff|#090a0bff|0 * 2
+0,17:#ffffffff|#090a0bff|0 * 100
+0,18:#ffffffff|#090a0bff|0 * 100
+0,19:#ffffffff|#090a0bff|0 * 100
+0,20:#ffffffff|#090a0bff|0 * 100
+0,21:#ffffffff|#090a0bff|0 * 100
+0,22:#ffffffff|#090a0bff|0 * 100
+0,23:#ffffffff|#090a0bff|0 * 100
+0,24:#ffffffff|#090a0bff|0 * 100
+0,25:#ffffffff|#090a0bff|0 * 100
+0,26:#ffffffff|#090a0bff|0 * 100
+0,27:#ffffffff|#090a0bff|0 * 100
+0,28:#ffffffff|#090a0bff|0 * 100
+0,29:#ffffffff|#090a0bff|0 * 100

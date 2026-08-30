@@ -1,0 +1,24 @@
+                                                                                
+  Components demo  DARK   RUNNING  ⠋                                            
+  Tab move · Space/Enter activate · Ctrl+T palette · Ctrl+S spinner · Ctrl+Q    
+  quit                                                                          
+                                                                                
+   Controls  Foundation  Overlays  Data                                         
+                                                                                
+  ┌─ Autocomplete states ──────────────┐ ┌─ Tree states ─────────────────────┐  
+  │ready                               │ │  ▾ src / expanded                 │  
+  │noir                                │ │  ›   noir.dart / selected         │  
+  │noir_cli                            │ │  ▸ archive / collapsed            │  
+  │loading                             │ │                                   │  
+  │ Loading…                           │ │                                   │  
+  │empty                               │ │                                   │  
+  │ No options.                        │ │                                   │  
+  │error                               │ │                                   │  
+  │ Options unavailable.               │ │                                   │  
+  └────────────────────────────────────┘ └───────────────────────────────────┘  
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                

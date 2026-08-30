@@ -142,15 +142,15 @@ match stay. Example chrome stays example-local.
 | `Button` / `Badge` / `Checkbox` / `Switch` / `ProgressBar` / `Spinner` | Present in `components_demo` inside titled panels. |
 | `Divider` | One specimen rule inside the controls panel. |
 | `TextInput` | `focus_form` fields are titled panels of height 3. |
-| `Autocomplete` | `autocomplete_demo` composes the public controlled field/list behavior with example-owned debounce and stale-response protection. |
+| `Autocomplete` | `autocomplete_demo` composes the public controlled field/list behavior with example-owned debounce and stale-response protection; `components_demo` shows ready/loading/empty/error states under both palettes. |
 | `Select` | `select_demo` and `widgets_tour`: titled panel. |
 | `ListView` | `listview_demo`: one titled panel per list. |
-| `TreeView` | `file_picker_demo` composes the public generic tree with application-owned paths, preview copy, and Open behavior. |
+| `TreeView` | `file_picker_demo` composes the public generic tree with application-owned paths, preview copy, and Open behavior; `components_demo` shows collapsed/expanded/selected states under both palettes. |
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
 | Phase-2 parity components | `parity_components_demo` demonstrates every new non-image component. |
-| `Theme` | `theme_demo` and the component sheet re-skin public `Panel` and `Modal` compositions without component sub-themes. |
+| `Theme` | `theme_demo` and the component sheet re-skin public `Panel`, `Modal`, `Autocomplete`, and `TreeView` compositions without component sub-themes. |
 | `Focus` / `PointerListener` | `focus_form`. |
 | `framework_primitives` | Scaffold only. |
 | Exempt | listed above. |

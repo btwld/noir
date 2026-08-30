@@ -38,7 +38,7 @@ question each example answers; it is not a required sequence.
 
 | Run | Learn |
 | --- | --- |
-| `dart run example/components_demo.dart` | A two-palette sheet for `Panel`, `Modal`, Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
+| `dart run example/components_demo.dart` | A two-palette sheet for `Panel`, `Modal`, `Autocomplete`, `TreeView`, Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
 | `dart run example/focus_form.dart` | Structural focus cues, validated text input, Enter submission, and a clickable Save action. |
 | `dart run example/select_demo.dart` | Keyboard and pointer selection. |
 | `dart run example/scrollbox_demo.dart` | Viewport clipping, scrollbars, keyboard paging, and wheel input. |
@@ -53,11 +53,12 @@ question each example answers; it is not a required sequence.
 ### Component sheet controls
 
 The component sheet starts on Controls. Shift+Tab reaches the category strip;
-Left/Right switches among Controls, the public `Panel` foundation states, and
-`Modal` behavior. The modal specimen demonstrates Cancel, Confirm, closed-loop
-Tab focus, and blocked background pointer input. Press `t` to apply the
-alternate palette to the same tree, `s` to stop or restart the spinner, and
-`q` to quit.
+Left/Right switches among Controls, the public `Panel` foundation states,
+`Modal` behavior, and Data. Data shows ready/loading/empty/error
+`Autocomplete` states beside collapsed/expanded/selected `TreeView` states.
+The modal specimen demonstrates Cancel, Confirm, closed-loop Tab focus, and
+blocked background pointer input. Press `Ctrl+T` to apply the alternate palette
+to the same tree, `Ctrl+S` to stop or restart the spinner, and `Ctrl+Q` to quit.
 
 ## Complete apps
 
