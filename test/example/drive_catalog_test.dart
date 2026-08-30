@@ -174,6 +174,15 @@ void main() {
         final driver = await NoirDriver.launch('example/file_picker_demo.dart');
         addTearDown(driver.quit);
 
+        await driver.waitFor(const DriverLocator.byKey('file-tree'));
+        expect(await driver.waitStable(), isTrue);
+        expect(
+          (await driver.find(
+            const DriverLocator.byKey('file-tree'),
+          )).hasFocusedDescendant,
+          isTrue,
+        );
+
         await driver.sendKey('down');
         await driver.sendKey('tab');
         await driver.sendKey('tab');
