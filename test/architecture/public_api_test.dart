@@ -222,6 +222,7 @@ void main() {
         'WidgetBuilder',
       },
       'src/widgets/padding.dart': {'Padding'},
+      'src/widgets/panel.dart': {'Panel'},
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/progress_bar.dart': {'ProgressBar'},
       'src/widgets/rich_text.dart': {'RichText'},
@@ -373,8 +374,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(239),
-      reason: 'The high-level surface is locked at exactly 239 symbols.',
+      hasLength(240),
+      reason: 'The high-level surface is locked at exactly 240 symbols.',
     );
   });
 }

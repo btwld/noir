@@ -8,7 +8,7 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 - [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
 - [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `MenuAnchor`
 - [Theme](#theme): `Theme`, `ThemeData`
-- [Chrome](#chrome): `Divider`, `Badge`, `ProgressBar`, `Spinner`, `Icons`
+- [Chrome](#chrome): `Panel`, `Divider`, `Badge`, `ProgressBar`, `Spinner`, `Icons`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
 - [Painting](#painting): `Color`, `BoxDecoration`, `Border`, `Image`, `TerminalImage`
 - [Text](#text): `Text`, `TextStyle`, `TextStyles`, `RichText` / `TextSpan`, `AsciiFont`
@@ -325,6 +325,40 @@ when "no theme" and "themed" must paint differently.
 ---
 
 ## Chrome
+
+### Panel
+
+A themed bordered region with an optional title on its top edge. It
+shrink-wraps its child unless `width` or `height` fixes that axis; fixed sizes
+include the one-cell border and horizontal inset. `focused` is visual only:
+the caller still owns focus, while the panel switches to accent chrome and
+adds `Icons.chevronRight` so keyboard ownership does not rely on color.
+
+```dart
+const Panel({
+  required Widget child,
+  Key? key,
+  String? title,
+  bool focused = false,
+  int? width,
+  int? height,
+  Color? color,                       // ThemeData.surfaceVariant
+  Color? borderColor,                 // explicit, or accent/border by focus
+})
+```
+
+An explicit `color` or `borderColor` wins over the palette. Otherwise the fill
+uses `ThemeData.surfaceVariant`; the border/title use `ThemeData.border` at
+rest and `ThemeData.accent` while focused. There is no `PanelThemeData`.
+
+```dart
+Panel(
+  title: 'Results',
+  focused: resultsFocus.hasFocus,
+  height: 8,
+  child: ListView(/* ... */),
+)
+```
 
 ### Divider
 

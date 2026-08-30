@@ -276,7 +276,7 @@ class _AutocompleteDemoAppState extends State<AutocompleteDemoApp> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DemoPanel(
+                  Panel(
                     title: 'Package',
                     focused: _queryFocus.hasFocus,
                     child: TextInput(

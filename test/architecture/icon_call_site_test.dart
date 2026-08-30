@@ -23,6 +23,7 @@ void main() {
         'Icons.triangleUp',
         'Icons.triangleDown',
       ],
+      'lib/src/widgets/panel.dart': ['Icons.chevronRight'],
       'lib/src/widgets/select.dart': ['Icons.triangleUp', 'Icons.triangleDown'],
       'lib/src/widgets/tab_select.dart': [
         'Icons.chevronLeft',
@@ -65,6 +66,7 @@ void main() {
         "_descending = '▼'",
       ],
       'lib/src/widgets/list_view.dart': ["return '▲'", "return '▼'"],
+      'lib/src/widgets/panel.dart': ["'›'"],
       'lib/src/widgets/select.dart': ["? '▲'", "? '▼'"],
       'lib/src/widgets/tab_select.dart': ["'‹'", "'›'", "'…'"],
       'lib/src/tools/patch_manager/patch_theme.dart': [

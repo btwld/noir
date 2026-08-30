@@ -25,13 +25,13 @@ class HelloApp extends StatelessWidget {
           spacing: 1,
           children: [
             Expanded(
-              child: DemoPanel(
+              child: Panel(
                 title: 'Layout',
                 child: Text('Row, Column, Container, Expanded'),
               ),
             ),
             Expanded(
-              child: DemoPanel(
+              child: Panel(
                 title: 'State',
                 child: Text('StatelessWidget and StatefulWidget'),
               ),

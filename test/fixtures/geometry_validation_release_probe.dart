@@ -62,6 +62,26 @@ void main() {
       _disposeQuietly(host);
     }
   });
+  _expect<ArgumentError>('panel-width', () {
+    final host = TestElementHost();
+    try {
+      host
+        ..mount(Panel(width: -1, child: const SizedBox.shrink()))
+        ..pumpFrame();
+    } finally {
+      _disposeQuietly(host);
+    }
+  });
+  _expect<ArgumentError>('panel-height', () {
+    final host = TestElementHost();
+    try {
+      host
+        ..mount(Panel(height: -1, child: const SizedBox.shrink()))
+        ..pumpFrame();
+    } finally {
+      _disposeQuietly(host);
+    }
+  });
   _expect<ArgumentError>('textarea-widget', () {
     final host = TestElementHost();
     try {

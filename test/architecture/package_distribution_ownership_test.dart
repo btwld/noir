@@ -654,6 +654,15 @@ void main() {
     },
   );
 
+  test('website catalog and layout guidance use the public Panel', () {
+    final catalog = _read('website/src/content/docs/widget-catalog.mdx');
+    final layout = _read('website/src/content/docs/widgets-layout.mdx');
+
+    expect(catalog, contains('`Panel`'));
+    expect(layout, contains('Panel('));
+    expect(layout, isNot(contains('class LogPanel')));
+  });
+
   test('development guidance is excluded while examples stay publishable', () {
     final repositorySkillDocs =
         'skills/noir/SKILL.md skills/noir/agents/openai.yaml skills/noir/references/testing.md skills/noir/references/widgets.md skills/noir/references/inputs-and-focus.md skills/noir/references/state-and-animation.md skills/noir/references/design.md skills/noir/references/hooks.md'
@@ -845,6 +854,7 @@ void main() {
       'Spinner',
       'Badge',
       'DataTable',
+      'Panel',
     ]) {
       expect(skill, contains('`$name`'), reason: 'SKILL.md catalog: $name');
     }
@@ -854,6 +864,7 @@ void main() {
     expect(widgetsGuide, contains('const Badge({'));
     expect(widgetsGuide, contains('const ProgressBar({'));
     expect(widgetsGuide, contains('const Spinner({'));
+    expect(widgetsGuide, contains('const Panel({'));
     expect(inputsGuide, contains('const ListView({'));
     expect(inputsGuide, contains('const Checkbox({'));
     expect(inputsGuide, contains('const Switch({'));
@@ -891,7 +902,8 @@ void main() {
       contains('per-side max of `padding` and border thickness'),
     );
     expect(designGuide, contains('Theme.of(context)'));
-    expect(designGuide, contains('There is no public `Panel`'));
+    expect(designGuide, contains('Use `Panel`'));
+    expect(designGuide, isNot(contains('There is no public `Panel`')));
     expect(designGuide, contains('80×24'));
     expect(designGuide, contains('8px grid'));
     expect(designGuide, isNot(contains('MaterialApp')));

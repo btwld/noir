@@ -224,6 +224,8 @@ void main() {
         'PASS:padding-widget',
         'PASS:container-margin',
         'PASS:sized-widget',
+        'PASS:panel-width',
+        'PASS:panel-height',
         'PASS:textarea-widget',
         'PASS:select-widget',
         'PASS:viewport',

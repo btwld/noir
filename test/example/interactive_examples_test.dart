@@ -58,6 +58,7 @@ void main() {
         'example/select_demo.dart': <String>["ValueKey<String>('fruit')"],
         'example/scrollbox_demo.dart': <String>["ValueKey<String>('content')"],
         'example/components_demo.dart': <String>[
+          "ValueKey<String>('component-category')",
           "ValueKey<String>('wrap')",
           "ValueKey<String>('verbose')",
           "ValueKey<String>('step')",

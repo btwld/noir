@@ -301,7 +301,7 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
     child: DemoScaffold(
       title: 'Editor workspace',
       hint: 'Choose a project file without leaving the current screen.',
-      child: DemoPanel(
+      child: Panel(
         title: 'Current file',
         child: Row(
           spacing: 1,
@@ -323,7 +323,7 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
   Widget _buildPicker(BuildContext context) {
     final theme = Theme.of(context);
     final selected = _picker.selectedEntry;
-    return DemoPanel(
+    return Panel(
       title: 'Open file',
       width: 76,
       child: Column(

@@ -103,7 +103,7 @@ class _TourAppState extends State<WidgetsTourApp> {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 2,
               children: [
-                DemoPanel(
+                Panel(
                   title: 'Select',
                   focused: _selectFocus.hasFocus,
                   child: SizedBox(
@@ -120,7 +120,7 @@ class _TourAppState extends State<WidgetsTourApp> {
                     ),
                   ),
                 ),
-                DemoPanel(
+                Panel(
                   title: 'ScrollBox',
                   focused: _scrollFocus.hasFocus,
                   child: SizedBox(
@@ -144,7 +144,7 @@ class _TourAppState extends State<WidgetsTourApp> {
               ],
             ),
             const SizedBox(height: 1),
-            DemoPanel(
+            Panel(
               title: 'TextArea',
               focused: _textFocus.hasFocus,
               child: TextArea(

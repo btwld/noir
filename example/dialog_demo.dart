@@ -64,7 +64,7 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
     child: DemoScaffold(
       title: 'Deployment control',
       hint: 'Review the current release before changing production.',
-      child: DemoPanel(
+      child: Panel(
         title: 'Release',
         child: Column(
           spacing: 1,
@@ -108,7 +108,7 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
 
   Widget _buildDialog(BuildContext context) {
     final theme = Theme.of(context);
-    return DemoPanel(
+    return Panel(
       title: 'Confirm deployment',
       focused: true,
       width: 54,

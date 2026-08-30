@@ -38,7 +38,7 @@ question each example answers; it is not a required sequence.
 
 | Run | Learn |
 | --- | --- |
-| `dart run example/components_demo.dart` | A focused specimen of Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
+| `dart run example/components_demo.dart` | A two-palette sheet for `Panel`, Checkbox, Switch, Button, Divider, ProgressBar, Spinner, and Badge. |
 | `dart run example/focus_form.dart` | Structural focus cues, validated text input, Enter submission, and a clickable Save action. |
 | `dart run example/select_demo.dart` | Keyboard and pointer selection. |
 | `dart run example/scrollbox_demo.dart` | Viewport clipping, scrollbars, keyboard paging, and wheel input. |
@@ -49,6 +49,13 @@ question each example answers; it is not a required sequence.
 | `dart run example/dialog_demo.dart` | A centered confirmation overlay with a pointer barrier, closed-loop focus, and focus restoration. |
 | `dart run example/autocomplete_demo.dart` | Debounced package suggestions with stale-response protection and an attached borderless list. |
 | `dart run example/file_picker_demo.dart` | A modal flattened file tree, disclosure controls, preview pane, and guarded Open action. |
+
+### Component sheet controls
+
+The component sheet starts on Controls. Shift+Tab reaches the category strip;
+Left/Right switches between Controls and the public `Panel` foundation states.
+Press `t` to apply the alternate palette to the same tree, `s` to stop or
+restart the spinner, and `q` to quit.
 
 ## Complete apps
 

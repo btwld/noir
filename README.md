@@ -10,8 +10,9 @@ stable 1.0.
 
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
   and `setState`.
-- Compose layouts with `Row`, `Column`, `Container`, `Padding`, `SizedBox`,
-  `Align`, `Flexible`, `Expanded`, `Stack`, `Positioned`, and `Wrap`.
+- Compose layouts with `Row`, `Column`, `Container`, `Panel`, `Padding`,
+  `SizedBox`, `Align`, `Flexible`, `Expanded`, `Stack`, `Positioned`, and
+  `Wrap`.
 - Decode and display PNG, JPEG, WebP, GIF, or raw RGBA images with terminal
   protocol negotiation and deterministic block-cell fallback.
 - Handle text editing, selection, scrolling, keyboard focus, mouse input, and
@@ -217,7 +218,7 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 
 | Area | Public widgets and types |
 | --- | --- |
-| Layout | `Container`, `Row`, `Column`, `Flexible`, `Expanded`, `Stack`, `Positioned`, `Wrap`, `Align`, `Padding`, `SizedBox` |
+| Layout | `Container`, `Panel`, `Row`, `Column`, `Flexible`, `Expanded`, `Stack`, `Positioned`, `Wrap`, `Align`, `Padding`, `SizedBox` |
 | Overlay and menus | `OverlayPortal`, `OverlayPortalController`, `MenuAnchor`, `MenuController` |
 | Text and media | `Text`, `RichText`, linked `TextSpan`, `AsciiFont`, `Image`, `TerminalImage` |
 | Input | `TextInput`, `TextArea`, `Select`, `TabSelect`, `Slider`, `Checkbox`, `Switch`, `Button` |

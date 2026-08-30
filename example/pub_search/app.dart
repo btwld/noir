@@ -752,7 +752,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DemoPanel(
+            Panel(
               title: 'SEARCH',
               focused: _searchFocus.hasFocus,
               child: Row(
@@ -925,7 +925,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
             PubLoadState.error => _buildSearchError(context),
             PubLoadState.ready => _buildResultList(context),
           };
-    return DemoPanel(
+    return Panel(
       title: _suggestionsVisible ? 'SUGGESTIONS' : 'RESULTS',
       focused: _activeMenu == null && _resultsFocus.hasFocus,
       child: child,
@@ -934,7 +934,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Widget _menuPanel({required String title, required Widget child}) => SizedBox(
     width: 48,
-    child: DemoPanel(
+    child: Panel(
       title: title,
       focused: _menuFocus.hasFocus,
       child: Column(

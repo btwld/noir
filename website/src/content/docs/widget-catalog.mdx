@@ -11,15 +11,16 @@ for every constructor parameter and published signature.
 
 ## Layout and composition
 
-| Need                                    | Start with                     | Important distinction                                   |
-| --------------------------------------- | ------------------------------ | ------------------------------------------------------- |
-| Horizontal or vertical children         | `Row`, `Column`, `Flex`        | `spacing` inserts whole cells between children          |
-| One child owns leftover space           | `Expanded`, `Flexible`         | Expanded fills its share; Flexible may use less         |
-| Padding, alignment, or exact extent     | `Padding`, `Align`, `SizedBox` | Keep each relationship in the widget that owns it       |
-| Minimum or maximum size                 | `ConstrainedBox`               | A constraint is a range, not a promised size            |
-| Fill, border, and child composition     | `Container`, `DecoratedBox`    | Use Container for composition; DecoratedBox only paints |
-| Overlapping children                    | `Stack`, `Positioned`          | Positions are integer cell offsets                      |
-| Children that continue onto another run | `Wrap`                         | Use Row when wrapping would be surprising               |
+| Need                                    | Start with                     | Important distinction                                    |
+| --------------------------------------- | ------------------------------ | -------------------------------------------------------- |
+| Horizontal or vertical children         | `Row`, `Column`, `Flex`        | `spacing` inserts whole cells between children           |
+| One child owns leftover space           | `Expanded`, `Flexible`         | Expanded fills its share; Flexible may use less          |
+| Padding, alignment, or exact extent     | `Padding`, `Align`, `SizedBox` | Keep each relationship in the widget that owns it        |
+| Minimum or maximum size                 | `ConstrainedBox`               | A constraint is a range, not a promised size             |
+| Themed titled region                    | `Panel`                        | Shrink-wraps content; width and height set exact extents |
+| Fill, border, and child composition     | `Container`, `DecoratedBox`    | Use Container for composition; DecoratedBox only paints  |
+| Overlapping children                    | `Stack`, `Positioned`          | Positions are integer cell offsets                       |
+| Children that continue onto another run | `Wrap`                         | Use Row when wrapping would be surprising                |
 
 Read [Widgets and layout](/docs/widgets-layout) before fixing widths throughout
 a screen. Terminal proportions make one row of spacing visually larger than

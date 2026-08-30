@@ -104,7 +104,7 @@ class PubPackageDetail extends StatelessWidget {
             Expanded(
               // Header gaps yield before the viewport on short terminals.
               flex: 20,
-              child: DemoPanel(
+              child: Panel(
                 focused: scrollFocusNode.hasFocus,
                 child: ScrollBox(
                   key: const ValueKey<String>('detail'),

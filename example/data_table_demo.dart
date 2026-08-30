@@ -133,7 +133,7 @@ class _DataTableDemoAppState extends State<DataTableDemoApp> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DemoPanel(
+          Panel(
             title: 'Packages',
             child: DataTable(
               key: const ValueKey<String>('table'),

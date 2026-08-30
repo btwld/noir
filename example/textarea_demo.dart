@@ -52,7 +52,7 @@ class _TextAreaDemoAppState extends State<TextAreaDemoApp> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DemoPanel(
+            Panel(
               title: 'Draft',
               child: TextArea(
                 key: const ValueKey<String>('editor'),
