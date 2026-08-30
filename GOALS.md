@@ -116,6 +116,7 @@ shrink-wrapped:
 | `TabSelect` | Fixed-width or label-sized horizontal tabs with an optional underline and description row. |
 | `Slider` | One-cell track on its cross axis; value is caller-controlled. |
 | `ListView` | Same highlight rules. `selectedIndex == null` is plain scroll. |
+| `TreeView` | Virtualized visible preorder over stable caller IDs. The controller owns expansion/selection; the item builder owns label overflow. |
 | `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |
 | `TextTable` | Finite rich grid. `DataTable` remains the windowed interactive table. |
 | `CodeView` / `DiffView` / `MarkdownView` | Bounded selectable viewports; copy only on explicit Ctrl+C. |
@@ -144,6 +145,7 @@ match stay. Example chrome stays example-local.
 | `Autocomplete` | `autocomplete_demo` composes the public controlled field/list behavior with example-owned debounce and stale-response protection. |
 | `Select` | `select_demo` and `widgets_tour`: titled panel. |
 | `ListView` | `listview_demo`: one titled panel per list. |
+| `TreeView` | `file_picker_demo` composes the public generic tree with application-owned paths, preview copy, and Open behavior. |
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |

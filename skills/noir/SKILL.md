@@ -201,6 +201,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Horizontal tabs | `TabSelect<T>` | `references/widgets.md` |
 | Controlled numeric track | `Slider` | `references/widgets.md` |
 | Windowed builder list | `ListView` | `references/inputs-and-focus.md` |
+| Hierarchical virtual list | `TreeView`, `TreeViewController`, `TreeNode` | `references/inputs-and-focus.md` |
 | Aligned columns + windowed body | `DataTable`, `DataColumn` | `references/inputs-and-focus.md` |
 | Static rich-text grid | `TextTable` | `references/widgets.md` |
 | Selectable code, diff, or Markdown | `CodeView`, `DiffView`, `MarkdownView` | `references/widgets.md` |

@@ -222,7 +222,7 @@ Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
 | Overlay and menus | `OverlayPortal`, `OverlayPortalController`, `Modal`, `ModalController`, `MenuAnchor`, `MenuController` |
 | Text and media | `Text`, `RichText`, linked `TextSpan`, `AsciiFont`, `Image`, `TerminalImage` |
 | Input | `TextInput`, `Autocomplete`, `TextArea`, `Select`, `TabSelect`, `Slider`, `Checkbox`, `Switch`, `Button` |
-| Scrolling and data | `ScrollBox`, `ListView`, virtualized interactive `DataTable`, static rich `TextTable` |
+| Scrolling and data | `ScrollBox`, `ListView`, `TreeView`, virtualized interactive `DataTable`, static rich `TextTable` |
 | Documents | `CodeView`, `DiffView`, `UnifiedDiffParser`, `MarkdownView`, `SelectedText` |
 | Feedback and chrome | `Divider`, `ProgressBar`, `Spinner`, `Badge`, `Theme`, `Icons` |
 

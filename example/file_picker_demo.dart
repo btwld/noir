@@ -8,201 +8,99 @@ void main() => runTuiApp(const FilePickerDemoApp(), enableMouse: true);
 
 /// One deterministic file or directory in the example-owned project tree.
 final class DemoFileNode {
-  const DemoFileNode.file({required this.name, required this.preview})
-    : children = null;
-
-  const DemoFileNode.directory({required this.name, required this.children})
-    : preview = null;
+  const DemoFileNode({required this.name, this.preview});
 
   final String name;
   final String? preview;
-  final List<DemoFileNode>? children;
-
-  bool get isDirectory => children != null;
 }
 
-/// A visible flattened row derived from a [DemoFileNode] tree.
-final class DemoFileEntry {
-  const DemoFileEntry({
-    required this.node,
-    required this.depth,
-    required this.path,
-    this.parentPath,
-  });
+TreeNode<DemoFileNode> _directory(
+  String path,
+  String name, {
+  required List<TreeNode<DemoFileNode>> children,
+}) => TreeNode<DemoFileNode>.branch(
+  id: path,
+  value: DemoFileNode(name: name),
+  children: children,
+);
 
-  final DemoFileNode node;
-  final int depth;
-  final String path;
-  final String? parentPath;
-}
+TreeNode<DemoFileNode> _file(String path, String name, String preview) =>
+    TreeNode<DemoFileNode>.leaf(
+      id: path,
+      value: DemoFileNode(name: name, preview: preview),
+    );
 
-/// Owns expansion and selection while the ListView owns viewport mechanics.
-final class FilePickerController extends ChangeNotifier {
-  FilePickerController({
-    required List<DemoFileNode> roots,
-    Iterable<String> initiallyExpanded = const [],
-    String? initialPath,
-  }) : _roots = List<DemoFileNode>.unmodifiable(roots),
-       _expanded = Set<String>.of(initiallyExpanded) {
-    _rebuild(preferredPath: initialPath);
-  }
-
-  final List<DemoFileNode> _roots;
-  final Set<String> _expanded;
-  var _visible = const <DemoFileEntry>[];
-  var _selectedIndex = 0;
-
-  List<DemoFileEntry> get visibleEntries => _visible;
-  int get selectedIndex => _selectedIndex;
-  DemoFileEntry? get selectedEntry => _visible.isEmpty
-      ? null
-      : _visible[_selectedIndex.clamp(0, _visible.length - 1)];
-
-  bool isExpanded(DemoFileEntry entry) => _expanded.contains(entry.path);
-
-  void highlight(int index) {
-    if (_visible.isEmpty) return;
-    final next = index.clamp(0, _visible.length - 1);
-    if (next == _selectedIndex) return;
-    _selectedIndex = next;
-    notifyListeners();
-  }
-
-  bool toggleHighlighted() {
-    final entry = selectedEntry;
-    if (entry == null || !entry.node.isDirectory) return false;
-    if (!_expanded.remove(entry.path)) _expanded.add(entry.path);
-    _rebuild(preferredPath: entry.path);
-    notifyListeners();
-    return true;
-  }
-
-  bool expandHighlighted() {
-    final entry = selectedEntry;
-    if (entry == null || !entry.node.isDirectory) return false;
-    if (isExpanded(entry)) return true;
-    _expanded.add(entry.path);
-    _rebuild(preferredPath: entry.path);
-    notifyListeners();
-    return true;
-  }
-
-  bool collapseOrSelectParent() {
-    final entry = selectedEntry;
-    if (entry == null) return false;
-    if (entry.node.isDirectory && _expanded.remove(entry.path)) {
-      _rebuild(preferredPath: entry.path);
-      notifyListeners();
-      return true;
-    }
-
-    final parentPath = entry.parentPath;
-    if (parentPath == null) return false;
-    final parent = _visible.indexWhere((item) => item.path == parentPath);
-    if (parent < 0) return false;
-    _selectedIndex = parent;
-    notifyListeners();
-    return true;
-  }
-
-  void _rebuild({String? preferredPath}) {
-    final flattened = <DemoFileEntry>[];
-
-    void visit(DemoFileNode node, int depth, String? parentPath) {
-      final path = parentPath == null ? node.name : '$parentPath/${node.name}';
-      flattened.add(
-        DemoFileEntry(
-          node: node,
-          depth: depth,
-          path: path,
-          parentPath: parentPath,
-        ),
-      );
-      if (!node.isDirectory || !_expanded.contains(path)) return;
-      for (final child in node.children!) {
-        visit(child, depth + 1, path);
-      }
-    }
-
-    for (final root in _roots) {
-      visit(root, 0, null);
-    }
-    _visible = List<DemoFileEntry>.unmodifiable(flattened);
-    if (_visible.isEmpty) {
-      _selectedIndex = 0;
-      return;
-    }
-    final preferred = preferredPath == null
-        ? -1
-        : _visible.indexWhere((entry) => entry.path == preferredPath);
-    _selectedIndex = preferred >= 0
-        ? preferred
-        : _selectedIndex.clamp(0, _visible.length - 1);
-  }
-}
-
-const _demoProject = <DemoFileNode>[
-  DemoFileNode.directory(
-    name: 'lib',
+final _demoProject = <TreeNode<DemoFileNode>>[
+  _directory(
+    'lib',
+    'lib',
     children: [
-      DemoFileNode.directory(
-        name: 'src',
+      _directory(
+        'lib/src',
+        'src',
         children: [
-          DemoFileNode.directory(
-            name: 'app',
+          _directory(
+            'lib/src/app',
+            'app',
             children: [
-              DemoFileNode.file(
-                name: 'tui_binding.dart',
-                preview:
-                    'Owns the frame lifecycle, input manager, and root terminal constraints.',
+              _file(
+                'lib/src/app/tui_binding.dart',
+                'tui_binding.dart',
+                'Owns the frame lifecycle, input manager, and root terminal constraints.',
               ),
             ],
           ),
-          DemoFileNode.directory(
-            name: 'widgets',
+          _directory(
+            'lib/src/widgets',
+            'widgets',
             children: [
-              DemoFileNode.file(
-                name: 'menu_anchor.dart',
-                preview:
-                    'Anchors an overlay surface to a launcher and restores focus on close.',
+              _file(
+                'lib/src/widgets/menu_anchor.dart',
+                'menu_anchor.dart',
+                'Anchors an overlay surface to a launcher and restores focus on close.',
               ),
-              DemoFileNode.file(
-                name: 'overlay.dart',
-                preview:
-                    'Hosts logical descendants above the application through the root overlay.',
+              _file(
+                'lib/src/widgets/overlay.dart',
+                'overlay.dart',
+                'Hosts logical descendants above the application through the root overlay.',
               ),
             ],
           ),
         ],
       ),
-      DemoFileNode.file(
-        name: 'noir.dart',
-        preview:
-            "Exports Noir's supported high-level application and widget surface.",
+      _file(
+        'lib/noir.dart',
+        'noir.dart',
+        "Exports Noir's supported high-level application and widget surface.",
       ),
     ],
   ),
-  DemoFileNode.directory(
-    name: 'test',
+  _directory(
+    'test',
+    'test',
     children: [
-      DemoFileNode.file(
-        name: 'widget_test.dart',
-        preview: 'Exercises layout, input, and captured terminal cells.',
+      _file(
+        'test/widget_test.dart',
+        'widget_test.dart',
+        'Exercises layout, input, and captured terminal cells.',
       ),
     ],
   ),
-  DemoFileNode.directory(
-    name: 'example',
+  _directory(
+    'example',
+    'example',
     children: [
-      DemoFileNode.file(
-        name: 'main.dart',
-        preview: 'The canonical minimal Noir application entry point.',
+      _file(
+        'example/main.dart',
+        'main.dart',
+        'The canonical minimal Noir application entry point.',
       ),
     ],
   ),
-  DemoFileNode.file(
-    name: 'README.md',
-    preview: 'Package installation, supported surfaces, and terminal guidance.',
+  _file(
+    'README.md',
+    'README.md',
+    'Package installation, supported surfaces, and terminal guidance.',
   ),
 ];
 
@@ -220,17 +118,17 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
   final _treeFocus = FocusNode(debugLabel: 'project-tree');
   final _cancelFocus = FocusNode(debugLabel: 'cancel-file-picker');
   final _openFocus = FocusNode(debugLabel: 'open-selected-file');
-  late final FilePickerController _picker;
+  late final TreeViewController<DemoFileNode> _tree;
 
   var _openedPath = 'No file opened.';
 
   @override
   void initState() {
     super.initState();
-    _picker = FilePickerController(
+    _tree = TreeViewController<DemoFileNode>(
       roots: _demoProject,
       initiallyExpanded: const {'lib', 'lib/src', 'lib/src/widgets'},
-      initialPath: 'lib/src/widgets/menu_anchor.dart',
+      initialSelection: 'lib/src/widgets/menu_anchor.dart',
     )..addListener(_handleChanged);
     _treeFocus.addListener(_handleChanged);
     Timer.run(() {
@@ -240,7 +138,7 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
 
   @override
   void dispose() {
-    _picker
+    _tree
       ..removeListener(_handleChanged)
       ..dispose();
     _treeFocus
@@ -261,38 +159,22 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
   void _closePicker() => _modal.close();
 
   void _openSelected() {
-    final entry = _picker.selectedEntry;
-    if (entry == null || entry.node.isDirectory) return;
-    setState(() => _openedPath = 'Opened ${entry.path}');
-    _closePicker();
+    final selected = _tree.selectedNode;
+    if (selected == null) return;
+    _openNode(selected);
   }
 
-  KeyEventResult _handleTreeKeys(FocusNode node, KeyEvent event) {
-    if (!event.isPress || !_treeFocus.hasFocus) {
-      return KeyEventResult.ignored;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      return _picker.expandHighlighted()
-          ? KeyEventResult.handled
-          : KeyEventResult.ignored;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      return _picker.collapseOrSelectParent()
-          ? KeyEventResult.handled
-          : KeyEventResult.ignored;
-    }
-    return KeyEventResult.ignored;
+  void _openNode(TreeNode<DemoFileNode> node) {
+    if (node.isBranch) return;
+    setState(() => _openedPath = 'Opened ${node.id}');
+    _closePicker();
   }
 
   @override
   Widget build(BuildContext context) => Modal(
     controller: _modal,
     initialFocusNode: _treeFocus,
-    modalBuilder: (context) => Focus(
-      canRequestFocus: false,
-      onKeyEvent: _handleTreeKeys,
-      child: _buildPicker(context),
-    ),
+    modalBuilder: _buildPicker,
     child: DemoScaffold(
       title: 'Editor workspace',
       hint: 'Choose a project file without leaving the current screen.',
@@ -317,7 +199,8 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
 
   Widget _buildPicker(BuildContext context) {
     final theme = Theme.of(context);
-    final selected = _picker.selectedEntry;
+    final selected = _tree.selectedNode;
+    final selectedPath = selected == null ? null : selected.id as String;
     return Panel(
       title: 'Open file',
       width: 76,
@@ -346,20 +229,15 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
                               : FontWeight.normal,
                         ),
                       ),
-                      ListView(
+                      TreeView<DemoFileNode>(
                         key: const ValueKey<String>('file-tree'),
-                        itemCount: _picker.visibleEntries.length,
+                        controller: _tree,
+                        itemBuilder: _buildTreeRow,
                         height: 10,
-                        selectedIndex: _picker.selectedIndex,
                         focusNode: _treeFocus,
                         showScrollIndicator: true,
                         backgroundColor: Color.transparent,
-                        onChanged: _picker.highlight,
-                        onSelect: (index) {
-                          _picker.highlight(index);
-                          _picker.toggleHighlighted();
-                        },
-                        itemBuilder: _buildTreeRow,
+                        onActivate: _openNode,
                       ),
                     ],
                   ),
@@ -377,14 +255,14 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
                           style: TextStyle(color: theme.textMuted),
                         ),
                         Text(
-                          selected?.path ?? 'No selection',
+                          selectedPath ?? 'No selection',
                           maxLines: 1,
                           softWrap: false,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          selected?.node.preview ??
+                          selected?.value.preview ??
                               'Expand a folder or choose a file to preview it.',
                           maxLines: 7,
                           overflow: TextOverflow.ellipsis,
@@ -398,7 +276,7 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
             ),
           ),
           Text(
-            selected?.path ?? 'No project entries',
+            selectedPath ?? 'No project entries',
             maxLines: 1,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
@@ -420,7 +298,7 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
                 key: const ValueKey<String>('open-selected-file'),
                 label: 'Open',
                 focusNode: _openFocus,
-                onPressed: selected == null || selected.node.isDirectory
+                onPressed: selected == null || selected.isBranch
                     ? null
                     : _openSelected,
               ),
@@ -431,18 +309,17 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
     );
   }
 
-  Widget _buildTreeRow(BuildContext context, int index, bool selected) {
+  Widget _buildTreeRow(
+    BuildContext context,
+    TreeNode<DemoFileNode> node,
+    bool selected,
+  ) {
     final theme = Theme.of(context);
-    final entry = _picker.visibleEntries[index];
-    final indent = List<String>.filled(entry.depth, '  ').join();
-    final disclosure = entry.node.isDirectory
-        ? (_picker.isExpanded(entry) ? Icons.caretDown : Icons.caretRight)
-        : ' ';
     final color = selected ? theme.selectedForeground : theme.text;
     return Container(
       padding: const EdgeInsets.only(right: 1),
       child: Text(
-        '${selected ? Icons.chevronRight : ' '} $indent$disclosure ${entry.node.name}',
+        node.value.name,
         maxLines: 1,
         softWrap: false,
         overflow: TextOverflow.ellipsis,

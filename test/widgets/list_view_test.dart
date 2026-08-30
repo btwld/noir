@@ -238,16 +238,16 @@ void main() {
       );
       await driver.ready();
 
-      await driver.sendMouse(
-        MouseEvent(
-          type: MouseEventType.down,
-          button: MouseButton.left,
-          x: 0,
-          y: 2,
-        ),
+      final event = MouseEvent(
+        type: MouseEventType.down,
+        button: MouseButton.left,
+        x: 0,
+        y: 2,
       );
+      await driver.sendMouse(event);
       expect(changes, [2]);
       expect(selects, [2]);
+      expect(event.isConsumed, isTrue);
       driver.dispose();
     });
 
@@ -380,16 +380,16 @@ void main() {
       );
       await driver.ready();
 
-      await driver.sendMouse(
-        MouseEvent(
-          type: MouseEventType.down,
-          button: MouseButton.left,
-          x: 0,
-          y: 1,
-        ),
+      final event = MouseEvent(
+        type: MouseEventType.down,
+        button: MouseButton.left,
+        x: 0,
+        y: 1,
       );
+      await driver.sendMouse(event);
       expect(selects, isEmpty);
       expect(focusNode.hasFocus, isTrue);
+      expect(event.isConsumed, isFalse);
       driver.dispose();
       focusNode.dispose();
     });

@@ -8,6 +8,7 @@ import '../core/color.dart';
 import '../core/input.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
+import '../framework/key.dart';
 import '../framework/widget.dart';
 import 'actions.dart';
 import 'container.dart';
@@ -51,7 +52,9 @@ typedef ListViewItemBuilder =
 ///   directly and no row is highlighted.
 ///
 /// The mouse wheel scrolls the window in both modes without moving the
-/// highlight.
+/// highlight. A valid primary click in selectable mode is consumed after it
+/// confirms a row; plain-list and blank-row clicks remain available to
+/// ancestors.
 ///
 /// The list occupies exactly [height] rows. A parent that offers fewer rows
 /// clips the overflow rather than shrinking the window, so give the list a
@@ -300,7 +303,7 @@ class _ListViewState extends State<ListView>
     final index = _viewport.scrollOffset + row;
     if (index > _maxIndex) return;
     _setHighlighted(index);
-    _confirm();
+    if (_confirm() == KeyEventResult.handled) event.consume();
   }
 
   void _handlePointerScroll(MouseEvent event) {
@@ -315,6 +318,20 @@ class _ListViewState extends State<ListView>
     if (_viewport.jumpTo(_viewport.scrollOffset + sign * scroll.magnitude)) {
       event.consume();
     }
+  }
+
+  Widget _buildRow(BuildContext context, int index, Color selectedBackground) {
+    final selected = _selectable && index == _highlighted;
+    final item = widget.itemBuilder(context, index, selected);
+    final itemKey = item.key;
+    return SizedBox(
+      key: itemKey is LocalKey ? itemKey : null,
+      height: widget.itemExtent,
+      child: Container(
+        color: selected ? selectedBackground : Color.transparent,
+        child: item,
+      ),
+    );
   }
 
   @override
@@ -335,15 +352,7 @@ class _ListViewState extends State<ListView>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var index = start; index < end; index++)
-          SizedBox(
-            height: widget.itemExtent,
-            child: _selectable && index == _highlighted
-                ? Container(
-                    color: selectedBackground,
-                    child: widget.itemBuilder(context, index, true),
-                  )
-                : widget.itemBuilder(context, index, false),
-          ),
+          _buildRow(context, index, selectedBackground),
       ],
     );
 

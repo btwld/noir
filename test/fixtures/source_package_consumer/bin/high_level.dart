@@ -129,4 +129,22 @@ Widget consumerAutocomplete() {
   );
 }
 
+Widget consumerTreeView() {
+  final controller = TreeViewController<String>(
+    roots: [
+      TreeNode<String>.branch(
+        id: 'root',
+        value: 'Root',
+        children: [TreeNode<String>.leaf(id: 'child', value: 'Child')],
+      ),
+    ],
+  );
+  return TreeView<String>(
+    controller: controller,
+    itemBuilder: (context, node, selected) => Text(node.value),
+    onSelectionChanged: (node) {},
+    onActivate: (node) {},
+  );
+}
+
 Widget _overlayChild(BuildContext context) => const Text('overlay');

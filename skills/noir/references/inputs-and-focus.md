@@ -8,7 +8,7 @@ the focus system they plug into, raw key/mouse events, and the
 
 - [How a key reaches your code](#how-a-key-reaches-your-code)
 - [The value-vs-controller rule](#the-value-vs-controller-rule)
-- [TextInput](#textinput) · [Autocomplete](#autocomplete) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
+- [TextInput](#textinput) · [Autocomplete](#autocomplete) · [TextArea](#textarea) · [Select](#select) · [ListView](#listview) · [TreeView](#treeview) · [DataTable](#datatable) · [Checkbox](#checkbox) · [Switch](#switch) · [Button](#button) · [ScrollBox](#scrollbox)
 - [Focus: Focus / FocusScope / FocusNode](#focus)
 - [Raw input: KeyEvent / MouseEvent](#raw-input)
 - [PointerListener](#pointerlistener)
@@ -288,6 +288,82 @@ ListView(
 Give a stateful row `key: ValueKey(id)` so its `State` survives scrolling.
 The mouse wheel scrolls the window in both modes without moving the
 highlight.
+
+## TreeView
+
+A virtualized hierarchy over stable caller-provided equality keys. The
+controller owns roots, expanded IDs, and selected ID; the widget composes
+`ListView` and owns only focus/viewport resources that the caller omits.
+
+```dart
+TreeNode<T>.leaf({required Object id, required T value})
+TreeNode<T>.branch({
+  required Object id,
+  required T value,
+  Iterable<TreeNode<T>> children = const [],
+})
+
+TreeViewController<T>({
+  required List<TreeNode<T>> roots,
+  Iterable<Object> initiallyExpanded = const [],
+  Object? initialSelection,
+})
+
+const TreeView<T>({
+  required TreeViewController<T> controller,
+  required TreeViewItemBuilder<T> itemBuilder,
+  int height = 8,
+  int indentation = 2,
+  ViewportController? viewportController,
+  FocusNode? focusNode,
+  bool autofocus = false,
+  bool showScrollIndicator = false,
+  Color? backgroundColor,
+  Color? selectedBackgroundColor,
+  ValueChanged<TreeNode<T>>? onSelectionChanged,
+  ValueChanged<TreeNode<T>>? onActivate,
+  Key? key,
+})
+```
+
+```dart
+final tree = TreeViewController<String>(
+  roots: [
+    TreeNode<String>.branch(
+      id: 'docs',
+      value: 'Docs',
+      children: [
+        TreeNode<String>.leaf(id: 'docs/readme', value: 'README.md'),
+      ],
+    ),
+  ],
+);
+
+TreeView<String>(
+  controller: tree,
+  autofocus: true,
+  itemBuilder: (context, node, selected) => Text(
+    node.value,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+  ),
+  onActivate: (node) => open(node.id),
+)
+```
+
+IDs must be unique across the complete tree. `leaf` and an empty `branch` are
+different states, and node child/root collections are snapshotted. Up/Down
+move through visible rows; Right expands; Left collapses or selects the
+visible parent. Enter and a primary click select through the same route,
+toggle branches, and call `onActivate` for leaves. A null `onActivate` keeps
+leaf activation safely disabled and consumed while selection still works.
+
+`updateRoots` validates before mutation, prunes expansion that no longer names
+a branch, and repairs selection to a visible ancestor or clamped row. Direct
+controller changes do not call `onSelectionChanged`; that callback reports
+user input only. Supplied controller/focus/viewport objects stay caller-owned.
+`height` and `indentation` must be non-negative. Use `dispose()` on the
+controller when its owner unmounts.
 
 ## DataTable
 

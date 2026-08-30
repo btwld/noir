@@ -48,7 +48,7 @@ question each example answers; it is not a required sequence.
 | `dart run example/widgets_tour.dart` | Select, ScrollBox, and TextArea in one interaction flow. |
 | `dart run example/dialog_demo.dart` | A public `Modal` confirmation flow with `Panel` chrome, a pointer barrier, closed-loop focus, and focus restoration. |
 | `dart run example/autocomplete_demo.dart` | Public controlled `Autocomplete` behavior composed with example-owned debounce, stale-response protection, and package data. |
-| `dart run example/file_picker_demo.dart` | A public `Modal` containing a flattened file tree, disclosure controls, preview pane, and guarded Open action. |
+| `dart run example/file_picker_demo.dart` | A public `Modal` and generic `TreeView` composed with application-owned paths, preview copy, and guarded Open behavior. |
 
 ### Component sheet controls
 

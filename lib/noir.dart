@@ -251,5 +251,7 @@ export 'src/widgets/text_table.dart'
         TextTableColumnWidthMode,
         TextTableWrapMode;
 export 'src/widgets/theme.dart' show Theme, ThemeData;
+export 'src/widgets/tree_view.dart'
+    show TreeNode, TreeView, TreeViewController, TreeViewItemBuilder;
 export 'src/widgets/viewport.dart' show ViewportController;
 export 'src/widgets/wrap.dart' show Wrap;

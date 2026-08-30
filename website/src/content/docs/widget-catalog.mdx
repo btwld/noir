@@ -104,12 +104,18 @@ and focus traversal.
 | --------------------- | ----------- | -------------------------------------------------------------- |
 | One oversized child   | `ScrollBox` | The content already exists as one widget subtree               |
 | Repeated visible rows | `ListView`  | Rows should be built only for the visible window               |
+| Hierarchical rows     | `TreeView`  | Stable caller IDs need expansion and keyboard navigation       |
 | Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting |
 | Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection     |
 
 `DataTable` virtualizes its body and reports sort requests; your data owner does
 the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells and
 supports document-style selection. They solve different table problems.
+
+`TreeViewController` owns generic roots, expansion, and selection; path,
+filesystem, or other domain behavior stays in the application. TreeView uses
+Up/Down for visible selection, Right/Left for hierarchy navigation, and one
+Enter/primary-click activation route.
 
 ## Overlays and menus
 

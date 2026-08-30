@@ -276,6 +276,12 @@ void main() {
         'TextStyles',
       },
       'src/widgets/theme.dart': {'Theme', 'ThemeData'},
+      'src/widgets/tree_view.dart': {
+        'TreeNode',
+        'TreeView',
+        'TreeViewController',
+        'TreeViewItemBuilder',
+      },
       'src/widgets/viewport.dart': {'ViewportController'},
       'src/rendering/stack.dart': {'StackFit'},
       'src/rendering/wrap.dart': {'WrapAlignment', 'WrapCrossAlignment'},
@@ -380,8 +386,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(245),
-      reason: 'The high-level surface is locked at exactly 245 symbols.',
+      hasLength(249),
+      reason: 'The high-level surface is locked at exactly 249 symbols.',
     );
   });
 }
