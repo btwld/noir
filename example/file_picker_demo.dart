@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
-import 'src/modal_overlay.dart';
 
 void main() => runTuiApp(const FilePickerDemoApp(), enableMouse: true);
 
@@ -214,14 +215,12 @@ class FilePickerDemoApp extends StatefulWidget {
 }
 
 class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
-  final _overlay = OverlayPortalController(debugLabel: 'file-picker');
+  final _modal = ModalController();
   final _launcherFocus = FocusNode(debugLabel: 'open-file-launcher');
   final _treeFocus = FocusNode(debugLabel: 'project-tree');
   final _cancelFocus = FocusNode(debugLabel: 'cancel-file-picker');
   final _openFocus = FocusNode(debugLabel: 'open-selected-file');
   late final FilePickerController _picker;
-  late final DemoClosedLoopTraversalPolicy _dialogTraversal =
-      DemoClosedLoopTraversalPolicy([_treeFocus, _cancelFocus, _openFocus]);
 
   var _openedPath = 'No file opened.';
 
@@ -234,7 +233,9 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
       initialPath: 'lib/src/widgets/menu_anchor.dart',
     )..addListener(_handleChanged);
     _treeFocus.addListener(_handleChanged);
-    _overlay.show();
+    Timer.run(() {
+      if (mounted) _modal.open();
+    });
   }
 
   @override
@@ -255,14 +256,9 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
     if (mounted) setState(() {});
   }
 
-  void _openPicker() => _overlay.show();
+  void _openPicker() => _modal.open();
 
-  void _closePicker() {
-    _overlay.hide();
-    if (_launcherFocus.isAttached && _launcherFocus.canRequestFocus) {
-      _launcherFocus.requestFocus();
-    }
-  }
+  void _closePicker() => _modal.close();
 
   void _openSelected() {
     final entry = _picker.selectedEntry;
@@ -289,11 +285,10 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
   }
 
   @override
-  Widget build(BuildContext context) => DemoModalOverlay(
-    controller: _overlay,
-    onDismiss: _closePicker,
-    traversalPolicy: _dialogTraversal,
-    dialog: Focus(
+  Widget build(BuildContext context) => Modal(
+    controller: _modal,
+    initialFocusNode: _treeFocus,
+    modalBuilder: (context) => Focus(
       canRequestFocus: false,
       onKeyEvent: _handleTreeKeys,
       child: _buildPicker(context),
@@ -357,7 +352,6 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
                         height: 10,
                         selectedIndex: _picker.selectedIndex,
                         focusNode: _treeFocus,
-                        autofocus: true,
                         showScrollIndicator: true,
                         backgroundColor: Color.transparent,
                         onChanged: _picker.highlight,

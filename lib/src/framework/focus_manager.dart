@@ -451,7 +451,12 @@ class FocusManager {
     if (element != null) {
       _elementToNode[element] = null;
     }
+    final carriesFocus = node._hasFocus || node._descendantsHaveFocus;
+    final oldParent = node._parent;
     _detachFromParent(node);
+    if (carriesFocus && oldParent != null) {
+      _updateAncestorChainForLoss(oldParent, node);
+    }
     if (identical(_primaryFocus, node) || node._isAncestorOf(_primaryFocus)) {
       _clearFocus(node);
     }

@@ -63,6 +63,10 @@ void main() {
           "ValueKey<String>('verbose')",
           "ValueKey<String>('step')",
           "ValueKey<String>('reset')",
+          "ValueKey<String>('open-modal')",
+          "ValueKey<String>('modal-background')",
+          "ValueKey<String>('modal-cancel')",
+          "ValueKey<String>('modal-confirm')",
         ],
         'example/data_table_demo.dart': <String>["ValueKey<String>('table')"],
         'example/listview_demo.dart': <String>[

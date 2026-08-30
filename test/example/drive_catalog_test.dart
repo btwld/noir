@@ -102,6 +102,25 @@ void main() {
       expect((await driver.capture()).contains('4/10'), isTrue);
     });
 
+    test('components modal locators confirm the overlay specimen', () async {
+      final driver = await NoirDriver.launch('example/components_demo.dart');
+      addTearDown(driver.quit);
+
+      await driver.sendKey('shift-tab');
+      await driver.sendKey('right');
+      await driver.sendKey('right');
+      await driver.waitFor(const DriverLocator.byKey('open-modal'));
+
+      await driver.clickLocator(const DriverLocator.byKey('open-modal'));
+      expect((await driver.capture()).contains('Review changes'), isTrue);
+
+      await driver.clickLocator(const DriverLocator.byKey('modal-confirm'));
+      final frame = await driver.capture();
+      expect(frame.contains('Review changes'), isFalse);
+      expect(frame.contains('Result: approved'), isTrue);
+      expect(frame.contains('Transitions: 1 open / 1 close'), isTrue);
+    });
+
     test('focus form Save key exposes both blank-field errors', () async {
       final driver = await NoirDriver.launch('example/focus_form.dart');
       addTearDown(driver.quit);
@@ -154,6 +173,15 @@ void main() {
       () async {
         final driver = await NoirDriver.launch('example/file_picker_demo.dart');
         addTearDown(driver.quit);
+
+        await driver.waitFor(const DriverLocator.byKey('file-tree'));
+        expect(await driver.waitStable(), isTrue);
+        expect(
+          (await driver.find(
+            const DriverLocator.byKey('file-tree'),
+          )).hasFocusedDescendant,
+          isTrue,
+        );
 
         await driver.sendKey('down');
         await driver.sendKey('tab');

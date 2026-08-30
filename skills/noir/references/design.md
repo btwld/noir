@@ -106,10 +106,13 @@ panel itself is visual and does not request focus. Its explicit `color` and
 `borderColor` parameters win over theme tokens. Use `Container` with
 `BoxDecoration` only when the region deliberately needs different geometry.
 
-There is no public modal or command-palette widget. In-repo examples share
+Use `Modal` for centered modal behavior: closed-loop focus, focus restoration,
+Escape dismissal, and blocked background pointer input. It deliberately owns
+no visible chrome; put a shrink-wrapped `Panel` in `modalBuilder`. There is no
+public command-palette widget. In-repo examples share
 `example/src/demo_scaffold.dart` only for application-specific page chrome.
-Use `Stack`/`Positioned` for deliberate overlays and `Wrap` for cell-based
-runs.
+Use `Stack`/`Positioned` for local deliberate overlaps and `Wrap` for
+cell-based runs.
 
 ## Type and copy
 

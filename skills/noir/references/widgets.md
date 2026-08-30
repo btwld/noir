@@ -6,7 +6,7 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 ## Contents
 
 - [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
-- [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `MenuAnchor`
+- [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `Modal`, `MenuAnchor`
 - [Theme](#theme): `Theme`, `ThemeData`
 - [Chrome](#chrome): `Panel`, `Divider`, `Badge`, `ProgressBar`, `Spinner`, `Icons`
 - [Geometry](#geometry): `EdgeInsets`, `Alignment`, `BoxConstraints`, `Size`, `Offset`, `Rect`
@@ -220,6 +220,91 @@ const OverlayPortal({
   super.key,
   this.child,
 })
+```
+
+### Modal
+
+`Modal` is the public, unstyled behavior boundary for a centered modal flow.
+Its ordinary `child` remains mounted below the root-overlay entry. The
+`modalBuilder` subtree exists only while open, is rebuilt with fresh `State` on
+each later open, and follows `Theme` and other inherited values from the
+portal's logical ancestry. Put a shrink-wrapped `Panel` in the builder when the
+modal needs visible chrome.
+
+```dart
+const Modal({
+  required ModalController controller,
+  required WidgetBuilder modalBuilder,
+  required Widget child,
+  Key? key,
+  FocusNode? initialFocusNode,
+  bool dismissOnEscape = true,
+  bool dismissOnOutsideClick = false,
+  VoidCallback? onOpen,
+  VoidCallback? onClose,
+})
+```
+
+A `ModalController` attaches to exactly one live modal. `open()` throws while
+detached; there is no pending-open state. `close()` is a detached and
+already-closed no-op, and `isOpen` is false while detached. Calling `open()`
+again preserves the open subtree, brings its entry to the top, and reestablishes
+focus inside it. Replacing the controller preserves visibility and the mounted
+subtree without firing callbacks.
+
+On open, focus moves to `initialFocusNode` only when it is an attached,
+requestable descendant of this modal. Otherwise Noir chooses the first live
+focusable descendant, or the private modal scope when there are none. Tab and
+Shift+Tab loop over the current descendants, including insertions, removals,
+and enabled-state changes. Close restores the captured node only when it still
+belongs to the same focus manager and can request focus.
+
+With several open modals, only the topmost entry repairs escaped focus. Closing
+that entry preserves a valid restored focus inside the modal below; when the
+snapshot is unavailable, the newly exposed modal repairs focus to its preferred
+or first live target. Closing a lone modal still does not invent a fallback for
+an unavailable outside snapshot.
+
+Escape closes by default. Every outside pointer event is consumed at
+render-tree priority even when `dismissOnOutsideClick` is false; opting in adds
+dismissal for an outside primary-button down. `TuiApp.onMouse` remains
+app-priority and may still observe the raw event. Resize recenters the same
+open subtree.
+
+`onOpen` observes `isOpen == true` before the overlay mounts. `onClose`
+observes `isOpen == false` before the overlay is removed and focus restored.
+Callback errors are rethrown after the requested transition settles;
+reentrant open or close calls determine the final state. Teardown skips
+`onClose` and focus restoration.
+
+```dart
+final modal = ModalController();
+
+Modal(
+  controller: modal,
+  initialFocusNode: cancelFocus,
+  modalBuilder: (context) => Panel(
+    title: 'Discard changes?',
+    child: Row(
+      spacing: 1,
+      children: [
+        Button(
+          label: 'Cancel',
+          focusNode: cancelFocus,
+          onPressed: modal.close,
+        ),
+        Button(
+          label: 'Discard',
+          onPressed: () {
+            discard();
+            modal.close();
+          },
+        ),
+      ],
+    ),
+  ),
+  child: Button(label: 'Open', onPressed: modal.open),
+)
 ```
 
 `MenuAnchor` places `menuChildren` as an unstyled `Column` (`MainAxisSize.min`,

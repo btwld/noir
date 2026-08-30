@@ -233,5 +233,57 @@ void main() {
 
       app.dispose();
     });
+
+    test('detaching the focused child notifies its immediate scope', () async {
+      final scope = FocusScopeNode(debugLabel: 'scope');
+      final child = FocusNode(debugLabel: 'child');
+      final key = GlobalKey<_RemovableFocusState>();
+      final app = runTuiAppForTesting(
+        FocusScope(
+          node: scope,
+          child: _RemovableFocus(key: key, node: child),
+        ),
+        headless: true,
+      );
+      addTearDown(app.dispose);
+      addTearDown(scope.dispose);
+      addTearDown(child.dispose);
+
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(child.hasFocus, isTrue);
+
+      var notifications = 0;
+      scope.addListener(() => notifications++);
+      key.currentState!.hide();
+      app.debugFlushFrame();
+
+      expect(app.buildOwner.focusManager.primaryFocus, isNull);
+      expect(notifications, 1);
+    });
   });
+}
+
+class _RemovableFocus extends StatefulWidget {
+  const _RemovableFocus({required this.node, super.key});
+
+  final FocusNode node;
+
+  @override
+  State<_RemovableFocus> createState() => _RemovableFocusState();
+}
+
+class _RemovableFocusState extends State<_RemovableFocus> {
+  var _visible = true;
+
+  void hide() => setState(() => _visible = false);
+
+  @override
+  Widget build(BuildContext context) => _visible
+      ? Focus(
+          focusNode: widget.node,
+          autofocus: true,
+          child: const SizedBox(width: 1, height: 1),
+        )
+      : const SizedBox.shrink();
 }

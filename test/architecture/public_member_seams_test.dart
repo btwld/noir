@@ -799,6 +799,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   (path: 'lib/src/widgets/menu_anchor.dart', name: 'MenuAnchor'): {
     'createElement',
   },
+  (path: 'lib/src/widgets/modal.dart', name: 'Modal'): {'createElement'},
   (path: 'lib/src/widgets/overlay.dart', name: 'OverlayPortal'): {
     'createElement',
   },
@@ -876,6 +877,7 @@ const Set<_Owner> _createElementOwners = <_Owner>{
   (path: 'lib/src/widgets/stack.dart', name: 'Stack'),
   (path: 'lib/src/widgets/stack.dart', name: 'Positioned'),
   (path: 'lib/src/widgets/menu_anchor.dart', name: 'MenuAnchor'),
+  (path: 'lib/src/widgets/modal.dart', name: 'Modal'),
   (path: 'lib/src/widgets/overlay.dart', name: 'OverlayPortal'),
 };
 

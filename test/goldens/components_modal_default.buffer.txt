@@ -1,0 +1,12 @@
+┌─ Base ─────────────────────────┐
+│Background remains visible      │
+│                                │
+│                                │
+│ ┌─ › Modal ──────────────────┐ │
+│ │Behavior without built-in   │ │
+│ │chrome                      │ │
+│ │ Cancel   Confirm           │ │
+│ └────────────────────────────┘ │
+│                                │
+│                                │
+└────────────────────────────────┘

@@ -1,7 +1,6 @@
 import 'package:noir/noir.dart';
 
 import 'src/demo_scaffold.dart';
-import 'src/modal_overlay.dart';
 
 void main() => runTuiApp(const DialogDemoApp(), enableMouse: true);
 
@@ -14,13 +13,11 @@ class DialogDemoApp extends StatefulWidget {
 }
 
 class _DialogDemoAppState extends State<DialogDemoApp> {
-  final _overlay = OverlayPortalController(debugLabel: 'deployment-dialog');
+  final _modal = ModalController();
   final _reviewFocus = FocusNode(debugLabel: 'review-deploy');
   final _refreshFocus = FocusNode(debugLabel: 'refresh-release');
   final _cancelFocus = FocusNode(debugLabel: 'cancel-deploy');
   final _deployFocus = FocusNode(debugLabel: 'confirm-deploy');
-  late final DemoClosedLoopTraversalPolicy _dialogTraversal =
-      DemoClosedLoopTraversalPolicy([_cancelFocus, _deployFocus]);
 
   var _status = 'Production remains unchanged.';
 
@@ -33,14 +30,9 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
     super.dispose();
   }
 
-  void _openDialog() => _overlay.show();
+  void _openDialog() => _modal.open();
 
-  void _closeDialog() {
-    _overlay.hide();
-    if (_reviewFocus.isAttached && _reviewFocus.canRequestFocus) {
-      _reviewFocus.requestFocus();
-    }
-  }
+  void _closeDialog() => _modal.close();
 
   void _refreshRelease() {
     setState(
@@ -56,11 +48,10 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
   }
 
   @override
-  Widget build(BuildContext context) => DemoModalOverlay(
-    controller: _overlay,
-    onDismiss: _closeDialog,
-    traversalPolicy: _dialogTraversal,
-    dialog: _buildDialog(context),
+  Widget build(BuildContext context) => Modal(
+    controller: _modal,
+    initialFocusNode: _cancelFocus,
+    modalBuilder: _buildDialog,
     child: DemoScaffold(
       title: 'Deployment control',
       hint: 'Review the current release before changing production.',
@@ -133,7 +124,6 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
                 key: const ValueKey<String>('cancel-deploy'),
                 label: 'Cancel',
                 focusNode: _cancelFocus,
-                autofocus: true,
                 color: theme.surfaceVariant,
                 textColor: theme.text,
                 onPressed: _closeDialog,
