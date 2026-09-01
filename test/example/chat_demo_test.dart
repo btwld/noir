@@ -34,6 +34,16 @@ void main() {
           () => chatBackendFromArguments(const ['--claude=']),
           throwsFormatException,
         );
+        // A relative project would resolve against whatever directory the
+        // example was launched from.
+        expect(
+          () => chatBackendFromArguments(const ['--claude=.']),
+          throwsFormatException,
+        );
+        expect(
+          () => chatBackendFromArguments(const ['--claude=relative/dir']),
+          throwsFormatException,
+        );
         expect(
           () => chatBackendFromArguments(const ['--unknown']),
           throwsFormatException,

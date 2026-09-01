@@ -592,10 +592,19 @@ final class ClaudeStreamEventDecoder {
     throw FormatException('$key must be numeric');
   }
 
+  /// Names the CLI's permission mode in the semantic protocol.
+  ///
+  /// The adapter starts every session with `dontAsk`, so that is the value
+  /// a live header shows. A mode this table does not name fails the decode
+  /// rather than passing as a reviewing session.
   static AgentPermissionMode _permissionMode(Object? value) => switch (value) {
+    'default' => AgentPermissionMode.review,
     'acceptEdits' => AgentPermissionMode.autoEdit,
     'plan' => AgentPermissionMode.plan,
-    final String _ => AgentPermissionMode.review,
+    'dontAsk' => AgentPermissionMode.unattended,
+    final String mode => throw FormatException(
+      'unsupported permissionMode $mode',
+    ),
     _ => throw const FormatException('permissionMode must be a string'),
   };
 
@@ -1199,6 +1208,16 @@ final class ClaudeCliBackend implements AgentBackend {
         workingDirectory,
         'workingDirectory',
         'must not be empty',
+      );
+    }
+    // A relative directory resolves against the caller's own project, which
+    // is exactly the context this adapter must never hand to a live run.
+    if (!workingDirectory.startsWith('/') &&
+        !Directory(workingDirectory).isAbsolute) {
+      throw ArgumentError.value(
+        workingDirectory,
+        'workingDirectory',
+        'must be an absolute path',
       );
     }
     if (model.trim().isEmpty) {

@@ -40,8 +40,22 @@ AgentBackend? chatBackendFromArguments(List<String> arguments) {
   if (workingDirectory.trim().isEmpty) {
     throw const FormatException('--claude requires a working directory.');
   }
+  if (!_isAbsolutePath(workingDirectory)) {
+    throw const FormatException(
+      '--claude requires an absolute working directory.',
+    );
+  }
   return ClaudeCliBackend(workingDirectory: workingDirectory);
 }
+
+/// Whether [path] is rooted on POSIX or Windows, without touching `dart:io`.
+///
+/// A relative project would resolve against whatever directory the example
+/// was launched from, which is the one context a live run must never see.
+bool _isAbsolutePath(String path) =>
+    path.startsWith('/') ||
+    path.startsWith(r'\\') ||
+    RegExp(r'^[A-Za-z]:[\\/]').hasMatch(path);
 
 /// Minimal C-family source highlighter for the agent transcript.
 ///
@@ -1671,6 +1685,7 @@ class _ChatDemoAppState extends State<ChatDemoApp> {
     AgentPermissionMode.review => 'review',
     AgentPermissionMode.autoEdit => 'auto-edit',
     AgentPermissionMode.plan => 'plan',
+    AgentPermissionMode.unattended => 'unattended',
   };
 
   @override

@@ -98,13 +98,14 @@ dart run example/chat_demo.dart --claude=/absolute/path/to/disposable/project
 ```
 
 Live mode starts `claude -p` without a PTY in safe mode, disables tools, slash
-commands, MCP servers, and session persistence, and passes Claude's $0.05
-per-request budget flag. Tools stay off unconditionally: the adapter exposes no
-permission channel, so no caller can turn them on. A long-lived session can
-accumulate more than the per-request budget across requests, so embedding
-applications must also bound their message count. The adapter has no request
-watchdog either. A child that stalls without exiting keeps the turn open until
-the application calls `interrupt`.
+commands, MCP servers, and session persistence, and passes Claude's
+`--max-budget-usd` flag with a $0.05 cap. The CLI enforces that cap; Noir does
+not measure spend, so an embedding application must bound its own message
+count. Tools stay off unconditionally: the adapter exposes no permission
+channel, so no caller can turn them on. The adapter has no request watchdog
+either. A child that stalls without exiting keeps the turn open until the
+application calls `interrupt`.
+
 It supports session metadata, streaming/final text, tool-shaped protocol
 records, retries, stderr, interruption, usage, and process teardown. Dynamic
 model/mode changes, approvals, `AskUserQuestion`, and saved-session catalogs

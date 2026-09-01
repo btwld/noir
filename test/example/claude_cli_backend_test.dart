@@ -42,10 +42,11 @@ void main() {
         'test/fixtures/claude_cli/stream_2_1_246.jsonl',
       ).readAsLinesSync().expand(decoder.decodeLine).toList();
 
-      expect(
-        events.whereType<AgentSessionEvent>().single.sessionId,
-        'fixture-session',
-      );
+      final session = events.whereType<AgentSessionEvent>().single;
+      expect(session.sessionId, 'fixture-session');
+      // The adapter always starts the CLI with `dontAsk`, and the header
+      // must not report that as a reviewing session.
+      expect(session.permissionMode, AgentPermissionMode.unattended);
       expect(
         events.whereType<AgentTextDeltaEvent>().map((event) => event.delta),
         ['NOIR_', 'SPIKE_OK'],
@@ -181,6 +182,24 @@ void main() {
         expect(events.whereType<AgentRequestFailedEvent>(), hasLength(2));
       },
     );
+
+    test('fails the request on a permission mode it cannot name', () {
+      final decoder = ClaudeStreamEventDecoder()..beginRequest('request-1');
+      final events = decoder.decodeLine(
+        '{"type":"system","subtype":"init","session_id":"s",'
+        '"model":"claude-sonnet-5","permissionMode":"bypassPermissions",'
+        '"uuid":"init-1"}',
+      );
+
+      expect(events.map((event) => event.runtimeType), [
+        AgentUnknownEvent,
+        AgentRequestFailedEvent,
+      ]);
+      expect(
+        (events.first as AgentUnknownEvent).diagnostic,
+        contains('permissionMode bypassPermissions'),
+      );
+    });
 
     test('maps official-shaped error and abort result records', () {
       final decoder = ClaudeStreamEventDecoder()..beginRequest('request-3');
@@ -942,6 +961,14 @@ void main() {
 
     test('validates executable, directory, budget, and timeouts', () {
       expect(() => ClaudeCliBackend(workingDirectory: ''), throwsArgumentError);
+      expect(
+        () => ClaudeCliBackend(workingDirectory: 'relative/project'),
+        throwsArgumentError,
+      );
+      expect(
+        () => ClaudeCliBackend(workingDirectory: '.'),
+        throwsArgumentError,
+      );
       expect(
         () => ClaudeCliBackend(workingDirectory: '/fixture', executable: ' '),
         throwsArgumentError,

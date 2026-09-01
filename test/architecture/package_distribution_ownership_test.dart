@@ -594,6 +594,7 @@ void main() {
     expect(claudeBackend, contains("'--no-session-persistence'"));
     expect(claudeBackend, contains("'--max-budget-usd'"));
     expect(claudeBackend, isNot(contains("'--continue'")));
+    expect(claudeBackend, isNot(contains("'--resume'")));
     expect(claudeBackend, isNot(contains('~/.claude')));
     expect(chatDemo, contains("const prefix = '--claude=';"));
     expect(chatDemo, isNot(contains('ChatResponder')));
