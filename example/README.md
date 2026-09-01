@@ -64,14 +64,14 @@ to the same tree, `Ctrl+S` to stop or restart the spinner, and `Ctrl+Q` to quit.
 
 | Run | Learn |
 | --- | --- |
-| `dart run example/chat_demo.dart` | A replay-driven, continuous full-page agent transcript with streaming blocks, tools, suggestions, decisions, session/model/mode controls, and chronological tail following. |
+| `dart run example/chat_demo.dart` | A replay-driven, continuous full-page agent transcript with streaming blocks, tools, suggestions, decisions, session/model/mode controls, and chronological tail following; an explicit isolated Claude CLI mode is also available. |
 | `dart run example/pub_search.dart` | A live pub.dev browser with completion, filters, paging, and package detail. Requires network access. |
 
 ### Agent chat controls
 
-The chat example is deterministic and offline. Its UI consumes a
-product-neutral semantic backend, so the replay backend drives the same
-reducer and public Noir widget tree that any other backend would. Enter sends, a
+The chat example is deterministic and offline by default. Its UI consumes a
+product-neutral semantic backend. The included replay and opt-in Claude CLI
+backends drive the same reducer and public Noir widget tree. Enter sends, a
 distinguishable Ctrl+J inserts a newline, `/` filters replay commands, `@`
 filters the supplied project paths, Tab accepts a suggestion, and Up/Down at an
 editor boundary walk prompt history.
@@ -89,6 +89,29 @@ reporting so modified letter chords remain distinguishable. Edit decisions carry
 the approval preview and expanded tool detail reuse `DiffView`; arbitrary tool
 text remains plain text and is never classified by tool-name or output
 heuristics.
+
+To exercise the installed Claude Code 2.1.246 stream-JSON protocol against a
+dedicated, non-personal project, pass its path explicitly:
+
+```sh
+dart run example/chat_demo.dart --claude=/absolute/path/to/disposable/project
+```
+
+Live mode starts `claude -p` without a PTY in safe mode, disables tools, slash
+commands, MCP servers, and session persistence, and passes Claude's
+`--max-budget-usd` flag with a $0.05 cap. The CLI enforces that cap; Noir does
+not measure spend, so an embedding application must bound its own message
+count. Tools stay off unconditionally: the adapter exposes no permission
+channel, so no caller can turn them on. The adapter has no request watchdog
+either. A child that stalls without exiting keeps the turn open until the
+application calls `interrupt`.
+
+It supports session metadata, streaming/final text, tool-shaped protocol
+records, retries, stderr, interruption, usage, and process teardown. Dynamic
+model/mode changes, approvals, `AskUserQuestion`, and saved-session catalogs
+remain replay-only because Claude's raw CLI stream does not expose the official
+SDK approval callback. Use an SDK bridge only when those live flows become a
+real application requirement; do not scrape Claude's ANSI interface.
 
 ## Motion
 

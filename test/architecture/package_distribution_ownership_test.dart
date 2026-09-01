@@ -25,6 +25,7 @@ void main() {
   final chatDemo = _read('example/chat_demo.dart');
   final agentProtocol = _read('example/src/agent_chat_protocol.dart');
   final agentController = _read('example/src/agent_session_controller.dart');
+  final claudeBackend = _read('example/src/claude_cli_backend.dart');
 
   test('retained source consumer uses only supported package barrels', () {
     final fixtureRoot = Directory('test/fixtures/source_package_consumer');
@@ -578,6 +579,24 @@ void main() {
     expect(applicationSources, isNot(contains('package:noir/noir_ffi.dart')));
     expect(applicationSources, isNot(contains("import 'dart:io'")));
     expect(applicationSources, isNot(contains('Process.start')));
+    expect(claudeBackend, contains("import 'dart:io';"));
+    expect(claudeBackend, contains('Process.start'));
+    expect(claudeBackend, isNot(contains('package:noir/')));
+    expect(claudeBackend, contains("'--safe-mode'"));
+    expect(claudeBackend, contains("'--disable-slash-commands'"));
+    expect(claudeBackend, contains("'--strict-mcp-config'"));
+    // The adapter exposes no permission channel, so tools stay off and no
+    // constructor parameter may turn them on.
+    expect(claudeBackend, contains("'--tools',\n    '',"));
+    expect(claudeBackend, isNot(contains('allowedTools')));
+    expect(claudeBackend, contains("'--permission-mode',\n    'dontAsk',"));
+    expect(claudeBackend, contains("'{\"mcpServers\":{}}'"));
+    expect(claudeBackend, contains("'--no-session-persistence'"));
+    expect(claudeBackend, contains("'--max-budget-usd'"));
+    expect(claudeBackend, isNot(contains("'--continue'")));
+    expect(claudeBackend, isNot(contains("'--resume'")));
+    expect(claudeBackend, isNot(contains('~/.claude')));
+    expect(chatDemo, contains("const prefix = '--claude=';"));
     expect(chatDemo, isNot(contains('ChatResponder')));
     expect(chatDemo, isNot(contains('jumpTo(0)')));
     expect(chatDemo, isNot(contains('newest-first')));

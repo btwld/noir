@@ -20,6 +20,38 @@ const _editDiff =
     ' }';
 
 void main() {
+  group('chat backend arguments', () {
+    test(
+      'keeps replay as the default and requires an explicit live project',
+      () {
+        expect(chatBackendFromArguments(const []), isNull);
+
+        final live = chatBackendFromArguments(const ['--claude=/tmp/fixture']);
+        expect(live, isA<ClaudeCliBackend>());
+        expect((live! as ClaudeCliBackend).workingDirectory, '/tmp/fixture');
+
+        expect(
+          () => chatBackendFromArguments(const ['--claude=']),
+          throwsFormatException,
+        );
+        // A relative project would resolve against whatever directory the
+        // example was launched from.
+        expect(
+          () => chatBackendFromArguments(const ['--claude=.']),
+          throwsFormatException,
+        );
+        expect(
+          () => chatBackendFromArguments(const ['--claude=relative/dir']),
+          throwsFormatException,
+        );
+        expect(
+          () => chatBackendFromArguments(const ['--unknown']),
+          throwsFormatException,
+        );
+      },
+    );
+  });
+
   group('agent chat example', () {
     test(
       'Enter submits while Ctrl+J and paste preserve multiline text',

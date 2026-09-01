@@ -2,7 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 /// Permission posture applied to subsequent agent requests.
-enum AgentPermissionMode { review, autoEdit, plan }
+/// How the agent treats an action that would need the user's approval.
+///
+/// `unattended` means the agent never asks: it proceeds without tools or
+/// with a fixed allowance, so no permission request can arrive.
+enum AgentPermissionMode { review, autoEdit, plan, unattended }
 
 /// One user request sent to an [AgentBackend].
 final class AgentRequest {
@@ -482,6 +486,7 @@ abstract final class AgentEventCodec {
     'review' => AgentPermissionMode.review,
     'auto_edit' => AgentPermissionMode.autoEdit,
     'plan' => AgentPermissionMode.plan,
+    'unattended' => AgentPermissionMode.unattended,
     _ => throw FormatException('unsupported permissionMode $value'),
   };
 
