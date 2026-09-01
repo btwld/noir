@@ -385,7 +385,8 @@ class _ScrollBoxRenderObjectWidget extends SingleChildRenderObjectWidget {
     showScrollbar: showScrollbar,
     scrollbarColor: scrollbarColor,
     trackColor: trackColor,
-  ).._cursorController = context.owner.cursorController;
+    cursorController: context.owner.cursorController,
+  );
 
   @override
   void updateRenderObject(
@@ -393,7 +394,7 @@ class _ScrollBoxRenderObjectWidget extends SingleChildRenderObjectWidget {
     covariant RenderScrollBox renderObject,
   ) {
     renderObject
-      .._cursorController = context.owner.cursorController
+      ..cursorController = context.owner.cursorController
       ..controller = controller
       ..scrollDirection = scrollDirection
       ..showScrollbar = showScrollbar
@@ -414,11 +415,13 @@ class RenderScrollBox extends RenderProxyBox {
     required bool showScrollbar,
     required Color scrollbarColor,
     required Color trackColor,
+    CursorController? cursorController,
   }) : _controller = controller,
        _scrollDirection = scrollDirection,
        _showScrollbar = showScrollbar,
        _scrollbarColor = scrollbarColor,
-       _trackColor = trackColor;
+       _trackColor = trackColor,
+       _cursorController = cursorController;
 
   ScrollController _controller;
   Axis _scrollDirection;
@@ -427,6 +430,18 @@ class RenderScrollBox extends RenderProxyBox {
   Color _trackColor;
   bool _hasControllerListener = false;
   CursorController? _cursorController;
+
+  /// The cursor publication this viewport clips.
+  ///
+  /// A descendant editor that scrolls out of the viewport must not publish a
+  /// terminal cursor there. Without a controller the viewport clips nothing,
+  /// so a host that builds this render object directly passes the owner's
+  /// controller to keep that guarantee.
+  set cursorController(CursorController? v) {
+    if (identical(_cursorController, v)) return;
+    _cursorController = v;
+    markNeedsPaint();
+  }
 
   set controller(ScrollController v) {
     if (identical(_controller, v)) return;

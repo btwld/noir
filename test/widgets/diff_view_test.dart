@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
+import '../helpers/tui_test_app.dart';
 
 const _patch = '''
 diff --git a/lib/a.dart b/lib/a.dart
@@ -111,6 +112,42 @@ diff --git "a/lib/path with space-\303\244.dart" "b/lib/path with space-\303\244
     } finally {
       capture.dispose();
     }
+  });
+
+  test('can opt out of focus traversal as an embedded preview', () async {
+    final first = FocusNode(debugLabel: 'first');
+    final second = FocusNode(debugLabel: 'second');
+    final app = createTuiTestApp(
+      FocusScope(
+        child: Column(
+          children: [
+            Button(label: 'First', focusNode: first, onPressed: () {}),
+            SizedBox(
+              height: 2,
+              child: DiffView(
+                document: const UnifiedDiffParser().parse(_patch),
+                canRequestFocus: false,
+              ),
+            ),
+            Button(label: 'Second', focusNode: second, onPressed: () {}),
+          ],
+        ),
+      ),
+      width: 40,
+      height: 4,
+    );
+    addTearDown(() {
+      app.dispose();
+      first.dispose();
+      second.dispose();
+    });
+    first.requestFocus();
+    expect(first.hasFocus, isTrue);
+
+    app.mockInput.pressTab();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(second.hasFocus, isTrue);
   });
 
   test('changed rows fill to the right edge', () {

@@ -253,6 +253,16 @@ void main() {
   });
 
   group('paint-invalidating render configuration', () {
+    test('ScrollBox cursor controller owns paint only', () {
+      final scroll = _scrollBox(ScrollController());
+      final harness = _Harness(scroll);
+      final cursor = CursorController();
+
+      _expectPaint(harness, () => scroll.cursorController = cursor);
+      _expectNoWork(harness, () => scroll.cursorController = cursor);
+      _expectPaint(harness, () => scroll.cursorController = null);
+    });
+
     test('decoration setters own paint only', () {
       final first = _ProbeDecoration(1);
       final second = _ProbeDecoration(2);

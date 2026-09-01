@@ -802,6 +802,30 @@ secret
     expect(text, isNot(contains('Notes')));
   });
 
+  test('a negative table padding is rejected when the table renders', () {
+    final capture = BufferCapture(width: 20, height: 4);
+    addTearDown(capture.dispose);
+
+    // TextTable owns the guard: an assert while asserts are enabled, and an
+    // ArgumentError from its render object in release mode. MarkdownView adds
+    // no debug-only duplicate.
+    expect(
+      () => capture.capture(
+        const MarkdownView(
+          markdown: '| H1 |\n| --- |\n| A |',
+          tableCellPaddingX: -1,
+        ),
+      ),
+      throwsA(
+        predicate<Object>(
+          (error) =>
+              (error is AssertionError || error is ArgumentError) &&
+              '$error'.contains('cellPaddingX'),
+        ),
+      ),
+    );
+  });
+
   test('markdown table cells are unpadded until the caller asks', () {
     const source = '| H1 | H2 |\n| --- | --- |\n| A | B |';
 

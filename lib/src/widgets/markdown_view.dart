@@ -148,7 +148,7 @@ class MarkdownView extends StatefulWidget {
     this.onSelectionChanged,
     this.onCopy,
     this.onHighlightError,
-  }) : assert(tableCellPaddingX >= 0, 'tableCellPaddingX must not be negative');
+  });
 
   /// Markdown source reparsed whenever it changes.
   final String markdown;
