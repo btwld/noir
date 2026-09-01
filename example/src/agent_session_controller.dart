@@ -614,6 +614,11 @@ final class AgentSessionController extends ChangeNotifier {
     }
   }
 
+  /// Closes the blocks a completed request left open.
+  ///
+  /// Streamed text is kept as the final answer. A tool that never reported a
+  /// result is marked cancelled rather than succeeded: the run ended before
+  /// the tool confirmed an outcome, and the transcript must not invent one.
   void _completeRunningEntries(String requestId) {
     for (var index = 0; index < _entries.length; index++) {
       final entry = _entries[index];
@@ -622,7 +627,7 @@ final class AgentSessionController extends ChangeNotifier {
         (AgentEntryKind.assistant, AgentEntryStatus.streaming) =>
           AgentEntryStatus.complete,
         (AgentEntryKind.tool, AgentEntryStatus.running) =>
-          AgentEntryStatus.succeeded,
+          AgentEntryStatus.cancelled,
         _ => null,
       };
       if (status != null) _entries[index] = entry.copyWith(status: status);

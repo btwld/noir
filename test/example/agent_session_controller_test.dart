@@ -190,7 +190,7 @@ void main() {
     });
 
     test(
-      'completion closes any still-streaming text and tool blocks',
+      'completion keeps streamed text and cancels an unreported tool',
       () async {
         final backend = ReplayAgentBackend();
         final controller = AgentSessionController(backend: backend);
@@ -234,7 +234,9 @@ void main() {
           (entry) => entry.kind == AgentEntryKind.tool,
         );
         expect(assistant.status, AgentEntryStatus.complete);
-        expect(tool.status, AgentEntryStatus.succeeded);
+        // The run ended before the tool reported, so the transcript must not
+        // claim a result it never received.
+        expect(tool.status, AgentEntryStatus.cancelled);
         expect(controller.phase, AgentRunPhase.idle);
 
         backend
