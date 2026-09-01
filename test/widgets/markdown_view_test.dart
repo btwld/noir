@@ -802,6 +802,43 @@ secret
     expect(text, isNot(contains('Notes')));
   });
 
+  test('markdown table cells are unpadded until the caller asks', () {
+    const source = '| H1 | H2 |\n| --- | --- |\n| A | B |';
+
+    String render(int padding) {
+      final host = DriverHost.create(width: 20, height: 8);
+      addTearDown(host.dispose);
+      host.binding
+        ..runApp(
+          MarkdownView(
+            markdown: source,
+            embedded: true,
+            tableCellPaddingX: padding,
+          ),
+        )
+        ..debugFlushFrame();
+      return _capturedText(host);
+    }
+
+    // Zero matches the OpenTUI Markdown renderer, which leaves the choice to
+    // the application.
+    final unpadded = render(0).split('\n');
+    expect(
+      unpadded.firstWhere((line) => line.contains('H1')),
+      contains('\u2502H1\u2502H2\u2502'),
+    );
+
+    final padded = render(1).split('\n');
+    expect(
+      padded.firstWhere((line) => line.contains('H1')),
+      contains('\u2502 H1 \u2502 H2 \u2502'),
+    );
+    expect(
+      padded.firstWhere((line) => line.contains('A')),
+      contains('\u2502 A  \u2502 B  \u2502'),
+    );
+  });
+
   test('GFM tables keep literal >= and < instead of HTML entities', () {
     const source = '''
 |Package|Constraint|

@@ -24,6 +24,10 @@ void main() {
     expect(() => Container(height: -1), throwsA(isA<AssertionError>()));
     expect(() => TextArea(height: -1), throwsA(isA<AssertionError>()));
     expect(
+      () => TextArea(height: 2, maxHeight: 1),
+      throwsA(isA<AssertionError>()),
+    );
+    expect(
       () => Select<String>(options: const [], height: -1),
       throwsA(isA<AssertionError>()),
     );
@@ -227,6 +231,7 @@ void main() {
         'PASS:panel-width',
         'PASS:panel-height',
         'PASS:textarea-widget',
+        'PASS:textarea-max-height',
         'PASS:select-widget',
         'PASS:viewport',
         'PASS:scroll-controller',

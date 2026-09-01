@@ -114,6 +114,101 @@ void main() {
       driver.dispose();
     });
 
+    test('submitOnEnter submits while Ctrl+J inserts a newline', () async {
+      final controller = TextEditingController();
+      final changes = <String>[];
+      var submits = 0;
+      final driver = KeyDriver(
+        TextArea(
+          autofocus: true,
+          controller: controller,
+          height: 1,
+          width: 20,
+          submitOnEnter: true,
+          onChanged: changes.add,
+          onSubmit: () => submits++,
+        ),
+      );
+      await driver.ready();
+
+      await driver.sendCharacter('a');
+      await driver.sendLogicalKey(LogicalKeyboardKey.enter);
+      expect(controller.text, 'a');
+      expect(submits, 1);
+
+      await driver.sendLogicalKey(
+        LogicalKeyboardKey.keyJ,
+        code: 10,
+        modifiers: KeyModifiers.ctrl,
+      );
+      expect(controller.text, 'a\n');
+      expect(changes, ['a', 'a\n']);
+
+      await driver.sendPaste('b\nc');
+      expect(controller.text, 'a\nb\nc');
+      expect(changes, ['a', 'a\n', 'a\nb\nc']);
+
+      driver.dispose();
+      controller.dispose();
+    });
+
+    test('submitOnEnter keeps Ctrl+J inside ordinary editing policy', () async {
+      final readOnlyController = TextEditingController(text: 'a')
+        ..selection = const TextSelection.collapsed(offset: 1);
+      final readOnlyDriver = KeyDriver(
+        TextArea(
+          autofocus: true,
+          controller: readOnlyController,
+          submitOnEnter: true,
+          readOnly: true,
+        ),
+      );
+      await readOnlyDriver.ready();
+      await readOnlyDriver.sendLogicalKey(
+        LogicalKeyboardKey.keyJ,
+        code: 10,
+        modifiers: KeyModifiers.ctrl,
+      );
+      expect(readOnlyController.text, 'a');
+      readOnlyDriver.dispose();
+      readOnlyController.dispose();
+
+      final limitedController = TextEditingController(text: 'a')
+        ..selection = const TextSelection.collapsed(offset: 1);
+      final limitedDriver = KeyDriver(
+        TextArea(
+          autofocus: true,
+          controller: limitedController,
+          submitOnEnter: true,
+          maxLength: 1,
+        ),
+      );
+      await limitedDriver.ready();
+      await limitedDriver.sendLogicalKey(
+        LogicalKeyboardKey.keyJ,
+        code: 10,
+        modifiers: KeyModifiers.ctrl,
+      );
+      expect(limitedController.text, 'a');
+      limitedDriver.dispose();
+      limitedController.dispose();
+
+      var bubbled = 0;
+      final submitDriver = KeyDriver(
+        Focus(
+          onKeyEvent: (node, event) {
+            bubbled++;
+            return KeyEventResult.ignored;
+          },
+          child: const TextArea(autofocus: true, submitOnEnter: true),
+        ),
+      );
+      await submitDriver.ready();
+      await submitDriver.sendLogicalKey(LogicalKeyboardKey.enter);
+      expect(bubbled, 0);
+      submitDriver.dispose();
+    });
+
     test(
       'submits multiline text and renders cursor at edited position',
       () async {

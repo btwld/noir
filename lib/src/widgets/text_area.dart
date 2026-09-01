@@ -4,7 +4,9 @@ import 'package:characters/characters.dart';
 import '../core/color.dart';
 import '../core/cursor.dart';
 import '../core/grapheme_metrics.dart';
+import '../core/input.dart';
 import '../foundation/text_editing_controller.dart';
+import '../foundation/text_selection.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -19,6 +21,8 @@ import 'pointer_listener.dart';
 import 'shortcuts.dart';
 import 'text_editing_owner_mixin.dart';
 import 'text_input_connection.dart';
+import 'text_layout.dart';
+import 'text_span.dart';
 import 'theme.dart';
 import 'viewport.dart';
 
@@ -27,7 +31,8 @@ import 'viewport.dart';
 /// Keys (when focused):
 /// - Printable chars insert at cursor.
 /// - Backspace / Delete edit characters and join lines.
-/// - Enter inserts a newline; Ctrl+Enter fires [onSubmit].
+/// - By default, Enter inserts a newline and Ctrl+Enter fires [onSubmit].
+/// - With [submitOnEnter], Enter submits and Ctrl+J inserts a newline.
 /// - Arrow keys, Home/End, Ctrl+Home/End move the cursor.
 /// - An [InsertTabIntent] inserts [tabSize] spaces.
 ///
@@ -43,7 +48,10 @@ class TextArea extends StatefulWidget {
     this.value,
     this.placeholder,
     this.height = 5,
+    this.maxHeight,
     this.width,
+    this.softWrap = false,
+    this.submitOnEnter = false,
     this.readOnly = false,
     this.tabSize = 2,
     this.color,
@@ -60,6 +68,7 @@ class TextArea extends StatefulWidget {
          'TextArea cannot be given both controller and value.',
        ),
        assert(height >= 0),
+       assert(maxHeight == null || maxHeight >= height),
        assert(width == null || width >= 0);
 
   /// The controller that owns this field's text and selection.
@@ -72,10 +81,29 @@ class TextArea extends StatefulWidget {
   final String? placeholder;
 
   /// Visible height of the field in rows. Defaults to 5.
+  ///
+  /// This remains an exact height when [maxHeight] is null. When [maxHeight]
+  /// is set, it is the minimum height used for bounded content growth.
   final int height;
+
+  /// Optional maximum height for content-driven growth.
+  ///
+  /// Must be at least [height]. When set, the field grows from [height] to
+  /// this many visual rows before scrolling internally.
+  final int? maxHeight;
 
   /// Explicit width in cells. Expands to available width when null.
   final int? width;
+
+  /// Whether long logical lines wrap at grapheme boundaries and terminal
+  /// cell widths instead of scrolling horizontally.
+  final bool softWrap;
+
+  /// Whether plain Enter submits instead of inserting a newline.
+  ///
+  /// In this mode a distinguishable Ctrl+J inserts a newline. Multiline paste
+  /// remains allowed.
+  final bool submitOnEnter;
 
   /// When true, the field renders text but rejects edits. Defaults to false.
   final bool readOnly;
@@ -183,17 +211,33 @@ class _TextAreaState extends State<TextArea>
     return graphemeIndexToCell(line, controller.col);
   }
 
-  /// Total content height in lines (1 row per model line — no wrap yet).
-  int _contentLineCount() => controller.lines.length;
+  _TextAreaVisualLayout _visualLayout(int width) =>
+      _TextAreaVisualLayout.compute(
+        controller.text,
+        width: width,
+        softWrap: widget.softWrap,
+      );
 
   /// Scrolls the vertical and horizontal viewports so the cursor's line and
   /// column are visible. The horizontal content extent is derived from the
   /// cursor cell alone, since "scroll into view" only cares about the cursor.
   void _ensureCursorVisible() {
     final cells = _viewportCells;
+    final visualLayout = _visualLayout(cells.width);
+    final cursor = visualLayout.positionForOffset(
+      controller.selection.extentOffset,
+      affinity: controller.selection.affinity,
+    );
     _vViewport.viewportExtent = cells.height;
-    _vViewport.contentExtent = _contentLineCount();
-    _vViewport.ensureVisible(controller.line, controller.line + 1);
+    _vViewport.contentExtent = visualLayout.lines.length;
+    _vViewport.ensureVisible(cursor.row, cursor.row + 1);
+
+    if (widget.softWrap) {
+      _hViewport.viewportExtent = cells.width;
+      _hViewport.contentExtent = cells.width;
+      _hViewport.jumpTo(0);
+      return;
+    }
 
     // Horizontal: ensure the cursor column is visible. Content extent is
     // at least cursor cell + 1 so ensureVisible can actually scroll.
@@ -215,16 +259,60 @@ class _TextAreaState extends State<TextArea>
     onSubmit: widget.onSubmit,
   );
 
+  KeyEventResult _moveByVisualRow(int delta) {
+    if (!controller.selectionWithinText) {
+      throw StateError(
+        'TextArea requires an in-range controller selection for visual '
+        'cursor movement.',
+      );
+    }
+    final layout = _visualLayout(_viewportCells.width);
+    final current = layout.positionForOffset(
+      controller.selection.extentOffset,
+      affinity: controller.selection.affinity,
+    );
+    final targetRow = (current.row + delta).clamp(0, layout.lines.length - 1);
+    if (targetRow == current.row) return KeyEventResult.ignored;
+    final target = layout.lines[targetRow].sourceOffsetForCell(current.cell);
+    final targetAffinity = layout.affinityForPosition(targetRow, target);
+    final before = controller.selection;
+    controller.selection = TextSelection.collapsed(
+      offset: target,
+      affinity: targetAffinity,
+    );
+    return controller.selection == before
+        ? KeyEventResult.ignored
+        : KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
     requireUsableSelectionForBuild();
     final conn = connection;
+    final shortcuts = conn.shortcuts;
+    if (widget.submitOnEnter) {
+      shortcuts
+        ..[const SingleActivator(LogicalKeyboardKey.enter)] =
+            const SubmitTextIntent()
+        ..[const SingleActivator(LogicalKeyboardKey.keyJ, control: true)] =
+            const InsertTextIntent('\n');
+    }
+    final actions = conn.actions;
+    if (widget.softWrap) {
+      actions
+        ..[MoveCaretUpIntent] = CallbackAction<MoveCaretUpIntent>(
+          (intent, context) => _moveByVisualRow(-1),
+        )
+        ..[MoveCaretDownIntent] = CallbackAction<MoveCaretDownIntent>(
+          (intent, context) => _moveByVisualRow(1),
+        );
+    }
     final theme = Theme.maybeOf(context);
     final palette = theme ?? ThemeData.dark;
     return Shortcuts(
-      shortcuts: conn.shortcuts,
+      shortcuts: shortcuts,
       child: Actions(
-        actions: conn.actions,
+        actions: actions,
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
@@ -236,9 +324,12 @@ class _TextAreaState extends State<TextArea>
               lines: controller.lines,
               cursorLine: controller.line,
               cursorColumn: controller.col,
+              cursorAffinity: controller.selection.affinity,
               placeholder: widget.placeholder,
               height: widget.height,
+              maxHeight: widget.maxHeight,
               width: widget.width,
+              softWrap: widget.softWrap,
               color: widget.color ?? palette.text,
               // `theme?.surface`, not `palette.surface`: with no ancestor
               // Theme the field must keep painting no fill at all, which no
@@ -263,9 +354,12 @@ class _TextAreaLeaf extends RenderObjectWidget {
     required this.lines,
     required this.cursorLine,
     required this.cursorColumn,
+    required this.cursorAffinity,
     required this.placeholder,
     required this.height,
+    required this.maxHeight,
     required this.width,
+    required this.softWrap,
     required this.color,
     required this.backgroundColor,
     required this.cursorColor,
@@ -279,9 +373,12 @@ class _TextAreaLeaf extends RenderObjectWidget {
   final List<String> lines;
   final int cursorLine;
   final int cursorColumn;
+  final TextAffinity cursorAffinity;
   final String? placeholder;
   final int height;
+  final int? maxHeight;
   final int? width;
+  final bool softWrap;
   final Color color;
   final Color? backgroundColor;
   final Color cursorColor;
@@ -298,9 +395,12 @@ class _TextAreaLeaf extends RenderObjectWidget {
         lines: lines,
         cursorLine: cursorLine,
         cursorColumn: cursorColumn,
+        cursorAffinity: cursorAffinity,
         placeholder: placeholder,
         heightLines: height,
+        maxHeightLines: maxHeight,
         explicitWidth: width,
+        softWrap: softWrap,
         color: color,
         backgroundColor: backgroundColor,
         cursorColor: cursorColor,
@@ -316,12 +416,17 @@ class _TextAreaLeaf extends RenderObjectWidget {
     covariant RenderTextArea renderObject,
   ) {
     renderObject
+      .._updateWidgetGeometry(
+        heightLines: height,
+        maxHeightLines: maxHeight,
+        explicitWidth: width,
+        softWrap: softWrap,
+      )
       ..lines = lines
       ..cursorLine = cursorLine
       ..cursorColumn = cursorColumn
+      ..cursorAffinity = cursorAffinity
       ..placeholder = placeholder
-      ..heightLines = height
-      ..explicitWidth = width
       ..color = color
       ..backgroundColor = backgroundColor
       ..cursorColor = cursorColor
@@ -362,9 +467,12 @@ class RenderTextArea extends RenderBox {
          lines: lines,
          cursorLine: cursorLine,
          cursorColumn: cursorColumn,
+         cursorAffinity: TextAffinity.downstream,
          placeholder: placeholder,
          heightLines: heightLines,
+         maxHeightLines: null,
          explicitWidth: explicitWidth,
+         softWrap: false,
          color: color,
          backgroundColor: backgroundColor,
          cursorColor: cursorColor,
@@ -380,9 +488,12 @@ class RenderTextArea extends RenderBox {
     required List<String> lines,
     required int cursorLine,
     required int cursorColumn,
+    required TextAffinity cursorAffinity,
     required String? placeholder,
     required int heightLines,
+    required int? maxHeightLines,
     required int? explicitWidth,
+    required bool softWrap,
     required Color color,
     required Color? backgroundColor,
     required Color cursorColor,
@@ -395,9 +506,12 @@ class RenderTextArea extends RenderBox {
        _lines = List<String>.unmodifiable(lines),
        _cursorLine = cursorLine,
        _cursorColumn = cursorColumn,
+       _cursorAffinity = cursorAffinity,
        _placeholder = placeholder,
        _heightLines = heightLines,
+       _maxHeightLines = maxHeightLines,
        _explicitWidth = explicitWidth,
+       _softWrap = softWrap,
        _color = color,
        _backgroundColor = backgroundColor,
        _cursorColor = cursorColor,
@@ -406,6 +520,7 @@ class RenderTextArea extends RenderBox {
        _scrollLine = scrollLine,
        _scrollCell = scrollCell {
     requireNonNegativeExtent(_heightLines, 'heightLines');
+    _requireValidMaxHeight(_heightLines, _maxHeightLines);
     _requireNonNegativeNullableExtent(_explicitWidth, 'explicitWidth');
   }
 
@@ -414,9 +529,12 @@ class RenderTextArea extends RenderBox {
   List<String> _lines;
   int _cursorLine;
   int _cursorColumn;
+  TextAffinity _cursorAffinity;
   String? _placeholder;
   int _heightLines;
+  int? _maxHeightLines;
   int? _explicitWidth;
+  bool _softWrap;
   Color _color;
   Color? _backgroundColor;
   Color _cursorColor;
@@ -424,11 +542,18 @@ class RenderTextArea extends RenderBox {
   bool _focused;
   int _scrollLine;
   int _scrollCell;
+  _TextAreaVisualLayout? _visualLayout;
+  int? _visualLayoutWidth;
 
   set lines(List<String> v) {
     if (_sameLines(_lines, v)) return;
     _lines = List<String>.unmodifiable(v);
-    markNeedsPaint();
+    _invalidateVisualLayout();
+    if (_softWrap || _maxHeightLines != null) {
+      markNeedsLayout();
+    } else {
+      markNeedsPaint();
+    }
   }
 
   set cursorLine(int v) {
@@ -443,6 +568,12 @@ class RenderTextArea extends RenderBox {
     markNeedsPaint();
   }
 
+  set cursorAffinity(TextAffinity v) {
+    if (_cursorAffinity == v) return;
+    _cursorAffinity = v;
+    markNeedsPaint();
+  }
+
   set placeholder(String? v) {
     if (_placeholder == v) return;
     _placeholder = v;
@@ -451,6 +582,7 @@ class RenderTextArea extends RenderBox {
 
   set heightLines(int v) {
     requireNonNegativeExtent(v, 'heightLines');
+    _requireValidMaxHeight(v, _maxHeightLines);
     if (_heightLines == v) return;
     _heightLines = v;
     markNeedsLayout();
@@ -460,6 +592,30 @@ class RenderTextArea extends RenderBox {
     _requireNonNegativeNullableExtent(v, 'explicitWidth');
     if (_explicitWidth == v) return;
     _explicitWidth = v;
+    _invalidateVisualLayout();
+    markNeedsLayout();
+  }
+
+  void _updateWidgetGeometry({
+    required int heightLines,
+    required int? maxHeightLines,
+    required int? explicitWidth,
+    required bool softWrap,
+  }) {
+    requireNonNegativeExtent(heightLines, 'heightLines');
+    _requireValidMaxHeight(heightLines, maxHeightLines);
+    _requireNonNegativeNullableExtent(explicitWidth, 'explicitWidth');
+    final changed =
+        _heightLines != heightLines ||
+        _maxHeightLines != maxHeightLines ||
+        _explicitWidth != explicitWidth ||
+        _softWrap != softWrap;
+    if (!changed) return;
+    _heightLines = heightLines;
+    _maxHeightLines = maxHeightLines;
+    _explicitWidth = explicitWidth;
+    _softWrap = softWrap;
+    _invalidateVisualLayout();
     markNeedsLayout();
   }
 
@@ -510,10 +666,12 @@ class RenderTextArea extends RenderBox {
     // Fall back to minWidth when both the explicit width and the parent's
     // maxWidth are unspecified so we still produce a definite size.
     final w = _explicitWidth ?? constraints.maxWidth ?? constraints.minWidth;
-    size = Size(
-      constraints.constrainWidth(w),
-      constraints.constrainHeight(_heightLines),
-    );
+    final constrainedWidth = constraints.constrainWidth(w);
+    final layout = _ensureVisualLayout(constrainedWidth);
+    final desiredHeight = _maxHeightLines == null
+        ? _heightLines
+        : layout.lines.length.clamp(_heightLines, _maxHeightLines!);
+    size = Size(constrainedWidth, constraints.constrainHeight(desiredHeight));
     _layoutMetrics?.publish(size);
   }
 
@@ -522,6 +680,30 @@ class RenderTextArea extends RenderBox {
     final originX = offset.dx + x;
     final originY = offset.dy + y;
     final canvas = context.canvas;
+    final visualLayout = _ensureVisualLayout(width);
+    final cursor = visualLayout.positionForOffset(
+      _cursorSourceOffset(),
+      affinity: _cursorAffinity,
+    );
+    var effectiveScrollLine = _scrollLine.clamp(
+      0,
+      (visualLayout.lines.length - height).clamp(0, visualLayout.lines.length),
+    );
+    if (_focused && (_softWrap || _maxHeightLines != null) && height > 0) {
+      if (cursor.row < effectiveScrollLine) {
+        effectiveScrollLine = cursor.row;
+      } else if (cursor.row >= effectiveScrollLine + height) {
+        effectiveScrollLine = cursor.row - height + 1;
+      }
+    }
+    var effectiveScrollCell = _softWrap ? 0 : _scrollCell;
+    if (_focused && _maxHeightLines != null && !_softWrap && width > 0) {
+      if (cursor.cell < effectiveScrollCell) {
+        effectiveScrollCell = cursor.cell;
+      } else if (cursor.cell >= effectiveScrollCell + width) {
+        effectiveScrollCell = cursor.cell - width + 1;
+      }
+    }
 
     if (_backgroundColor != null) {
       canvas.fillRect(
@@ -555,42 +737,45 @@ class RenderTextArea extends RenderBox {
       }
     } else {
       for (var row = 0; row < height; row++) {
-        final lineIdx = _scrollLine + row;
-        if (lineIdx >= _lines.length) break;
-        final line = _lines[lineIdx];
+        final lineIdx = effectiveScrollLine + row;
+        if (lineIdx >= visualLayout.lines.length) break;
+        final line = visualLayout.lines[lineIdx];
         var cellAccum = 0;
         var paintedCol = 0;
-        for (final cluster in line.characters) {
-          final cw = terminalCellWidth(cluster);
-          if (cellAccum + cw <= _scrollCell) {
-            cellAccum += cw;
-            continue;
+        paintLine:
+        for (final run in line.runs) {
+          for (final cluster in run.text.characters) {
+            final clusterWidth = terminalCellWidth(cluster);
+            if (cellAccum + clusterWidth <= effectiveScrollCell) {
+              cellAccum += clusterWidth;
+              continue;
+            }
+            // If a wide cluster straddles the left edge, drop it whole.
+            if (cellAccum < effectiveScrollCell) {
+              cellAccum += clusterWidth;
+              continue;
+            }
+            if (paintedCol + clusterWidth > width) break paintLine;
+            canvas.setCell(
+              Offset(originX + paintedCol, originY + row),
+              cluster,
+              _color,
+              _backgroundColor ?? Color.transparent,
+              0,
+            );
+            paintedCol += clusterWidth;
+            cellAccum += clusterWidth;
           }
-          // The cluster crosses or starts past the scroll boundary. If it
-          // straddles the left edge (wide cluster at the boundary), drop it.
-          if (cellAccum < _scrollCell) {
-            cellAccum += cw;
-            continue;
-          }
-          if (paintedCol + cw > width) break;
-          canvas.setCell(
-            Offset(originX + paintedCol, originY + row),
-            cluster,
-            _color,
-            _backgroundColor ?? Color.transparent,
-            0,
-          );
-          paintedCol += cw;
-          cellAccum += cw;
         }
       }
     }
 
     if (_focused) {
-      final cursorRow = _cursorLine - _scrollLine;
-      final line = _lines[_cursorLine.clamp(0, _lines.length - 1)];
-      final cursorAbsoluteCell = graphemeIndexToCell(line, _cursorColumn);
-      final cursorCol = cursorAbsoluteCell - _scrollCell;
+      final cursorRow = cursor.row - effectiveScrollLine;
+      final cursorCell = _softWrap && width > 0 && cursor.cell >= width
+          ? width - 1
+          : cursor.cell;
+      final cursorCol = cursorCell - effectiveScrollCell;
       if (cursorRow >= 0 &&
           cursorRow < height &&
           cursorCol >= 0 &&
@@ -623,10 +808,205 @@ class RenderTextArea extends RenderBox {
     }
     return true;
   }
+
+  int _cursorSourceOffset() {
+    if (_lines.isEmpty) return 0;
+    final lineIndex = _cursorLine.clamp(0, _lines.length - 1);
+    var offset = 0;
+    for (var index = 0; index < lineIndex; index++) {
+      offset += _lines[index].length + 1;
+    }
+    final line = _lines[lineIndex];
+    final clampedColumn = _cursorColumn.clamp(0, line.characters.length);
+    return offset + line.characters.take(clampedColumn).toString().length;
+  }
+
+  _TextAreaVisualLayout _ensureVisualLayout(int width) {
+    final current = _visualLayout;
+    if (current != null && _visualLayoutWidth == width) return current;
+    final next = _TextAreaVisualLayout.compute(
+      _lines.join('\n'),
+      width: width,
+      softWrap: _softWrap,
+    );
+    _visualLayout = next;
+    _visualLayoutWidth = width;
+    return next;
+  }
+
+  void _invalidateVisualLayout() {
+    _visualLayout = null;
+    _visualLayoutWidth = null;
+  }
+}
+
+final class _TextAreaVisualLayout {
+  const _TextAreaVisualLayout._({required this.text, required this.lines});
+
+  factory _TextAreaVisualLayout.compute(
+    String text, {
+    required int width,
+    required bool softWrap,
+  }) {
+    final maxWidth = softWrap && width > 0 ? width : null;
+    final laidOut = const TextLayoutEngine().layout(
+      TextSpan(text: text),
+      BoxConstraints(maxWidth: maxWidth),
+    );
+    final hardBreakOffsets = '\n'
+        .allMatches(text)
+        .map((match) => match.start)
+        .toSet();
+    final lines = <_TextAreaVisualLine>[];
+    var sourceCursor = 0;
+    for (final line in laidOut.lines) {
+      final sourceStart = line.runs.isEmpty
+          ? sourceCursor
+          : line.runs.first.sourceStart;
+      final sourceEnd = line.runs.isEmpty
+          ? sourceStart
+          : line.runs.last.sourceEnd;
+      lines.add(
+        _TextAreaVisualLine(
+          runs: line.runs,
+          sourceStart: sourceStart,
+          sourceEnd: sourceEnd,
+          width: line.width,
+        ),
+      );
+      sourceCursor = sourceEnd;
+      if (hardBreakOffsets.contains(sourceCursor)) {
+        sourceCursor++;
+      }
+    }
+    if (text.endsWith('\n')) {
+      lines.add(
+        _TextAreaVisualLine(
+          runs: const [],
+          sourceStart: text.length,
+          sourceEnd: text.length,
+          width: 0,
+        ),
+      );
+    } else if (softWrap &&
+        width > 0 &&
+        lines.isNotEmpty &&
+        lines.last.width >= width &&
+        lines.last.sourceEnd == text.length) {
+      lines.add(
+        _TextAreaVisualLine(
+          runs: const [],
+          sourceStart: text.length,
+          sourceEnd: text.length,
+          width: 0,
+        ),
+      );
+    }
+    return _TextAreaVisualLayout._(text: text, lines: List.unmodifiable(lines));
+  }
+
+  final String text;
+  final List<_TextAreaVisualLine> lines;
+
+  TextAffinity affinityForPosition(int row, int sourceOffset) {
+    final line = lines[row];
+    final nextRow = row + 1;
+    final sharesNextBoundary =
+        sourceOffset == line.sourceEnd &&
+        nextRow < lines.length &&
+        lines[nextRow].sourceStart == sourceOffset;
+    return sharesNextBoundary ? TextAffinity.upstream : TextAffinity.downstream;
+  }
+
+  ({int row, int cell}) positionForOffset(
+    int sourceOffset, {
+    TextAffinity affinity = TextAffinity.downstream,
+  }) {
+    final offset = sourceOffset.clamp(0, text.length);
+    for (var index = 0; index < lines.length; index++) {
+      final line = lines[index];
+      if (offset < line.sourceEnd) {
+        return (row: index, cell: line.cellForSourceOffset(offset));
+      }
+      if (offset == line.sourceEnd) {
+        final hasNext = index + 1 < lines.length;
+        final sharesSoftBoundary =
+            hasNext && lines[index + 1].sourceStart == offset;
+        if (sharesSoftBoundary && affinity == TextAffinity.downstream) {
+          return (row: index + 1, cell: 0);
+        }
+        return (row: index, cell: line.width);
+      }
+    }
+    final last = lines.last;
+    return (row: lines.length - 1, cell: last.width);
+  }
+}
+
+final class _TextAreaVisualLine {
+  _TextAreaVisualLine({
+    required List<TextLayoutRun> runs,
+    required this.sourceStart,
+    required this.sourceEnd,
+    required this.width,
+  }) : runs = List.unmodifiable(runs);
+
+  final List<TextLayoutRun> runs;
+  final int sourceStart;
+  final int sourceEnd;
+  final int width;
+
+  int cellForSourceOffset(int offset) {
+    var cell = 0;
+    for (final run in runs) {
+      var sourceOffset = run.sourceStart;
+      for (final cluster in run.text.characters) {
+        final sourceEnd = sourceOffset + cluster.length;
+        if (offset < sourceEnd) return cell;
+        cell += terminalCellWidth(cluster);
+        sourceOffset = sourceEnd;
+      }
+    }
+    return cell;
+  }
+
+  int sourceOffsetForCell(int targetCell) {
+    if (runs.isEmpty || targetCell <= 0) return sourceStart;
+    var cell = 0;
+    for (final run in runs) {
+      var sourceOffset = run.sourceStart;
+      for (final cluster in run.text.characters) {
+        final clusterWidth = terminalCellWidth(cluster);
+        final cellEnd = cell + clusterWidth;
+        final sourceEnd = sourceOffset + cluster.length;
+        if (targetCell < cellEnd) {
+          return targetCell - cell > cellEnd - targetCell
+              ? sourceEnd
+              : sourceOffset;
+        }
+        if (targetCell == cellEnd) return sourceEnd;
+        cell = cellEnd;
+        sourceOffset = sourceEnd;
+      }
+    }
+    return sourceEnd;
+  }
 }
 
 void _requireNonNegativeNullableExtent(int? value, String name) {
   if (value != null) {
     requireNonNegativeExtent(value, name);
+  }
+}
+
+void _requireValidMaxHeight(int height, int? maxHeight) {
+  if (maxHeight == null) return;
+  requireNonNegativeExtent(maxHeight, 'maxHeightLines');
+  if (maxHeight < height) {
+    throw ArgumentError.value(
+      maxHeight,
+      'maxHeightLines',
+      'must be greater than or equal to heightLines',
+    );
   }
 }

@@ -26,6 +26,19 @@ Widget _buildConsumerTree() => ScrollBox(
   ),
 );
 
+/// Proves the opt-in chronological-tail controller constructor is public.
+ScrollController createConsumerTailController() =>
+    ScrollController(followTail: true);
+
+/// Proves the bounded, submit-on-enter multiline editor is public.
+Widget buildConsumerComposer() => const TextArea(
+  value: 'first line\nsecond line',
+  height: 1,
+  maxHeight: 4,
+  softWrap: true,
+  submitOnEnter: true,
+);
+
 /// Proves that the app entrypoint returns the narrowed lifecycle facade and
 /// that registrations are cancellable without exposing InputManager.
 TuiApp launchConsumerApp(Widget root) {

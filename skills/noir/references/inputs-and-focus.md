@@ -166,19 +166,23 @@ supplied nodes and the controller remain caller-owned.
 
 ## TextArea
 
-Multi-line editor backed by a `TextEditingController` internally. **Enter inserts
-a newline; a reported `Ctrl+Enter` fires `onSubmit`.** Some terminals encode
-Ctrl+Enter as ordinary Enter even after keyboard enhancement is requested, so
-bind a second control key at an ancestor `Focus` when submission must work
-there. The shipped multiline examples use Ctrl+D.
+Multi-line editor backed by a `TextEditingController` internally. By default,
+**Enter inserts a newline and a reported `Ctrl+Enter` fires `onSubmit`.** Set
+`submitOnEnter: true` for a composer: Enter then submits and a distinguishable
+Ctrl+J inserts a newline without disabling multiline paste. Terminals that do
+not report the modifier encode Ctrl+J as ordinary Enter, so document the
+terminal requirement or provide another app command for that environment.
 
 ```dart
 const TextArea({
   TextEditingController? controller,    // XOR value
   String? value,
   String? placeholder,
-  int height = 5,                       // visible rows
+  int height = 5,                       // exact rows, or minimum with maxHeight
+  int? maxHeight,                       // null = fixed height
   int? width,                           // null = expand to available
+  bool softWrap = false,                // visual cell-aware wrapping
+  bool submitOnEnter = false,           // Ctrl+J becomes explicit newline
   bool readOnly = false,
   int tabSize = 2,
   Color? color,                         // ThemeData.text
@@ -187,7 +191,7 @@ const TextArea({
   CursorStyle cursorStyle = CursorStyle.block,
   int? maxLength,                       // null = unlimited
   void Function(String)? onChanged,
-  void Function()? onSubmit,            // reported Ctrl+Enter
+  void Function()? onSubmit,
   FocusNode? focusNode,
   bool autofocus = false,
   Key? key,
@@ -198,6 +202,11 @@ Built-in keys: arrows + Home/End + Ctrl+Home/End move the caret; Backspace/Delet
 edit and join lines. Physical Tab and Shift+Tab move focus through the traversal
 policy (stage 5 above) and do not insert text — indent deliberately by
 dispatching an `InsertTabIntent`, which inserts `tabSize` spaces.
+
+With `softWrap: true`, wrap points and Up/Down navigation use grapheme clusters
+and terminal-cell widths. Supplying `maxHeight` makes `height` the minimum;
+the field grows with visual rows until the maximum, then scrolls internally.
+`maxHeight` must be at least `height`.
 
 ## Select
 
@@ -478,18 +487,26 @@ const ScrollBox({
   Color? trackColor,                    // ThemeData.scrollbarTrack
   FocusNode? focusNode,
   bool autofocus = false,
+  bool canRequestFocus = true,
   void Function(double offset)? onScroll,
   Key? key,
 })
 
 // ScrollController:
-ScrollController({ double initialOffset = 0 })
-//   .offset, .maxScrollExtent, .viewportExtent, .jumpTo(target), .pageUp(), .pageDown()
+ScrollController({ double initialOffset = 0, bool followTail = false })
+//   .offset, .maxScrollExtent, .viewportExtent, .isFollowingTail,
+//   .jumpTo(target), .pageUp(), .pageDown()
 ```
 
 Keys: arrows by 1 line/cell; PageUp/Down by a viewport; Home/End to bounds.
 Mouse wheel input follows the configured axis. Holding Shift rotates vertical
 directions to horizontal and horizontal directions to vertical.
+Set `canRequestFocus: false` when a read-only embedded preview must stay out of
+the enclosing surface's keyboard traversal.
+
+`followTail: true` starts at the trailing extent and follows content growth or
+reflow while attached. Scrolling above the end detaches and preserves the
+numeric top-row offset; returning to the end reattaches.
 
 ---
 

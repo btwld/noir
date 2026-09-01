@@ -137,6 +137,7 @@ class MarkdownView extends StatefulWidget {
     this.theme,
     this.codeHighlighter = const PlainTextCodeHighlighter(),
     this.blockRenderer,
+    this.tableCellPaddingX = 0,
     this.controller,
     this.focusNode,
     this.autofocus = false,
@@ -163,6 +164,13 @@ class MarkdownView extends StatefulWidget {
   /// Replacement widgets retain the parsed block's default text for document
   /// selection and copy, because arbitrary widgets do not expose plain text.
   final MarkdownBlockRenderer? blockRenderer;
+
+  /// Horizontal padding inside each table cell.
+  ///
+  /// Zero matches the OpenTUI Markdown renderer, which leaves the choice to
+  /// the application. Set one column for the roomier presentation that most
+  /// Markdown renderers use.
+  final int tableCellPaddingX;
 
   /// Caller-owned vertical scroll controller.
   final ScrollController? controller;
@@ -491,6 +499,7 @@ final class _MarkdownViewState extends State<MarkdownView>
         content: content,
         borderColor: theme.ruleColor,
         columnWidthMode: TextTableColumnWidthMode.content,
+        cellPaddingX: widget.tableCellPaddingX,
         selectable: widget.selectable,
         selectionForegroundColor: widget.selectionForegroundColor,
         selectionBackgroundColor: widget.selectionBackgroundColor,

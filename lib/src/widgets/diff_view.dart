@@ -401,6 +401,7 @@ class DiffView extends StatefulWidget {
     this.splitColumnWidth = 40,
     this.focusNode,
     this.autofocus = false,
+    this.canRequestFocus = true,
     this.selectionForegroundColor,
     this.selectionBackgroundColor,
     this.onSelectionChanged,
@@ -446,6 +447,12 @@ class DiffView extends StatefulWidget {
 
   /// Whether the diff requests focus after mounting.
   final bool autofocus;
+
+  /// Whether this diff participates in focus traversal.
+  ///
+  /// Set this to false for a read-only embedded preview whose enclosing
+  /// surface owns keyboard navigation.
+  final bool canRequestFocus;
 
   /// Selected text foreground override.
   final Color? selectionForegroundColor;
@@ -680,6 +687,7 @@ final class _DiffViewState extends State<DiffView>
         controller: _scrollController,
         focusNode: focusNode,
         autofocus: widget.autofocus,
+        canRequestFocus: widget.canRequestFocus,
         showScrollbar: widget.rowBuilder != null,
         child: DocumentScrollScope(
           handlesScrolling: false,
@@ -693,6 +701,7 @@ final class _DiffViewState extends State<DiffView>
   Widget _buildDefaultDocument(ThemeData theme) => DocumentSelectionScope(
     documentText: _presentation.text,
     sourceBase: 0,
+    leafCanRequestFocus: widget.canRequestFocus,
     selection: _selection,
     dragging: _dragging,
     readSelection: () => _selection,
@@ -757,6 +766,7 @@ final class _DiffViewState extends State<DiffView>
     return DocumentSelectionScope(
       documentText: _presentation.text,
       sourceBase: row.start,
+      leafCanRequestFocus: widget.canRequestFocus,
       selection: _selection,
       dragging: _dragging,
       readSelection: () => _selection,
