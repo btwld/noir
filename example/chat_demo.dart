@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations
 // Replay: dart run example/chat_demo.dart
+// Live: dart run example/chat_demo.dart --claude=/absolute/fixture/path
 
 import 'dart:async';
 
@@ -7,12 +8,39 @@ import 'package:noir/noir.dart';
 
 import 'src/agent_chat_protocol.dart';
 import 'src/agent_session_controller.dart';
+import 'src/claude_cli_backend.dart';
 
 export 'src/agent_chat_protocol.dart';
 export 'src/agent_session_controller.dart';
+export 'src/claude_cli_backend.dart';
 
-void main() {
-  runTuiApp(const ChatDemoApp(), enableMouse: true).enableKittyKeyboard();
+void main(List<String> arguments) {
+  final backend = chatBackendFromArguments(arguments);
+  runTuiApp(
+    ChatDemoApp(
+      backend: backend,
+      pathSuggestions: backend == null ? _defaultPathSuggestions : const [],
+      enableReplayControls: backend == null,
+    ),
+    enableMouse: true,
+  ).enableKittyKeyboard();
+}
+
+/// Selects the default replay backend or an explicit isolated Claude project.
+AgentBackend? chatBackendFromArguments(List<String> arguments) {
+  if (arguments.isEmpty) return null;
+  const prefix = '--claude=';
+  if (arguments.length != 1 || !arguments.single.startsWith(prefix)) {
+    throw const FormatException(
+      'Usage: dart run example/chat_demo.dart '
+      '[--claude=/absolute/fixture/path]',
+    );
+  }
+  final workingDirectory = arguments.single.substring(prefix.length);
+  if (workingDirectory.trim().isEmpty) {
+    throw const FormatException('--claude requires a working directory.');
+  }
+  return ClaudeCliBackend(workingDirectory: workingDirectory);
 }
 
 /// Minimal C-family source highlighter for the agent transcript.
