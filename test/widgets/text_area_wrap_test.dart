@@ -27,6 +27,36 @@ void main() {
     expect(render.size.height, 2);
   });
 
+  test('bounded growth without wrapping counts only hard newlines', () {
+    final tester = WidgetTester(maxWidth: 12, maxHeight: 10);
+    addTearDown(tester.dispose);
+
+    // A long single line cannot grow the field, because nothing wraps it.
+    tester.pumpWidget(
+      const TextArea(
+        value: 'aaaaaaaaaaaaaaaaaaaa',
+        width: 6,
+        height: 1,
+        maxHeight: 3,
+      ),
+    );
+    var render = tester.renderObject<RenderTextArea>(RenderTextArea)!;
+    expect(render.size.height, 1);
+
+    // Hard newlines do grow it, up to the bound.
+    tester.pumpWidget(
+      const TextArea(value: 'a\nb', width: 6, height: 1, maxHeight: 3),
+    );
+    render = tester.renderObject<RenderTextArea>(RenderTextArea)!;
+    expect(render.size.height, 2);
+
+    tester.pumpWidget(
+      const TextArea(value: 'a\nb\nc\nd\ne', width: 6, height: 1, maxHeight: 3),
+    );
+    render = tester.renderObject<RenderTextArea>(RenderTextArea)!;
+    expect(render.size.height, 3);
+  });
+
   test('soft wrap paints wide graphemes without splitting cells', () {
     final capture = BufferCapture(width: 3, height: 2);
     addTearDown(capture.dispose);
