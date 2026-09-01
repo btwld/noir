@@ -472,8 +472,10 @@ final class ClaudeStreamEventDecoder {
         : legacyResult is String
         ? legacyResult
         : 'Claude request ended with $subtype.';
-    final normalized = '$subtype ${terminalReason ?? ''} $message'
-        .toLowerCase();
+    // Classify from the protocol fields only. The free-text message may
+    // describe a genuine failure using the word "cancel", and reading it here
+    // would report that failure as a cancellation.
+    final normalized = '$subtype ${terminalReason ?? ''}'.toLowerCase();
     if ((terminalReason is String && terminalReason.startsWith('aborted_')) ||
         normalized.contains('interrupt') ||
         normalized.contains('cancel')) {
@@ -644,12 +646,10 @@ final class ClaudeCliBackend implements AgentBackend {
     this.executable = 'claude',
     this.model = 'sonnet',
     this.maxBudgetUsd = 0.05,
-    List<String> allowedTools = const [],
     ClaudeProcessLauncher launcher = const SystemClaudeProcessLauncher(),
     this.shutdownGracePeriod = const Duration(seconds: 2),
     this.interruptTimeout = const Duration(seconds: 3),
-  }) : allowedTools = List<String>.unmodifiable(allowedTools),
-       _launcher = launcher {
+  }) : _launcher = launcher {
     _validateConfiguration();
   }
 
@@ -657,7 +657,6 @@ final class ClaudeCliBackend implements AgentBackend {
   final String workingDirectory;
   final String model;
   final double maxBudgetUsd;
-  final List<String> allowedTools;
   final Duration shutdownGracePeriod;
   final Duration interruptTimeout;
   final ClaudeProcessLauncher _launcher;
@@ -1178,8 +1177,10 @@ final class ClaudeCliBackend implements AgentBackend {
     '--strict-mcp-config',
     '--mcp-config',
     '{"mcpServers":{}}',
+    // This adapter exposes no permission channel: respondToPermission always
+    // throws. Tools must therefore stay off, and no caller may turn them on.
     '--tools',
-    allowedTools.join(','),
+    '',
     '--permission-mode',
     'dontAsk',
     '--no-session-persistence',
@@ -1208,13 +1209,6 @@ final class ClaudeCliBackend implements AgentBackend {
         maxBudgetUsd,
         'maxBudgetUsd',
         'must be finite and greater than zero',
-      );
-    }
-    if (allowedTools.any((tool) => tool.trim().isEmpty)) {
-      throw ArgumentError.value(
-        allowedTools,
-        'allowedTools',
-        'must not contain empty tool names',
       );
     }
     if (shutdownGracePeriod <= Duration.zero) {

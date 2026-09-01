@@ -585,6 +585,11 @@ void main() {
     expect(claudeBackend, contains("'--safe-mode'"));
     expect(claudeBackend, contains("'--disable-slash-commands'"));
     expect(claudeBackend, contains("'--strict-mcp-config'"));
+    // The adapter exposes no permission channel, so tools stay off and no
+    // constructor parameter may turn them on.
+    expect(claudeBackend, contains("'--tools',\n    '',"));
+    expect(claudeBackend, isNot(contains('allowedTools')));
+    expect(claudeBackend, contains("'--permission-mode',\n    'dontAsk',"));
     expect(claudeBackend, contains("'{\"mcpServers\":{}}'"));
     expect(claudeBackend, contains("'--no-session-persistence'"));
     expect(claudeBackend, contains("'--max-budget-usd'"));

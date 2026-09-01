@@ -915,17 +915,35 @@ void main() {
       expect(launcher.process.closeCount, 1);
     });
 
-    test('validates executable, directory, tools, budget, and timeouts', () {
+    test('keeps tools off, because there is no permission channel', () async {
+      final launcher = _FakeClaudeProcessLauncher();
+      final backend = ClaudeCliBackend(
+        workingDirectory: '/fixture',
+        launcher: launcher,
+      );
+      addTearDown(backend.close);
+      await backend.start();
+
+      final arguments = launcher.arguments!;
+      final tools = arguments.indexOf('--tools');
+      expect(tools, greaterThanOrEqualTo(0));
+      expect(arguments[tools + 1], isEmpty);
+
+      // Nothing may approve a tool call, so nothing may request one.
+      await expectLater(
+        backend.respondToPermission(
+          requestId: 'r',
+          permissionId: 'p',
+          allow: true,
+        ),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('validates executable, directory, budget, and timeouts', () {
       expect(() => ClaudeCliBackend(workingDirectory: ''), throwsArgumentError);
       expect(
         () => ClaudeCliBackend(workingDirectory: '/fixture', executable: ' '),
-        throwsArgumentError,
-      );
-      expect(
-        () => ClaudeCliBackend(
-          workingDirectory: '/fixture',
-          allowedTools: const ['Read', ''],
-        ),
         throwsArgumentError,
       );
       expect(
