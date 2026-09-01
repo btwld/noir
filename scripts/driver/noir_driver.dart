@@ -60,9 +60,19 @@ Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
 /// Whether [error] is the VM service disappearing with the driven isolate.
 ///
 /// After [TuiApp.exit], in-flight input RPCs fail this way. That is the
-/// app's exit, not a driver fault.
-bool isDrivenServiceGone(Object error) =>
-    error is RPCError && error.code == RPCErrorKind.kServiceDisappeared.code;
+/// app's exit, not a driver fault. The service reports the exit either as
+/// the vanished-service code or, when the socket closes while a request is
+/// still outstanding, as a disposed connection. `vm_service` raises the
+/// latter with the generic server-error code and the disposed-connection
+/// message, so both spellings are accepted. Which one arrives depends on
+/// timing.
+bool isDrivenServiceGone(Object error) {
+  if (error is! RPCError) return false;
+  if (error.code == RPCErrorKind.kServiceDisappeared.code) return true;
+  if (error.code == RPCErrorKind.kConnectionDisposed.code) return true;
+  return error.code == RPCErrorKind.kServerError.code &&
+      error.message == RPCErrorKind.kConnectionDisposed.message;
+}
 
 /// Drives one Noir app process over its `ext.noir.driver.*` surface.
 class NoirDriver {

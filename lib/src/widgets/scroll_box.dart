@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:meta/meta.dart';
 
 import '../core/color.dart';
+import '../core/cursor.dart';
 import '../core/input.dart';
 import '../foundation/change_notifier.dart';
 import '../framework/build_context.dart';
@@ -32,12 +33,27 @@ import 'theme.dart';
 /// box's layout still remembers the requested scroll position.
 class ScrollController extends ChangeNotifier {
   /// Preserves [initialOffset] until layout publishes extents and clamps it.
-  ScrollController({double initialOffset = 0}) : _offset = initialOffset;
+  ScrollController({double initialOffset = 0, this.followTail = false})
+    : _offset = initialOffset,
+      _isFollowingTail = followTail;
 
   double _offset;
   double _maxScrollExtent = 0;
   int _viewportExtent = 0;
   bool _layoutStateChanged = false;
+  bool _isFollowingTail;
+
+  /// Whether reaching the trailing extent enables automatic tail following.
+  ///
+  /// An opted-in controller starts attached to the tail. Calling [jumpTo]
+  /// with an earlier offset detaches it, and jumping back to
+  /// [maxScrollExtent] reattaches it.
+  final bool followTail;
+
+  /// Whether an opted-in controller is currently attached to the tail.
+  ///
+  /// Always false when [followTail] is false.
+  bool get isFollowingTail => _isFollowingTail;
 
   /// Current scroll offset in lines (or cells for horizontal scroll).
   double get offset => _offset;
@@ -51,8 +67,10 @@ class ScrollController extends ChangeNotifier {
   /// Jump immediately to [target], clamped to `[0, maxScrollExtent]`.
   void jumpTo(double target) {
     final clamped = target.clamp(0.0, _maxScrollExtent);
-    if (clamped == _offset) return;
+    final nextFollowing = followTail && clamped == _maxScrollExtent;
+    if (clamped == _offset && nextFollowing == _isFollowingTail) return;
     _offset = clamped;
+    _isFollowingTail = nextFollowing;
     notifyListeners();
   }
 
@@ -86,22 +104,22 @@ class ScrollController extends ChangeNotifier {
       throw ArgumentError.value(max, 'max', 'must be finite and non-negative');
     }
     final oldOffset = _offset;
+    final oldFollowing = _isFollowingTail;
     final maxChanged = max != _maxScrollExtent;
-    if (!maxChanged && !_layoutStateChanged) {
-      final clamped = _offset.clamp(0.0, _maxScrollExtent);
-      if (clamped != _offset) {
-        _offset = clamped;
-        notifyListeners();
-      }
-      return;
-    }
     _maxScrollExtent = max;
-    final clamped = _offset.clamp(0.0, _maxScrollExtent);
-    if (clamped != _offset) {
-      _offset = clamped;
+    if (followTail && oldFollowing) {
+      _offset = _maxScrollExtent;
+    } else {
+      _offset = _offset.clamp(0.0, _maxScrollExtent);
+    }
+    if (followTail && _offset == _maxScrollExtent) {
+      _isFollowingTail = true;
     }
     final shouldNotify =
-        maxChanged || _layoutStateChanged || oldOffset != _offset;
+        maxChanged ||
+        _layoutStateChanged ||
+        oldOffset != _offset ||
+        oldFollowing != _isFollowingTail;
     _layoutStateChanged = false;
     if (shouldNotify) {
       notifyListeners();
@@ -114,6 +132,7 @@ class ScrollController extends ChangeNotifier {
 /// Composition: [Focus] -> [PointerListener] (for mouse wheel) -> custom
 /// [_ScrollBoxRenderObjectWidget] which clips and offsets its child along
 /// [scrollDirection] and optionally paints a 1-cell-wide scrollbar gutter.
+/// Descendant editor cursors are clipped to the same viewport as their paint.
 ///
 /// Input bindings when focused:
 /// - ArrowUp/Down (or Left/Right for horizontal) move by 1 line
@@ -134,6 +153,7 @@ class ScrollBox extends StatefulWidget {
     this.trackColor,
     this.focusNode,
     this.autofocus = false,
+    this.canRequestFocus = true,
     this.onScroll,
   });
 
@@ -158,6 +178,12 @@ class ScrollBox extends StatefulWidget {
 
   /// Whether this widget requests focus when first mounted.
   final bool autofocus;
+
+  /// Whether this viewport participates in focus traversal.
+  ///
+  /// Set this to false for a read-only embedded preview whose enclosing
+  /// surface owns keyboard navigation.
+  final bool canRequestFocus;
 
   /// Called after the scroll offset changes.
   final void Function(double offset)? onScroll;
@@ -318,6 +344,7 @@ class _ScrollBoxState extends State<ScrollBox>
         child: Focus(
           focusNode: focusNode,
           autofocus: widget.autofocus,
+          canRequestFocus: widget.canRequestFocus,
           child: PointerListener(
             onPointerScroll: _handlePointerScroll,
             child: _ScrollBoxRenderObjectWidget(
@@ -358,6 +385,7 @@ class _ScrollBoxRenderObjectWidget extends SingleChildRenderObjectWidget {
     showScrollbar: showScrollbar,
     scrollbarColor: scrollbarColor,
     trackColor: trackColor,
+    cursorController: context.owner.cursorController,
   );
 
   @override
@@ -366,6 +394,7 @@ class _ScrollBoxRenderObjectWidget extends SingleChildRenderObjectWidget {
     covariant RenderScrollBox renderObject,
   ) {
     renderObject
+      ..cursorController = context.owner.cursorController
       ..controller = controller
       ..scrollDirection = scrollDirection
       ..showScrollbar = showScrollbar
@@ -386,11 +415,13 @@ class RenderScrollBox extends RenderProxyBox {
     required bool showScrollbar,
     required Color scrollbarColor,
     required Color trackColor,
+    CursorController? cursorController,
   }) : _controller = controller,
        _scrollDirection = scrollDirection,
        _showScrollbar = showScrollbar,
        _scrollbarColor = scrollbarColor,
-       _trackColor = trackColor;
+       _trackColor = trackColor,
+       _cursorController = cursorController;
 
   ScrollController _controller;
   Axis _scrollDirection;
@@ -398,6 +429,19 @@ class RenderScrollBox extends RenderProxyBox {
   Color _scrollbarColor;
   Color _trackColor;
   bool _hasControllerListener = false;
+  CursorController? _cursorController;
+
+  /// The cursor publication this viewport clips.
+  ///
+  /// A descendant editor that scrolls out of the viewport must not publish a
+  /// terminal cursor there. Without a controller the viewport clips nothing,
+  /// so a host that builds this render object directly passes the owner's
+  /// controller to keep that guarantee.
+  set cursorController(CursorController? v) {
+    if (identical(_cursorController, v)) return;
+    _cursorController = v;
+    markNeedsPaint();
+  }
 
   set controller(ScrollController v) {
     if (identical(_controller, v)) return;
@@ -527,6 +571,7 @@ class RenderScrollBox extends RenderProxyBox {
     final viewportW = _viewportWidth;
     final viewportH = _viewportHeight;
     if (width <= 0 || height <= 0 || viewportW <= 0 || viewportH <= 0) {
+      _clipDescendantCursor(originX, originY, 0, 0);
       return;
     }
 
@@ -546,11 +591,36 @@ class RenderScrollBox extends RenderProxyBox {
       );
       context.paintChild(c, Offset(originX + scrollX, originY + scrollY));
       context.canvas.restore();
+      _clipDescendantCursor(originX, originY, viewportW, viewportH);
     }
 
     if (_showScrollbar) {
       _paintScrollbar(context, originX, originY, viewportW, viewportH);
     }
+  }
+
+  void _clipDescendantCursor(
+    int originX,
+    int originY,
+    int viewportWidth,
+    int viewportHeight,
+  ) {
+    final cursor = _cursorController;
+    final owner = cursor?.owner;
+    if (cursor == null || !cursor.isVisible || owner is! RenderObject) return;
+
+    RenderObject? ancestor = owner;
+    while (ancestor != null && !identical(ancestor, this)) {
+      ancestor = ancestor.parent;
+    }
+    if (ancestor == null) return;
+
+    final outsideViewport =
+        cursor.x < originX ||
+        cursor.x >= originX + viewportWidth ||
+        cursor.y < originY ||
+        cursor.y >= originY + viewportHeight;
+    if (outsideViewport) cursor.hideCursorFor(owner);
   }
 
   @override

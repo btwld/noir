@@ -152,9 +152,11 @@ TextInput or TextArea, never both.
 
 `TextInput.onSubmit` runs on Enter. `TextInput.maxLength` defaults to `100`;
 raise it when a field must accept a longer line. `TextArea.maxLength` is
-unbounded unless you set it. TextArea uses Enter for a newline and reports
-Ctrl+Enter when the terminal distinguishes it; provide another documented
-control key when submit must work across terminals.
+unbounded unless you set it. By default, TextArea uses Enter for a newline and
+reports Ctrl+Enter when the terminal distinguishes it. With
+`submitOnEnter: true`, Enter submits and a distinguishable Ctrl+J inserts a
+newline. `softWrap: true` wraps by grapheme and terminal-cell width; pair it
+with `maxHeight` to grow from `height` to a bounded maximum before scrolling.
 
 Focus-aware controls can create an internal node, but pass your own `FocusNode`
 when a parent needs to request focus, observe it, or coordinate several fields.
@@ -189,6 +191,12 @@ events separately only when the app needs hover or drag.
 and `DataTable` uses a ListView body under its aligned header. Give a scrollable
 region focus when its arrows, PageUp, PageDown, Home, and End keys should not
 move another region.
+Set `canRequestFocus: false` for a read-only embedded viewport that must remain
+outside an enclosing modal or form's focus traversal.
+
+For chronological output, construct its controller with `followTail: true`.
+It follows layout extent changes while at the end, detaches when scrolled above
+the end, and reattaches when returned to the maximum extent.
 
 Stable `ValueKey`s belong in repository drive scripts, not in ordinary app
 input code. See [Testing](/docs/testing) for Driver inspection, the

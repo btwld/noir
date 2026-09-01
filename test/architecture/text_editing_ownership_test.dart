@@ -202,7 +202,7 @@ void main() {
       'void paint(PaintingContext context, Offset offset)',
     );
     final sizeAssignment = layout.indexOf('size = Size(');
-    final sizeAssignmentEnd = layout.indexOf('    );', sizeAssignment);
+    final sizeAssignmentEnd = layout.indexOf(';', sizeAssignment);
     final publication = layout.indexOf('_layoutMetrics?.publish(size);');
     expect(sizeAssignment, isNonNegative);
     expect(sizeAssignmentEnd, greaterThan(sizeAssignment));

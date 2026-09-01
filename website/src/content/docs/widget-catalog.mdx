@@ -55,19 +55,19 @@ Row(
 
 ## Input and selection
 
-| Need                        | Widget                 | Interaction model                                             |
-| --------------------------- | ---------------------- | ------------------------------------------------------------- |
-| Activate one command        | `Button`               | Enter, Space, or primary pointer activation                   |
-| Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state         |
-| Value on a range            | `Slider`               | Arrow-key and pointer adjustment                              |
-| One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                     |
-| Attached suggestions        | `Autocomplete<T>`      | Caller controls options, status, selection, and async work    |
-| Multi-line editing          | `TextArea`             | Enter inserts a newline; `maxLength` is unbounded by default  |
-| Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms            |
-| Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels |
-| Local raw key ownership     | `Focus`, `FocusScope`  | Return `ignored` for keys the region does not own             |
-| Semantic key commands       | `Shortcuts`, `Actions` | Map keys to Intents, then Intents to application commands     |
-| Pointer hit region          | `PointerListener`      | Read `MouseEvent.localPosition` after hit testing             |
+| Need                        | Widget                 | Interaction model                                                       |
+| --------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| Activate one command        | `Button`               | Enter, Space, or primary pointer activation                             |
+| Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state                   |
+| Value on a range            | `Slider`               | Arrow-key and pointer adjustment                                        |
+| One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                               |
+| Attached suggestions        | `Autocomplete<T>`      | Caller controls options, status, selection, and async work              |
+| Multi-line editing          | `TextArea`             | Fixed by default; opt into wrapping, bounded growth, or Enter-to-submit |
+| Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms                      |
+| Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels           |
+| Local raw key ownership     | `Focus`, `FocusScope`  | Return `ignored` for keys the region does not own                       |
+| Semantic key commands       | `Shortcuts`, `Actions` | Map keys to Intents, then Intents to application commands               |
+| Pointer hit region          | `PointerListener`      | Read `MouseEvent.localPosition` after hit testing                       |
 
 `Select` and `TabSelect` share typed options but express different spatial
 models:
@@ -100,13 +100,13 @@ and focus traversal.
 
 ## Scrolling and data
 
-| Need                  | Widget      | Choose it when…                                                |
-| --------------------- | ----------- | -------------------------------------------------------------- |
-| One oversized child   | `ScrollBox` | The content already exists as one widget subtree               |
-| Repeated visible rows | `ListView`  | Rows should be built only for the visible window               |
-| Hierarchical rows     | `TreeView`  | Stable caller IDs need expansion and keyboard navigation       |
-| Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting |
-| Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection     |
+| Need                  | Widget      | Choose it when…                                                         |
+| --------------------- | ----------- | ----------------------------------------------------------------------- |
+| One oversized child   | `ScrollBox` | The content already exists as one widget subtree; tail follow is opt-in |
+| Repeated visible rows | `ListView`  | Rows should be built only for the visible window                        |
+| Hierarchical rows     | `TreeView`  | Stable caller IDs need expansion and keyboard navigation                |
+| Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting          |
+| Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection              |
 
 `DataTable` virtualizes its body and reports sort requests; your data owner does
 the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells and
@@ -183,6 +183,10 @@ overlay animation APIs.
 | Terminal image              | `Image`, `TerminalImage`              | File, network, encoded bytes, or RGBA; protocol support still depends on the terminal |
 | Semantic terminal link      | linked `TextSpan`                     | The terminal decides whether and how the link is presented                            |
 | Explicit selected-text copy | `SelectedText` and document callbacks | OSC52 acceptance depends on terminal policy                                           |
+
+For a read-only `DiffView` embedded in a decision surface, set
+`canRequestFocus: false` so the enclosing modal keeps ownership of keyboard
+traversal.
 
 For example, a standalone Markdown document owns focus, selection, and its
 scrolling viewport:

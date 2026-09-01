@@ -111,7 +111,7 @@ shrink-wrapped:
 | `Checkbox` / `Switch` | One row. Narrow ASCII glyphs. |
 | `TextInput` | One row. No chrome pad. |
 | `Autocomplete` | Controlled field plus one attached state or option surface. Async search and option data stay caller-owned. |
-| `TextArea` | `height` is visible rows. |
+| `TextArea` | `height` is exact rows unless `maxHeight` enables bounded visual-row growth; wrapping is opt-in. |
 | `Select` | `height` is visible options. Highlight mutes when unfocused. |
 | `TabSelect` | Fixed-width or label-sized horizontal tabs with an optional underline and description row. |
 | `Slider` | One-cell track on its cross axis; value is caller-controlled. |
@@ -120,7 +120,7 @@ shrink-wrapped:
 | `DataTable` | Header is one row; body is a `ListView`. No spacer under the header. |
 | `TextTable` | Finite rich grid. `DataTable` remains the windowed interactive table. |
 | `CodeView` / `DiffView` / `MarkdownView` | Bounded selectable viewports; copy only on explicit Ctrl+C. |
-| `ScrollBox` | One overflowing child. Scrollbar in the last column. |
+| `ScrollBox` | One overflowing child. Scrollbar in the last column. Chronological tail following is controller-owned and opt-in. |
 | `Focus` / `FocusScope` | Focused lists use `selectedBackground`. Accent border marks keyboard ownership. |
 | `PointerListener` | `MouseEvent.localPosition` only. |
 | Example `DemoScaffold` | Surface fills the terminal. Title inset 2, 1. Not a public `Scaffold`. |

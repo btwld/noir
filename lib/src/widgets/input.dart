@@ -406,14 +406,13 @@ class RenderTextInput extends RenderBox {
       final cluster = visibleClusters[i];
       final cw = _obscureText ? 1 : terminalCellWidth(cluster);
       if (paintedCol + cw > width) break;
-      // This scalar-cell path currently records only the cluster's first
-      // scalar. Multi-code-point grapheme painting remains a known limitation.
-      canvas.setCell(
-        Offset(targetX + paintedCol, targetY),
+      // drawText encodes the whole cluster; setCell keeps only its first
+      // scalar, which truncates a ZWJ sequence.
+      canvas.drawText(
         cluster,
+        Offset(targetX + paintedCol, targetY),
         textColor,
-        _backgroundColor ?? Color.transparent,
-        0,
+        background: _backgroundColor,
       );
       paintedCol += cw;
     }

@@ -92,6 +92,16 @@ void main() {
       _disposeQuietly(host);
     }
   });
+  _expect<ArgumentError>('textarea-max-height', () {
+    final host = TestElementHost();
+    try {
+      host
+        ..mount(TextArea(height: 2, maxHeight: 1))
+        ..pumpFrame();
+    } finally {
+      _disposeQuietly(host);
+    }
+  });
   _expect<ArgumentError>('select-widget', () {
     final host = TestElementHost();
     try {

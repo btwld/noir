@@ -20,7 +20,9 @@ void main() {
 
     final captured = app.captureFrame();
     expect(controller.text, 'a😀中');
-    expect(captured.getRegion(0, 0, 6, 1), startsWith('a😀 中'));
+    // Each wide glyph owns its overhang cell, so the region reads as the
+    // glyphs themselves rather than glyph, blank, glyph.
+    expect(captured.getRegion(0, 0, 6, 1), startsWith('a😀中'));
     expect(captured.cursor, isNotNull);
     expect(captured.cursor.x, 5);
   });

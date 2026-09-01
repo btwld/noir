@@ -401,6 +401,7 @@ class DiffView extends StatefulWidget {
     this.splitColumnWidth = 40,
     this.focusNode,
     this.autofocus = false,
+    this.canRequestFocus = true,
     this.selectionForegroundColor,
     this.selectionBackgroundColor,
     this.onSelectionChanged,
@@ -446,6 +447,12 @@ class DiffView extends StatefulWidget {
 
   /// Whether the diff requests focus after mounting.
   final bool autofocus;
+
+  /// Whether this diff participates in focus traversal.
+  ///
+  /// Set this to false for a read-only embedded preview whose enclosing
+  /// surface owns keyboard navigation.
+  final bool canRequestFocus;
 
   /// Selected text foreground override.
   final Color? selectionForegroundColor;
@@ -680,6 +687,7 @@ final class _DiffViewState extends State<DiffView>
         controller: _scrollController,
         focusNode: focusNode,
         autofocus: widget.autofocus,
+        canRequestFocus: widget.canRequestFocus,
         showScrollbar: widget.rowBuilder != null,
         child: DocumentScrollScope(
           handlesScrolling: false,
@@ -693,6 +701,7 @@ final class _DiffViewState extends State<DiffView>
   Widget _buildDefaultDocument(ThemeData theme) => DocumentSelectionScope(
     documentText: _presentation.text,
     sourceBase: 0,
+    leafCanRequestFocus: widget.canRequestFocus,
     selection: _selection,
     dragging: _dragging,
     readSelection: () => _selection,
@@ -709,6 +718,9 @@ final class _DiffViewState extends State<DiffView>
       selectionBackgroundColor:
           widget.selectionBackgroundColor ?? theme.selectedBackground,
       onPointerDownOffset: _activateSourceOffset,
+      rowBackgrounds: <DocumentRowBackground>[
+        for (final row in _presentation.rows) ...row.rowBackgrounds(theme),
+      ],
     ),
   );
 
@@ -746,6 +758,7 @@ final class _DiffViewState extends State<DiffView>
       selectionForegroundColor: widget.selectionForegroundColor,
       selectionBackgroundColor:
           widget.selectionBackgroundColor ?? theme.selectedBackground,
+      rowBackgrounds: row.rowBackgrounds(theme, base: row.start),
     );
     final built = widget.rowBuilder!(
       context,
@@ -757,6 +770,7 @@ final class _DiffViewState extends State<DiffView>
     return DocumentSelectionScope(
       documentText: _presentation.text,
       sourceBase: row.start,
+      leafCanRequestFocus: widget.canRequestFocus,
       selection: _selection,
       dragging: _dragging,
       readSelection: () => _selection,
@@ -881,6 +895,37 @@ final class _DiffPresentationRow {
       }
     }
     return _styleForKind(kind, theme);
+  }
+
+  /// Row fills for the changed segments of this row, relative to [base].
+  ///
+  /// A unified addition or deletion fills to the viewport edge. A split row
+  /// fills its deletion half up to the divider and its addition half to the
+  /// edge, so each side reads as its own column.
+  List<DocumentRowBackground> rowBackgrounds(ThemeData theme, {int base = 0}) {
+    final fills = <DocumentRowBackground>[];
+    void fill(_DiffPresentationKind segment, int from, int? to) {
+      final color = _styleForKind(segment, theme).backgroundColor;
+      if (color == null) return;
+      fills.add(
+        DocumentRowBackground(
+          start: from - base,
+          end: to == null ? null : to - base,
+          color: color,
+        ),
+      );
+    }
+
+    final leftEnd = splitLeftEnd;
+    final rightStart = splitRightStart;
+    final right = rightKind;
+    if (leftEnd != null && rightStart != null && right != null) {
+      fill(kind, start, start + leftEnd);
+      fill(right, start + rightStart, null);
+    } else {
+      fill(kind, start, null);
+    }
+    return fills;
   }
 
   int nextStyleBoundary(int absoluteOffset) {

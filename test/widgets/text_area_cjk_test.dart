@@ -13,9 +13,8 @@ void main() {
         );
         // Each ideograph takes 2 cells. The first cell holds the glyph;
         // the second cell is the wide overhang (terminal renders the
-        // glyph spanning both cells). Our setCell writes the glyph code
-        // into the first cell only — the overhang cell remains whatever
-        // the background paint set.
+        // glyph spanning both cells). drawText encodes the cluster and
+        // its overhang, so the next glyph starts two cells later.
         expect(captured.getChar(0, 0), '中');
         expect(captured.getChar(2, 0), '文');
       } finally {
