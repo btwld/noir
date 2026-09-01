@@ -514,9 +514,7 @@ contextual suggestions, bounded `TextArea`, and footer on one full-page
 follow-tail `ScrollBox`. Public `Modal` and `TreeView` surfaces own decisions
 and pickers. Keep protocol parsing and tool-specific presentation out of
 framework widgets; the example is the reference boundary, not a generic agent
-component. Its optional `ClaudeCliBackend` keeps process ownership in a
-separate application adapter, uses stream JSON rather than a PTY, and leaves
-the replay backend as the deterministic source for decisions and goldens.
+component.
 
 ---
 

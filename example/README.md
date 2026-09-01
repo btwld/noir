@@ -76,7 +76,7 @@ distinguishable Ctrl+J inserts a newline, `/` filters replay commands, `@`
 filters the supplied project paths, Tab accepts a suggestion, and Up/Down at an
 editor boundary walk prompt history.
 
-In replay mode, Shift+Tab cycles permission mode, Ctrl+M opens the model picker,
+Shift+Tab cycles permission mode, Ctrl+M opens the model picker,
 and Ctrl+R opens the `TreeView` session picker. Ctrl+O focuses the full-page
 conversation scroll surface and shows its structural focus cue without moving
 the viewport; PageUp/PageDown move it. The header, history, suggestions,
@@ -84,9 +84,8 @@ composer, and footer share that one tail-following page, so short conversations
 stay near the terminal top and long conversations scroll as a continuous stream.
 Escape or Ctrl+C interrupts active work; while idle, it exits. Permission and
 question requests use a focus-trapping
-`Modal` and return focus to the unchanged composer draft. The real entrypoint
-enables Kitty keyboard reporting so modified letter chords remain
-distinguishable. Replay Edit decisions carry an explicit semantic patch, so
+`Modal` and return focus to the unchanged composer draft. The entrypoint enables Kitty keyboard
+reporting so modified letter chords remain distinguishable. Edit decisions carry an explicit semantic patch, so
 the approval preview and expanded tool detail reuse `DiffView`; arbitrary tool
 text remains plain text and is never classified by tool-name or output
 heuristics.
