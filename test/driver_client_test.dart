@@ -93,6 +93,30 @@ void main() {
       ),
       isTrue,
     );
+    // A request still in flight when the socket closes fails with the
+    // generic server-error code and the disposed-connection message.
+    expect(
+      isDrivenServiceGone(
+        RPCError(
+          'info',
+          RPCErrorKind.kServerError.code,
+          'Service connection disposed',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      isDrivenServiceGone(
+        RPCError('info', RPCErrorKind.kConnectionDisposed.code),
+      ),
+      isTrue,
+    );
+    expect(
+      isDrivenServiceGone(
+        RPCError('info', RPCErrorKind.kServerError.code, 'another failure'),
+      ),
+      isFalse,
+    );
     expect(isDrivenServiceGone(RPCError('info', 100)), isFalse);
     expect(isDrivenServiceGone(StateError('gone')), isFalse);
   });
