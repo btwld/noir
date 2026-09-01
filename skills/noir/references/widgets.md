@@ -936,6 +936,8 @@ Parse standard or Git unified patches with `UnifiedDiffParser`, then render a
 its own selection presentation, while the surrounding `DiffView` retains the
 complete semantic selection and copy stream. Wrapping the default row keeps
 both document-wide selection behavior and Noir's built-in visual highlight.
+An added or removed row fills its background to the viewport edge, and a split
+row fills each half up to its own edge, as the OpenTUI diff renderer does.
 Set `canRequestFocus: false` for a read-only embedded preview when the enclosing
 surface owns keyboard traversal.
 

@@ -147,9 +147,9 @@ void main() {
     );
 
     expect(frame.toLines().take(3), <String>[
-      '• Item 1',
-      '  • Nested A',
-      '  • Nested B',
+      '- Item 1',
+      '  - Nested A',
+      '  - Nested B',
     ]);
   });
 
@@ -160,13 +160,13 @@ void main() {
     final tasks = capture.capture(
       const MarkdownView(markdown: '- parent\n  - [x] child'),
     );
-    expect(tasks.toLines().take(2), <String>['• parent', '  [x] child']);
+    expect(tasks.toLines().take(2), <String>['- parent', '  [x] child']);
 
     final ordered = capture.capture(
       const MarkdownView(markdown: '- parent\n  3. third\n  4. fourth'),
     );
     expect(ordered.toLines().take(3), <String>[
-      '• parent',
+      '- parent',
       '  3. third',
       '  4. fourth',
     ]);

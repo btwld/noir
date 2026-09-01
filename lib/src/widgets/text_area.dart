@@ -726,12 +726,11 @@ class RenderTextArea extends RenderBox {
       for (final cluster in ph.characters) {
         final cw = terminalCellWidth(cluster);
         if (col + cw > width) break;
-        canvas.setCell(
-          Offset(originX + col, originY),
+        canvas.drawText(
           cluster,
+          Offset(originX + col, originY),
           dim,
-          _backgroundColor ?? Color.transparent,
-          0,
+          background: _backgroundColor,
         );
         col += cw;
       }
@@ -756,12 +755,11 @@ class RenderTextArea extends RenderBox {
               continue;
             }
             if (paintedCol + clusterWidth > width) break paintLine;
-            canvas.setCell(
-              Offset(originX + paintedCol, originY + row),
+            canvas.drawText(
               cluster,
+              Offset(originX + paintedCol, originY + row),
               _color,
-              _backgroundColor ?? Color.transparent,
-              0,
+              background: _backgroundColor,
             );
             paintedCol += clusterWidth;
             cellAccum += clusterWidth;

@@ -72,7 +72,9 @@ void main() {
     );
 
     expect(frame.getRegion(0, 0, 3, 1), 'ab ');
-    expect(frame.getRegion(0, 1, 3, 1), '中  ');
+    // The ideograph owns two cells; the capture reports its overhang cell as
+    // part of the glyph, so the row reads as the glyph plus one empty cell.
+    expect(frame.getRegion(0, 1, 3, 1), '中 ');
   });
 
   test('bounded growth caps and scrolls the wrapped caret into view', () async {

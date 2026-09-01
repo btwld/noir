@@ -113,6 +113,79 @@ diff --git "a/lib/path with space-\303\244.dart" "b/lib/path with space-\303\244
     }
   });
 
+  test('changed rows fill to the right edge', () {
+    const patch = '''
+--- a/lib/a.dart
++++ b/lib/a.dart
+@@ -1,2 +1,2 @@
+ keep
+-old
++abcdefghijklmnopqrstuvwxyz
+''';
+    final surface = ThemeData.dark.surface.toHex();
+    final capture = BufferCapture(width: 40, height: 4);
+    addTearDown(capture.dispose);
+
+    // Unified: the fill continues past the text to the last column, and a
+    // context row keeps the plain surface.
+    final unified = capture.capture(
+      DiffView(document: const UnifiedDiffParser().parse(_patch)),
+    );
+    expect(unified.getBackgroundColor(39, 1).toHex(), surface);
+    expect(unified.getBackgroundColor(39, 2).toHex(), '#380f0fff');
+    expect(unified.getBackgroundColor(39, 3).toHex(), '#0d331aff');
+
+    // The default row under a row builder paints the same fill up to the
+    // scrollbar column that the row-builder viewport reserves.
+    final built = capture.capture(
+      DiffView(
+        document: const UnifiedDiffParser().parse(_patch),
+        rowBuilder: (context, file, hunk, line, defaultRow) => defaultRow,
+      ),
+    );
+    expect(built.getBackgroundColor(38, 2).toHex(), '#380f0fff');
+    expect(built.getBackgroundColor(38, 3).toHex(), '#0d331aff');
+
+    // A wrapped addition fills every visual row it occupies.
+    final wrapped = BufferCapture(width: 20, height: 5);
+    addTearDown(wrapped.dispose);
+    final frame = wrapped.capture(
+      DiffView(
+        document: const UnifiedDiffParser().parse(patch),
+        wrap: true,
+        showLineNumbers: false,
+      ),
+    );
+    expect(frame.toLines()[3], startsWith('+abcdefghijklmnopqrs'));
+    expect(frame.toLines()[4], startsWith('tuvwxyz'));
+    expect(frame.getBackgroundColor(19, 2).toHex(), '#380f0fff');
+    expect(frame.getBackgroundColor(19, 3).toHex(), '#0d331aff');
+    expect(frame.getBackgroundColor(19, 4).toHex(), '#0d331aff');
+    expect(frame.getBackgroundColor(19, 1).toHex(), surface);
+  });
+
+  test('split rows fill each half up to its own edge', () {
+    final surface = ThemeData.dark.surface.toHex();
+    final capture = BufferCapture(width: 60, height: 4);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      DiffView(
+        document: const UnifiedDiffParser().parse(_patch),
+        mode: DiffViewMode.split,
+        splitColumnWidth: 20,
+      ),
+    );
+
+    // The deletion half fills through its padding up to the divider, the
+    // divider stays plain, and the addition half fills to the last column.
+    expect(frame.toLines()[2][21], '│');
+    expect(frame.getBackgroundColor(19, 2).toHex(), '#380f0fff');
+    expect(frame.getBackgroundColor(21, 2).toHex(), surface);
+    expect(frame.getBackgroundColor(59, 2).toHex(), '#0d331aff');
+    expect(frame.getBackgroundColor(59, 1).toHex(), surface);
+  });
+
   test('split mode aligns old and new sides in one synchronized viewport', () {
     final capture = BufferCapture(width: 60, height: 4);
     try {

@@ -609,7 +609,7 @@ String _listPrefix(
   required bool? checked,
 }) {
   if (checked != null) return checked ? '[x] ' : '[ ] ';
-  return ordered ? '${orderedStart + index}. ' : '• ';
+  return ordered ? '${orderedStart + index}. ' : '- ';
 }
 
 /// Parses GitHub-flavoured markdown for TUI paint, not HTML output.

@@ -334,6 +334,45 @@ final class DocumentViewportController {
   }
 }
 
+/// A background painted across whole viewport rows behind a source range.
+///
+/// [DocumentView] fills the cells that `[start, end)` covers on every visual
+/// row the range touches, before the text runs paint. A range with no [end]
+/// runs to the end of the source line that contains [start] and extends to
+/// the right edge of the viewport on each visual row of that line, which is
+/// how a diff row keeps its colour past its last glyph.
+@internal
+@immutable
+final class DocumentRowBackground {
+  /// Creates a row background for the UTF-16 range `[start, end)`.
+  const DocumentRowBackground({
+    required this.start,
+    required this.color,
+    this.end,
+  }) : assert(start >= 0, 'start must not be negative'),
+       assert(end == null || end >= start, 'end must not precede start');
+
+  /// UTF-16 offset where the fill starts.
+  final int start;
+
+  /// UTF-16 offset where the fill ends, or null to fill the rest of the
+  /// source line and reach the viewport edge.
+  final int? end;
+
+  /// Fill colour.
+  final Color color;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DocumentRowBackground &&
+      other.start == start &&
+      other.end == end &&
+      other.color == color;
+
+  @override
+  int get hashCode => Object.hash(start, end, color);
+}
+
 /// Shared selectable, scrollable viewport used by document components.
 @internal
 final class DocumentView extends StatefulWidget {
@@ -355,6 +394,7 @@ final class DocumentView extends StatefulWidget {
     this.onPointerDownOffset,
     this.onVisibleLineChanged,
     this.controller,
+    this.rowBackgrounds = const <DocumentRowBackground>[],
   });
 
   /// Rich content whose plain text matches [plainText].
@@ -401,6 +441,9 @@ final class DocumentView extends StatefulWidget {
 
   /// Optional internal scroll coordinator for composed document views.
   final DocumentViewportController? controller;
+
+  /// Row fills painted behind [text] before its runs.
+  final List<DocumentRowBackground> rowBackgrounds;
 
   @override
   State<DocumentView> createState() => _DocumentViewState();
@@ -884,6 +927,7 @@ final class _DocumentViewState extends State<DocumentView>
               metrics: _metrics,
               onScrollClamped: _reconcileScrollAfterLayout,
               backgroundColor: theme.surface,
+              rowBackgrounds: widget.rowBackgrounds,
             ),
           ),
         ),
@@ -944,6 +988,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     required this.metrics,
     required this.onScrollClamped,
     required this.backgroundColor,
+    required this.rowBackgrounds,
   });
 
   final InlineSpan text;
@@ -957,6 +1002,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
   final _DocumentMetrics metrics;
   final void Function(int x, int y) onScrollClamped;
   final Color backgroundColor;
+  final List<DocumentRowBackground> rowBackgrounds;
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderDocument(
@@ -971,6 +1017,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     metrics: metrics,
     onScrollClamped: onScrollClamped,
     backgroundColor: backgroundColor,
+    rowBackgrounds: rowBackgrounds,
   );
 
   @override
@@ -992,6 +1039,7 @@ final class _RenderDocument extends RenderBox {
     required _DocumentMetrics metrics,
     required void Function(int x, int y) onScrollClamped,
     required Color backgroundColor,
+    required List<DocumentRowBackground> rowBackgrounds,
   }) : _text = snapshotInlineSpan(text),
        _plainText = plainText,
        _wrap = wrap,
@@ -1002,7 +1050,10 @@ final class _RenderDocument extends RenderBox {
        _scrollY = scrollY,
        _metrics = metrics,
        _onScrollClamped = onScrollClamped,
-       _backgroundColor = backgroundColor;
+       _backgroundColor = backgroundColor,
+       _rowBackgrounds = List<DocumentRowBackground>.unmodifiable(
+         rowBackgrounds,
+       );
 
   InlineSpan _text;
   String _plainText;
@@ -1015,6 +1066,7 @@ final class _RenderDocument extends RenderBox {
   _DocumentMetrics _metrics;
   void Function(int x, int y) _onScrollClamped;
   Color _backgroundColor;
+  List<DocumentRowBackground> _rowBackgrounds;
   late TextLayout _layout;
 
   void updateFrom(_DocumentLeaf widget) {
@@ -1029,6 +1081,9 @@ final class _RenderDocument extends RenderBox {
     _metrics = widget.metrics;
     _onScrollClamped = widget.onScrollClamped;
     _backgroundColor = widget.backgroundColor;
+    _rowBackgrounds = List<DocumentRowBackground>.unmodifiable(
+      widget.rowBackgrounds,
+    );
     markNeedsLayout();
   }
 
@@ -1069,6 +1124,9 @@ final class _RenderDocument extends RenderBox {
     context.canvas.fillRect(origin & size, _backgroundColor);
     final scrollY = _scrollY.clamp(0, _metrics.maxScrollY);
     final scrollX = _scrollX.clamp(0, _metrics.maxScrollX);
+    if (_rowBackgrounds.isNotEmpty) {
+      _paintRowBackgrounds(context, origin, scrollX, scrollY);
+    }
     if (_showLineNumbers) {
       _paintGutter(context, origin, scrollY);
     }
@@ -1084,6 +1142,70 @@ final class _RenderDocument extends RenderBox {
       ),
       selection: _selection,
     );
+  }
+
+  /// Fills each visual row that a [DocumentRowBackground] touches.
+  ///
+  /// A visual row without runs is an empty source line, so its source offset
+  /// is the offset after the previous row's line feed.
+  void _paintRowBackgrounds(
+    PaintingContext context,
+    Offset origin,
+    int scrollX,
+    int scrollY,
+  ) {
+    final gutter = _metrics.gutterWidth;
+    final viewportWidth = size.width - gutter;
+    if (viewportWidth <= 0) return;
+    var nextLineStart = 0;
+    for (var visualLine = 0; visualLine < _layout.lines.length; visualLine++) {
+      final line = _layout.lines[visualLine];
+      final lineStart = line.runs.isEmpty
+          ? nextLineStart
+          : line.runs.first.sourceStart;
+      final lineEnd = line.runs.isEmpty ? lineStart : line.runs.last.sourceEnd;
+      nextLineStart = lineEnd + 1;
+      final viewportY = visualLine - scrollY;
+      if (viewportY < 0) continue;
+      if (viewportY >= size.height) break;
+      for (final background in _rowBackgrounds) {
+        final start = background.start;
+        final toEdge = background.end == null;
+        final end = background.end ?? _sourceLineEnd(start);
+        if (toEdge) {
+          // An open range owns every visual row of its source line, and an
+          // empty source line is one such row.
+          if (start > lineEnd || lineStart > end) continue;
+        } else if (start >= lineEnd || end <= lineStart) {
+          continue;
+        }
+        final startCell = start <= lineStart
+            ? 0
+            : _cellForSourceOffset(line, start);
+        final endCell = toEdge
+            ? scrollX + viewportWidth
+            : end >= lineEnd
+            ? line.width
+            : _cellForSourceOffset(line, end);
+        final left = (startCell - scrollX).clamp(0, viewportWidth);
+        final right = (endCell - scrollX).clamp(0, viewportWidth);
+        if (right <= left) continue;
+        context.canvas.fillRect(
+          Rect.fromLTWH(
+            origin.dx + gutter + left,
+            origin.dy + viewportY,
+            right - left,
+            1,
+          ),
+          background.color,
+        );
+      }
+    }
+  }
+
+  int _sourceLineEnd(int offset) {
+    final newline = _plainText.indexOf('\n', offset);
+    return newline < 0 ? _plainText.length : newline;
   }
 
   void _paintGutter(PaintingContext context, Offset origin, int scrollY) {
@@ -1109,4 +1231,17 @@ final class _RenderDocument extends RenderBox {
       );
     }
   }
+}
+
+int _cellForSourceOffset(TextLayoutLine line, int offset) {
+  var cell = 0;
+  for (final run in line.runs) {
+    var sourceOffset = run.sourceStart;
+    for (final cluster in run.text.characters) {
+      if (sourceOffset >= offset) return cell;
+      cell += terminalCellWidth(cluster);
+      sourceOffset += cluster.length;
+    }
+  }
+  return cell;
 }

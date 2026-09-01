@@ -718,6 +718,9 @@ final class _DiffViewState extends State<DiffView>
       selectionBackgroundColor:
           widget.selectionBackgroundColor ?? theme.selectedBackground,
       onPointerDownOffset: _activateSourceOffset,
+      rowBackgrounds: <DocumentRowBackground>[
+        for (final row in _presentation.rows) ...row.rowBackgrounds(theme),
+      ],
     ),
   );
 
@@ -755,6 +758,7 @@ final class _DiffViewState extends State<DiffView>
       selectionForegroundColor: widget.selectionForegroundColor,
       selectionBackgroundColor:
           widget.selectionBackgroundColor ?? theme.selectedBackground,
+      rowBackgrounds: row.rowBackgrounds(theme, base: row.start),
     );
     final built = widget.rowBuilder!(
       context,
@@ -891,6 +895,37 @@ final class _DiffPresentationRow {
       }
     }
     return _styleForKind(kind, theme);
+  }
+
+  /// Row fills for the changed segments of this row, relative to [base].
+  ///
+  /// A unified addition or deletion fills to the viewport edge. A split row
+  /// fills its deletion half up to the divider and its addition half to the
+  /// edge, so each side reads as its own column.
+  List<DocumentRowBackground> rowBackgrounds(ThemeData theme, {int base = 0}) {
+    final fills = <DocumentRowBackground>[];
+    void fill(_DiffPresentationKind segment, int from, int? to) {
+      final color = _styleForKind(segment, theme).backgroundColor;
+      if (color == null) return;
+      fills.add(
+        DocumentRowBackground(
+          start: from - base,
+          end: to == null ? null : to - base,
+          color: color,
+        ),
+      );
+    }
+
+    final leftEnd = splitLeftEnd;
+    final rightStart = splitRightStart;
+    final right = rightKind;
+    if (leftEnd != null && rightStart != null && right != null) {
+      fill(kind, start, start + leftEnd);
+      fill(right, start + rightStart, null);
+    } else {
+      fill(kind, start, null);
+    }
+    return fills;
   }
 
   int nextStyleBoundary(int absoluteOffset) {
