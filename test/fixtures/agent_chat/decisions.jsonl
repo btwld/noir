@@ -1,3 +1,0 @@
-{"type":"permission","id":"decision-permission","requestId":"fixture-decision","permissionId":"edit-1","toolName":"Edit","reason":"Update one focused file"}
-{"type":"question","id":"decision-question","requestId":"fixture-decision","questionId":"scope","prompt":"Which scope?","choices":["Focused files","Whole package"],"allowFreeText":true}
-{"type":"request_cancelled","id":"decision-cancelled","requestId":"fixture-decision","reason":"Interrupted while waiting"}

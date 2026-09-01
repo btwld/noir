@@ -79,10 +79,6 @@ final class AgentCodeHighlighter implements CodeHighlighter {
   ///
   /// Add an entry to give a lexed language reserved-word highlighting. Every
   /// other language keeps its comments, strings, and numbers.
-  /// Reserved words per language.
-  ///
-  /// Add an entry to give a lexed language reserved-word highlighting. Every
-  /// other language keeps its comments, strings, and numbers.
   static const Map<String, Set<String>> _keywords = {
     'dart': _dartKeywords,
     'javascript': _javaScriptKeywords,
@@ -1008,7 +1004,7 @@ class _ChatDemoAppState extends State<ChatDemoApp> {
                           submitOnEnter: true,
                           backgroundColor: Color.transparent,
                           placeholder: _session.isBusy
-                              ? 'Agent is working — Esc interrupts'
+                              ? 'Agent is working · Esc interrupts'
                               : widget.enableReplayControls
                               ? 'Message the agent, / for commands, @ for paths'
                               : widget.pathSuggestions.isEmpty
@@ -1154,10 +1150,15 @@ class _ChatDemoAppState extends State<ChatDemoApp> {
       child: switch (entry.kind) {
         AgentEntryKind.user => Container(
           color: theme.surfaceVariant,
-          padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Text(
-            '${Icons.chevronRight} ${entry.text}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          child: _markRow(
+            marker: const Text(
+              Icons.chevronRight,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              entry.text,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         AgentEntryKind.assistant => _markRow(

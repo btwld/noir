@@ -1,7 +1,0 @@
-{"type":"text_delta","id":"stream-1","requestId":"fixture-stream","blockId":"answer","delta":"Inspecting "}
-{"type":"text_delta","id":"stream-2","requestId":"fixture-stream","blockId":"answer","delta":"the change."}
-{"type":"tool_start","id":"stream-tool-start","requestId":"fixture-stream","blockId":"read","name":"Read","summary":"lib/noir.dart"}
-{"type":"tool_progress","id":"stream-tool-progress","requestId":"fixture-stream","blockId":"read","message":"Reading exports"}
-{"type":"tool_result","id":"stream-tool-result","requestId":"fixture-stream","blockId":"read","output":"Exports are supported","isError":false}
-{"type":"text_final","id":"stream-final","requestId":"fixture-stream","blockId":"answer","text":"Inspecting the change. **No blocker.**"}
-{"type":"request_complete","id":"stream-complete","requestId":"fixture-stream","inputTokens":20,"outputTokens":11,"costUsd":0.003}

@@ -3,7 +3,7 @@
    local                                                                                                                
                                                                                                                         
                                                                                                                         
-  › Inspect the current change.                                                                                         
+ › Inspect the current change.                                                                                          
                                                                                                                         
  ● I found one focused improvement and no release blocker.                                                              
                                                                                                                         

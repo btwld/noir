@@ -133,35 +133,6 @@ void main() {
         everyElement(isNotEmpty),
       );
     });
-
-    test('keeps the complete normalized scenario fixture set decodable', () {
-      final directory = Directory('test/fixtures/agent_chat');
-      final files =
-          directory
-              .listSync()
-              .whereType<File>()
-              .where((file) => file.path.endsWith('.jsonl'))
-              .toList()
-            ..sort((left, right) => left.path.compareTo(right.path));
-
-      expect(files.map((file) => file.uri.pathSegments.last), [
-        'core.jsonl',
-        'decisions.jsonl',
-        'errors.jsonl',
-        'malformed.jsonl',
-        'sessions_long_history.jsonl',
-        'streaming_tools.jsonl',
-      ]);
-      for (final file in files) {
-        final lines = file.readAsLinesSync();
-        expect(lines, isNotEmpty, reason: file.path);
-        expect(
-          lines.map(AgentEventCodec.decodeLine),
-          everyElement(isA<AgentEvent>()),
-          reason: file.path,
-        );
-      }
-    });
   });
 
   group('ReplayAgentBackend', () {

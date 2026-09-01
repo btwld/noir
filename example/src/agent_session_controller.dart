@@ -109,7 +109,6 @@ final class AgentSessionController extends ChangeNotifier {
   final List<AgentTranscriptEntry> _entries = [];
   final Map<String, int> _blockIndexes = {};
   final Set<String> _seenEventIds = {};
-  final Set<String> _terminalRequestIds = {};
   List<AgentSessionSummary> _sessions = const [];
   StreamSubscription<AgentEvent>? _subscription;
   Future<void>? _startFuture;
@@ -225,7 +224,6 @@ final class AgentSessionController extends ChangeNotifier {
     _requireOpen();
     final requestId = _activeRequestId;
     if (requestId == null) return;
-    _terminalRequestIds.add(requestId);
     _activeRequestId = null;
     _permissionRequest = null;
     _questionRequest = null;
@@ -462,19 +460,19 @@ final class AgentSessionController extends ChangeNotifier {
         _phase = AgentRunPhase.waitingQuestion;
       case AgentRequestCompletedEvent():
         _completeRunningEntries(event.requestId);
-        _finishRequest(event.requestId, AgentRunPhase.idle);
+        _finishRequest(AgentRunPhase.idle);
         _inputTokens += event.inputTokens;
         _outputTokens += event.outputTokens;
         _costUsd += event.costUsd;
       case AgentRequestCancelledEvent():
         _cancelRunningEntries(event.requestId);
         _appendNotice(event.reason, requestId: event.requestId);
-        _finishRequest(event.requestId, AgentRunPhase.cancelled);
+        _finishRequest(AgentRunPhase.cancelled);
       case AgentRequestFailedEvent():
         _cancelRunningEntries(event.requestId, failed: true);
         _lastError = event.message;
         _appendNotice(event.message, requestId: event.requestId, failed: true);
-        _finishRequest(event.requestId, AgentRunPhase.failed);
+        _finishRequest(AgentRunPhase.failed);
       case AgentStderrEvent():
         _appendNotice('Backend: ${event.text}', requestId: event.requestId);
       case AgentProcessExitEvent():
@@ -588,11 +586,7 @@ final class AgentSessionController extends ChangeNotifier {
     );
   }
 
-  void _finishRequest(String requestId, AgentRunPhase phase) {
-    if (!_terminalRequestIds.add(requestId)) {
-      _ignoredEventCount++;
-      return;
-    }
+  void _finishRequest(AgentRunPhase phase) {
     _activeRequestId = null;
     _permissionRequest = null;
     _questionRequest = null;
@@ -640,7 +634,6 @@ final class AgentSessionController extends ChangeNotifier {
       ..addAll(snapshot.entries.map(_entryFromSnapshot));
     _blockIndexes.clear();
     _seenEventIds.clear();
-    _terminalRequestIds.clear();
     _snapshotPublicationGeneration++;
     _modelChangeGeneration++;
     _modeChangeGeneration++;
@@ -723,7 +716,6 @@ final class AgentSessionController extends ChangeNotifier {
 
   void _failRequest(String requestId, String message) {
     _cancelRunningEntries(requestId, failed: true);
-    _terminalRequestIds.add(requestId);
     _activeRequestId = null;
     _permissionRequest = null;
     _questionRequest = null;

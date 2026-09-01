@@ -3,7 +3,7 @@
    local                                                        
                                                                 
                                                                 
-  › Inspect the current change.                                 
+ › Inspect the current change.                                  
    ┌─ › Permission required ────────────────────────────────┐   
    │Edit                                                    │   
    │                                                        │   

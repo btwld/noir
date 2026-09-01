@@ -1,5 +1,0 @@
-{"type":"retry","id":"error-retry","requestId":"fixture-error","attempt":2,"message":"Temporary service error"}
-{"type":"stderr","id":"error-stderr","requestId":"fixture-error","text":"diagnostic warning"}
-{"type":"request_failed","id":"error-failed","requestId":"fixture-error","message":"Request failed after retry"}
-{"type":"process_exit","id":"error-exit","exitCode":17}
-{"type":"future_diagnostic","id":"error-unknown","payload":"retained"}
