@@ -64,8 +64,32 @@ to the same tree, `Ctrl+S` to stop or restart the spinner, and `Ctrl+Q` to quit.
 
 | Run | Learn |
 | --- | --- |
-| `dart run example/chat_demo.dart` | Scrollback, text submission, asynchronous state, and Noir's standard loading spinner. |
+| `dart run example/chat_demo.dart` | A replay-driven, continuous full-page agent transcript with streaming blocks, tools, suggestions, decisions, session/model/mode controls, and chronological tail following. |
 | `dart run example/pub_search.dart` | A live pub.dev browser with completion, filters, paging, and package detail. Requires network access. |
+
+### Agent chat controls
+
+The chat example is deterministic and offline. Its UI consumes a
+product-neutral semantic backend, so the replay backend drives the same
+reducer and public Noir widget tree that any other backend would. Enter sends, a
+distinguishable Ctrl+J inserts a newline, `/` filters replay commands, `@`
+filters the supplied project paths, Tab accepts a suggestion, and Up/Down at an
+editor boundary walk prompt history.
+
+In replay mode, Shift+Tab cycles permission mode, Ctrl+M opens the model picker,
+and Ctrl+R opens the `TreeView` session picker. Ctrl+O focuses the full-page
+conversation scroll surface and shows its structural focus cue without moving
+the viewport; PageUp/PageDown move it. The header, history, suggestions,
+composer, and footer share that one tail-following page, so short conversations
+stay near the terminal top and long conversations scroll as a continuous stream.
+Escape or Ctrl+C interrupts active work; while idle, it exits. Permission and
+question requests use a focus-trapping
+`Modal` and return focus to the unchanged composer draft. The real entrypoint
+enables Kitty keyboard reporting so modified letter chords remain
+distinguishable. Replay Edit decisions carry an explicit semantic patch, so
+the approval preview and expanded tool detail reuse `DiffView`; arbitrary tool
+text remains plain text and is never classified by tool-name or output
+heuristics.
 
 ## Motion
 
@@ -172,9 +196,11 @@ exits 70 under drive mode.
   true)`.
 - Examples exit with `Ctrl+C` through the default terminal-session shutdown.
   The layout, parity-components, Select, ScrollBox, ListView, DataTable,
-  components, theme, and framework-primitives examples also accept `q`. Chat and TextArea accept
-  `Esc`. The widget tour accepts both: `Esc` always, and `q` only while the
-  TextArea is not focused. The inherited example uses `t` to switch palettes.
+  components, theme, and framework-primitives examples also accept `q`. Agent
+  chat uses `Esc` or Ctrl+C to interrupt active work and exits on the same key
+  while idle. TextArea accepts `Esc`. The widget tour accepts both: `Esc`
+  always, and `q` only while the TextArea is not focused. The inherited example
+  uses `t` to switch palettes.
 - Quit wrappers around a real control use `Focus(canRequestFocus: false)` so
   Tab stays on the field, list, or viewport.
 - `TextArea` accepts Ctrl+Enter when a terminal reports the modifier. The

@@ -2,13 +2,13 @@
   "version": 1,
   "entrypoint": "example/chat_demo.dart",
   "output": ".context/demos/chat-loading.cast",
-  "title": "Noir · Async chat state",
+  "title": "Noir · Replay agent chat",
   "width": 64,
-  "height": 16,
+  "height": 18,
   "durationMs": 2800,
   "fps": 20,
   "actions": [
-    {"atMs": 400, "type": "Show me async UI"},
+    {"atMs": 400, "type": "Inspect this replay"},
     {"atMs": 900, "key": "enter"}
   ]
 }

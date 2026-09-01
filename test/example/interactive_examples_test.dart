@@ -91,7 +91,19 @@ void main() {
         'example/framework_primitives.dart': <String>[
           "ValueKey<String>('activate')",
         ],
-        'example/chat_demo.dart': <String>["ValueKey<String>('composer')"],
+        'example/chat_demo.dart': <String>[
+          "ValueKey<String>('transcript')",
+          "ValueKey<String>('composer')",
+          "ValueKey<String>('permission-deny')",
+          "ValueKey<String>('permission-allow')",
+          "ValueKey<String>('question-choices')",
+          "ValueKey<String>('question-answer')",
+          "ValueKey<String>('question-submit')",
+          "ValueKey<String>('model-picker')",
+          "ValueKey<String>('model-cancel')",
+          "ValueKey<String>('session-picker')",
+          "ValueKey<String>('session-cancel')",
+        ],
         'example/widgets_tour.dart': <String>[
           "ValueKey<String>('fruit')",
           "ValueKey<String>('content')",

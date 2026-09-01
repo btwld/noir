@@ -1,0 +1,72 @@
+0,0:#ffffffff|#090a0bff|0 * 3
+3,0:#66d9ffff|#090a0bff|1 * 10
+13,0:#ffffffff|#090a0bff|0
+14,0:#33cc33ff|#090a0bff|1 * 5
+19,0:#ffffffff|#090a0bff|0 * 101
+0,1:#ffffffff|#090a0bff|0 * 3
+3,1:#999999ff|#090a0bff|0 * 15
+18,1:#ffffffff|#090a0bff|0 * 102
+0,2:#ffffffff|#090a0bff|0 * 3
+3,2:#999999ff|#090a0bff|0 * 5
+8,2:#ffffffff|#090a0bff|0 * 112
+0,3:#ffffffff|#090a0bff|0 * 120
+0,4:#ffffffff|#090a0bff|0 * 120
+0,5:#ffffffff|#090a0bff|0
+1,5:#ffffffff|#0f1013ff|0
+2,5:#ffffffff|#0f1013ff|1 * 29
+31,5:#ffffffff|#0f1013ff|0 * 88
+119,5:#ffffffff|#090a0bff|0
+0,6:#ffffffff|#090a0bff|0 * 120
+0,7:#ffffffff|#090a0bff|0
+1,7:#999999ff|#090a0bff|0
+2,7:#ffffffff|#090a0bff|0 * 9
+11,7:#ffffffff|#090a0bff|1 * 23
+34,7:#ffffffff|#090a0bff|0 * 86
+0,8:#ffffffff|#090a0bff|0 * 120
+0,9:#ffffffff|#090a0bff|0
+1,9:#999999ff|#090a0bff|0
+2,9:#ffffffff|#090a0bff|0
+3,9:#33cc33ff|#090a0bff|1 * 4
+7,9:#ffffffff|#090a0bff|0 * 107
+114,9:#999999ff|#090a0bff|0 * 4
+118,9:#ffffffff|#090a0bff|0 * 2
+0,10:#ffffffff|#090a0bff|0 * 5
+5,10:#999999ff|#090a0bff|0 * 60
+65,10:#ffffffff|#090a0bff|0 * 55
+0,11:#ffffffff|#090a0bff|0 * 120
+0,12:#ffffffff|#090a0bff|0
+1,12:#999999ff|#090a0bff|1 * 5
+6,12:#ffffffff|#090a0bff|0 * 114
+0,13:#ffffffff|#090a0bff|0
+1,13:#ffffffff|#3366ccff|0 * 2
+3,13:#ffffffff|#3366ccff|1 * 14
+17,13:#ffffffff|#3366ccff|0
+18,13:#999999ff|#3366ccff|0 * 12
+30,13:#ffffffff|#3366ccff|0 * 89
+119,13:#ffffffff|#090a0bff|0
+0,14:#ffffffff|#090a0bff|0 * 120
+0,15:#ffffffff|#090a0bff|0
+1,15:#66d9ffff|#090a0bff|0 * 118
+119,15:#ffffffff|#090a0bff|0
+0,16:#ffffffff|#090a0bff|0
+1,16:#66d9ffff|#090a0bff|1
+2,16:#ffffffff|#090a0bff|0 * 118
+0,17:#ffffffff|#090a0bff|0
+1,17:#66d9ffff|#090a0bff|0 * 118
+119,17:#ffffffff|#090a0bff|0
+0,18:#ffffffff|#090a0bff|0
+1,18:#999999ff|#090a0bff|0 * 77
+78,18:#ffffffff|#090a0bff|0 * 25
+103,18:#999999ff|#090a0bff|0 * 16
+119,18:#ffffffff|#090a0bff|0
+0,19:#ffffffff|#090a0bff|0 * 120
+0,20:#ffffffff|#090a0bff|0 * 120
+0,21:#ffffffff|#090a0bff|0 * 120
+0,22:#ffffffff|#090a0bff|0 * 120
+0,23:#ffffffff|#090a0bff|0 * 120
+0,24:#ffffffff|#090a0bff|0 * 120
+0,25:#ffffffff|#090a0bff|0 * 120
+0,26:#ffffffff|#090a0bff|0 * 120
+0,27:#ffffffff|#090a0bff|0 * 120
+0,28:#ffffffff|#090a0bff|0 * 120
+0,29:#ffffffff|#090a0bff|0 * 120
