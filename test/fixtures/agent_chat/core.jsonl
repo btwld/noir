@@ -1,0 +1,15 @@
+{"type":"session","id":"session-1","sessionId":"fixture-session","model":"sonnet","permissionMode":"review"}
+{"type":"text_delta","id":"delta-1","requestId":"request-1","blockId":"answer","delta":"Checking "}
+{"type":"text_final","id":"final-1","requestId":"request-1","blockId":"answer","text":"Checking the focused change."}
+{"type":"tool_start","id":"tool-start-1","requestId":"request-1","blockId":"tool-1","name":"Read","summary":"lib/src/widget.dart"}
+{"type":"tool_progress","id":"tool-progress-1","requestId":"request-1","blockId":"tool-1","message":"Read 40 lines"}
+{"type":"tool_result","id":"tool-result-1","requestId":"request-1","blockId":"tool-1","output":"No issue found","isError":false}
+{"type":"retry","id":"retry-1","requestId":"request-1","attempt":2,"message":"Temporary service error"}
+{"type":"permission","id":"permission-1","requestId":"request-1","permissionId":"permit-1","toolName":"Edit","reason":"Update the focused guard"}
+{"type":"question","id":"question-1","requestId":"request-1","questionId":"approach","prompt":"How should I proceed?","choices":["Add a guard","Leave unchanged"],"allowFreeText":true}
+{"type":"request_complete","id":"complete-1","requestId":"request-1","inputTokens":12,"outputTokens":8,"costUsd":0.004}
+{"type":"request_cancelled","id":"cancel-1","requestId":"request-2","reason":"Interrupted by user"}
+{"type":"request_failed","id":"failure-1","requestId":"request-3","message":"Request failed"}
+{"type":"stderr","id":"stderr-1","text":"diagnostic warning"}
+{"type":"process_exit","id":"exit-1","exitCode":17}
+{"type":"future_event","id":"future-1","future":true}

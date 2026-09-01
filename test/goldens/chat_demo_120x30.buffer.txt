@@ -1,0 +1,30 @@
+   Agent Chat READY                                                                                                     
+   sonnet · review                                                                                                      
+   local                                                                                                                
+                                                                                                                        
+                                                                                                                        
+ › Inspect the current change.                                                                                          
+                                                                                                                        
+ ● I found one focused improvement and no release blocker.                                                              
+                                                                                                                        
+ ● DONE Read · lib/src/widgets/text_area.dart                                                                     Hide  
+     Verified grapheme-aware wrapping and visual cursor movement.                                                       
+                                                                                                                        
+ Paths                                                                                                                  
+ › @lib/noir.dart Project path                                                                                          
+                                                                                                                        
+ ─────────────────────────────────────────────────────────────────────────────────────────────────────────────› local── 
+ › Draft with @lib/noir.dart                                                                                            
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+ Ctrl+J newline · Enter send · Shift+Tab mode · Ctrl+M model · Ctrl+R sessions                         120 tok · $0.012 
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        

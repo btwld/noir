@@ -148,6 +148,7 @@ match stay. Example chrome stays example-local.
 | `TreeView` | `file_picker_demo` composes the public generic tree with application-owned paths, preview copy, and Open behavior; `components_demo` shows collapsed/expanded/selected states under both palettes. |
 | `ScrollBox` | `scrollbox_demo` / `widgets_tour`: titled viewport. |
 | `TextArea` | `textarea_demo` / `widgets_tour`: titled viewport. |
+| Agent transcript | `chat_demo`: an offline replay backend feeds a semantic reducer; one continuous, full-page follow-tail surface owns header, transcript, composer, and compact tool presentation, while public `Modal`/`TreeView` compositions own decisions and pickers. Semantically typed diff previews remain explicit. |
 | `DataTable` | No header/body `Divider`. `data_table_demo` in a titled panel. |
 | Phase-2 parity components | `parity_components_demo` demonstrates every new non-image component. |
 | `Theme` | `theme_demo` and the component sheet re-skin public `Panel`, `Modal`, `Autocomplete`, and `TreeView` compositions without component sub-themes. |

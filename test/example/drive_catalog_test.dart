@@ -60,6 +60,37 @@ void main() {
   });
 
   group('keyed example locators', () {
+    test(
+      'agent chat composer survives locator input, resize, and graceful exit',
+      () async {
+        final driver = await NoirDriver.launch('example/chat_demo.dart');
+        var exited = false;
+        addTearDown(() async {
+          if (!exited) await driver.quit();
+        });
+
+        const composer = DriverLocator.byKey('composer');
+        await driver.waitFor(composer);
+        await driver.clickLocator(composer);
+        await driver.typeText('drive-mode draft');
+        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+
+        expect(await driver.resize(64, 18), (width: 64, height: 18));
+        expect((await driver.find(composer)).hasFocusedDescendant, isTrue);
+        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+
+        expect(await driver.resize(120, 30), (width: 120, height: 30));
+        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+
+        await driver.sendKey('esc');
+        expect(
+          await driver.waitForExit().timeout(const Duration(seconds: 5)),
+          0,
+        );
+        exited = true;
+      },
+    );
+
     test('counter increment key click advances the count', () async {
       final driver = await NoirDriver.launch('example/counter.dart');
       addTearDown(driver.quit);

@@ -1,0 +1,18 @@
+   Agent Chat REVIEW                                            
+   sonnet · review                                              
+   local                                                        
+                                                                
+                                                                
+ › Inspect the current change.                                  
+   ┌─ › Permission required ────────────────────────────────┐   
+   │Edit                                                    │   
+   │                                                        │   
+   │Update the focused regression test                      │   
+   │                                                        │   
+   │                                           Deny   Allow │   
+   └────────────────────────────────────────────────────────┘   
+ ────────────────────────────────────────────────────────────── 
+ Ctrl+J newline · Enter send · Shift+Tab mode... 0 tok · $0.000 
+                                                                
+                                                                
+                                                                

@@ -508,6 +508,14 @@ the enclosing surface's keyboard traversal.
 reflow while attached. Scrolling above the end detaches and preserves the
 numeric top-row offset; returning to the end reattaches.
 
+For a full composition, `example/chat_demo.dart` keeps semantic agent events in
+an application-owned reducer, then places its header, chronological transcript,
+contextual suggestions, bounded `TextArea`, and footer on one full-page
+follow-tail `ScrollBox`. Public `Modal` and `TreeView` surfaces own decisions
+and pickers. Keep protocol parsing and tool-specific presentation out of
+framework widgets; the example is the reference boundary, not a generic agent
+component.
+
 ---
 
 ## Focus

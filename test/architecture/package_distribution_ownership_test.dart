@@ -23,6 +23,8 @@ void main() {
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
   final ffiBarrel = _read('lib/noir_ffi.dart');
   final chatDemo = _read('example/chat_demo.dart');
+  final agentProtocol = _read('example/src/agent_chat_protocol.dart');
+  final agentController = _read('example/src/agent_session_controller.dart');
 
   test('retained source consumer uses only supported package barrels', () {
     final fixtureRoot = Directory('test/fixtures/source_package_consumer');
@@ -553,6 +555,35 @@ void main() {
     ]) {
       expect(skillFlat, contains(evidence), reason: evidence);
     }
+  });
+
+  test('agent chat keeps protocol, reducer, and presentation boundaries', () {
+    final packageImports = RegExp(
+      r"^import 'package:noir/([^']+)';$",
+      multiLine: true,
+    ).allMatches(chatDemo).map((match) => match.group(1)).toList();
+    expect(packageImports, ['noir.dart']);
+    expect(agentProtocol, isNot(contains('package:noir/')));
+    expect(
+      agentController,
+      contains("import 'package:noir/noir.dart' show ChangeNotifier;"),
+    );
+    expect(agentController, isNot(contains('package:noir/src/')));
+
+    final applicationSources = '$chatDemo\n$agentProtocol\n$agentController';
+    expect(
+      applicationSources,
+      isNot(contains('package:noir/noir_low_level.dart')),
+    );
+    expect(applicationSources, isNot(contains('package:noir/noir_ffi.dart')));
+    expect(applicationSources, isNot(contains("import 'dart:io'")));
+    expect(applicationSources, isNot(contains('Process.start')));
+    expect(chatDemo, isNot(contains('ChatResponder')));
+    expect(chatDemo, isNot(contains('jumpTo(0)')));
+    expect(chatDemo, isNot(contains('newest-first')));
+    expect(chatDemo, contains('ScrollController(followTail: true)'));
+    expect(chatDemo, contains('MarkdownView('));
+    expect(chatDemo, contains('submitOnEnter: true'));
   });
 
   test('desktop target metadata matches the bundled manifest matrix', () {
