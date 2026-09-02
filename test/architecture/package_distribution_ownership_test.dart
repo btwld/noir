@@ -135,6 +135,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$')));
+    expect(packageVersion, '0.0.1-alpha.4');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -147,20 +148,41 @@ void main() {
 
   test('current alpha changelog records its release contracts', () {
     final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
-    final currentStart = changelog.indexOf('## $packageVersion');
-    final publishedStart = changelog.indexOf('## 0.0.1-alpha.1');
+    final currentAlpha = _changelogSection(changelog, packageVersion);
 
-    expect(currentStart, greaterThanOrEqualTo(0));
-    expect(publishedStart, greaterThan(currentStart));
-    final currentAlpha = changelog.substring(currentStart, publishedStart);
-
+    expect(currentAlpha, isNotEmpty);
     expect(
       changelog,
       isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
     );
-    for (final heading in const ['Added', 'Changed', 'Fixed', 'Removed']) {
+    for (final heading in const ['Changed', 'Fixed']) {
       expect(
         RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
+        hasLength(1),
+        reason: heading,
+      );
+    }
+    for (final contract in const [
+      'example/src/',
+      'LICENSE-YOGA',
+      'bin/patch_manager.dart',
+      'already excluded from the published alpha.3 archive',
+      'public API shapes and runtime behavior',
+      'native ABI',
+      'bundled native artifacts are unchanged',
+    ]) {
+      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+    }
+  });
+
+  test('published alpha.3 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedAlpha = _changelogSection(changelog, '0.0.1-alpha.3');
+
+    expect(publishedAlpha, isNotEmpty);
+    for (final heading in const ['Added', 'Changed', 'Fixed', 'Removed']) {
+      expect(
+        RegExp('^### $heading\$', multiLine: true).allMatches(publishedAlpha),
         hasLength(1),
         reason: heading,
       );
@@ -176,7 +198,7 @@ void main() {
       'scissor-',
       'opacity-stack',
     ]) {
-      expect(currentAlpha, contains(contract), reason: contract);
+      expect(publishedAlpha, contains(contract), reason: contract);
     }
   });
 
@@ -195,6 +217,33 @@ void main() {
       contains('The target is the current core-framework prerelease candidate'),
     );
     expect(contributorGuide, isNot(contains(packageVersion)));
+  });
+
+  test('live version references follow the package release', () {
+    final dialog = _read('example/dialog_demo.dart');
+    expect(dialog, contains(packageVersion));
+    expect(
+      RegExp(RegExp.escape(packageVersion)).allMatches(dialog),
+      hasLength(3),
+    );
+
+    for (final path in const [
+      'lib/src/core/terminal_image.dart',
+      'skills/noir/references/widgets.md',
+      'website/src/content/docs/platform-limitations.mdx',
+    ]) {
+      expect(_read(path), isNot(contains('alpha.3')), reason: path);
+    }
+
+    expect(
+      releaseTodo,
+      isNot(contains('For alpha.3, forced Kitty graphics through tmux')),
+    );
+
+    final historicalRecording = _read(
+      'scripts/recordings/pub_search_demo.dart',
+    );
+    expect(historicalRecording, contains("version: '0.0.1-alpha.3'"));
   });
 
   test(

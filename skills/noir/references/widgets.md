@@ -41,10 +41,9 @@ cell pixel ratio. `ImageFit.fit` centers the complete image,
 `ImageFit.cover` center-crops, and `ImageFit.fill` stretches. Protocol choices
 are `auto`, `kitty`, `sixel`, and `blocks`; automatic selection and unavailable
 Sixel fallbacks are owned by OpenTUI. File, network, and encoded-memory inputs
-are limited to 64 MiB. Network sources accept HTTP(S) only. For alpha.3, forced
-Kitty graphics through tmux are unsupported because initial placement can
-overlap content until a resize; use `auto`, which selects block cells under
-tmux.
+are limited to 64 MiB. Network sources accept HTTP(S) only. Forced Kitty
+graphics through tmux are unsupported because initial placement can overlap
+content until a resize; use `auto`, which selects block cells under tmux.
 
 `loadingBuilder` and `errorBuilder` appear only before any source succeeds;
 `onLoad` and `onError` observe only the current source.
