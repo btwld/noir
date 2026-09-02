@@ -790,7 +790,8 @@ Map<String, dynamic> _metricsPayload() => {
         'issueTrackerUrl': 'https://github.com/conceptadev/noir/issues',
         'documentationUrl': 'https://pub.dev/documentation/noir/latest/',
         'fundingUrls': ['https://github.com/sponsors/leoafarias'],
-        'contributingUrl': 'https://github.com/conceptadev/noir/CONTRIBUTING.md',
+        'contributingUrl':
+            'https://github.com/conceptadev/noir/CONTRIBUTING.md',
         'grantedPoints': 160,
         'maxPoints': 160,
         'repository': {
