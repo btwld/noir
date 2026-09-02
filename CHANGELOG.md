@@ -46,6 +46,25 @@ This release includes the work from the unpublished alpha.2 candidate; no
 - Added the live Pub search example with injected test data, stale-response
   suppression, paging, completion suggestions, anchored sort/filter menus,
   responsive package details, and rendered health and advisory documents.
+- Added opt-in chronological tail following to `ScrollController` through
+  `followTail` and `isFollowingTail`. An opted-in controller starts at the
+  trailing extent, follows content growth and reflow, detaches when scrolled
+  above the end while preserving the top-row offset, and reattaches on return.
+- Added `TextArea.maxHeight` for bounded visual-row growth, `softWrap` for
+  grapheme- and cell-aware wrapping, and `submitOnEnter` so Enter submits
+  while a distinguishable Ctrl+J inserts a newline and multiline paste stays
+  intact.
+- Added `DiffView.canRequestFocus`, so a read-only embedded preview stays out
+  of the enclosing surface's keyboard traversal, and
+  `MarkdownView.tableCellPaddingX`, which defaults to `0` to match the pinned
+  OpenTUI Markdown renderer and leaves the choice to the application.
+- Added the agent chat example: a product-neutral transcript whose
+  presentation consumes a semantic backend and never learns which agent
+  produced an event. A deterministic offline replay backend is the default,
+  and an opt-in bounded Claude CLI backend behind `--claude=/absolute/path`
+  drives the same reducer and widget tree. The adapter starts `claude -p`
+  without a PTY in safe mode, keeps tools, slash commands, MCP servers, and
+  session persistence off, and exposes no permission channel.
 
 ### Changed
 
@@ -61,6 +80,11 @@ This release includes the work from the unpublished alpha.2 candidate; no
 - Standardized example chrome around terminal-native titled regions and moved
   Patch Manager's tracked-file presentation to `DiffView` without changing its
   staging and action model.
+- `DiffView` fills an added or removed row to the viewport edge, and a split
+  row fills each half up to its own edge, which matches the pinned OpenTUI
+  diff renderer. Earlier rows painted their background only under the text.
+- `MarkdownView` renders `-` for an unordered list item, which matches the
+  pinned OpenTUI Markdown renderer. Earlier lists used a bullet glyph.
 
 ### Fixed
 
@@ -82,6 +106,12 @@ This release includes the work from the unpublished alpha.2 candidate; no
 - `ImageProtocol.auto` uses block cells under tmux. Forced Kitty graphics
   through tmux remain unsupported for alpha.3 because placement may stay
   displaced until a resize.
+- `TextArea` and `TextInput` paint each grapheme cluster whole. The earlier
+  per-cell path kept only a cluster's first scalar, so an extended cluster
+  such as a zero-width-joiner emoji lost its tail.
+- `ScrollBox` clips a descendant editor's terminal cursor to the same viewport
+  as its painted cells, so an editor scrolled out of view no longer positions
+  a stray cursor outside the viewport.
 
 ### Removed
 
