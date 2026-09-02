@@ -43,10 +43,9 @@ enum ImageProtocol {
 
   /// Request Kitty graphics directly.
   ///
-  /// Forced Kitty graphics through tmux are unsupported for the alpha.3
-  /// release boundary because initial placement may be incorrect until a
-  /// resize. Prefer [ImageProtocol.auto], which selects block cells under
-  /// tmux.
+  /// Forced Kitty graphics through tmux are unsupported because initial
+  /// placement may be incorrect until a resize. Prefer [ImageProtocol.auto],
+  /// which selects block cells under tmux.
   kitty,
 
   /// Request Sixel graphics.

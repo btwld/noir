@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.0.1-alpha.4
+
+This release corrects the package archive and moves checkout-only code to its
+owning directories. Noir's public API shapes and runtime behavior, native ABI,
+and bundled native artifacts are unchanged from alpha.3.
+
+### Changed
+
+- Large example implementations now live under `example/src/`, while every
+  runnable entry point remains directly under `example/`. Shared example
+  chrome has one owner under `example/src/shared/`.
+- Package and contributor guidance now distinguish supported library surfaces,
+  publishable examples, repository-only scripts, and website sources.
+- Checkout-only entry points `bin/patch_manager.dart` and
+  `bin/snapshot_scenes.dart` now live under `scripts/`, and the Patch Manager
+  implementation now lives under `scripts/patch_manager/`. Both entry points
+  were already excluded from the published alpha.3 archive.
+
+### Fixed
+
+- The archive now includes `third_party/opentui-v0.5.1/LICENSE-YOGA` and names
+  Yoga v3.2.1 in `THIRD_PARTY_NOTICES.md`. The published
+  `0.0.1-alpha.3` archive omitted this MIT license notice even though Yoga is
+  compiled into the bundled OpenTUI libraries.
+
 ## 0.0.1-alpha.3
 
 This release includes the work from the unpublished alpha.2 candidate; no

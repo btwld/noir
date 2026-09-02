@@ -1,7 +1,12 @@
-# Release TODO — `0.0.1-alpha.3`
+# Release TODO — `0.0.1-alpha.4`
 
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
+
+`0.0.1-alpha.4` is the active distribution-correction candidate based on the
+repository-hygiene merge at `f553bdcae8d1ebeeea23900c0d3dd35b3f1f8bf7`.
+It changes package contents and documentation without changing Noir's public
+API shapes or runtime behavior, native ABI, or bundled native artifacts.
 
 `0.0.1-alpha.3` is **published**. It shipped from commit
 `967820b47f3e8ad2c2ab94b84245f5e2f7d3b445`, built from a verified clean clone
@@ -13,16 +18,38 @@ The repository stays private. A historical GitHub prerelease exists for
 remains deferred to beta.1. Neither repository visibility nor that next
 release is cleared by this publication.
 
+## Candidate — `0.0.1-alpha.4`
+
+- [ ] **Version and release record**: `pubspec.yaml`, `CHANGELOG.md`, this
+      record, live example copy, and durable limitation guidance agree on the
+      alpha.4 boundary. Historical alpha.3 records and recording fixtures stay
+      pinned.
+- [ ] **Independent behavior and diff review**: verify that this candidate is
+      limited to distribution ownership, documentation, and the Yoga notice;
+      no supported Dart API, native ABI, binary, or OpenTUI pin changes.
+- [ ] **Exact-tree automated gates**: format, fatal-info analysis, architecture
+      tests, the serial ordinary suite, native manifest verification, dartdoc
+      link validation, diff checks, and the publish dry-run pass from a clean
+      candidate tree.
+- [ ] **GitHub candidate gates**: the release PR and the resulting `main`
+      commit pass Linux, macOS, Windows, analysis, and website checks.
+- [ ] **Automated publishing configuration**: confirm pub.dev trusts
+      `conceptadev/noir` with tag pattern `v{{version}}`, and confirm the
+      repository's `publish.yml` trigger matches it. This tag will be the first
+      publication through the repaired pinned inline OIDC workflow.
+- [ ] **Publish and verify**: create annotated tag `v0.0.1-alpha.4` on the exact
+      reviewed `main` commit, push it once, wait for the automatic publish
+      workflow, then verify the public archive hash, Yoga notice, package
+      version, and audit-log provenance.
+
 ## Published alpha.3 notice correction
 
 A post-release archive audit confirmed that the published `0.0.1-alpha.3`
 archive omitted Yoga v3.2.1's MIT license notice even though the bundled
-OpenTUI native libraries compile Yoga sources. The current source tree adds the
+OpenTUI native libraries compile Yoga sources. The alpha.4 candidate adds the
 missing notice to the package archive, but cannot change the already-published
-alpha.3 archive. Before the next package release, choose a newer version and
-verify from its exact candidate tree that `LICENSE-YOGA` ships. Retracting
-alpha.3 or choosing the replacement version remains a separate, deliberate
-release-owner decision.
+alpha.3 archive. Alpha.4 is the selected corrective version; retracting alpha.3
+is not part of this release.
 
 ## Released — `0.0.1-alpha.3`
 
@@ -223,8 +250,8 @@ authorization.
 - The pinned native lifecycle has an exact-cursor restoration limitation on an
   observed macOS/iTerm path. Noir retains exception-safe cleanup and does not
   duplicate native ownership with an ANSI workaround.
-- For alpha.3, forced Kitty graphics through tmux are unsupported. The initial
-  placement can overlap existing content and remain displaced until a resize;
+- Forced Kitty graphics through tmux are unsupported. The initial placement
+  can overlap existing content and remain displaced until a resize;
   `ImageProtocol.auto` uses block cells under tmux and is the supported path.
 - The official Linux release libraries retain absolute build/debug paths. This
   is visible upstream artifact metadata, not a Noir rebuild output.
