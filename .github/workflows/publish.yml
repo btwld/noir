@@ -2,7 +2,7 @@ name: Publish to pub.dev
 
 # One-time pub.dev configuration:
 #   package: noir
-#   repository: leoafarias/noir
+#   repository: conceptadev/noir
 #   tag pattern: v{{version}}
 # Automated publishing applies only after the first version is published
 # manually, as required by pub.dev.

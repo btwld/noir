@@ -44,7 +44,7 @@ void main() {
   });
 
   test('publish configuration names Noir and immutable actions', () {
-    expect(publish, contains('repository: leoafarias/noir'));
+    expect(publish, contains('repository: conceptadev/noir'));
     expect(publish, isNot(contains('leoafarias/cli_ui')));
     expect(publish, contains("tags: ['v*']"));
 

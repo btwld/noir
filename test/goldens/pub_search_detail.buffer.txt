@@ -25,8 +25,8 @@
   │PROJECT LINKS                                                                                 │  
   │PUB.DEV          https://pub.dev/packages/noir                                                │  
   │CHANGELOG        View changelog ➚                                                             │  
-  │HOMEPAGE         https://github.com/leoafarias/noir                                           │  
-  │REPOSITORY       https://github.com/leoafarias/noir                                           │  
+  │HOMEPAGE         https://github.com/conceptadev/noir                                          │  
+  │REPOSITORY       https://github.com/conceptadev/noir                                          │  
   └──────────────────────────────────────────────────────────────────────────────────────────────┘  
   ←→/1–4/click tabs  ↑↓/PgUp/PgDn scroll  / search  Esc results                                     
                                                                                                     

@@ -37,7 +37,7 @@ evaluating an unreleased API, use a path dependency:
       noir:
         path: ../noir
 
-Private Git consumers need access to `leoafarias/noir` and should pin an exact
+Private Git consumers need access to `conceptadev/noir` and should pin an exact
 commit or release tag rather than a moving branch.
 
 ## Quick Start
@@ -76,7 +76,7 @@ class HelloApp extends StatelessWidget {
 ```
 
 The complete version is available in
-[the hello example](https://github.com/leoafarias/noir/blob/main/example/hello.dart).
+[the hello example](https://github.com/conceptadev/noir/blob/main/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state:
@@ -183,7 +183,7 @@ class _CounterAppState extends State<CounterApp> {
 ```
 
 See
-[the counter example](https://github.com/leoafarias/noir/blob/main/example/counter.dart)
+[the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
 for the complete styled version with a solid action button.
 
 ## Hot Reload During Development
@@ -345,7 +345,7 @@ matches the behavior you are building:
   real terminal at least 120×40.
 
 The
-[example guide](https://github.com/leoafarias/noir/blob/main/example/README.md)
+[example guide](https://github.com/conceptadev/noir/blob/main/example/README.md)
 includes the command for every app.
 
 ## Supported Keyboard and Mouse Input
@@ -401,7 +401,7 @@ native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
 
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](https://github.com/leoafarias/noir/blob/main/THIRD_PARTY_NOTICES.md)
+[Third-Party Notices](https://github.com/conceptadev/noir/blob/main/THIRD_PARTY_NOTICES.md)
 for OpenTUI provenance and license terms.
 
 High-level Unicode cell measurement uses a compact pure-Dart range table

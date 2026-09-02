@@ -1133,7 +1133,7 @@ const _publishedAlpha0 = '''
 - Canonical OpenTUI v0.5.1 source and unchanged official release assets.
 - macOS bundles require macOS 13.0 or later.
 - See
-  [Known Limitations](https://github.com/leoafarias/noir#known-limitations)
+  [Known Limitations](https://github.com/conceptadev/noir#known-limitations)
   for current platform and rendering constraints.''';
 
 String _read(String path) => File(path).readAsStringSync();
