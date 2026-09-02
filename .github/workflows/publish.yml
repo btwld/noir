@@ -6,6 +6,12 @@ name: Publish to pub.dev
 #   tag pattern: v{{version}}
 # Automated publishing applies only after the first version is published
 # manually, as required by pub.dev.
+#
+# The publishing job is written inline rather than calling
+# dart-lang/setup-dart's reusable workflow. That workflow's own steps use an
+# unpinned actions/checkout, which this repository's policy rejects, so every
+# tag-triggered run failed before it could publish. Publication authenticates
+# through OIDC; no long-lived pub.dev credential is stored here.
 
 on:
   push:
@@ -94,7 +100,61 @@ jobs:
   publish:
     name: Publish package
     needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
+      # pub.dev exchanges this OIDC token for a short-lived publish
+      # credential. The workflow holds no long-lived secret.
       id-token: write
       contents: read
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Decide whether this version needs publishing
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
+          published="$(curl -sS --max-time 30 \
+            https://pub.dev/api/packages/noir || true)"
+          if [[ -n "$published" ]] && printf '%s' "$published" \
+            | jq -e --arg v "$version" \
+              '.versions[]? | select(.version == $v)' >/dev/null 2>&1; then
+            echo "::notice::noir $version is already on pub.dev; skipping"
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate publish archive
+        timeout-minutes: 5
+        run: dart pub publish --dry-run
+
+      - name: Publish to pub.dev
+        if: steps.state.outputs.publish == 'true'
+        timeout-minutes: 10
+        run: dart pub publish --force
