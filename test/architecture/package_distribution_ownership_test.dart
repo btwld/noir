@@ -198,7 +198,7 @@ void main() {
   });
 
   test(
-    'pinned OpenTUI notice accompanies bundled native libraries',
+    'pinned OpenTUI and Yoga notices accompany bundled native libraries',
     () {
       final noticeFile = File('THIRD_PARTY_NOTICES.md');
       expect(noticeFile.existsSync(), isTrue);
@@ -208,6 +208,12 @@ void main() {
       );
       final packagedLicense = _normalizeLineEndings(
         File('third_party/opentui-v0.5.1/LICENSE').readAsStringSync(),
+      );
+      final packagedYogaLicense = _normalizeLineEndings(
+        File('third_party/opentui-v0.5.1/LICENSE-YOGA').readAsStringSync(),
+      );
+      final buildDependencies = _read(
+        'external/opentui/packages/core/src/zig/build.zig.zon',
       );
       final manifest =
           jsonDecode(File('native_manifest.json').readAsStringSync())
@@ -225,9 +231,17 @@ void main() {
         'PATENTS-LIBWEBP',
         'LICENSE-STB',
         'LICENSE-LCMS2',
+        'LICENSE-YOGA',
       ]) {
         expect(notice, contains('third_party/opentui-v0.5.1/$fileName'));
       }
+      expect(
+        buildDependencies,
+        contains('git+https://github.com/facebook/yoga#v3.2.1'),
+      );
+      expect(notice, contains('https://github.com/facebook/yoga'));
+      expect(notice, contains('v3.2.1'));
+      expect(packagedYogaLicense, _yogaV321License);
     },
     skip: File('external/opentui/LICENSE').existsSync()
         ? false
@@ -693,6 +707,24 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
+  test('internal product record stays outside the publish archive', () {
+    final pubignoreLines = _read('.pubignore').split('\n');
+
+    expect(pubignoreLines, contains('/PRODUCT.md'));
+
+    final ignored = Process.runSync('git', [
+      'ls-files',
+      '--cached',
+      '--others',
+      '--ignored',
+      '--exclude-from=.pubignore',
+      '--',
+      'PRODUCT.md',
+    ]);
+    expect(ignored.exitCode, 0, reason: ignored.stderr as String);
+    expect((ignored.stdout as String).trim(), 'PRODUCT.md');
+  });
+
   test(
     'website application and its design record stay outside the Dart package archive',
     () {
@@ -1084,6 +1116,31 @@ String _changelogSection(String changelog, String version) {
   final section = next == null ? rest : rest.substring(0, next.start);
   return section.trimRight();
 }
+
+// Exact upstream body from Yoga's v3.2.1 tag. Inline so the packaged notice
+// cannot drift from the dependency that OpenTUI compiles into its binaries.
+const _yogaV321License =
+    'MIT License\n'
+    '\n'
+    'Copyright (c) Facebook, Inc. and its affiliates.\n'
+    '\n'
+    'Permission is hereby granted, free of charge, to any person obtaining a copy\n'
+    'of this software and associated documentation files (the "Software"), to deal\n'
+    'in the Software without restriction, including without limitation the rights\n'
+    'to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n'
+    'copies of the Software, and to permit persons to whom the Software is\n'
+    'furnished to do so, subject to the following conditions:\n'
+    '\n'
+    'The above copyright notice and this permission notice shall be included in all\n'
+    'copies or substantial portions of the Software.\n'
+    '\n'
+    'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n'
+    'IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n'
+    'FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n'
+    'AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n'
+    'LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n'
+    'OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n'
+    'SOFTWARE.\n';
 
 // Exact published bodies from tag v0.0.1-alpha.1. Inline so CI checkouts
 // that do not fetch tags cannot rewrite history undetected.

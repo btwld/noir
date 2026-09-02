@@ -83,10 +83,29 @@ boundaries.
     </dd>
   </div>
   <div>
+    <dt>Linux native-library metadata</dt>
+    <dd>
+      The official Linux libraries retain absolute build and debug paths from
+      OpenTUI’s release environment. They are upstream artifact metadata, not
+      paths produced on the application’s machine.
+    </dd>
+  </div>
+  <div>
+    <dt>Fractional opacity on ordinary text</dt>
+    <dd>
+      The pinned native text fast path does not apply opacity values between
+      <code>0.0</code> and <code>1.0</code>; ordinary text paints as fully
+      opaque. A value of <code>0.0</code> remains transparent. Alpha blending is
+      available on supported cell and rectangle paint paths, but the native
+      stack alone cannot implement a general <code>Opacity</code> widget.
+    </dd>
+  </div>
+  <div>
     <dt>Forced Kitty graphics through tmux (alpha.3)</dt>
     <dd>
       This combination is unsupported because initial image placement can
-      overlap existing content until a resize. Use <code>ImageProtocol.auto</code>
+      overlap existing content until a resize. Use{' '}
+      <code>ImageProtocol.auto</code>
       under tmux; it selects block rendering.
     </dd>
   </div>

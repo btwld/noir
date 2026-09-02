@@ -285,6 +285,7 @@ async function runSmoke() {
     );
 
     await page.setViewportSize({ width: 390, height: 844 });
+    const expectedLimitationRows = 9;
     const routeContracts = [
       ['/docs/getting-started', '#create-the-project', 1],
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
@@ -293,8 +294,12 @@ async function runSmoke() {
       ['/docs/input-focus', '#use-local-pointer-coordinates', 1],
       ['/docs/testing', 'main table', 1],
       ['/docs/architecture-api', '.architecture-layers > li', 5],
-      ['/docs/widget-catalog', 'main table', 5],
-      ['/docs/platform-limitations', '.limitation-list > div', 6],
+      ['/docs/widget-catalog', 'main table', 6],
+      [
+        '/docs/platform-limitations',
+        '.limitation-list > div',
+        expectedLimitationRows,
+      ],
       ['/api', '.api-surface-status', 4],
     ];
     for (const [route, selector, count] of routeContracts) {
@@ -367,10 +372,11 @@ async function runSmoke() {
     assert.equal(
       await page
         .locator('main pre')
-        .filter({ hasText: 'minWidth: 18' })
+        .filter({ hasText: "title: 'Build log'" })
+        .filter({ hasText: 'width: 24' })
         .count(),
       1,
-      'the layout guide must size a titled border wide enough to paint the title',
+      'the layout guide must size a titled panel wide enough to paint the title',
     );
 
     await page.goto(`${baseUrl}/docs/hooks`, { waitUntil: 'networkidle' });
@@ -484,7 +490,7 @@ async function runSmoke() {
     });
     assert.equal(
       await page.locator('.limitation-list > div').count(),
-      6,
+      expectedLimitationRows,
       'known platform boundaries must be presented as scannable impact rows',
     );
 
