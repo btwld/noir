@@ -163,5 +163,5 @@ This release includes the work from the unpublished alpha.2 candidate; no
 - Canonical OpenTUI v0.5.1 source and unchanged official release assets.
 - macOS bundles require macOS 13.0 or later.
 - See
-  [Known Limitations](https://github.com/leoafarias/noir#known-limitations)
+  [Known Limitations](https://github.com/conceptadev/noir#known-limitations)
   for current platform and rendering constraints.

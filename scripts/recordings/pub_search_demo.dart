@@ -51,7 +51,7 @@ final class _RecordingCatalog implements PubCatalog {
       description: 'Flutter-inspired reactive terminal UI for Dart.',
       published: DateTime.utc(2026, 8, 25),
       packageUrl: 'https://pub.dev/packages/$name',
-      repository: 'https://github.com/leoafarias/noir',
+      repository: 'https://github.com/conceptadev/noir',
       publisher: 'noir.dev',
       environment: const {'sdk': '>=3.10.0 <4.0.0'},
       topics: const ['terminal', 'tui', 'widgets'],
