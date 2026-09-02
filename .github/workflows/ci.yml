@@ -51,6 +51,53 @@ jobs:
         timeout-minutes: 4
         run: dart analyze --fatal-infos
 
+  website:
+    name: Validate website
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: website
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        timeout-minutes: 3
+        run: npm ci
+
+      - name: Install browser
+        timeout-minutes: 4
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Check website formatting
+        run: npm run format:check
+
+      - name: Lint website
+        run: npm run lint
+
+      - name: Check website types
+        run: npm run typecheck
+
+      - name: Build static website
+        env:
+          NOIR_WEBSITE_BASE_PATH: /noir
+        run: npm run build
+
+      - name: Run website smoke test
+        env:
+          NOIR_WEBSITE_BASE_PATH: /noir
+        run: npm run test:smoke
+
   ubuntu-test:
     name: Test (Ubuntu)
     needs: analyze

@@ -8,8 +8,21 @@ Update it only with evidence from the exact reviewed tree.
 of that exact commit and tagged `v0.0.1-alpha.3`. Unpublished `0.0.1-alpha.2`
 was skipped: that work shipped first in `0.0.1-alpha.3`.
 
-The repository stays private and the first GitHub release remains deferred to
-beta.1. Neither is cleared by this publication.
+The repository stays private. A historical GitHub prerelease exists for
+`v0.0.1-alpha.1`; alpha.3 has no GitHub release, and the next GitHub release
+remains deferred to beta.1. Neither repository visibility nor that next
+release is cleared by this publication.
+
+## Published alpha.3 notice correction
+
+A post-release archive audit confirmed that the published `0.0.1-alpha.3`
+archive omitted Yoga v3.2.1's MIT license notice even though the bundled
+OpenTUI native libraries compile Yoga sources. The current source tree adds the
+missing notice to the package archive, but cannot change the already-published
+alpha.3 archive. Before the next package release, choose a newer version and
+verify from its exact candidate tree that `LICENSE-YOGA` ships. Retracting
+alpha.3 or choosing the replacement version remains a separate, deliberate
+release-owner decision.
 
 ## Released — `0.0.1-alpha.3`
 
@@ -52,9 +65,10 @@ evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
 - [x] **Publish `0.0.1-alpha.3` to pub.dev**: published from the verified
       clean clone of the candidate. `0.0.1-alpha.2` was not published.
 - [x] **Tag**: `v0.0.1-alpha.3` annotated on the candidate and pushed.
-- [ ] **Repository visibility and GitHub release** — each remains a separate,
-      deliberate decision. The repository stays private through this alpha.
-      First GitHub release is deferred to beta.1.
+- [ ] **Repository visibility and next GitHub release** — each remains a
+      separate, deliberate decision. The repository stays private through this
+      alpha. A historical prerelease exists for `v0.0.1-alpha.1`; alpha.3 has
+      no GitHub release, and the next one is deferred to beta.1.
 
 ## Done — recorded baseline (alpha.2 work ships first in alpha.3)
 

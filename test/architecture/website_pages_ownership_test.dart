@@ -52,6 +52,33 @@ void main() {
     }
   });
 
+  test('pull requests validate the website without deploying it', () {
+    final workflow = _read('.github/workflows/ci.yml');
+    final website = _job(workflow, 'website');
+
+    expect(website, contains("if: github.event_name == 'pull_request'"));
+    expect(website, contains('working-directory: website'));
+    expect(website, contains('node-version: 24'));
+    expect(
+      website,
+      contains('cache-dependency-path: website/package-lock.json'),
+    );
+    expect(website, contains('run: npm ci'));
+    expect(website, contains('run: npm run format:check'));
+    expect(website, contains('run: npm run lint'));
+    expect(website, contains('run: npm run typecheck'));
+    expect(
+      website,
+      contains('run: npx --no-install playwright install --with-deps chromium'),
+    );
+    expect(website, contains('NOIR_WEBSITE_BASE_PATH: /noir'));
+    expect(website, contains('run: npm run build'));
+    expect(website, contains('run: npm run test:smoke'));
+    expect(website, isNot(contains('deploy-pages')));
+    expect(website, isNot(contains('pages: write')));
+    expect(website, isNot(contains('id-token: write')));
+  });
+
   test('website records the Pages URL and deployment boundary', () {
     final readme = _read('website/README.md');
 
@@ -67,3 +94,13 @@ void main() {
 
 String _read(String path) =>
     File(path).readAsStringSync().replaceAll('\r\n', '\n');
+
+String _job(String workflow, String name) {
+  final start = workflow.indexOf('  $name:');
+  expect(start, isNonNegative, reason: 'missing job $name');
+  final end = workflow.indexOf(
+    RegExp('^  [a-z][a-z-]+:', multiLine: true),
+    start + 3,
+  );
+  return workflow.substring(start, end < 0 ? workflow.length : end);
+}

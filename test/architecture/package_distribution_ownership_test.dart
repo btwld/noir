@@ -242,6 +242,11 @@ void main() {
       expect(notice, contains('https://github.com/facebook/yoga'));
       expect(notice, contains('v3.2.1'));
       expect(packagedYogaLicense, _yogaV321License);
+      expect(
+        _read('CHANGELOG.md'),
+        contains('published `0.0.1-alpha.3` archive omitted'),
+      );
+      expect(releaseTodo, contains('Published alpha.3 notice correction'));
     },
     skip: File('external/opentui/LICENSE').existsSync()
         ? false

@@ -5,6 +5,11 @@
 This release includes the work from the unpublished alpha.2 candidate; no
 `0.0.1-alpha.2` package was published.
 
+> **Post-release notice:** The published `0.0.1-alpha.3` archive omitted the
+> Yoga v3.2.1 MIT license notice for the Yoga sources compiled into the bundled
+> OpenTUI native libraries. The repository correction will ship in the next
+> package version; the published alpha.3 archive cannot be changed.
+
 ### Added
 
 - Added `Theme` / `ThemeData` and the first themed component tier:

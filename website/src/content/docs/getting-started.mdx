@@ -91,8 +91,9 @@ the button. Each activation changes the count by one.
 
 This recording uses the repository’s complete counter, which adds application
 chrome, arrow keys, `+`, `-`, and explicit pointer handling to the smaller app
-above. It is captured from Noir’s production parser and renderer rather than a
-hand-written terminal mock.
+above. The capture runs Noir’s production ANSI parser and retained render
+pipeline against OpenTUI’s non-terminal testing renderer. It is a reproducible
+framework capture, not a hand-written mock or evidence from a real terminal.
 
 If the keyboard does nothing, focus the terminal window. The Button has
 `autofocus: true`, so Noir gives it primary focus when the tree mounts. Press
