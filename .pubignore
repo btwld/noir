@@ -17,10 +17,6 @@
 /tools/
 /website/
 /.impeccable/
-/DESIGN.md
-
-# Internal Patch Manager implementation is development-only.
-/lib/src/tools/
 
 # External dependencies and submodules
 /external/
@@ -64,10 +60,6 @@ coverage/
 .lcov
 
 # Keep packaged native binaries and native_manifest.json.
-
-# Development-only executables (not part of the published API)
-bin/patch_manager.dart
-bin/snapshot_scenes.dart
 
 # Codegen and test configuration (development-only)
 FFIGEN.md

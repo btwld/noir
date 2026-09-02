@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:noir/noir.dart';
 
-import '../../example/pub_search/app.dart';
-import '../../example/pub_search/catalog.dart';
-import '../../example/pub_search/models.dart';
+import '../../example/src/pub_search/app.dart';
+import '../../example/src/pub_search/catalog.dart';
+import '../../example/src/pub_search/models.dart';
 
 /// Deterministic host used only by the documentation recorder.
 void main() => runTuiApp(

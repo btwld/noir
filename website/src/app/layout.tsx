@@ -5,6 +5,7 @@ import { Head } from 'nextra/components';
 import { getPageMap } from 'nextra/page-map';
 import { Footer, Layout, Navbar } from 'nextra-theme-docs';
 
+import 'asciinema-player/dist/bundle/asciinema-player.css';
 import 'nextra-theme-docs/style.css';
 import './globals.css';
 

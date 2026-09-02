@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'agent_chat_protocol.dart';
+import 'protocol.dart';
 
 /// Launches the isolated process used by [ClaudeCliBackend].
 abstract interface class ClaudeProcessLauncher {

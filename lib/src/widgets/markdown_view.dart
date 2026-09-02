@@ -598,7 +598,10 @@ List<List<InlineSpan?>> _dropEmptyTableColumns(List<List<InlineSpan?>> rows) {
   if (keep.isEmpty || keep.length == columns) return rows;
   return [
     for (final row in rows)
-      [for (final column in keep) column < row.length ? row[column] : null],
+      [
+        for (final column in keep)
+          if (column < row.length) row[column] else null,
+      ],
   ];
 }
 

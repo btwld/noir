@@ -4,9 +4,9 @@ import 'package:noir/noir.dart'
     show BuildContext, GlobalKey, State, StatefulWidget, Text, Widget;
 import 'package:noir/src/framework/diagnostics.dart';
 import 'package:noir/src/framework/element.dart';
-import 'package:noir/src/tools/patch_manager/patch_manager.dart';
 import 'package:test/test.dart';
 
+import '../../scripts/patch_manager/patch_manager.dart';
 import '../helpers/key_driver.dart';
 import '../helpers/patch_manager_fixtures.dart';
 

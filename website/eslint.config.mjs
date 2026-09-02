@@ -5,5 +5,10 @@ import nextTypeScript from 'eslint-config-next/typescript';
 export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
-  globalIgnores(['.next/**', 'node_modules/**', 'public/_pagefind/**']),
+  globalIgnores([
+    '.next/**',
+    'node_modules/**',
+    'out/**',
+    'public/_pagefind/**',
+  ]),
 ]);

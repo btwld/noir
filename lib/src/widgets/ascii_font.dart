@@ -461,7 +461,7 @@ List<String> _palletGlyph(List<String> glyph) {
     for (var row = 0; row < glyph.length; row++)
       _taggedRow(<int>[
         for (var column = 0; column < width; column++)
-          glyph[row][column] == '#' ? 1 + ((row + column) & 1) : 0,
+          if (glyph[row][column] == '#') 1 + ((row + column) & 1) else 0,
       ]),
   ];
 }

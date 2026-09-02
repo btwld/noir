@@ -1,8 +1,14 @@
+// Run with: dart run example/autocomplete_demo.dart
+// The initial `noi` query demonstrates application-owned debounce and stale
+// response protection. Type to replace or refine it, Tab into suggestions,
+// use arrows to move, Enter or click to choose, and Escape to clear results or
+// exit.
+
 import 'dart:async';
 
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 void main() => runTuiApp(const AutocompleteDemoApp(), enableMouse: true);
 

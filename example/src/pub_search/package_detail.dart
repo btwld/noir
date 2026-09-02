@@ -1,6 +1,6 @@
 import 'package:noir/noir.dart';
 
-import '../src/demo_scaffold.dart';
+import '../shared/demo_scaffold.dart';
 import 'models.dart';
 import 'theme.dart';
 

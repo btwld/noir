@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:test/test.dart';
 
-import '../../example/src/agent_chat_protocol.dart';
-import '../../example/src/agent_session_controller.dart';
+import '../../example/src/chat/protocol.dart';
+import '../../example/src/chat/session_controller.dart';
 
 void main() {
   group('AgentSessionController', () {

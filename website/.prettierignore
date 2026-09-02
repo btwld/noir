@@ -1,5 +1,6 @@
 .next/
 next-env.d.ts
 node_modules/
+out/
 public/_pagefind/
 src/lib/counter-highlight.ts

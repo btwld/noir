@@ -22,10 +22,10 @@ void main() {
   final hooksBarrel = _read('lib/hooks.dart');
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
   final ffiBarrel = _read('lib/noir_ffi.dart');
-  final chatDemo = _read('example/chat_demo.dart');
-  final agentProtocol = _read('example/src/agent_chat_protocol.dart');
-  final agentController = _read('example/src/agent_session_controller.dart');
-  final claudeBackend = _read('example/src/claude_cli_backend.dart');
+  final chatDemo = _read('example/src/chat/app.dart');
+  final agentProtocol = _read('example/src/chat/protocol.dart');
+  final agentController = _read('example/src/chat/session_controller.dart');
+  final claudeBackend = _read('example/src/chat/claude_cli_backend.dart');
 
   test('retained source consumer uses only supported package barrels', () {
     final fixtureRoot = Directory('test/fixtures/source_package_consumer');
@@ -198,7 +198,7 @@ void main() {
   });
 
   test(
-    'pinned OpenTUI notice accompanies bundled native libraries',
+    'pinned OpenTUI and Yoga notices accompany bundled native libraries',
     () {
       final noticeFile = File('THIRD_PARTY_NOTICES.md');
       expect(noticeFile.existsSync(), isTrue);
@@ -208,6 +208,12 @@ void main() {
       );
       final packagedLicense = _normalizeLineEndings(
         File('third_party/opentui-v0.5.1/LICENSE').readAsStringSync(),
+      );
+      final packagedYogaLicense = _normalizeLineEndings(
+        File('third_party/opentui-v0.5.1/LICENSE-YOGA').readAsStringSync(),
+      );
+      final buildDependencies = _read(
+        'external/opentui/packages/core/src/zig/build.zig.zon',
       );
       final manifest =
           jsonDecode(File('native_manifest.json').readAsStringSync())
@@ -225,9 +231,22 @@ void main() {
         'PATENTS-LIBWEBP',
         'LICENSE-STB',
         'LICENSE-LCMS2',
+        'LICENSE-YOGA',
       ]) {
         expect(notice, contains('third_party/opentui-v0.5.1/$fileName'));
       }
+      expect(
+        buildDependencies,
+        contains('git+https://github.com/facebook/yoga#v3.2.1'),
+      );
+      expect(notice, contains('https://github.com/facebook/yoga'));
+      expect(notice, contains('v3.2.1'));
+      expect(packagedYogaLicense, _yogaV321License);
+      expect(
+        _read('CHANGELOG.md'),
+        contains('published `0.0.1-alpha.3` archive omitted'),
+      );
+      expect(releaseTodo, contains('Published alpha.3 notice correction'));
     },
     skip: File('external/opentui/LICENSE').existsSync()
         ? false
@@ -405,9 +424,16 @@ void main() {
 
     expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
     expect(catalogEntries, unorderedEquals(shippedExamples));
-    for (final example in shippedExamples) {
-      expect(readme, contains('example/$example'), reason: example);
-    }
+    expect(readme, contains('[example catalog](example/README.md)'));
+    expect(
+      RegExp(r'\[example catalog\]\(example/README\.md\)').allMatches(readme),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'example/[^)]+\.dart').allMatches(readme).length,
+      lessThan(shippedExamples.length),
+      reason: 'README must link to the catalog instead of duplicating it',
+    );
     for (final heading in <String>[
       '## Start here',
       '## Core concepts',
@@ -694,13 +720,73 @@ void main() {
   });
 
   test(
+    'repository-only code stays in scripts and large examples share one layout',
+    () {
+      expect(
+        Directory('bin').listSync().whereType<File>().map(
+          (file) => file.path.replaceAll(Platform.pathSeparator, '/'),
+        ),
+        unorderedEquals(<String>['bin/health_check.dart', 'bin/run.dart']),
+      );
+      final misplacedToolFiles = Directory('lib/src/tools').existsSync()
+          ? Directory(
+              'lib/src/tools',
+            ).listSync(recursive: true).whereType<File>().toList()
+          : const <File>[];
+      expect(misplacedToolFiles, isEmpty);
+
+      for (final path in const <String>[
+        'scripts/patch_manager.dart',
+        'scripts/patch_manager/patch_manager.dart',
+        'scripts/snapshot_scenes.dart',
+        'example/src/chat/app.dart',
+        'example/src/chat/protocol.dart',
+        'example/src/chat/session_controller.dart',
+        'example/src/chat/claude_cli_backend.dart',
+        'example/src/pub_search/app.dart',
+        'example/src/pub_search/catalog.dart',
+        'example/src/pub_search/models.dart',
+        'example/src/pub_search/package_detail.dart',
+        'example/src/pub_search/theme.dart',
+        'example/src/shared/demo_scaffold.dart',
+      ]) {
+        expect(File(path).existsSync(), isTrue, reason: path);
+      }
+    },
+  );
+
+  test('website records live with the website application', () {
+    expect(File('PRODUCT.md').existsSync(), isFalse);
+    expect(File('DESIGN.md').existsSync(), isFalse);
+    expect(File('website/README.md').existsSync(), isTrue);
+    expect(File('website/DESIGN.md').existsSync(), isTrue);
+  });
+
+  test(
     'website application and its design record stay outside the Dart package archive',
     () {
       final pubignoreLines = _read('.pubignore').split('\n');
 
       expect(pubignoreLines, contains('/website/'));
       expect(pubignoreLines, contains('/.impeccable/'));
-      expect(pubignoreLines, contains('/DESIGN.md'));
+      expect(pubignoreLines, isNot(contains('/PRODUCT.md')));
+      expect(pubignoreLines, isNot(contains('/DESIGN.md')));
+
+      final ignored = Process.runSync('git', [
+        'ls-files',
+        '--cached',
+        '--others',
+        '--ignored',
+        '--exclude-from=.pubignore',
+        '--',
+        'website/README.md',
+        'website/DESIGN.md',
+      ]);
+      expect(ignored.exitCode, 0, reason: ignored.stderr as String);
+      expect(
+        (ignored.stdout as String).trim().split('\n'),
+        unorderedEquals(<String>['website/DESIGN.md', 'website/README.md']),
+      );
     },
   );
 
@@ -1084,6 +1170,31 @@ String _changelogSection(String changelog, String version) {
   final section = next == null ? rest : rest.substring(0, next.start);
   return section.trimRight();
 }
+
+// Exact upstream body from Yoga's v3.2.1 tag. Inline so the packaged notice
+// cannot drift from the dependency that OpenTUI compiles into its binaries.
+const _yogaV321License =
+    'MIT License\n'
+    '\n'
+    'Copyright (c) Facebook, Inc. and its affiliates.\n'
+    '\n'
+    'Permission is hereby granted, free of charge, to any person obtaining a copy\n'
+    'of this software and associated documentation files (the "Software"), to deal\n'
+    'in the Software without restriction, including without limitation the rights\n'
+    'to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n'
+    'copies of the Software, and to permit persons to whom the Software is\n'
+    'furnished to do so, subject to the following conditions:\n'
+    '\n'
+    'The above copyright notice and this permission notice shall be included in all\n'
+    'copies or substantial portions of the Software.\n'
+    '\n'
+    'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n'
+    'IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n'
+    'FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n'
+    'AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n'
+    'LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n'
+    'OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n'
+    'SOFTWARE.\n';
 
 // Exact published bodies from tag v0.0.1-alpha.1. Inline so CI checkouts
 // that do not fetch tags cannot rewrite history undetected.

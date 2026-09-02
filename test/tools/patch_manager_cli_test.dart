@@ -7,7 +7,7 @@ void main() {
     'help describes tracked changes, split sections, and untracked files',
     () async {
       final result = await Process.run(Platform.resolvedExecutable, [
-        'bin/patch_manager.dart',
+        'scripts/patch_manager.dart',
         '--help',
       ], workingDirectory: Directory.current.path);
 
@@ -20,7 +20,7 @@ void main() {
   );
 
   test('entrypoint quits through the tree', () {
-    final source = File('bin/patch_manager.dart').readAsStringSync();
+    final source = File('scripts/patch_manager.dart').readAsStringSync();
     expect(source, isNot(contains('onQuit')));
     expect(source, isNot(contains('io.exit(')));
     expect(source, contains('runTuiApp('));

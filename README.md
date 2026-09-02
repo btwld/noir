@@ -75,8 +75,7 @@ class HelloApp extends StatelessWidget {
 }
 ```
 
-The complete version is available in
-[the hello example](https://github.com/conceptadev/noir/blob/main/example/hello.dart).
+The complete version is available in [the hello example](example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state:
@@ -182,9 +181,8 @@ class _CounterAppState extends State<CounterApp> {
 }
 ```
 
-See
-[the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
-for the complete styled version with a solid action button.
+See [the counter example](example/counter.dart) for the complete styled version
+with a solid action button.
 
 ## Hot Reload During Development
 
@@ -311,42 +309,13 @@ Noir has four supported import surfaces:
 Concrete Element implementations and the recorder/display-list/compositor
 backend remain framework-owned; they are not supported package surfaces.
 
-## Example Apps
+## Examples
 
-Start with [Main](example/main.dart), [Counter](example/counter.dart),
-[Layout basics](example/layout_basics.dart), and
-[Components](example/components_demo.dart). Then choose the example that
-matches the behavior you are building:
-
-- Foundations: [Hello](example/hello.dart),
-  [Hooks counter](example/hooks_counter.dart),
-  [Layout showcase](example/layout_demo.dart),
-  [Inherited state](example/inherited_example.dart),
-  [Theme](example/theme_demo.dart), [Image](example/image_demo.dart), and
-  [Framework primitives](example/framework_primitives.dart).
-- Controls and data: [Focus form](example/focus_form.dart),
-  [Select](example/select_demo.dart), [ScrollBox](example/scrollbox_demo.dart),
-  [ListView](example/listview_demo.dart),
-  [DataTable](example/data_table_demo.dart),
-  [TextArea](example/textarea_demo.dart), and
-  [Widgets tour](example/widgets_tour.dart).
-- Composition patterns: [Confirmation dialog](example/dialog_demo.dart),
-  [Package autocomplete](example/autocomplete_demo.dart), and
-  [Tree file picker](example/file_picker_demo.dart).
-- Complete apps: the replay-driven, product-neutral
-  [Agent chat](example/chat_demo.dart), with an opt-in bounded Claude CLI
-  backend, and the live
-  [pub.dev search](example/pub_search.dart).
-- Motion: [Pulse](example/pulse_animation.dart) and
-  [Like Reactor](example/like_reactor.dart).
-- Reference and validation:
-  [Parity components](example/parity_components_demo.dart) and
-  [Bindings validation](example/bindings_validation.dart), which requires a
-  real terminal at least 120×40.
-
-The
-[example guide](https://github.com/conceptadev/noir/blob/main/example/README.md)
-includes the command for every app.
+Start with [Main](example/main.dart), [Counter](example/counter.dart), or
+[Components](example/components_demo.dart). The
+[example catalog](example/README.md) lists every runnable app by the question
+it answers, including focused controls, complete applications, animation, and
+advanced validation.
 
 ## Supported Keyboard and Mouse Input
 
@@ -401,8 +370,8 @@ native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
 
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](https://github.com/conceptadev/noir/blob/main/THIRD_PARTY_NOTICES.md)
-for OpenTUI provenance and license terms.
+[Third-Party Notices](THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
+license terms.
 
 High-level Unicode cell measurement uses a compact pure-Dart range table
 derived from the exact `uucode` revision pinned by OpenTUI v0.5.1 (Unicode
@@ -421,13 +390,13 @@ corrupt package.
 
 - Kitty, Sixel, and OSC52 acceptance depends on the terminal or multiplexer.
   Automated coverage verifies protocol selection, deterministic block fallback,
-  clipping, sizing, and OSC52 argument/status behavior. The complete
-  direct-terminal, tmux, and Screen matrix on the exact candidate remains a
-  release gate. Automatic image mode uses blocks under tmux; unavailable Sixel
-  (including a missing pixel-resolution measurement) falls back to blocks.
-  For alpha.3, forcing Kitty graphics through tmux is unsupported because the
-  initial placement can overlap existing content until a resize. Use automatic
-  image mode under tmux.
+  clipping, sizing, and OSC52 argument/status behavior. Direct Kitty graphics,
+  OSC52, and resize/crop have real-terminal evidence. Sixel, GNU Screen, and
+  OSC52 through tmux remain unverified. Automatic image mode uses blocks under
+  tmux; unavailable Sixel (including a missing pixel-resolution measurement)
+  falls back to blocks. Forcing Kitty graphics through tmux is unsupported
+  because the initial placement can overlap existing content until a resize.
+  Use automatic image mode under tmux.
 - Dart 3.10 supplies a macOS deployment target of 12 to native-asset hooks,
   while the bundled OpenTUI libraries require macOS 13. Because
   `dart build cli` does not expose a deployment-target override, Noir documents

@@ -2,24 +2,9 @@
 
 import 'dart:math' as math;
 
-import '../../core/color.dart';
-import '../../core/input.dart';
-import '../../foundation/listenable.dart';
-import '../../framework/build_context.dart';
-import '../../framework/focus_manager.dart';
-import '../../framework/widget.dart';
-import '../../render/geometry.dart';
-import '../../widgets/container.dart';
-import '../../widgets/diff_view.dart' as noir_diff;
-import '../../widgets/flexible.dart';
-import '../../widgets/focus.dart';
-import '../../widgets/pointer_listener.dart';
-import '../../widgets/row_column.dart';
-import '../../widgets/scroll_box.dart';
-import '../../widgets/sized_box.dart';
-import '../../widgets/text.dart';
-import '../../widgets/text_style.dart';
-import '../../widgets/viewport.dart';
+import 'package:noir/noir.dart'
+    hide DiffFile, DiffHunk, DiffLine, UnifiedDiffParser;
+import 'package:noir/noir.dart' as noir_diff;
 import 'display_models.dart';
 import 'git_path.dart';
 import 'models.dart';

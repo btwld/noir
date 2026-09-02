@@ -2,7 +2,7 @@ import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../../example/hello.dart' as hello;
-import '../../example/src/demo_scaffold.dart';
+import '../../example/src/shared/demo_scaffold.dart';
 import '../helpers/buffer_capture.dart';
 import '../helpers/tui_test_app.dart';
 

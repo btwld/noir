@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:noir/noir.dart' show ChangeNotifier;
 
-import 'agent_chat_protocol.dart';
+import 'protocol.dart';
 
 enum AgentRunPhase {
   starting,

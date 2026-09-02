@@ -4,11 +4,11 @@ import 'package:noir/noir.dart';
 import 'package:noir/src/app/driver.dart';
 import 'package:test/test.dart';
 
-import '../../example/pub_search/app.dart';
-import '../../example/pub_search/catalog.dart';
-import '../../example/pub_search/models.dart';
-import '../../example/pub_search/package_detail.dart';
-import '../../example/pub_search/theme.dart';
+import '../../example/src/pub_search/app.dart';
+import '../../example/src/pub_search/catalog.dart';
+import '../../example/src/pub_search/models.dart';
+import '../../example/src/pub_search/package_detail.dart';
+import '../../example/src/pub_search/theme.dart';
 import '../helpers/buffer_capture.dart';
 import '../helpers/tui_test_app.dart';
 import 'pub_search_test_data.dart';

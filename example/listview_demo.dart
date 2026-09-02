@@ -12,7 +12,7 @@
 
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 const _rowCount = 500;
 

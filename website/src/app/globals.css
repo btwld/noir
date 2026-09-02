@@ -244,7 +244,7 @@ pre {
   border-top: 1px solid var(--ink);
   display: grid;
   gap: clamp(2.5rem, 5.5vw, 5.5rem);
-  grid-template-columns: minmax(28rem, 1.2fr) minmax(16rem, 0.8fr);
+  grid-template-columns: minmax(24rem, 0.8fr) minmax(32rem, 1.2fr);
   margin: clamp(4.5rem, 10vw, 8.5rem) 0;
   padding: clamp(2.75rem, 6vw, 5rem) 0;
 }
@@ -312,7 +312,7 @@ html.dark .highlighted-code span {
   font-weight: 600;
 }
 
-.terminal-frame {
+.terminal-recording {
   background: var(--terminal);
   border: 1px solid var(--terminal);
   color: var(--terminal-ink);
@@ -320,11 +320,11 @@ html.dark .highlighted-code span {
   min-width: 0;
 }
 
-.home-proof .terminal-frame {
+.home-proof .terminal-recording {
   margin: 0;
 }
 
-.terminal-frame figcaption {
+.terminal-recording figcaption {
   align-items: baseline;
   border-bottom: 1px solid var(--terminal-rule);
   display: flex;
@@ -336,27 +336,38 @@ html.dark .highlighted-code span {
   padding: 0.7rem 0.85rem;
 }
 
-.terminal-frame figcaption > span {
+.terminal-recording figcaption > span {
   color: var(--terminal-quiet);
 }
 
-.terminal-frame figcaption a {
+.terminal-recording figcaption a {
   color: var(--terminal-ink);
 }
 
-.terminal-frame pre {
+.terminal-recording > div[aria-label] {
   background: var(--terminal);
-  border: 0;
-  color: var(--terminal-ink);
-  font-size: clamp(0.7rem, 1.4vw, 0.84rem);
-  line-height: 1.45;
-  margin: 0;
-  min-height: 8rem;
-  overflow-x: auto;
-  padding: clamp(1rem, 3vw, 2rem);
+  min-height: 12rem;
+  overflow: hidden;
 }
 
-.terminal-frame-meta {
+.terminal-recording div.ap-wrapper {
+  justify-content: stretch;
+}
+
+.terminal-recording div.ap-wrapper div.ap-player {
+  border-radius: 0;
+  width: 100%;
+}
+
+.terminal-recording-error {
+  color: var(--terminal-ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  margin: 0;
+  padding: 1rem;
+}
+
+.terminal-recording-meta {
   border-top: 1px solid var(--terminal-rule);
   display: grid;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -366,16 +377,16 @@ html.dark .highlighted-code span {
   padding: 0.7rem 0.85rem;
 }
 
-.terminal-frame-meta code {
+.terminal-recording-meta code {
   color: var(--terminal-ink);
   overflow-wrap: anywhere;
 }
 
-.terminal-frame-meta span {
+.terminal-recording-meta span {
   color: var(--terminal-quiet);
 }
 
-.terminal-frame-meta span::before {
+.terminal-recording-meta span::before {
   color: var(--signal);
   content: '●';
   margin-inline-end: 0.5rem;
@@ -803,7 +814,7 @@ main[data-pagefind-body='true'] th {
     padding-right: 0;
   }
 
-  .terminal-frame figcaption {
+  .terminal-recording figcaption {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;

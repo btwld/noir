@@ -6,8 +6,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:characters/characters.dart';
+import 'package:noir/noir.dart' show terminalCellWidth, terminalStringWidth;
 
-import '../../core/grapheme_metrics.dart';
 import 'diff_parser.dart';
 import 'git_path.dart';
 import 'models.dart';

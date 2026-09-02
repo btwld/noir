@@ -2,100 +2,97 @@
 name: Noir Website
 description: Ink and Signal is Noir's browser documentation system, not terminal-widget rendering guidance.
 colors:
-  ink: "#11110f"
-  paper: "#fbfbf8"
-  quiet: "#5f5f58"
-  rule: "#d4d4cb"
-  signal: "#244fd7"
-  terminal: "#090a0a"
-  terminal-ink: "#f5f5ed"
+  ink: '#11110f'
+  paper: '#fbfbf8'
+  quiet: '#5f5f58'
+  rule: '#d4d4cb'
+  signal: '#244fd7'
+  terminal: '#090a0a'
+  terminal-ink: '#f5f5ed'
 typography:
   display:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(3rem, 7.2vw, 6rem)"
+    fontSize: 'clamp(3rem, 7.2vw, 6rem)'
     fontWeight: 500
     lineHeight: 1.04
-    letterSpacing: "-0.03em"
+    letterSpacing: '-0.03em'
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(2.4rem, 3.6vw, 3.65rem)"
+    fontSize: 'clamp(2.4rem, 3.6vw, 3.65rem)'
     fontWeight: 500
     lineHeight: 1.08
-    letterSpacing: "-0.03em"
+    letterSpacing: '-0.03em'
   section-heading:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "clamp(1.65rem, 2.5vw, 2.3rem)"
+    fontSize: 'clamp(1.65rem, 2.5vw, 2.3rem)'
     fontWeight: 500
     lineHeight: 1.18
-    letterSpacing: "-0.02em"
+    letterSpacing: '-0.02em'
   body:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: "1.1rem"
+    fontSize: '1.1rem'
     lineHeight: 1.7
   ui-label:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '0.875rem'
   mono:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    fontSize: "0.86rem"
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+    fontSize: '0.86rem'
     lineHeight: 1.7
 rounded:
-  square: "0"
+  square: '0'
 spacing:
-  page-inline: "clamp(1.25rem, 5vw, 4rem)"
-  section-breath: "clamp(4rem, 10vw, 8.5rem)"
-  heading-gap: "1.4rem"
+  page-inline: 'clamp(1.25rem, 5vw, 4rem)'
+  section-breath: 'clamp(4rem, 10vw, 8.5rem)'
+  heading-gap: '1.4rem'
 components:
-  terminal-frame:
-    backgroundColor: "{colors.terminal}"
-    textColor: "{colors.terminal-ink}"
-    rounded: "{rounded.square}"
+  terminal-recording:
+    backgroundColor: '{colors.terminal}'
+    textColor: '{colors.terminal-ink}'
+    rounded: '{rounded.square}'
   install-command:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.mono}"
-    rounded: "{rounded.square}"
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.ink}'
+    typography: '{typography.mono}'
+    rounded: '{rounded.square}'
   prerelease-notice:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.ui-label}"
-    rounded: "{rounded.square}"
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.ink}'
+    typography: '{typography.ui-label}'
+    rounded: '{rounded.square}'
   process-flow:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.ink}'
+    rounded: '{rounded.square}'
 ---
 
 # Design system: Noir website
 
 ## Creative direction
 
-**Ink and Signal** pairs an editorial reading surface with verified terminal
-evidence. Warm paper and serif type make long technical explanations calm. A
-near-black terminal frame interrupts that calm only when readers need to see
-what Noir actually produces. Thin rules expose structure; one restrained blue
-signal marks process steps and evidence boundaries.
+**Ink and Signal** uses warm paper, serif body text, square near-black terminal
+frames, thin rules, and one blue accent. Terminal material is captured output,
+with its capture boundary stated alongside it.
 
 This is a browser documentation system. It does not prescribe the appearance
 of applications built with Noir.
 
-The design should feel like Noir itself: a declarative surface with visible,
-precise machinery underneath. It must not become a generic prose template, a
-gallery of animated demos, or a website dressed up as a terminal.
+Terminal styling is reserved for output. It is not page chrome, decoration, or
+a substitute for the browser documentation hierarchy.
 
 ## The visual grammar
 
 The paper field is the default. Serif is for explanation, monospace is for
 code and operations, and system sans is for navigation and compact metadata.
-Noir's name and major promises carry the largest type. Article titles remain
-strong, but code and terminal output become the visual proof.
+The product name and page titles carry the largest type. Article titles remain
+strong, while code and terminal output provide supporting evidence.
 
-The terminal surface is black, square, and static. It shows a real headless
-capture or a clearly labelled expected frame beside the code and command that
-produce it. It is never decorative chrome and never implies a real-terminal
-protocol check. The documentation does not need a separate Examples route or
-an embedded playback system; complete repository examples can be linked from
-the guide that explains their behavior.
+The terminal surface is black and square. It shows a reproducible headless
+recording beside the code and command that produce it, with playback remaining
+reader-controlled. It is never decorative chrome and never implies a
+real-terminal protocol check. The documentation does not need a separate
+Examples route; complete repository examples can be demonstrated from the
+guide that explains their behavior.
 
 Blue is a signal, not a theme color. Use it for process numbers or a small
 evidence marker. Links, headings, cards, and whole page regions do not become

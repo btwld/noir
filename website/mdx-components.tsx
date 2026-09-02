@@ -3,7 +3,7 @@ import { useMDXComponents as getDocsMDXComponents } from 'nextra-theme-docs';
 
 import { InstallCommand } from './src/components/InstallCommand';
 import { PrereleaseNotice } from './src/components/PrereleaseNotice';
-import { TerminalFrame } from './src/components/TerminalFrame';
+import { TerminalRecording } from './src/components/TerminalRecording';
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
@@ -11,6 +11,6 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     InstallCommand,
     PrereleaseNotice,
-    TerminalFrame,
+    TerminalRecording,
   };
 }

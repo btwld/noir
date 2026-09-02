@@ -30,7 +30,7 @@ void main() {
         'Icons.chevronRight',
         'Icons.ellipsis',
       ],
-      'lib/src/tools/patch_manager/patch_theme.dart': [
+      'scripts/patch_manager/patch_theme.dart': [
         'Icons.circleDotted',
         'Icons.lozenge',
         'Icons.close',
@@ -46,8 +46,8 @@ void main() {
         'Icons.bulletSmall',
       ],
       'example/listview_demo.dart': ['Icons.pointerRight'],
-      'example/pub_search/app.dart': ['Icons.caretDown'],
-      'example/pub_search/package_detail.dart': [
+      'example/src/pub_search/app.dart': ['Icons.caretDown'],
+      'example/src/pub_search/package_detail.dart': [
         'Icons.arrowUpRight',
         'Icons.bulletSmall',
         'Icons.arrowBranchDown',
@@ -69,7 +69,7 @@ void main() {
       'lib/src/widgets/panel.dart': ["'›'"],
       'lib/src/widgets/select.dart': ["? '▲'", "? '▼'"],
       'lib/src/widgets/tab_select.dart': ["'‹'", "'›'", "'…'"],
-      'lib/src/tools/patch_manager/patch_theme.dart': [
+      'scripts/patch_manager/patch_theme.dart': [
         "=> '○'",
         "=> '◆'",
         "=> '✗'",
@@ -85,8 +85,8 @@ void main() {
         "return '·'",
       ],
       'example/listview_demo.dart': ["selected ? '▶'"],
-      'example/pub_search/app.dart': ["} ▾'"],
-      'example/pub_search/package_detail.dart': [
+      'example/src/pub_search/app.dart': ["} ▾'"],
+      'example/src/pub_search/package_detail.dart': [
         "'View changelog ↗'",
         "'● '",
         "'  ↳ ",

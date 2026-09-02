@@ -78,7 +78,7 @@ void main() {
       );
     });
 
-    test('tracked showcase recipes are local and runnable', () {
+    test('tracked showcase recipes have intentional destinations', () {
       const expected = <String>{
         'chat-loading.json',
         'components-spinner.json',
@@ -99,11 +99,19 @@ void main() {
           jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
         );
         expect(File(recipe.entrypoint).existsSync(), isTrue, reason: file.path);
-        expect(
-          recipe.output,
-          startsWith('.context/demos/'),
-          reason: '${file.path} must remain a local review artifact',
-        );
+        if (file.uri.pathSegments.last == 'counter.json') {
+          expect(
+            recipe.output,
+            'website/public/demos/counter.cast',
+            reason: '${file.path} owns the published website recording',
+          );
+        } else {
+          expect(
+            recipe.output,
+            startsWith('.context/demos/'),
+            reason: '${file.path} must remain a local review artifact',
+          );
+        }
       }
     });
   });
@@ -134,7 +142,7 @@ void main() {
           );
 
     final lines = const LineSplitter().convert(encoder.encode());
-    expect(lines, hasLength(5));
+    expect(lines, hasLength(6));
 
     final header = jsonDecode(lines.first) as Map<String, Object?>;
     expect(header['version'], 2);
@@ -162,6 +170,12 @@ void main() {
     expect(changedFrame[2], contains('\x1b]12;#123456\x1b\\'));
     expect(changedFrame[2], contains('\x1b[3 q'));
     expect(changedFrame[2], contains('\x1b[?25h'));
+
+    expect(
+      jsonDecode(lines[5]),
+      [2.0, 'o', '\x1b[0m'],
+      reason: 'the final frame must remain visible for the recipe duration',
+    );
   });
 
   test('non-zero app exit prevents a successful recording', () {

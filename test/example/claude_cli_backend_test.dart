@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-import '../../example/src/agent_chat_protocol.dart';
-import '../../example/src/agent_session_controller.dart';
-import '../../example/src/claude_cli_backend.dart';
+import '../../example/src/chat/claude_cli_backend.dart';
+import '../../example/src/chat/protocol.dart';
+import '../../example/src/chat/session_controller.dart';
 
 void main() {
   test('system process close cannot block forever on stdin', () async {

@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { once } from 'node:events';
 import { join } from 'node:path';
 
 import { chromium } from '@playwright/test';
+
+import {
+  normalizeBasePath,
+  startStaticExport,
+} from './serve-static-export.mjs';
 
 const websiteRoot = process.cwd();
 const counterExampleSource = readFileSync(
@@ -23,21 +26,18 @@ function readExportedTemplate(name) {
 }
 
 const counterStateSource = readExportedTemplate('counterStateSource');
-const expectedCounterFrame = ['', ' Count: 1', '', '  + Add one', ''].join(
-  '\n',
-);
 const port = Number(process.env.NOIR_WEBSITE_PORT ?? 3018);
 const suppliedUrl = process.env.NOIR_WEBSITE_URL;
-const baseUrl = suppliedUrl ?? `http://localhost:${port}`;
+const basePath = normalizeBasePath(process.env.NOIR_WEBSITE_BASE_PATH);
+const baseUrl = (suppliedUrl ?? `http://localhost:${port}${basePath}`).replace(
+  /\/$/,
+  '',
+);
+const siteOrigin = new URL(baseUrl).origin;
 const chromeOnMac =
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 let server;
-let serverOutput = '';
-
-function appendServerOutput(chunk) {
-  serverOutput += chunk.toString();
-}
 
 async function waitForServer() {
   const deadline = Date.now() + 15_000;
@@ -50,38 +50,21 @@ async function waitForServer() {
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
-  throw new Error(`Timed out waiting for ${baseUrl}.\n${serverOutput}`);
+  throw new Error(`Timed out waiting for ${baseUrl}.`);
 }
 
 async function startServer() {
   if (suppliedUrl) return;
 
-  if (!existsSync(join(websiteRoot, '.next', 'BUILD_ID'))) {
-    throw new Error('Run npm run build before npm run test:smoke.');
-  }
-
-  server = spawn(
-    process.execPath,
-    [
-      'node_modules/next/dist/bin/next',
-      'start',
-      '--hostname',
-      '127.0.0.1',
-      '--port',
-      String(port),
-    ],
-    { cwd: websiteRoot, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  server.stdout.on('data', appendServerOutput);
-  server.stderr.on('data', appendServerOutput);
+  server = await startStaticExport({ basePath, port });
   await waitForServer();
 }
 
 async function stopServer() {
-  if (!server || server.exitCode !== null) return;
-  const exited = once(server, 'exit');
-  server.kill();
-  await exited;
+  if (!server) return;
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => (error ? rejectClose(error) : resolveClose()));
+  });
 }
 
 async function launchBrowser() {
@@ -91,6 +74,28 @@ async function launchBrowser() {
     if (!existsSync(chromeOnMac)) throw error;
     return chromium.launch({ executablePath: chromeOnMac, headless: true });
   }
+}
+
+async function assertInternalLinksUseBasePath(page, pageName) {
+  if (!basePath) return;
+  const invalidLinks = await page
+    .locator('a[href^="/"]')
+    .evaluateAll(
+      (links, expectedBasePath) =>
+        links
+          .map((link) => link.getAttribute('href'))
+          .filter(
+            (href) =>
+              href !== expectedBasePath &&
+              !href?.startsWith(`${expectedBasePath}/`),
+          ),
+      basePath,
+    );
+  assert.deepEqual(
+    [...new Set(invalidLinks)],
+    [],
+    `${pageName} must keep internal links under the Pages base path`,
+  );
 }
 
 async function runSmoke() {
@@ -109,6 +114,7 @@ async function runSmoke() {
     await page
       .getByRole('heading', { name: 'Build reactive terminal UIs in Dart.' })
       .waitFor();
+    await assertInternalLinksUseBasePath(page, 'the homepage');
     assert.equal(
       await page.getByRole('link', { name: 'Examples', exact: true }).count(),
       0,
@@ -120,9 +126,9 @@ async function runSmoke() {
       'the homepage must retain the concise framework ownership model',
     );
     assert.equal(
-      await page.locator('.home-proof .terminal-frame').count(),
+      await page.locator('.home-proof .terminal-recording').count(),
       1,
-      'the homepage must pair source with one static terminal proof',
+      'the homepage must pair source with one real terminal recording',
     );
     assert.ok(
       (await page
@@ -170,25 +176,64 @@ async function runSmoke() {
         .count()) >= 1,
       'the homepage must show the Counter increment as a named State method',
     );
-    assert.equal(
-      await page
-        .locator('.home-proof .terminal-frame pre code')
-        .evaluate((element) => element.textContent),
-      expectedCounterFrame,
-      'homepage frame must keep Container padding rows as expected cells',
+    const homepageRecording = page.locator('.home-proof .terminal-recording');
+    await homepageRecording.locator('.ap-wrapper').waitFor();
+    const terminalText = homepageRecording.locator('.ap-term-text');
+    await terminalText.waitFor();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.home-proof .terminal-recording .ap-term-text')
+          ?.textContent?.includes('Noir Counter') ?? false,
+    );
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
+      'homepage poster must show the real initial counter frame',
+    );
+    await page.waitForTimeout(900);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*0/,
+      'homepage recording must not autoplay',
+    );
+    await homepageRecording.locator('.ap-play-button').click();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.home-proof .terminal-recording .ap-term-text')
+          ?.textContent?.includes('1') ?? false,
+    );
+    await page.waitForFunction(
+      () =>
+        /this many times:[\s\S]*3/.test(
+          document.querySelector(
+            '.home-proof .terminal-recording .ap-term-text',
+          )?.textContent ?? '',
+        ),
+      undefined,
+      { timeout: 4000 },
+    );
+    await page.waitForTimeout(250);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*3/,
+      'the final pointer interaction must remain visible before the loop',
     );
     assert.equal(
-      await page.getByText('Driver capture', { exact: false }).count(),
-      0,
-      'homepage must not claim a Driver capture it does not have',
-    );
-    assert.equal(
       await page
-        .locator('.home-proof .terminal-frame')
-        .getByText('Expected cell output', { exact: false })
+        .getByText('NoirDriver (NOIR_DRIVE=1)', { exact: false })
         .count(),
       1,
-      'homepage frame must be labeled as expected cell output',
+      'homepage must identify the capture boundary',
+    );
+    assert.equal(
+      await page
+        .locator('.home-proof .terminal-recording')
+        .getByText('Recorded at 64×18', { exact: false })
+        .count(),
+      1,
+      'homepage recording must expose its geometry and driver boundary',
     );
     assert.equal(
       await page.locator('.capability-index article').count(),
@@ -201,6 +246,7 @@ async function runSmoke() {
       'the homepage must offer four task-oriented next steps',
     );
 
+    await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.keyboard.press('Tab');
     const keyboardFocus = await page.evaluate(() => {
       const element = document.activeElement;
@@ -219,7 +265,7 @@ async function runSmoke() {
       'keyboard focus must have a visible outline',
     );
     await page.keyboard.press('Enter');
-    await page.waitForURL('**/#nextra-skip-nav');
+    await page.waitForURL('**/*#nextra-skip-nav');
     assert.equal(
       await page.evaluate(() => document.activeElement?.id),
       'nextra-skip-nav',
@@ -227,9 +273,10 @@ async function runSmoke() {
     );
 
     await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
+    await page.waitForURL('**/docs/getting-started/**');
     assert.equal(
-      new URL(page.url()).pathname,
-      '/docs/getting-started',
+      new URL(page.url()).pathname.replace(/\/$/, ''),
+      `${basePath}/docs/getting-started`,
       'the documentation root must lead to the first tutorial',
     );
 
@@ -260,8 +307,8 @@ async function runSmoke() {
         .locator('main')
         .getByText('dart run noir:run bin/noir_demo.dart', { exact: true })
         .count(),
-      2,
-      'the tutorial must show the hot-reload command and identify the captured frame command',
+      1,
+      'the tutorial must show the hot-reload command once',
     );
     assert.equal(
       await page
@@ -271,20 +318,16 @@ async function runSmoke() {
       '0px',
       'article headings must rely on whitespace instead of a rule after every section title',
     );
-    assert.equal(
-      await page
-        .locator('main .terminal-frame pre code')
-        .evaluate((element) => element.textContent),
-      expectedCounterFrame,
-      'Getting started must reuse the same expected counter frame as the homepage',
-    );
-    assert.equal(
-      await page.getByText('Driver capture', { exact: false }).count(),
-      0,
-      'Getting started must not claim a Driver capture it does not have',
+    const tutorialRecording = page.locator('main .terminal-recording');
+    await tutorialRecording.locator('.ap-wrapper').waitFor();
+    assert.match(
+      (await tutorialRecording.locator('.ap-term-text').textContent()) ?? '',
+      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
+      'Getting started must show the real repository counter poster',
     );
 
     await page.setViewportSize({ width: 390, height: 844 });
+    const expectedLimitationRows = 9;
     const routeContracts = [
       ['/docs/getting-started', '#create-the-project', 1],
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
@@ -293,8 +336,12 @@ async function runSmoke() {
       ['/docs/input-focus', '#use-local-pointer-coordinates', 1],
       ['/docs/testing', 'main table', 1],
       ['/docs/architecture-api', '.architecture-layers > li', 5],
-      ['/docs/widget-catalog', 'main table', 5],
-      ['/docs/platform-limitations', '.limitation-list > div', 6],
+      ['/docs/widget-catalog', 'main table', 6],
+      [
+        '/docs/platform-limitations',
+        '.limitation-list > div',
+        expectedLimitationRows,
+      ],
       ['/api', '.api-surface-status', 4],
     ];
     for (const [route, selector, count] of routeContracts) {
@@ -319,10 +366,11 @@ async function runSmoke() {
         `${route} must not overflow the mobile viewport`,
       );
       assert.equal(
-        await page.locator('a[href="/examples"]').count(),
+        await page.locator(`a[href="${basePath}/examples"]`).count(),
         0,
         `${route} must not link to the removed Examples route`,
       );
+      await assertInternalLinksUseBasePath(page, route);
     }
 
     await page.goto(`${baseUrl}/docs/getting-started`, {
@@ -367,10 +415,11 @@ async function runSmoke() {
     assert.equal(
       await page
         .locator('main pre')
-        .filter({ hasText: 'minWidth: 18' })
+        .filter({ hasText: "title: 'Build log'" })
+        .filter({ hasText: 'width: 24' })
         .count(),
       1,
-      'the layout guide must size a titled border wide enough to paint the title',
+      'the layout guide must size a titled panel wide enough to paint the title',
     );
 
     await page.goto(`${baseUrl}/docs/hooks`, { waitUntil: 'networkidle' });
@@ -484,7 +533,7 @@ async function runSmoke() {
     });
     assert.equal(
       await page.locator('.limitation-list > div').count(),
-      6,
+      expectedLimitationRows,
       'known platform boundaries must be presented as scannable impact rows',
     );
 
@@ -561,7 +610,7 @@ async function runSmoke() {
     );
 
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
-      origin: baseUrl,
+      origin: siteOrigin,
     });
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Copy' }).click();
@@ -660,7 +709,6 @@ try {
   await runSmoke();
   console.log('Website smoke test passed.');
 } catch (error) {
-  if (serverOutput) process.stderr.write(serverOutput);
   throw error;
 } finally {
   await stopServer();

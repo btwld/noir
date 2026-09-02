@@ -13,9 +13,9 @@ import '../../example/widgets_tour.dart';
 import '../helpers/tui_test_app.dart';
 
 void main() {
-  test('mouse-capable example entrypoints ask runTuiApp for mouse once', () {
+  test('mouse-capable example launch sources ask runTuiApp for mouse once', () {
     for (final path in <String>[
-      'example/chat_demo.dart',
+      'example/src/chat/app.dart',
       'example/autocomplete_demo.dart',
       'example/components_demo.dart',
       'example/data_table_demo.dart',
@@ -91,7 +91,7 @@ void main() {
         'example/framework_primitives.dart': <String>[
           "ValueKey<String>('activate')",
         ],
-        'example/chat_demo.dart': <String>[
+        'example/src/chat/app.dart': <String>[
           "ValueKey<String>('transcript')",
           "ValueKey<String>('composer')",
           "ValueKey<String>('permission-deny')",
@@ -109,12 +109,12 @@ void main() {
           "ValueKey<String>('content')",
           "ValueKey<String>('editor')",
         ],
-        'example/pub_search/app.dart': <String>[
+        'example/src/pub_search/app.dart': <String>[
           "ValueKey<String>('query')",
           "ValueKey<String>('sort')",
           "ValueKey<String>('filter')",
         ],
-        'example/pub_search/package_detail.dart': <String>[
+        'example/src/pub_search/package_detail.dart': <String>[
           "ValueKey<String>('tabs')",
           "ValueKey<String>('detail')",
         ],
@@ -187,9 +187,9 @@ void main() {
 
   test('pub search executable is live-only with fresh completion', () {
     final entrypoint = io.File('example/pub_search.dart').readAsStringSync();
-    final app = io.File('example/pub_search/app.dart').readAsStringSync();
+    final app = io.File('example/src/pub_search/app.dart').readAsStringSync();
     final catalog = io.File(
-      'example/pub_search/catalog.dart',
+      'example/src/pub_search/catalog.dart',
     ).readAsStringSync();
 
     expect(

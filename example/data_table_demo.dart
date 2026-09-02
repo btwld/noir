@@ -10,7 +10,7 @@
 
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 typedef _Package = ({String name, int size, String state});
 
