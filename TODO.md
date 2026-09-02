@@ -3,16 +3,19 @@
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
-Noir is **not** cleared for publication, a tag, GitHub release, native build,
-manual workflow dispatch, or public repository visibility until the applicable
-open items below are closed. The previous pub.dev publications recorded below
-are complete. Unpublished `0.0.1-alpha.2` is skipped: that work first ships in
-`0.0.1-alpha.3`.
+`0.0.1-alpha.3` is **published**. It shipped from commit
+`967820b47f3e8ad2c2ab94b84245f5e2f7d3b445`, built from a verified clean clone
+of that exact commit and tagged `v0.0.1-alpha.3`. Unpublished `0.0.1-alpha.2`
+was skipped: that work shipped first in `0.0.1-alpha.3`.
 
-## Open gates — `0.0.1-alpha.3`
+The repository stays private and the first GitHub release remains deferred to
+beta.1. Neither is cleared by this publication.
 
-These must be closed on the **exact** alpha.3 candidate SHA. Do not reuse a
-nearby green CI run, a cancelled HEAD run, or earlier alpha.2 tree evidence.
+## Released — `0.0.1-alpha.3`
+
+Every gate below was closed on the exact candidate
+`967820b47f3e8ad2c2ab94b84245f5e2f7d3b445`, with a clean worktree. Terminal
+evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
 
 - [x] **OpenTUI component parity (Phases 1–2)**: Image, ASCII-font licensing,
       Stack/Positioned, Wrap, TabSelect, Slider, TextTable, semantic
@@ -22,27 +25,36 @@ nearby green CI run, a cancelled HEAD run, or earlier alpha.2 tree evidence.
       baseline below.
 - [x] **Independent behavior and full-diff review** of the pre-alpha.3
       parity work. Alpha.3 still needs its own exact-tree verification below.
-- [ ] **Parity external gates**: obtain explicit authorization before direct
-      Kitty, Sixel, tmux, Screen, OSC52, resize/crop, or other real-terminal
-      checks, then record the results from the exact alpha.3 candidate tree.
-      Until that decision, these remain open rather than silently residual.
-- [ ] **Recovery bundle and clean-clone verification**: restore the
-      committed alpha.3 candidate and pinned OpenTUI gitlink into a fresh
-      checkout, run the verification commands below, and verify all six
-      bundled binaries against `native_manifest.json`.
-- [ ] **Clean-tree publish dry-run** with zero warnings and the intended
-      archive contents, repeated from the clean clone.
-- [ ] **Manual real-terminal check** of hot reload. Ordinary verification is
-      headless, so this is the only path that exercises a real TTY:
-      `dart run noir:run example/counter.dart`, edit a `build()` body, and
-      confirm the repaint without a restart. Runner diagnostics are recorded
-      in `.dart_tool/noir/run.log`.
-- [ ] **Publish `0.0.1-alpha.3` to pub.dev** as a separate deliberate action
-      after the candidate checks above are complete. Do not publish
-      `0.0.1-alpha.2`.
-- [ ] **Repository visibility, tag, and GitHub release** — each remains a
-      separate, deliberate decision. The repository stays private through
-      this alpha. First GitHub release is deferred to beta.1.
+- [x] **Parity external gates**: run under explicit authorization on the
+      candidate. Passed: Kitty direct with the automatic protocol, OSC52
+      acceptance, legacy Ctrl+A/C, the 80x24 to 30x12 to 80x24 resize and crop
+      cycle, forced Kitty graphics direct, and the Kitty counter smoke with
+      raw input, repaint, resize, and graceful exit. Forced Kitty graphics
+      through tmux reproduced the documented limitation: the image sat 38 px
+      high and overlapped the header, then placed correctly after the resize.
+      **Accepted as residual, not run:** Sixel, GNU Screen, and OSC52 through
+      tmux. The last was blocked because the clipboard guard could not
+      snapshot a macOS Universal Clipboard item and failed closed rather than
+      touch a clipboard it could not restore.
+- [x] **Recovery bundle and clean-clone verification**: a fresh clone of the
+      candidate with the pinned OpenTUI gitlink restored passed format,
+      `analyze --fatal-infos`, 191 architecture tests, the 2,199-test serial
+      suite, and verification of all six bundled binaries against
+      `native_manifest.json`.
+- [x] **Clean-tree publish dry-run**: zero warnings from the clean clone,
+      with the intended 15 MB archive.
+- [x] **Manual real-terminal check** of hot reload: passed on a real TTY.
+      `dart run noir:run example/counter.dart`, the counter driven to `2`, then
+      a `build()` body edited. The new text rendered and the counter still read
+      `2`; a restart resets it to `0`, so the preserved state proves
+      reassembly. `run.log` recorded `connected to the app VM service`,
+      `watching`, then `reloaded`.
+- [x] **Publish `0.0.1-alpha.3` to pub.dev**: published from the verified
+      clean clone of the candidate. `0.0.1-alpha.2` was not published.
+- [x] **Tag**: `v0.0.1-alpha.3` annotated on the candidate and pushed.
+- [ ] **Repository visibility and GitHub release** — each remains a separate,
+      deliberate decision. The repository stays private through this alpha.
+      First GitHub release is deferred to beta.1.
 
 ## Done — recorded baseline (alpha.2 work ships first in alpha.3)
 
