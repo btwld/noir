@@ -3,6 +3,8 @@ title: Platform support and limitations
 description: Check Noir’s prerelease targets, native floors, terminal protocol dependencies, and known user-visible limits.
 ---
 
+import Link from 'next/link';
+
 # Platform support and limitations
 
 Noir is an alpha prerelease, not a stable 1.0 release. Check the target OS,
@@ -114,8 +116,10 @@ boundaries.
     <dd>
       Reload does not rerun <code>main()</code> or <code>initState()</code>.
       Live stack signatures, enum-to-class changes, and native library changes
-      can require a full restart. See
-      <a href="/docs/getting-started#change-the-running-app">Getting started</a>
+      can require a full restart. See{' '}
+      <Link href="/docs/getting-started#change-the-running-app">
+        Getting started
+      </Link>{' '}
       for the development-runner loop.
     </dd>
   </div>
@@ -123,8 +127,8 @@ boundaries.
     <dt>Drive mode</dt>
     <dd>
       <code>NOIR_DRIVE=1</code> is headless. It is not evidence of raw-mode or
-      terminal-protocol behavior. See
-      <a href="/docs/testing">Testing</a> for where Driver fits.
+      terminal-protocol behavior. See <Link href="/docs/testing">Testing</Link>{' '}
+      for where Driver fits.
     </dd>
   </div>
   <div>

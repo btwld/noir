@@ -14,8 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
-    "start": "next start",
+    "postbuild": "pagefind --site out --output-path out/_pagefind",
+    "start": "node scripts/serve-static-export.mjs",
     "test:smoke": "node scripts/smoke.mjs",
     "typecheck": "node scripts/highlight-homepage.mjs && tsc --noEmit"
   },

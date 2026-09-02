@@ -29,6 +29,27 @@ npm run build
 npm run test:smoke
 ```
 
+## GitHub Pages
+
+The production site is <https://conceptadev.github.io/noir/>. The
+`.github/workflows/pages.yml` workflow builds `main` and deploys only the
+generated `website/out` artifact. In the repository settings, Pages must use
+**Source: GitHub Actions**.
+
+GitHub supplies the deployed base path to the build. To reproduce the project
+site locally, run:
+
+```sh
+cd website
+NOIR_WEBSITE_BASE_PATH=/noir npm run build
+NOIR_WEBSITE_BASE_PATH=/noir npm run test:smoke
+```
+
+`npm run build` performs a Next.js static export and writes the Pagefind index
+into `website/out/_pagefind`. The `out` directory is generated deployment
+output and is not committed. Pushes to `main` deploy automatically; the manual
+workflow trigger exists for an intentional deployment from another ref.
+
 ## Documentation ownership
 
 Each fact should have one primary home:

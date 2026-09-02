@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { once } from 'node:events';
 import { join } from 'node:path';
 
 import { chromium } from '@playwright/test';
+
+import {
+  normalizeBasePath,
+  startStaticExport,
+} from './serve-static-export.mjs';
 
 const websiteRoot = process.cwd();
 const counterExampleSource = readFileSync(
@@ -28,16 +31,16 @@ const expectedCounterFrame = ['', ' Count: 1', '', '  + Add one', ''].join(
 );
 const port = Number(process.env.NOIR_WEBSITE_PORT ?? 3018);
 const suppliedUrl = process.env.NOIR_WEBSITE_URL;
-const baseUrl = suppliedUrl ?? `http://localhost:${port}`;
+const basePath = normalizeBasePath(process.env.NOIR_WEBSITE_BASE_PATH);
+const baseUrl = (suppliedUrl ?? `http://localhost:${port}${basePath}`).replace(
+  /\/$/,
+  '',
+);
+const siteOrigin = new URL(baseUrl).origin;
 const chromeOnMac =
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 let server;
-let serverOutput = '';
-
-function appendServerOutput(chunk) {
-  serverOutput += chunk.toString();
-}
 
 async function waitForServer() {
   const deadline = Date.now() + 15_000;
@@ -50,38 +53,21 @@ async function waitForServer() {
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
-  throw new Error(`Timed out waiting for ${baseUrl}.\n${serverOutput}`);
+  throw new Error(`Timed out waiting for ${baseUrl}.`);
 }
 
 async function startServer() {
   if (suppliedUrl) return;
 
-  if (!existsSync(join(websiteRoot, '.next', 'BUILD_ID'))) {
-    throw new Error('Run npm run build before npm run test:smoke.');
-  }
-
-  server = spawn(
-    process.execPath,
-    [
-      'node_modules/next/dist/bin/next',
-      'start',
-      '--hostname',
-      '127.0.0.1',
-      '--port',
-      String(port),
-    ],
-    { cwd: websiteRoot, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  server.stdout.on('data', appendServerOutput);
-  server.stderr.on('data', appendServerOutput);
+  server = await startStaticExport({ basePath, port });
   await waitForServer();
 }
 
 async function stopServer() {
-  if (!server || server.exitCode !== null) return;
-  const exited = once(server, 'exit');
-  server.kill();
-  await exited;
+  if (!server) return;
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => (error ? rejectClose(error) : resolveClose()));
+  });
 }
 
 async function launchBrowser() {
@@ -91,6 +77,28 @@ async function launchBrowser() {
     if (!existsSync(chromeOnMac)) throw error;
     return chromium.launch({ executablePath: chromeOnMac, headless: true });
   }
+}
+
+async function assertInternalLinksUseBasePath(page, pageName) {
+  if (!basePath) return;
+  const invalidLinks = await page
+    .locator('a[href^="/"]')
+    .evaluateAll(
+      (links, expectedBasePath) =>
+        links
+          .map((link) => link.getAttribute('href'))
+          .filter(
+            (href) =>
+              href !== expectedBasePath &&
+              !href?.startsWith(`${expectedBasePath}/`),
+          ),
+      basePath,
+    );
+  assert.deepEqual(
+    [...new Set(invalidLinks)],
+    [],
+    `${pageName} must keep internal links under the Pages base path`,
+  );
 }
 
 async function runSmoke() {
@@ -109,6 +117,7 @@ async function runSmoke() {
     await page
       .getByRole('heading', { name: 'Build reactive terminal UIs in Dart.' })
       .waitFor();
+    await assertInternalLinksUseBasePath(page, 'the homepage');
     assert.equal(
       await page.getByRole('link', { name: 'Examples', exact: true }).count(),
       0,
@@ -219,7 +228,7 @@ async function runSmoke() {
       'keyboard focus must have a visible outline',
     );
     await page.keyboard.press('Enter');
-    await page.waitForURL('**/#nextra-skip-nav');
+    await page.waitForURL('**/*#nextra-skip-nav');
     assert.equal(
       await page.evaluate(() => document.activeElement?.id),
       'nextra-skip-nav',
@@ -227,9 +236,10 @@ async function runSmoke() {
     );
 
     await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
+    await page.waitForURL('**/docs/getting-started/**');
     assert.equal(
-      new URL(page.url()).pathname,
-      '/docs/getting-started',
+      new URL(page.url()).pathname.replace(/\/$/, ''),
+      `${basePath}/docs/getting-started`,
       'the documentation root must lead to the first tutorial',
     );
 
@@ -324,10 +334,11 @@ async function runSmoke() {
         `${route} must not overflow the mobile viewport`,
       );
       assert.equal(
-        await page.locator('a[href="/examples"]').count(),
+        await page.locator(`a[href="${basePath}/examples"]`).count(),
         0,
         `${route} must not link to the removed Examples route`,
       );
+      await assertInternalLinksUseBasePath(page, route);
     }
 
     await page.goto(`${baseUrl}/docs/getting-started`, {
@@ -567,7 +578,7 @@ async function runSmoke() {
     );
 
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
-      origin: baseUrl,
+      origin: siteOrigin,
     });
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Copy' }).click();
@@ -666,7 +677,6 @@ try {
   await runSmoke();
   console.log('Website smoke test passed.');
 } catch (error) {
-  if (serverOutput) process.stderr.write(serverOutput);
   throw error;
 } finally {
   await stopServer();
