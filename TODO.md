@@ -3,10 +3,15 @@
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
-`0.0.1-alpha.4` is the active distribution-correction candidate based on the
-repository-hygiene merge at `f553bdcae8d1ebeeea23900c0d3dd35b3f1f8bf7`.
-It changes package contents and documentation without changing Noir's public
-API shapes or runtime behavior, native ABI, or bundled native artifacts.
+`0.0.1-alpha.4` is **published**. It shipped from exact `main` commit
+`86dc43d6564ccc4723c37d2d24607eadf7dd7c67`, tagged
+`v0.0.1-alpha.4`, through GitHub Actions run
+[`33680362083`](https://github.com/conceptadev/noir/actions/runs/33680362083).
+The public archive SHA-256 is
+`833df9c82d5077913e3755b2f78d82d6f9625f0291b590be27315763ae60ed06`.
+This distribution correction changes package contents and documentation
+without changing Noir's public API shapes or runtime behavior, native ABI, or
+bundled native artifacts.
 
 `0.0.1-alpha.3` is **published**. It shipped from commit
 `967820b47f3e8ad2c2ab94b84245f5e2f7d3b445`, built from a verified clean clone
@@ -14,42 +19,55 @@ of that exact commit and tagged `v0.0.1-alpha.3`. Unpublished `0.0.1-alpha.2`
 was skipped: that work shipped first in `0.0.1-alpha.3`.
 
 The repository stays private. A historical GitHub prerelease exists for
-`v0.0.1-alpha.1`; alpha.3 has no GitHub release, and the next GitHub release
-remains deferred to beta.1. Neither repository visibility nor that next
-release is cleared by this publication.
+`v0.0.1-alpha.1`; alpha.3 and alpha.4 have no GitHub releases, and the next
+GitHub release remains deferred to beta.1. Neither repository visibility nor
+that next release is cleared by this publication.
 
-## Candidate — `0.0.1-alpha.4`
+## Released — `0.0.1-alpha.4`
 
-- [ ] **Version and release record**: `pubspec.yaml`, `CHANGELOG.md`, this
-      record, live example copy, and durable limitation guidance agree on the
-      alpha.4 boundary. Historical alpha.3 records and recording fixtures stay
-      pinned.
-- [ ] **Independent behavior and diff review**: verify that this candidate is
-      limited to distribution ownership, documentation, and the Yoga notice;
-      no supported Dart API, native ABI, binary, or OpenTUI pin changes.
-- [ ] **Exact-tree automated gates**: format, fatal-info analysis, architecture
-      tests, the serial ordinary suite, native manifest verification, dartdoc
-      link validation, diff checks, and the publish dry-run pass from a clean
-      candidate tree.
-- [ ] **GitHub candidate gates**: the release PR and the resulting `main`
-      commit pass Linux, macOS, Windows, analysis, and website checks.
-- [ ] **Automated publishing configuration**: confirm pub.dev trusts
-      `conceptadev/noir` with tag pattern `v{{version}}`, and confirm the
-      repository's `publish.yml` trigger matches it. This tag will be the first
-      publication through the repaired pinned inline OIDC workflow.
-- [ ] **Publish and verify**: create annotated tag `v0.0.1-alpha.4` on the exact
-      reviewed `main` commit, push it once, wait for the automatic publish
-      workflow, then verify the public archive hash, Yoga notice, package
-      version, and audit-log provenance.
+Every gate below was closed on the exact tagged candidate
+`86dc43d6564ccc4723c37d2d24607eadf7dd7c67`.
+
+- [x] **Version and release record**: `pubspec.yaml`, `CHANGELOG.md`, live
+      example copy, and durable limitation guidance agree on alpha.4.
+      Historical alpha.3 records and recording fixtures remain pinned.
+- [x] **Independent behavior and diff review**: the final review found no
+      blocker, weakened test, or filler prose. Public barrels, native ABI and
+      binaries, `native_manifest.json`, and the OpenTUI gitlink have no delta
+      from alpha.3. Outside the relocated checkout-only Patch Manager, the
+      remaining framework edits are a dartdoc qualifier removal and
+      semantics-preserving collection-if rewrites.
+- [x] **Exact-tree automated gates**: format and fatal-info analysis passed;
+      203 architecture tests and the 2,211-test serial suite passed; all six
+      binaries matched `native_manifest.json`; action lint and diff checks
+      passed. Dartdoc reported zero errors and eight package-root link
+      warnings. The clean 15 MB publish dry-run reported zero warnings and
+      included `LICENSE-YOGA`.
+- [x] **GitHub candidate gates**: release PR
+      [#38](https://github.com/conceptadev/noir/pull/38) passed analysis,
+      website build and browser smoke, Linux, macOS, and Windows checks. The
+      exact merge commit passed the same platform CI in run
+      [`33679453031`](https://github.com/conceptadev/noir/actions/runs/33679453031),
+      and Pages deployed it in run
+      [`33679452993`](https://github.com/conceptadev/noir/actions/runs/33679452993).
+- [x] **Automated publishing configuration**: the authenticated pub.dev admin
+      page confirmed GitHub Actions publishing for `conceptadev/noir`, tag
+      pattern `v{{version}}`, and push events. The repository's pinned inline
+      `publish.yml` trigger matches that configuration.
+- [x] **Publish and verify**: annotated tag `v0.0.1-alpha.4` points to the exact
+      reviewed commit. The repaired OIDC workflow passed both jobs and pub.dev
+      attributes publication to its run, revision, and repository. The
+      downloaded public archive matches the API hash above, declares alpha.4,
+      includes a byte-identical `LICENSE-YOGA` and the Yoga v3.2.1 notice, and
+      excludes repository-only scripts, tests, website, and release records.
 
 ## Published alpha.3 notice correction
 
 A post-release archive audit confirmed that the published `0.0.1-alpha.3`
 archive omitted Yoga v3.2.1's MIT license notice even though the bundled
-OpenTUI native libraries compile Yoga sources. The alpha.4 candidate adds the
-missing notice to the package archive, but cannot change the already-published
-alpha.3 archive. Alpha.4 is the selected corrective version; retracting alpha.3
-is not part of this release.
+OpenTUI native libraries compile Yoga sources. The published alpha.4 archive
+includes the missing notice, but cannot change the already-published alpha.3
+archive. Retracting alpha.3 was not part of this release.
 
 ## Released — `0.0.1-alpha.3`
 
