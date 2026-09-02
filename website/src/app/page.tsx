@@ -3,11 +3,7 @@ import Link from 'next/link';
 import { HighlightedCode } from '../components/HighlightedCode';
 import { InstallCommand } from '../components/InstallCommand';
 import { PrereleaseNotice } from '../components/PrereleaseNotice';
-import { TerminalFrame } from '../components/TerminalFrame';
-import {
-  counterFrameAfterIncrement,
-  expectedCounterBoundary,
-} from '../lib/counter-example';
+import { TerminalRecording } from '../components/TerminalRecording';
 import { counterStateHtml } from '../lib/counter-highlight';
 
 export default function HomePage() {
@@ -45,11 +41,10 @@ export default function HomePage() {
             Build this counter and hot-reload it
           </Link>
         </div>
-        <TerminalFrame
-          boundary={expectedCounterBoundary}
-          command="dart run noir:run bin/noir_demo.dart"
-          output={counterFrameAfterIncrement}
-          title="Counter after one activation"
+        <TerminalRecording
+          command="dart run noir:run example/counter.dart"
+          sourceHref="https://github.com/conceptadev/noir/blob/main/example/counter.dart"
+          title="Real Noir counter · Up, Space, then pointer activation"
         />
       </section>
 

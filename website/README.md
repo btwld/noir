@@ -52,6 +52,23 @@ into `website/out/_pagefind`. The `out` directory is generated deployment
 output and is not committed. Pushes to `main` deploy automatically; the manual
 workflow trigger exists for an intentional deployment from another ref.
 
+## Recorded examples
+
+The homepage and getting-started guide use the same self-hosted asciicast from
+the shipped counter example. Regenerate it from the repository root after an
+intentional visual or interaction change:
+
+```sh
+dart run scripts/record_noir_demo.dart \
+  --recipe scripts/recordings/counter.json --force
+```
+
+The player shows a static poster until the reader presses Play. Normal-motion
+sessions loop after that explicit action; reduced-motion sessions play once.
+The recording preserves NoirDriver cells, styles, cursor state, and production-
+parser input. It is not evidence of raw-mode cleanup or a particular terminal
+emulator.
+
 ## Documentation ownership
 
 Each fact should have one primary home:

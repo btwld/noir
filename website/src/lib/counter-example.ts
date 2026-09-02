@@ -1,6 +1,3 @@
-export const expectedCounterBoundary =
-  'Expected cell output; colors and the cursor depend on the terminal.';
-
 export const counterAppSource = `import 'package:noir/noir.dart';
 
 void main() => runTuiApp(const CounterApp(), enableMouse: true);
@@ -69,12 +66,3 @@ export const counterStateSource = `class _CounterAppState extends State<CounterA
     );
   }
 }`;
-
-// Container padding 1, Column spacing 1, Button horizontal padding 1.
-export const counterFrameAfterIncrement = [
-  '',
-  ' Count: 1',
-  '',
-  '  + Add one',
-  '',
-].join('\n');

@@ -46,7 +46,7 @@ spacing:
   section-breath: 'clamp(4rem, 10vw, 8.5rem)'
   heading-gap: '1.4rem'
 components:
-  terminal-frame:
+  terminal-recording:
     backgroundColor: '{colors.terminal}'
     textColor: '{colors.terminal-ink}'
     rounded: '{rounded.square}'
@@ -71,8 +71,8 @@ components:
 ## Creative direction
 
 **Ink and Signal** uses warm paper, serif body text, square near-black terminal
-frames, thin rules, and one blue accent. Terminal material is either captured
-output or clearly labelled expected output.
+frames, thin rules, and one blue accent. Terminal material is captured output,
+with its capture boundary stated alongside it.
 
 This is a browser documentation system. It does not prescribe the appearance
 of applications built with Noir.
@@ -87,12 +87,12 @@ code and operations, and system sans is for navigation and compact metadata.
 The product name and page titles carry the largest type. Article titles remain
 strong, while code and terminal output provide supporting evidence.
 
-The terminal surface is black, square, and static. It shows a real headless
-capture or a clearly labelled expected frame beside the code and command that
-produce it. It is never decorative chrome and never implies a real-terminal
-protocol check. The documentation does not need a separate Examples route or
-an embedded playback system; complete repository examples can be linked from
-the guide that explains their behavior.
+The terminal surface is black and square. It shows a reproducible headless
+recording beside the code and command that produce it, with playback remaining
+reader-controlled. It is never decorative chrome and never implies a
+real-terminal protocol check. The documentation does not need a separate
+Examples route; complete repository examples can be demonstrated from the
+guide that explains their behavior.
 
 Blue is a signal, not a theme color. Use it for process numbers or a small
 evidence marker. Links, headings, cards, and whole page regions do not become

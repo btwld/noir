@@ -242,11 +242,21 @@ class AsciicastEncoder {
   }
 
   String encode() {
+    final durationSeconds = _seconds(duration);
+    final events = <List<Object?>>[..._events];
+    if (events.isEmpty ||
+        (events.last[0]! as num).toDouble() < durationSeconds) {
+      // Asciinema Player derives a v2 recording's playback length from its
+      // final event, not the optional header duration. Resetting SGR at the
+      // recipe boundary leaves the rendered cells unchanged while holding the
+      // final frame for the intended amount of time.
+      events.add([durationSeconds, 'o', '\x1b[0m']);
+    }
     final header = <String, Object?>{
       'version': 2,
       'width': width,
       'height': height,
-      'duration': _seconds(duration),
+      'duration': durationSeconds,
       'idle_time_limit': 2.0,
       'command': command,
       'title': title,
@@ -254,7 +264,7 @@ class AsciicastEncoder {
     };
     return <String>[
       jsonEncode(header),
-      for (final event in _events) jsonEncode(event),
+      for (final event in events) jsonEncode(event),
       '',
     ].join('\n');
   }

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "entrypoint": "example/counter.dart",
-  "output": ".context/demos/counter.cast",
+  "output": "website/public/demos/counter.cast",
   "title": "Noir · Stateful counter",
   "width": 64,
   "height": 18,

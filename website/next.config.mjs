@@ -18,6 +18,9 @@ const withNextra = nextra({
 export default withNextra({
   agentRules: false,
   basePath,
+  env: {
+    NEXT_PUBLIC_NOIR_BASE_PATH: basePath,
+  },
   images: {
     unoptimized: true,
   },

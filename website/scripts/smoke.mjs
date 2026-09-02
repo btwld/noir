@@ -26,9 +26,6 @@ function readExportedTemplate(name) {
 }
 
 const counterStateSource = readExportedTemplate('counterStateSource');
-const expectedCounterFrame = ['', ' Count: 1', '', '  + Add one', ''].join(
-  '\n',
-);
 const port = Number(process.env.NOIR_WEBSITE_PORT ?? 3018);
 const suppliedUrl = process.env.NOIR_WEBSITE_URL;
 const basePath = normalizeBasePath(process.env.NOIR_WEBSITE_BASE_PATH);
@@ -129,9 +126,9 @@ async function runSmoke() {
       'the homepage must retain the concise framework ownership model',
     );
     assert.equal(
-      await page.locator('.home-proof .terminal-frame').count(),
+      await page.locator('.home-proof .terminal-recording').count(),
       1,
-      'the homepage must pair source with one static terminal proof',
+      'the homepage must pair source with one real terminal recording',
     );
     assert.ok(
       (await page
@@ -179,25 +176,64 @@ async function runSmoke() {
         .count()) >= 1,
       'the homepage must show the Counter increment as a named State method',
     );
-    assert.equal(
-      await page
-        .locator('.home-proof .terminal-frame pre code')
-        .evaluate((element) => element.textContent),
-      expectedCounterFrame,
-      'homepage frame must keep Container padding rows as expected cells',
+    const homepageRecording = page.locator('.home-proof .terminal-recording');
+    await homepageRecording.locator('.ap-wrapper').waitFor();
+    const terminalText = homepageRecording.locator('.ap-term-text');
+    await terminalText.waitFor();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.home-proof .terminal-recording .ap-term-text')
+          ?.textContent?.includes('Noir Counter') ?? false,
+    );
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
+      'homepage poster must show the real initial counter frame',
+    );
+    await page.waitForTimeout(900);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*0/,
+      'homepage recording must not autoplay',
+    );
+    await homepageRecording.locator('.ap-play-button').click();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.home-proof .terminal-recording .ap-term-text')
+          ?.textContent?.includes('1') ?? false,
+    );
+    await page.waitForFunction(
+      () =>
+        /this many times:[\s\S]*3/.test(
+          document.querySelector(
+            '.home-proof .terminal-recording .ap-term-text',
+          )?.textContent ?? '',
+        ),
+      undefined,
+      { timeout: 4000 },
+    );
+    await page.waitForTimeout(250);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*3/,
+      'the final pointer interaction must remain visible before the loop',
     );
     assert.equal(
-      await page.getByText('Driver capture', { exact: false }).count(),
-      0,
-      'homepage must not claim a Driver capture it does not have',
-    );
-    assert.equal(
       await page
-        .locator('.home-proof .terminal-frame')
-        .getByText('Expected cell output', { exact: false })
+        .getByText('NoirDriver (NOIR_DRIVE=1)', { exact: false })
         .count(),
       1,
-      'homepage frame must be labeled as expected cell output',
+      'homepage must identify the capture boundary',
+    );
+    assert.equal(
+      await page
+        .locator('.home-proof .terminal-recording')
+        .getByText('Recorded at 64×18', { exact: false })
+        .count(),
+      1,
+      'homepage recording must expose its geometry and driver boundary',
     );
     assert.equal(
       await page.locator('.capability-index article').count(),
@@ -210,6 +246,7 @@ async function runSmoke() {
       'the homepage must offer four task-oriented next steps',
     );
 
+    await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.keyboard.press('Tab');
     const keyboardFocus = await page.evaluate(() => {
       const element = document.activeElement;
@@ -270,8 +307,8 @@ async function runSmoke() {
         .locator('main')
         .getByText('dart run noir:run bin/noir_demo.dart', { exact: true })
         .count(),
-      2,
-      'the tutorial must show the hot-reload command and identify the captured frame command',
+      1,
+      'the tutorial must show the hot-reload command once',
     );
     assert.equal(
       await page
@@ -281,17 +318,12 @@ async function runSmoke() {
       '0px',
       'article headings must rely on whitespace instead of a rule after every section title',
     );
-    assert.equal(
-      await page
-        .locator('main .terminal-frame pre code')
-        .evaluate((element) => element.textContent),
-      expectedCounterFrame,
-      'Getting started must reuse the same expected counter frame as the homepage',
-    );
-    assert.equal(
-      await page.getByText('Driver capture', { exact: false }).count(),
-      0,
-      'Getting started must not claim a Driver capture it does not have',
+    const tutorialRecording = page.locator('main .terminal-recording');
+    await tutorialRecording.locator('.ap-wrapper').waitFor();
+    assert.match(
+      (await tutorialRecording.locator('.ap-term-text').textContent()) ?? '',
+      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
+      'Getting started must show the real repository counter poster',
     );
 
     await page.setViewportSize({ width: 390, height: 844 });

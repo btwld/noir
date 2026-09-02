@@ -37,10 +37,8 @@ if (!dartFence || dartFence[1] !== counterAppSource) {
     'getting-started.mdx dart fence must equal counterAppSource exactly',
   );
 }
-if (!gettingStarted.includes("from '../../lib/counter-example'")) {
-  throw new Error(
-    'getting-started.mdx must import the shared counter frame constants',
-  );
+if (!gettingStarted.includes('<TerminalRecording')) {
+  throw new Error('getting-started.mdx must show the shared real recording');
 }
 
 const html = await codeToHtml(counterStateSource.trimEnd(), {
