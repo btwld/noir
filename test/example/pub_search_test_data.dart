@@ -1,4 +1,4 @@
-import '../../example/pub_search/models.dart';
+import '../../example/src/pub_search/models.dart';
 
 final examplePubPackage = PubPackageSnapshot(
   name: 'noir',

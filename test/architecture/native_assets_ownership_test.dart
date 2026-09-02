@@ -188,14 +188,11 @@ void main() {
       '/scripts/',
       '/tools/',
       '/external/',
-      '/lib/src/tools/',
       'TODO.md',
       'test/',
       'FFIGEN.md',
       'ffigen_dynamic.yaml',
       'ffigen_native_assets.yaml',
-      'bin/patch_manager.dart',
-      'bin/snapshot_scenes.dart',
     ]) {
       expect(pubignoreRules, contains(rule), reason: rule);
     }

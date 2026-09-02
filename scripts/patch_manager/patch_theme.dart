@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs
 
-import '../../core/color.dart';
-import '../../widgets/icons.dart';
+import 'package:noir/noir.dart' show Color, Icons;
 import 'review_controller.dart';
 
 /// Visual design language for Patch Manager: palette tokens and status glyphs.

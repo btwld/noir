@@ -1,8 +1,8 @@
 // ignore_for_file: cascade_invocations
 
-import 'package:noir/src/tools/patch_manager/patch_manager.dart';
 import 'package:test/test.dart';
 
+import '../../scripts/patch_manager/patch_manager.dart';
 import '../helpers/patch_manager_fixtures.dart';
 
 void main() {

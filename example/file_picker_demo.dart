@@ -1,8 +1,14 @@
+// Run with: dart run example/file_picker_demo.dart
+// The example uses an in-memory project tree and never reads the host file
+// system. Up/Down move, Right expands, Left collapses or selects the parent,
+// and Enter toggles a folder. Tab reaches Cancel and Open; Escape closes the
+// picker and restores focus to its launcher.
+
 import 'dart:async';
 
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 void main() => runTuiApp(const FilePickerDemoApp(), enableMouse: true);
 

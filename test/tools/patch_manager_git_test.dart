@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:noir/src/tools/patch_manager/git_repository.dart'
-    show GitCommandRunner, GitPatchException;
-import 'package:noir/src/tools/patch_manager/patch_manager.dart';
 import 'package:test/test.dart';
 
+import '../../scripts/patch_manager/git_repository.dart'
+    show GitCommandRunner, GitPatchException;
+import '../../scripts/patch_manager/patch_manager.dart';
 import '../helpers/patch_manager_fixtures.dart';
 
 void main() {
@@ -1358,9 +1358,7 @@ void main() {
 
     test('untracked loader forbids every whole-file read API', () {
       final source = _withoutDartComments(
-        File(
-          'lib/src/tools/patch_manager/git_repository.dart',
-        ).readAsStringSync(),
+        File('scripts/patch_manager/git_repository.dart').readAsStringSync(),
       );
       for (final method in [
         'readAsBytes',

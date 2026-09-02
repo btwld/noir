@@ -1339,7 +1339,7 @@ void main() {
     });
 
     test('presentation imports only the supported high-level Noir barrel', () {
-      final source = io.File('example/chat_demo.dart').readAsStringSync();
+      final source = io.File('example/src/chat/app.dart').readAsStringSync();
 
       expect(source, contains("import 'package:noir/noir.dart';"));
       expect(source, isNot(contains('package:noir/src/')));

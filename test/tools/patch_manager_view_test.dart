@@ -9,12 +9,11 @@ import 'package:noir/src/framework/widget.dart';
 import 'package:noir/src/render/geometry.dart';
 import 'package:noir/src/rendering/box.dart';
 import 'package:noir/src/rendering/object.dart';
-import 'package:noir/src/tools/patch_manager/patch_manager.dart';
-import 'package:noir/src/tools/patch_manager/patch_manager_app.dart'
-    show LayoutProbe;
-import 'package:noir/src/tools/patch_manager/patch_theme.dart';
 import 'package:test/test.dart';
 
+import '../../scripts/patch_manager/patch_manager.dart';
+import '../../scripts/patch_manager/patch_manager_app.dart' show LayoutProbe;
+import '../../scripts/patch_manager/patch_theme.dart';
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
 import '../helpers/patch_manager_fixtures.dart';
@@ -1886,10 +1885,10 @@ index 5555555..6666666 100644
 ''';
 
 const _deepPathDiff = '''
-diff --git a/lib/src/tools/patch_manager/patch_manager_app.dart b/lib/src/tools/patch_manager/patch_manager_app.dart
+diff --git a/scripts/patch_manager/patch_manager_app.dart b/scripts/patch_manager/patch_manager_app.dart
 index 1111111..2222222 100644
---- a/lib/src/tools/patch_manager/patch_manager_app.dart
-+++ b/lib/src/tools/patch_manager/patch_manager_app.dart
+--- a/scripts/patch_manager/patch_manager_app.dart
++++ b/scripts/patch_manager/patch_manager_app.dart
 @@ -1 +1 @@
 -old
 +new

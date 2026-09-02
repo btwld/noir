@@ -1,6 +1,6 @@
 // ignore_for_file: public_member_api_docs
 
-import '../../core/color.dart';
+import 'package:noir/noir.dart' show Color;
 import 'git_path.dart';
 import 'models.dart';
 import 'patch_theme.dart';

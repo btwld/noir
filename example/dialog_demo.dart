@@ -1,6 +1,12 @@
+// Run with: dart run example/dialog_demo.dart
+// Activate `Review deploy` to open the dialog. Tab and Shift+Tab remain inside
+// it; Escape or Cancel closes it, and Deploy confirms. The full-screen pointer
+// barrier keeps the underlying screen visible without letting it receive
+// input.
+
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 void main() => runTuiApp(const DialogDemoApp(), enableMouse: true);
 

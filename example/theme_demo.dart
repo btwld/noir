@@ -6,7 +6,7 @@
 
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 void main() => runTuiApp(const ThemeDemoApp());
 

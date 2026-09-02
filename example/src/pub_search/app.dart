@@ -3,7 +3,7 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 
-import '../src/demo_scaffold.dart';
+import '../shared/demo_scaffold.dart';
 import 'catalog.dart';
 import 'models.dart';
 import 'package_detail.dart';

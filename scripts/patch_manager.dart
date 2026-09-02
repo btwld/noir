@@ -1,13 +1,14 @@
 import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
-import 'package:noir/src/tools/patch_manager/patch_manager.dart';
+
+import 'patch_manager/patch_manager.dart';
 
 void main(List<String> args) {
   if (args.contains('--help') || args.contains('-h')) {
     io.stdout.writeln('Interactive Patch Manager');
     io.stdout.writeln();
-    io.stdout.writeln('Usage: dart run bin/patch_manager.dart [worktree]');
+    io.stdout.writeln('Usage: dart run scripts/patch_manager.dart [worktree]');
     io.stdout.writeln();
     io.stdout.writeln(
       'Reviews tracked unstaged changes, split sections, and untracked files.',

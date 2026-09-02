@@ -110,7 +110,8 @@ Use `Modal` for centered modal behavior: closed-loop focus, focus restoration,
 Escape dismissal, and blocked background pointer input. It deliberately owns
 no visible chrome; put a shrink-wrapped `Panel` in `modalBuilder`. There is no
 public command-palette widget. In-repo examples share
-`example/src/demo_scaffold.dart` only for application-specific page chrome.
+`example/src/shared/demo_scaffold.dart` only for application-specific page
+chrome.
 Use `Stack`/`Positioned` for local deliberate overlaps and `Wrap` for
 cell-based runs.
 

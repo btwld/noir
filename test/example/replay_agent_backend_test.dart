@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-import '../../example/src/agent_chat_protocol.dart';
+import '../../example/src/chat/protocol.dart';
 
 void main() {
   group('AgentEventCodec', () {

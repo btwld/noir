@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:pub_api_client/pub_api_client.dart';
 import 'package:test/test.dart';
 
-import '../../example/pub_search/catalog.dart';
-import '../../example/pub_search/models.dart';
+import '../../example/src/pub_search/catalog.dart';
+import '../../example/src/pub_search/models.dart';
 
 void main() {
   group('PubPackageSnapshot.fromApi', () {

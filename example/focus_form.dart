@@ -1,7 +1,7 @@
 // ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 
-import 'src/demo_scaffold.dart';
+import 'src/shared/demo_scaffold.dart';
 
 void main() {
   // Kitty keyboard stays a handle method: only apps that want disambiguated

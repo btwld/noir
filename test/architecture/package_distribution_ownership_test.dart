@@ -22,10 +22,10 @@ void main() {
   final hooksBarrel = _read('lib/hooks.dart');
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
   final ffiBarrel = _read('lib/noir_ffi.dart');
-  final chatDemo = _read('example/chat_demo.dart');
-  final agentProtocol = _read('example/src/agent_chat_protocol.dart');
-  final agentController = _read('example/src/agent_session_controller.dart');
-  final claudeBackend = _read('example/src/claude_cli_backend.dart');
+  final chatDemo = _read('example/src/chat/app.dart');
+  final agentProtocol = _read('example/src/chat/protocol.dart');
+  final agentController = _read('example/src/chat/session_controller.dart');
+  final claudeBackend = _read('example/src/chat/claude_cli_backend.dart');
 
   test('retained source consumer uses only supported package barrels', () {
     final fixtureRoot = Directory('test/fixtures/source_package_consumer');
@@ -419,9 +419,16 @@ void main() {
 
     expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
     expect(catalogEntries, unorderedEquals(shippedExamples));
-    for (final example in shippedExamples) {
-      expect(readme, contains('example/$example'), reason: example);
-    }
+    expect(readme, contains('[example catalog](example/README.md)'));
+    expect(
+      RegExp(r'\[example catalog\]\(example/README\.md\)').allMatches(readme),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'example/[^)]+\.dart').allMatches(readme).length,
+      lessThan(shippedExamples.length),
+      reason: 'README must link to the catalog instead of duplicating it',
+    );
     for (final heading in <String>[
       '## Start here',
       '## Core concepts',
@@ -707,22 +714,47 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
-  test('internal product record stays outside the publish archive', () {
-    final pubignoreLines = _read('.pubignore').split('\n');
+  test(
+    'repository-only code stays in scripts and large examples share one layout',
+    () {
+      expect(
+        Directory('bin').listSync().whereType<File>().map(
+          (file) => file.path.replaceAll(Platform.pathSeparator, '/'),
+        ),
+        unorderedEquals(<String>['bin/health_check.dart', 'bin/run.dart']),
+      );
+      final misplacedToolFiles = Directory('lib/src/tools').existsSync()
+          ? Directory(
+              'lib/src/tools',
+            ).listSync(recursive: true).whereType<File>().toList()
+          : const <File>[];
+      expect(misplacedToolFiles, isEmpty);
 
-    expect(pubignoreLines, contains('/PRODUCT.md'));
+      for (final path in const <String>[
+        'scripts/patch_manager.dart',
+        'scripts/patch_manager/patch_manager.dart',
+        'scripts/snapshot_scenes.dart',
+        'example/src/chat/app.dart',
+        'example/src/chat/protocol.dart',
+        'example/src/chat/session_controller.dart',
+        'example/src/chat/claude_cli_backend.dart',
+        'example/src/pub_search/app.dart',
+        'example/src/pub_search/catalog.dart',
+        'example/src/pub_search/models.dart',
+        'example/src/pub_search/package_detail.dart',
+        'example/src/pub_search/theme.dart',
+        'example/src/shared/demo_scaffold.dart',
+      ]) {
+        expect(File(path).existsSync(), isTrue, reason: path);
+      }
+    },
+  );
 
-    final ignored = Process.runSync('git', [
-      'ls-files',
-      '--cached',
-      '--others',
-      '--ignored',
-      '--exclude-from=.pubignore',
-      '--',
-      'PRODUCT.md',
-    ]);
-    expect(ignored.exitCode, 0, reason: ignored.stderr as String);
-    expect((ignored.stdout as String).trim(), 'PRODUCT.md');
+  test('website records live with the website application', () {
+    expect(File('PRODUCT.md').existsSync(), isFalse);
+    expect(File('DESIGN.md').existsSync(), isFalse);
+    expect(File('website/README.md').existsSync(), isTrue);
+    expect(File('website/DESIGN.md').existsSync(), isTrue);
   });
 
   test(
@@ -732,7 +764,24 @@ void main() {
 
       expect(pubignoreLines, contains('/website/'));
       expect(pubignoreLines, contains('/.impeccable/'));
-      expect(pubignoreLines, contains('/DESIGN.md'));
+      expect(pubignoreLines, isNot(contains('/PRODUCT.md')));
+      expect(pubignoreLines, isNot(contains('/DESIGN.md')));
+
+      final ignored = Process.runSync('git', [
+        'ls-files',
+        '--cached',
+        '--others',
+        '--ignored',
+        '--exclude-from=.pubignore',
+        '--',
+        'website/README.md',
+        'website/DESIGN.md',
+      ]);
+      expect(ignored.exitCode, 0, reason: ignored.stderr as String);
+      expect(
+        (ignored.stdout as String).trim().split('\n'),
+        unorderedEquals(<String>['website/DESIGN.md', 'website/README.md']),
+      );
     },
   );
 

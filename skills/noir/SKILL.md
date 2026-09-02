@@ -127,17 +127,11 @@ class HelloApp extends StatelessWidget {
 ```
 
 Add `noir` to `pubspec.yaml` (`dart pub add noir`), then `dart run` the file.
-Inside this repo, `example/` has a runnable reference for every major feature
-(`hello.dart`, `counter.dart`, `layout_basics.dart`, `layout_demo.dart`,
-`image_demo.dart`, `parity_components_demo.dart`, `focus_form.dart`, `select_demo.dart`, `scrollbox_demo.dart`,
-`textarea_demo.dart`, `listview_demo.dart`, `components_demo.dart`,
-`data_table_demo.dart`, `theme_demo.dart`, `pulse_animation.dart`,
-`inherited_example.dart`, `framework_primitives.dart`, `hooks_counter.dart`,
-`chat_demo.dart` (replay/live semantic agent backends, reducer, and
-public-widget transcript),
-`widgets_tour.dart`, `dialog_demo.dart`,
-`autocomplete_demo.dart`, `file_picker_demo.dart`) — read one before inventing
-a pattern.
+Inside this repository, use `example/README.md` to choose a focused runnable
+example before inventing a pattern. Good starting points are `counter.dart`
+for retained state, `components_demo.dart` for the public component language,
+`focus_form.dart` for input ownership, and `chat_demo.dart` for a complete
+application with a semantic backend boundary.
 
 ## Mental model
 

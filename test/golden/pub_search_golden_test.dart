@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
-import '../../example/pub_search/package_detail.dart';
-import '../../example/pub_search/theme.dart';
+import '../../example/src/pub_search/package_detail.dart';
+import '../../example/src/pub_search/theme.dart';
 import '../example/pub_search_test_data.dart';
 import '../helpers/golden_testing.dart';
 
