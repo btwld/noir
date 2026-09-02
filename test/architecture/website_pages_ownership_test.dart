@@ -23,7 +23,7 @@ void main() {
   test('Pages workflow builds the website and deploys only its export', () {
     final workflow = _read('.github/workflows/pages.yml');
 
-    expect(workflow, contains('push:\n    branches: [main]'));
+    expect(workflow, contains('push:\n    branches:\n      - main'));
     expect(workflow, contains('  workflow_dispatch:'));
     expect(
       workflow,
@@ -55,7 +55,10 @@ void main() {
   test('website records the Pages URL and deployment boundary', () {
     final readme = _read('website/README.md');
 
-    expect(readme, contains('https://conceptadev.github.io/noir/'));
+    expect(
+      readme,
+      contains('https://cuddly-adventure-1v2ez7p.pages.github.io/'),
+    );
     expect(readme, contains('Source: GitHub Actions'));
     expect(readme, contains('website/out'));
     expect(readme, contains('NOIR_WEBSITE_BASE_PATH=/noir'));

@@ -31,13 +31,15 @@ npm run test:smoke
 
 ## GitHub Pages
 
-The production site is <https://conceptadev.github.io/noir/>. The
+The configured private Pages site is
+<https://cuddly-adventure-1v2ez7p.pages.github.io/>. The
 `.github/workflows/pages.yml` workflow builds `main` and deploys only the
-generated `website/out` artifact. In the repository settings, Pages must use
+generated `website/out` artifact. In the repository settings, Pages uses
 **Source: GitHub Actions**.
 
-GitHub supplies the deployed base path to the build. To reproduce the project
-site locally, run:
+GitHub supplies the deployed base path to the build. The current private URL
+uses the root path; to verify compatibility with a public `/noir` project path,
+run:
 
 ```sh
 cd website
