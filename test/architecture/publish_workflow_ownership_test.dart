@@ -96,6 +96,29 @@ void main() {
     expect(preflight, isNot(contains('.dart_tool')));
   });
 
+  test('publish job owns pinned steps instead of a reusable workflow', () {
+    final publishJob = publish.substring(publish.indexOf('  publish:'));
+
+    // A pinned reference to a reusable workflow is not enough. The previous
+    // call pinned dart-lang/setup-dart's publish workflow, whose own steps
+    // use an unpinned actions/checkout, so every tag run failed before it
+    // could publish. The job must therefore own its steps.
+    expect(
+      publishJob,
+      isNot(contains('.github/workflows/')),
+      reason: 'publish must not delegate to an external reusable workflow',
+    );
+    expect(publishJob, contains('runs-on: ubuntu-latest'));
+    expect(publishJob, contains('steps:'));
+    expect(publishJob, contains('dart pub publish --force'));
+
+    // Republishing an existing version is a hard error on pub.dev, so a
+    // re-run or a retagged commit must skip rather than fail.
+    expect(publishJob, contains('publish=false'));
+    expect(publishJob, contains(r'>> "$GITHUB_OUTPUT"'));
+    expect(publishJob, contains("if: steps.state.outputs.publish == 'true'"));
+  });
+
   test('OIDC publication depends on preflight with least privilege', () {
     expect(publish, contains('permissions:\n  contents: read'));
     final publishJob = publish.substring(publish.indexOf('  publish:'));
