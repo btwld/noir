@@ -330,6 +330,7 @@ async function runSmoke() {
     const expectedLimitationRows = 9;
     const routeContracts = [
       ['/docs/getting-started', '#create-the-project', 1],
+      ['/docs/command-line-arguments', '#use-commandrunner-for-subcommands', 1],
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
       ['/docs/state-lifecycle', '#let-one-state-own-the-field', 1],
       ['/docs/hooks', '#preserve-hook-order', 1],

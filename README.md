@@ -201,6 +201,15 @@ diagnostics are written to `.dart_tool/noir/run.log` so they do not overwrite
 the alternate-screen UI. Replace `example/counter.dart` with your package's
 entry point; arguments after it are forwarded to the app unchanged.
 
+A Noir entry point can declare `main(List<String> arguments)` like any Dart
+console program. Applications that need flags or subcommands can depend on
+`package:args`, parse and validate the arguments before calling `runTuiApp`,
+then pass typed values through the root widget's constructor. Noir does not
+re-export a command-line parser. Use `ArgParser` to configure one application
+root and `CommandRunner` only when a command name selects a distinct startup
+workflow. Hot reload does not rerun `main()`, so restart the process to launch
+with different arguments.
+
 ## Widget Lifecycle Hooks
 
 Hooks ship in the main `noir` package but remain outside the default
