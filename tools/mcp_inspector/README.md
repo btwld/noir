@@ -37,7 +37,7 @@ Options:
 `--verbosity=error` on the child matters. In a package whose dependency graph
 has a native-assets build hook, `dart run` writes `Running build hooks...` to
 stdout, and for a stdio server stdout is the protocol channel. See
-[`FINDINGS.md`](FINDINGS.md), entry 14.
+[`FINDINGS.md`](FINDINGS.md), entry 16.
 
 ## Keys
 
@@ -136,3 +136,10 @@ printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick 
 
 [`FINDINGS.md`](FINDINGS.md) records every Noir gap, documented behavior, and
 mcp_dart observation this tool produced.
+
+One authorized iTerm2 run captured this inspector and the official MCP
+Inspector TUI on the same server surface at a 100x40 grid, plus the 80x24 and
+60x18 floors and the elicitation modal. The screenshots, `COMPARISON.md`, and
+`NOTES.md` live in an untracked run folder under
+`.context/terminal-evidence/`, because `.context/` is workspace state rather
+than repository source.

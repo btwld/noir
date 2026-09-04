@@ -95,7 +95,7 @@ class DetailPane extends StatelessWidget {
       return Panel(
         title: 'Result',
         child: Text(
-          'Press Run, or Ctrl+Enter, to send the request.',
+          'Press $_runLabel, or Ctrl+Enter, to send the request.',
           style: TextStyle(color: theme.textMuted),
         ),
       );

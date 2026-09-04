@@ -123,7 +123,24 @@ Ctrl+Enter remain for people.
 
 *Classification.* Noir framework gap.
 
-### 6. Document-widget content is invisible to `DriverLocator.byText`
+### 6. Ctrl+Enter cannot reach an app that does not opt into Kitty keys
+
+A terminal reports Ctrl with Enter only through the Kitty keyboard protocol.
+`runTuiApp` never calls `enableKittyKeyboard`; it is an opt-in method on the
+`TuiApp` handle (`lib/src/app/app.dart:222`). An application that binds
+`SingleActivator(LogicalKeyboardKey.enter, control: true)` therefore has a
+shortcut that works in drive mode's synthetic parser and in a Kitty-enabled
+app, but not in an ordinary iTerm2 session.
+
+*Reproduction.* Route N1 of the authorized terminal run reached the Run button
+with Tab and pressed Enter, because `\x1b[13;5u` produced nothing. The
+`Ctrl+Enter` binding stays in the app for hosts that opt in.
+
+*Layer.* Terminal session and input.
+
+*Classification.* Noir framework gap.
+
+### 7. Document-widget content is invisible to `DriverLocator.byText`
 
 `CodeView` renders through its own document viewport, so `find text` and
 `wait text` never see the result body. Only a painted-frame wait
@@ -139,7 +156,7 @@ whose result view is a document widget.
 
 ## Noir works as documented
 
-### 7. A server-initiated `Modal` opens correctly from a notifier callback
+### 8. A server-initiated `Modal` opens correctly from a notifier callback
 
 `McpClient` calls `onElicitRequest` while it processes an incoming request.
 The session turns that into a controller notification, and the screen opens
@@ -151,7 +168,7 @@ the listener runs outside build. Accept, Decline, and Cancel each complete the
 input over a live session*, and the two elicitation tests in
 `test/tools/mcp_inspector_drive_test.dart`.
 
-### 8. `Modal` lays overlay content out at its natural size
+### 9. `Modal` lays overlay content out at its natural size
 
 A `Column` with the default `MainAxisSize.max` inside `modalBuilder` claims
 every row the terminal has, so the modal panel filled the screen. Adding
@@ -159,7 +176,7 @@ every row the terminal has, so the modal panel filled the screen. Adding
 follows the documented "natural size" rule; the failure mode is just easy to
 miss.
 
-### 9. Noir has no schema-driven form primitive, and that is the right boundary
+### 10. Noir has no schema-driven form primitive, and that is the right boundary
 
 Generating controls from a JSON Schema is application code.
 `lib/src/session/mcp_session.dart` converts the schema into a `FormSpec`, and
@@ -167,14 +184,14 @@ Generating controls from a JSON Schema is application code.
 `Checkbox`, or `TextArea`. The catalog covered every shape the MCP fixtures
 produce without a new widget.
 
-### 10. JSON display has no shipped highlighter
+### 11. JSON display has no shipped highlighter
 
 Noir ships only `PlainTextCodeHighlighter`, so the protocol pane renders JSON
 without syntax color. A language engine stays an application dependency, which
 is the documented boundary. The inspector prints indented JSON and relies on
 structure rather than color.
 
-### 11. A `list_changed` notice can refresh a live `ListView`
+### 12. A `list_changed` notice can refresh a live `ListView`
 
 `InspectorController` reloads the inventory when a `notifications/*/
 list_changed` notice arrives, and the list rebuilds with the new item count.
@@ -182,22 +199,35 @@ Covered by *a list_changed notice reloads the tool list* in
 `test/inspector_controller_test.dart` with an injected notice. No fixture
 server emits one yet, so the live path is untested.
 
-### 12. `TuiApp.exit` ends the app and its child cleanly
+### 13. `TuiApp.exit` ends the app and its child cleanly
 
 Ctrl+Q reaches an `Actions` handler that calls `TuiApp.exit(context)`. The
 controller disposes, the session closes, and the stdio child exits. The drive
 test asserts that no process matching the fixture path survives the quit.
 
-### 13. `TextInput` numeric entry is plain text entry
+### 14. `TextInput` numeric entry is plain text entry
 
 There is no numeric field. `FormModel.toArguments` parses `num` and `int` from
 the text and reports `not a number` or `not an integer` next to the field
 name. That is enough for a form, but every numeric tool argument needs the
 same application-side coercion.
 
+## Real-terminal observations
+
+### 15. The screen holds up in iTerm2 at three grids
+
+One authorized iTerm2 run at 100x40, 80x24, and 60x18 confirmed the layout,
+the generated form, the paired protocol log, the console, and the elicitation
+modal. At 60x18 the result region loses every row, which is entry 1 seen from
+the outside. Every session closed cleanly on Ctrl+C with no cursor or mode
+damage, so the iTerm cursor restoration limitation in `TODO.md` did not
+appear. Evidence and the side-by-side comparison with the official MCP
+Inspector TUI live in an untracked run folder under
+`.context/terminal-evidence/`.
+
 ## mcp_dart and Dart tooling observations
 
-### 14. `dart run` writes build-hook progress to stdout
+### 16. `dart run` writes build-hook progress to stdout
 
 In a package whose dependency graph has a native-assets build hook — which is
 every package that depends on `noir` — `dart run` prints
@@ -211,7 +241,7 @@ StdioClientTransport: Error processing read buffer: ... Skipping data.
 `dart run --verbosity=error <server>.dart` fixes it. Every fixture command in
 this package and in the two root tests carries that flag.
 
-### 15. The SDK's runtime logger writes to stderr and would corrupt a frame
+### 17. The SDK's runtime logger writes to stderr and would corrupt a frame
 
 `package:mcp_dart` logs transport and protocol diagnostics through its own
 `Logger`, whose default handler writes to stderr. In a terminal application
@@ -223,7 +253,7 @@ The client also logs, on every construction,
 `Setting request handler for potentially custom method 'ping'. Ensure client
 capabilities match.` at INFO. A host has to expect that line.
 
-### 16. `notifications/progress` never reaches `fallbackNotificationHandler`
+### 18. `notifications/progress` never reaches `fallbackNotificationHandler`
 
 `Protocol` registers default handlers for `notifications/cancelled` and
 `notifications/progress` (`shared/protocol.dart:632,647`), so a client that
@@ -231,7 +261,7 @@ watches `fallbackNotificationHandler` sees the list-changed, message, and
 resource-updated notices but not progress. The inspector shows progress only
 in the protocol log, which records every message the transport carries.
 
-### 17. `StdioClientTransport` hides the child process
+### 19. `StdioClientTransport` hides the child process
 
 The transport exposes `stderr` when `stderrMode` is `ProcessStartMode.normal`,
 but not the process, its pid, or its exit code. A host cannot report why a
@@ -239,7 +269,7 @@ server died or report its termination status. Both lifetime checks in this
 repository therefore inspect the process table with `pgrep -f <fixture path>`
 rather than reading an exit code.
 
-### 18. A transport decorator cannot forward the optional capabilities
+### 20. A transport decorator cannot forward the optional capabilities
 
 `Transport` and the optional capability interfaces are unrelated class types,
 so `is` does not promote and a decorator needs explicit casts —
@@ -258,7 +288,7 @@ and wrapping `StreamableHttpClientTransport` loses per-request cancellation
 and tool-parameter headers. A `Transport` mixin that forwards every optional
 capability by delegation would remove the trade-off.
 
-### 19. `ping` on the 2026-07-28 profile
+### 21. `ping` on the 2026-07-28 profile
 
 The plan listed this as a candidate. The inspector never sends `ping`, so this
 build neither confirms nor refutes it. It stays open.
