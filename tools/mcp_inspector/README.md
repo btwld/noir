@@ -46,24 +46,29 @@ stdout, and for a stdio server stdout is the protocol channel. See
 | Tab, Shift+Tab | Move focus: tab strip, list, form fields, Run, result |
 | Enter on a row | Select it, then move to the first field awaiting a value; a row with no fields sends its request |
 | Enter or Space on Run | Send the request |
-| Ctrl+Enter | Send the request from anywhere in the form |
+| Ctrl+R | Send the request from anywhere in the form |
 | Ctrl+O | Show the tool's raw input schema in place of the form, and back |
 | Ctrl+N, Ctrl+P | Next and previous tab, from anywhere |
 | `[`, `]` | Previous and next tab, from the list, protocol, and console regions |
-| Ctrl+1 .. Ctrl+5 | Jump to a tab, in terminals that report the chord |
 | Escape in the modal | Cancel the server's request |
 | Ctrl+Q | Quit through `TuiApp.exit` |
-| Ctrl+C | Quit through Noir's terminal-session fallback |
+| Ctrl+C | Copy a document selection, or quit through Noir's fallback when unhandled |
 
 `[` and `]` are bound only where nothing accepts typing: `Shortcuts` outranks
 the printable-character stage, so a bare `[` bound above a `TextInput` would
 make that character untypable. Ctrl+N and Ctrl+P cover the form, because
 neither the shipped drive-mode driver nor most terminals can send Ctrl with a
-digit.
+digit. Ctrl+Enter and Ctrl+1..5 remain bound for custom hosts that enable Kitty
+keyboard reporting; the normal CLI does not enable it. Use Ctrl+R and Ctrl+N/P
+with the commands above.
 
 ## Tabs
 
 - **Tools** — the input schema as a form, a Run action, and the result.
+  Descriptions and value constraints appear below each field. Tab and Shift+Tab
+  scroll focused fields into view; the mouse wheel scrolls the form too.
+  Ctrl+O opens the selected tool's full schema and focuses it for scrolling.
+  It leaves other tabs and server-request modals alone.
 - **Resources** — Enter reads the selected URI.
 - **Prompts** — the declared arguments as a form; Enter gets the prompt.
 - **Protocol** — every JSON-RPC message, paired `-> tools/call #3` with
@@ -71,12 +76,18 @@ digit.
 - **Console** — the child server's standard error, the SDK's own diagnostics,
   and one line per `notifications/*` the client did not handle itself.
 
+The form checks required fields and basic value conversion. Constraint hints
+describe the server's schema; the server still validates those constraints.
+Conditional schemas do not change the form dynamically. Read the full schema
+with Ctrl+O, or in the Protocol tab's `tools/list` response. At narrow widths,
+the full schema also supplies the text truncated from field hints.
+
 ## Fixtures
 
 | Fixture | Profile | What it shows |
 | --- | --- | --- |
 | `fixtures/calculate_server.dart` | default | `calculate` with an enum and two numbers, `file:///logs`, and the `analyze-code` prompt |
-| `fixtures/constrained_server.dart` | default | `schedule` declares every value constraint the form renders, plus `if` / `then` and `dependentRequired`, which it does not |
+| `fixtures/constrained_server.dart` | default | `schedule` declares numeric and string constraints, plus `if` / `then` and `dependentRequired`, which generate no controls |
 | `fixtures/greeting_server.dart` | `--protocol 2026` | `personalized_greeting` answers with `input_required`, then returns a greeting |
 | `fixtures/legacy_elicit_server.dart` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
 
@@ -120,9 +131,10 @@ dart test test/tools/mcp_inspector_drive_test.dart --concurrency=1
 ```
 
 The first runs the commands above as subprocesses. The second drives the real
-screen in drive mode against the fixtures: one tool call, the paired protocol
-log, the 80x24 and 60x18 floors, both elicitation profiles, and the fixture
-child ending with the app.
+screen in drive mode against the fixtures: tool calls, the paired protocol
+log, field and schema scrolling, the 80x24 and 60x18 floors, both elicitation
+profiles, and the fixture child ending with the app. Lifecycle counts use a
+unique process argument, so an interactive inspector may stay open beside them.
 
 Look at the screen at three sizes from the repository root:
 

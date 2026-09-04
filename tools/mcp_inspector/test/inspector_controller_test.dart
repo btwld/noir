@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:mcp_dart/mcp_dart.dart';
 import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
@@ -114,9 +115,45 @@ void main() {
 
     controller.toggleSchema();
 
-    expect(controller.isSchemaVisible, isTrue);
+    expect(controller.isSchemaVisible, isFalse);
     expect(controller.visibleSchema, isNull);
     expect(controller.visibleSchemaText, isNull);
+  });
+
+  test('an empty tool list ignores the schema toggle', () async {
+    final controller = InspectorController(session: FakeMcpSession());
+    addTearDown(controller.dispose);
+    await controller.connect();
+    controller.toggleSchema();
+    expect(controller.isSchemaVisible, isFalse);
+  });
+
+  test('an unencodable schema reports the limitation without throwing', () async {
+    final controller = InspectorController(
+      session: FakeMcpSession(
+        tools: [
+          McpToolInfo(
+            name: 'large',
+            form: const FormSpec([]),
+            schema:
+                jsonDecode(
+                      '{"type":"object","properties":{"n":{"type":"number","maximum":1e400}}}',
+                    )
+                    as Map<String, dynamic>,
+          ),
+        ],
+      ),
+    );
+    addTearDown(controller.dispose);
+    await controller.connect();
+    controller.toggleSchema();
+    expect(controller.visibleSchemaText, contains('cannot be displayed'));
+    expect(controller.visibleSchemaText, contains('non-finite'));
+    expect(
+      controller.visibleSchemaText,
+      isNotNull,
+      reason: 'repeated reads must retain the explanation',
+    );
   });
 
   test(

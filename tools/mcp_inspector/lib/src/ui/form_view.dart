@@ -11,7 +11,7 @@ const formLabelWidth = 12;
 /// The same view serves a tool's input schema, a prompt's arguments, and a
 /// server-initiated elicitation. [keyPrefix] separates the detail form's
 /// `field:` keys from the modal's `elicit:field:` keys.
-class FormView extends StatelessWidget {
+class FormView extends StatefulWidget {
   /// Creates a view over [model].
   const FormView({
     required this.model,
@@ -34,60 +34,146 @@ class FormView extends StatelessWidget {
   final String keyPrefix;
 
   @override
+  State<FormView> createState() => _FormViewState();
+}
+
+class _FormViewState extends State<FormView> {
+  final ScrollController _scroll = ScrollController();
+  final Map<String, FocusNode> _nodes = <String, FocusNode>{};
+  int _viewportExtent = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncNodes();
+    _scroll.addListener(_handleViewportChanged);
+  }
+
+  @override
+  void didUpdateWidget(FormView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncNodes();
+    if (!identical(oldWidget.model, widget.model)) _scroll.jumpTo(0);
+  }
+
+  void _syncNodes() {
+    for (final node in _nodes.values) {
+      node.removeListener(_revealFocusedField);
+    }
+    _nodes.clear();
+    for (final field in widget.model.spec.fields) {
+      final node = widget.focusNodeFor(field.name);
+      _nodes[field.name] = node;
+      node.addListener(_revealFocusedField);
+    }
+  }
+
+  void _handleViewportChanged() {
+    if (_viewportExtent == _scroll.viewportExtent) return;
+    _viewportExtent = _scroll.viewportExtent;
+    _revealFocusedField();
+  }
+
+  void _revealFocusedField() {
+    if (_scroll.viewportExtent <= 0) return;
+    var top = 0;
+    for (final field in widget.model.spec.fields) {
+      final height = _fieldHeight(field);
+      if (_nodes[field.name]!.hasFocus) {
+        final visibleHeight = height.clamp(1, _scroll.viewportExtent);
+        if (top < _scroll.offset) {
+          _scroll.jumpTo(top.toDouble());
+        } else if (top + visibleHeight >
+            _scroll.offset + _scroll.viewportExtent) {
+          _scroll.jumpTo(
+            (top + visibleHeight - _scroll.viewportExtent).toDouble(),
+          );
+        }
+        return;
+      }
+      top += height;
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final node in _nodes.values) {
+      node.removeListener(_revealFocusedField);
+    }
+    _scroll
+      ..removeListener(_handleViewportChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final model = widget.model;
     if (model.spec.isEmpty) {
       return Text('No arguments', style: TextStyle(color: theme.textMuted));
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        for (final field in model.spec.fields) ...<Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 1,
-            children: <Widget>[
-              SizedBox(
-                width: formLabelWidth,
-                child: Text(
-                  field.isRequired ? '${field.label}*' : field.label,
-                  style: TextStyle(color: theme.textMuted),
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Expanded(child: _control(field)),
-            ],
-          ),
-          // The hint sits under the control, indented past the label column,
-          // so a field the schema documents costs one extra row and a field
-          // it does not costs none.
-          if (field.hint case final hint?)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 1,
-              children: <Widget>[
-                const SizedBox(width: formLabelWidth),
-                Expanded(
-                  child: Text(
-                    hint,
-                    style: TextStyle(color: theme.textMuted),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
+    return SizedBox(
+      height: model.spec.fields.fold<int>(
+        0,
+        (height, field) => height + _fieldHeight(field),
+      ),
+      child: ScrollBox(
+        controller: _scroll,
+        canRequestFocus: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            for (final field in model.spec.fields) ...<Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 1,
+                children: <Widget>[
+                  SizedBox(
+                    width: formLabelWidth,
+                    child: Text(
+                      field.isRequired ? '${field.label}*' : field.label,
+                      style: TextStyle(color: theme.textMuted),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  Expanded(child: _control(field)),
+                ],
+              ),
+              // The hint sits under the control, indented past the label column,
+              // so a field the schema documents costs one extra row and a field
+              // it does not costs none.
+              if (field.hint case final hint?)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 1,
+                  children: <Widget>[
+                    const SizedBox(width: formLabelWidth),
+                    Expanded(
+                      child: Text(
+                        hint,
+                        style: TextStyle(color: theme.textMuted),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-        ],
-      ],
+            ],
+          ],
+        ),
+      ),
     );
   }
 
   Widget _control(FormFieldSpec field) {
-    final key = ValueKey<String>('$keyPrefix:${field.name}');
-    final node = focusNodeFor(field.name);
+    final model = widget.model;
+    final key = ValueKey<String>('${widget.keyPrefix}:${field.name}');
+    final node = _nodes[field.name]!;
     switch (field.kind) {
       case FormFieldKind.boolean:
         return Checkbox(
@@ -96,7 +182,7 @@ class FormView extends StatelessWidget {
           focusNode: node,
           onChanged: (value) {
             model.setFlag(field.name, value: value);
-            onChanged();
+            widget.onChanged();
           },
         );
       case FormFieldKind.select:
@@ -109,11 +195,11 @@ class FormView extends StatelessWidget {
           key: key,
           options: options,
           selectedIndex: current < 0 ? 0 : current,
-          height: options.length < 4 ? options.length : 4,
+          height: _controlHeight(field),
           focusNode: node,
           onChanged: (index, option) {
             model.setText(field.name, option.value ?? option.name);
-            onChanged();
+            widget.onChanged();
           },
         );
       case FormFieldKind.json:
@@ -121,9 +207,9 @@ class FormView extends StatelessWidget {
           key: key,
           controller: model.controllerFor(field.name),
           focusNode: node,
-          height: 3,
+          height: _controlHeight(field),
           placeholder: 'raw JSON',
-          onChanged: (_) => onChanged(),
+          onChanged: (_) => widget.onChanged(),
         );
       case FormFieldKind.text:
       case FormFieldKind.number:
@@ -133,10 +219,21 @@ class FormView extends StatelessWidget {
           controller: model.controllerFor(field.name),
           focusNode: node,
           placeholder: _placeholderFor(field.kind),
-          onChanged: (_) => onChanged(),
+          onChanged: (_) => widget.onChanged(),
         );
     }
   }
+
+  // Controls have fixed row counts and hints occupy one row. Use the same
+  // extents for construction and focus scrolling; no terminal-size API is needed.
+  static int _controlHeight(FormFieldSpec field) => switch (field.kind) {
+    FormFieldKind.select => field.options.length.clamp(1, 4),
+    FormFieldKind.json => 3,
+    _ => 1,
+  };
+
+  static int _fieldHeight(FormFieldSpec field) =>
+      _controlHeight(field) + (field.hint == null ? 0 : 1);
 
   static String? _placeholderFor(FormFieldKind kind) => switch (kind) {
     FormFieldKind.number => 'number',

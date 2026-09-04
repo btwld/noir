@@ -61,9 +61,7 @@ class ElicitationModal extends StatelessWidget {
                   style: TextStyle(color: theme.warning),
                   maxLines: 2,
                 ),
-              // Bounded for the same reason as the detail pane's form: a
-              // described field costs an extra hint row, and the Accept row
-              // below must not leave the modal at the narrow floor.
+              // Fields scroll inside this bound while the actions stay visible.
               Flexible(
                 child: FormView(
                   model: pending.form,

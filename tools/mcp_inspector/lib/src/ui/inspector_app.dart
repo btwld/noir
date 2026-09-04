@@ -124,6 +124,8 @@ class _InspectorAppState extends State<InspectorApp> {
           ),
         const SingleActivator(LogicalKeyboardKey.enter, control: true):
             const RunRequestIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            const RunRequestIntent(),
         // Ctrl+N and Ctrl+P step the tab strip from anywhere, including a
         // focused field. `[` and `]` are scoped to regions that never accept
         // typing, and terminals do not agree on Ctrl with a digit.
@@ -161,13 +163,16 @@ class _InspectorAppState extends State<InspectorApp> {
             intent,
             context,
           ) {
+            final wasVisible = _controller.visibleSchema != null;
             _controller.toggleSchema();
             // Swapping either view out removes whatever owned focus, and
             // `Shortcuts` are looked up from the focused element, so an
             // unfocused tree would stop answering every binding. Opening is
             // covered by the schema view's `autofocus`; closing has nothing
             // that autofocuses, so hand focus to Run, which stays mounted.
-            if (_controller.visibleSchema == null) _runFocus.requestFocus();
+            if (wasVisible && _controller.visibleSchema == null) {
+              _runFocus.requestFocus();
+            }
             return KeyEventResult.handled;
           }),
           ExitInspectorIntent: CallbackAction<ExitInspectorIntent>((
@@ -393,7 +398,7 @@ class _InspectorAppState extends State<InspectorApp> {
   String get _footer => switch (_controller.connectionState) {
     InspectorConnectionState.failed =>
       _controller.errorMessage ?? 'The session failed.',
-    _ => 'Tab focus  Enter select  Ctrl+Enter send  Ctrl+N/P tabs  Ctrl+C exit',
+    _ => 'Tab focus  Ctrl+R run  Ctrl+O schema  Ctrl+N/P tabs  Ctrl+Q quit',
   };
 
   List<SelectOption<InspectorTab>> get _tabOptions =>

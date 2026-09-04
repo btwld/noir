@@ -178,7 +178,16 @@ final class InspectorController extends ChangeNotifier {
     if (schema == null) return null;
     if (!identical(schema, _schemaTextSource)) {
       _schemaTextSource = schema;
-      _schemaText = const JsonEncoder.withIndent('  ').convert(schema);
+      try {
+        _schemaText = const JsonEncoder.withIndent('  ').convert(schema);
+        // Dart reports unsupported wire values as an Error; this is input
+        // the inspector must explain without breaking its build method.
+        // ignore: avoid_catching_errors
+      } on JsonUnsupportedObjectError {
+        _schemaText =
+            'This schema cannot be displayed as JSON: it contains '
+            'a non-finite number or another unsupported value.';
+      }
     }
     return _schemaText;
   }
@@ -188,7 +197,11 @@ final class InspectorController extends ChangeNotifier {
   /// Only a tool carries a schema, so the other tabs ignore the request
   /// instead of changing hidden state the reader cannot see.
   void toggleSchema() {
-    if (_activeTab != InspectorTab.tools) return;
+    if (_activeTab != InspectorTab.tools ||
+        selectedTool?.schema == null ||
+        _pendingElicitation != null) {
+      return;
+    }
     _isSchemaVisible = !_isSchemaVisible;
     notifyListeners();
   }

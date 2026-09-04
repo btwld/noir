@@ -87,9 +87,8 @@ class DetailPane extends StatelessWidget {
                 ),
               ),
             )
-          // `Flexible` bounds a long form instead of pushing Run and the
-          // result off the pane. Noir cannot measure the terminal, so the
-          // form cannot decide for itself how many rows it may take.
+          // The form owns scrolling inside this bound; Run and the result
+          // retain their own space while focus reveals each field.
           else if (form != null)
             Flexible(
               child: FormView(
@@ -127,7 +126,7 @@ class DetailPane extends StatelessWidget {
       return Panel(
         title: 'Result',
         child: Text(
-          'Press $_runLabel, or Ctrl+Enter, to send the request.',
+          'Press $_runLabel or Ctrl+R to send the request.',
           style: TextStyle(color: theme.textMuted),
         ),
       );

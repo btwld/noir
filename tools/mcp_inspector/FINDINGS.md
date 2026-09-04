@@ -28,9 +28,9 @@ the `TuiApp` handle. An application that wants a list to fill its pane has to
 hard-code a row budget for the smallest grid it supports.
 
 *Reproduction.* `lib/src/ui/primitives_pane.dart` sets `primitiveListRows` to
-12, chosen for a 60x18 grid. At 100x30 the list leaves twelve rows of the pane
-empty; below 80x24 the result panel loses every row it had, because the
-`Expanded` that holds it is squeezed to zero.
+12, chosen for a 60x18 grid. At 100x30 the list leaves unused rows in the pane.
+The inspector's forms now use bounded scroll viewports, so their field count
+does not push Run or the modal actions outside the pane.
 
 *Layer.* Widgets and layout.
 
@@ -127,8 +127,9 @@ disposes every node in `State.dispose`.
 driver, even though a Kitty-protocol terminal can send both.
 
 *Workaround in this tool.* Ctrl+N and Ctrl+P step the tab strip from anywhere,
-and `[` and `]` step it in regions that never accept typing. Ctrl+1..5 and
-Ctrl+Enter remain for people.
+and `[` and `]` step it in regions that never accept typing. Ctrl+R sends a
+request. Ctrl+1..5 and Ctrl+Enter remain bound for custom hosts that explicitly
+enable Kitty keyboard reporting.
 
 *Layer.* Drive-mode driver.
 
@@ -145,7 +146,8 @@ app, but not in an ordinary iTerm2 session.
 
 *Reproduction.* Route N1 of the authorized terminal run reached the Run button
 with Tab and pressed Enter, because `\x1b[13;5u` produced nothing. The
-`Ctrl+Enter` binding stays in the app for hosts that opt in.
+`Ctrl+Enter` binding stays in the app for hosts that opt in; the normal CLI
+advertises and accepts Ctrl+R instead.
 
 *Layer.* Terminal session and input.
 
@@ -214,7 +216,8 @@ server emits one yet, so the live path is untested.
 
 Ctrl+Q reaches an `Actions` handler that calls `TuiApp.exit(context)`. The
 controller disposes, the session closes, and the stdio child exits. The drive
-test asserts that no process matching the fixture path survives the quit.
+test asserts that no process carrying that run's unique marker survives the
+quit. Other inspector sessions are outside that count.
 
 ### 14. `TextInput` numeric entry is plain text entry
 
@@ -277,8 +280,9 @@ in the protocol log, which records every message the transport carries.
 The transport exposes `stderr` when `stderrMode` is `ProcessStartMode.normal`,
 but not the process, its pid, or its exit code. A host cannot report why a
 server died or report its termination status. Both lifetime checks in this
-repository therefore inspect the process table with `pgrep -f <fixture path>`
-rather than reading an exit code.
+repository therefore inspect the process table with `pgrep -f <unique marker>`
+rather than reading an exit code. The marker is an extra fixture argument,
+generated for each test invocation; the fixture ignores it.
 
 ### 20. A transport decorator cannot forward the optional capabilities
 
@@ -316,8 +320,9 @@ So a conditional tool schema arrives fully described. Anything a client drops
 after that, the client dropped on its own.
 
 `Tool.fromJson` also calls `_validateObjectRootSchema`, which rejects any
-`inputSchema` whose root type is not `object`. A root `oneOf` never reaches a
-client.
+`inputSchema` whose root type is not `object`. An object root can still carry
+`oneOf` alongside its `type` and `properties`; it is an untyped root containing
+only `oneOf` that the SDK rejects.
 
 ### 23. `compileJsonSchemaValidator` is hidden from the public API
 
@@ -343,11 +348,14 @@ the unconditional properties only.
 
 Value constraints are the common case, and the form now shows them:
 `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`,
-`minLength`, `maxLength`, `pattern`, and `format` all render as hint text
-under the control, beside the property description.
+`minLength`, `maxLength`, `pattern`, `format`, `minItems`, `maxItems`, and
+`uniqueItems` render as hint text under the control, beside the property
+description. Enum choices still show other declared constraints: JSON Schema
+applies those keywords together.
 
-Conditional keywords remain unrendered. Ctrl+O shows the raw schema beside the
-tool so the reader can see them: the view autofocuses as it mounts, so it
+Conditional keywords generate no controls. The Protocol tab's `tools/list`
+response has always carried the schema. Ctrl+O now also shows it beside the
+selected tool: the view autofocuses as it mounts, so it
 scrolls immediately, and `test/tools/mcp_inspector_drive_test.dart` proves it
 reaches `"if"` in the constrained fixture's 64-line schema.
 
@@ -355,16 +363,25 @@ Evaluating those keywords to drive the form live is a deliberate non-goal:
 real servers rarely send them, and a form that silently applies a condition
 incorrectly is worse than one that does not try.
 
-Both forms are wrapped in `Flexible`. Noir cannot measure the terminal, which
-is entry 1, so the form cannot decide how many rows it may take; bounding it
-keeps Run, and the modal's Accept row, on the pane at the 60x18 floor.
+Both forms are bounded and scroll as Tab or Shift+Tab focuses each field.
+`ScrollController.viewportExtent` supplies the local viewport height, so this
+does not require measuring the terminal. Run and the modal actions remain
+outside the scrolling region at the 60x18 floor. Drive tests cover the last
+constrained field even at 100x30, where the previous `Flexible`-only form
+clipped it, and all eight fields of a long elicitation at 60x18.
 
-### 25. The stdio lifecycle test counts processes machine-wide
+An out-of-range numeric token such as `1e400` can decode to infinity in Dart.
+The hint retains that value as text, and the schema view reports that it cannot
+display the schema as JSON instead of throwing or inventing a replacement bound.
+
+### 25. Lifecycle tests used to count unrelated inspector processes
 
 `test/stdio_lifecycle_test.dart` asserts that `close()` leaves no child, and
 counts with `pgrep -f fixtures/calculate_server.dart`. The pattern matches
 every process on the machine, so an interactive
 `dart run bin/mcp_inspector.dart -- dart run ... fixtures/calculate_server.dart`
-session running beside the suite fails the test. The reading is correct for
-the machine and wrong for the test. Scoping the count to the child the session
-started would fix it.
+session running beside the suite failed the test. Both lifetime checks now
+count a unique process argument generated per run. The package test also keeps
+a second live fixture connected, closes the tested session, and successfully
+calls the second fixture afterward. This proves isolation without requiring
+the user to close an interactive session.

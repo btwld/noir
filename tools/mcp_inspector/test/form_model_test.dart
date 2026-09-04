@@ -170,13 +170,13 @@ void main() {
       expect(field.constraintText, 'items 1..5, unique');
     });
 
-    test('a closed choice list reports no length constraint', () {
+    test('enum choices still report their conjunctive constraints', () {
       final field = fieldFromWire(
-        '{"type":"string","enum":["a","b"],"minLength":1}',
+        '{"type":"string","enum":["a","long"],"minLength":3}',
       );
 
       expect(field.kind, FormFieldKind.select);
-      expect(field.constraintText, isNull);
+      expect(field.constraintText, 'length >= 3');
     });
 
     test('joins the description and the constraints into one hint', () {

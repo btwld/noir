@@ -170,8 +170,8 @@ final class FormSpec {
 
   /// Summarises the value constraints [schema] declares beyond its type.
   ///
-  /// Returns null when the schema declares none. A closed choice list already
-  /// constrains the value, so a `select` field reports nothing.
+  /// Returns null when the schema declares none. An enum is conjunctive with
+  /// the other keywords, so its choices still need their declared constraints.
   static String? _constraintTextOf(JsonSchema schema) {
     final parts = <String>[];
     switch (schema) {
@@ -180,9 +180,7 @@ final class FormSpec {
         :final maxLength,
         :final pattern,
         :final format,
-        :final enumValues,
       ):
-        if (enumValues != null && enumValues.isNotEmpty) break;
         final length = _rangeText(minLength, maxLength);
         if (length != null) parts.add('length $length');
         if (pattern != null) parts.add('pattern $pattern');
