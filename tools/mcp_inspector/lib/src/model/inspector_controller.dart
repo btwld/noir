@@ -107,6 +107,18 @@ final class InspectorController extends ChangeNotifier {
   /// Where the session stands.
   InspectorConnectionState get connectionState => _connectionState;
 
+  /// Identity of the connected server, or null before the handshake.
+  McpServerInfo? get serverInfo => session.serverInfo;
+
+  /// The negotiated MCP protocol version, or null before the handshake.
+  String? get protocolVersion => session.protocolVersion;
+
+  /// The capability names the server advertised.
+  Set<String> get capabilities => session.capabilities;
+
+  /// The server's usage instructions, when it supplies them.
+  String? get instructions => session.instructions;
+
   /// Why the session failed, when it did.
   String? get errorMessage => _errorMessage;
 
@@ -222,6 +234,7 @@ final class InspectorController extends ChangeNotifier {
   void selectTab(InspectorTab tab) {
     if (_activeTab == tab) return;
     _activeTab = tab;
+    _outcome = null;
     _rebuildForm();
     notifyListeners();
   }
