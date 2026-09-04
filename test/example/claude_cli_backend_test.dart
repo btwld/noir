@@ -36,10 +36,10 @@ void main() {
   });
 
   group('ClaudeStreamEventDecoder', () {
-    test('normalizes the pinned partial stream without duplicating text', () {
+    test('normalizes the pinned 2.1.258 stream without duplicating text', () {
       final decoder = ClaudeStreamEventDecoder()..beginRequest('request-1');
       final events = File(
-        'test/fixtures/claude_cli/stream_2_1_246.jsonl',
+        'test/fixtures/claude_cli/stream_2_1_258.jsonl',
       ).readAsLinesSync().expand(decoder.decodeLine).toList();
 
       final session = events.whereType<AgentSessionEvent>().single;
@@ -49,22 +49,17 @@ void main() {
       expect(session.permissionMode, AgentPermissionMode.unattended);
       expect(
         events.whereType<AgentTextDeltaEvent>().map((event) => event.delta),
-        ['NOIR_', 'SPIKE_OK'],
+        ['NOIR_', '258_OK'],
       );
       final finalText = events.whereType<AgentTextFinalEvent>().single;
       expect(finalText.blockId, 'message-1:0');
-      expect(finalText.text, 'NOIR_SPIKE_OK');
-      expect(
-        events.whereType<AgentUnknownEvent>().map(
-          (event) => event.originalType,
-        ),
-        ['future_event'],
-      );
+      expect(finalText.text, 'NOIR_258_OK');
+      expect(events.whereType<AgentUnknownEvent>(), isEmpty);
       final completed = events.whereType<AgentRequestCompletedEvent>().single;
       expect(completed.requestId, 'request-1');
-      expect(completed.inputTokens, 5375);
+      expect(completed.inputTokens, 5431);
       expect(completed.outputTokens, 15);
-      expect(completed.costUsd, closeTo(0.0101438, 0.0000001));
+      expect(completed.costUsd, closeTo(0.0103708, 0.0000001));
     });
 
     test(
@@ -1008,7 +1003,7 @@ void main() {
       expect(controller.submit('hello'), isTrue);
 
       final raw = File(
-        'test/fixtures/claude_cli/stream_2_1_246.jsonl',
+        'test/fixtures/claude_cli/stream_2_1_258.jsonl',
       ).readAsBytesSync();
       launcher.process.stdout.add(raw);
       await _flushAsync();
@@ -1021,9 +1016,9 @@ void main() {
             .where((entry) => entry.kind == AgentEntryKind.assistant)
             .single
             .text,
-        'NOIR_SPIKE_OK',
+        'NOIR_258_OK',
       );
-      expect(controller.inputTokens, 5375);
+      expect(controller.inputTokens, 5431);
       expect(controller.outputTokens, 15);
     });
   });
