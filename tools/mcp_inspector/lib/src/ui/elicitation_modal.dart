@@ -50,6 +50,7 @@ class ElicitationModal extends StatelessWidget {
           title: 'Server request',
           width: 56,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 1,
             children: <Widget>[

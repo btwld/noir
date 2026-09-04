@@ -29,6 +29,16 @@ void main() {
     'fixtures',
     'calculate_server.dart',
   );
+  final greetingFixture = path.join(
+    packageRoot,
+    'fixtures',
+    'greeting_server.dart',
+  );
+  final legacyFixture = path.join(
+    packageRoot,
+    'fixtures',
+    'legacy_elicit_server.dart',
+  );
 
   setUpAll(() async {
     final resolution = await Process.run(
@@ -117,6 +127,76 @@ void main() {
     },
     skip: _skipReason,
   );
+
+  test('the modal answers a 2026 input_required call', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: <String>[
+        '--protocol',
+        '2026',
+        '--',
+        ..._fixtureCommand(greetingFixture),
+      ],
+    );
+    addTearDown(driver.quit);
+
+    await _answerElicitation(
+      driver,
+      tool: 'personalized_greeting',
+      name: 'Leo',
+    );
+
+    final frame = await driver.waitForText(
+      'Hello, Leo!',
+      timeout: const Duration(seconds: 30),
+    );
+    expect(frame.contains('Result ('), isTrue);
+  });
+
+  test('the same modal answers a 2025-11-25 elicitation/create', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: <String>[
+        '--protocol',
+        'legacy',
+        '--',
+        ..._fixtureCommand(legacyFixture),
+      ],
+    );
+    addTearDown(driver.quit);
+
+    await _answerElicitation(driver, tool: 'register_user', name: 'Leo');
+
+    final frame = await driver.waitForText(
+      'Registered Leo.',
+      timeout: const Duration(seconds: 30),
+    );
+    expect(frame.contains('Result ('), isTrue);
+  });
+}
+
+/// Runs [tool], then answers its server-initiated form with [name].
+Future<void> _answerElicitation(
+  NoirDriver driver, {
+  required String tool,
+  required String name,
+}) async {
+  await driver.waitFor(
+    DriverLocator.byKey('primitive:$tool'),
+    timeout: const Duration(seconds: 30),
+  );
+  // The tool takes no arguments, so Enter on the row sends the request.
+  await driver.sendKey('enter');
+  await driver.waitFor(
+    const DriverLocator.byKey('elicit:field:name'),
+    timeout: const Duration(seconds: 30),
+  );
+  await driver.typeText(name);
+  await driver.clickLocator(const DriverLocator.byKey('elicit:accept'));
 }
 
 /// Why this test cannot run here, or null when it can.

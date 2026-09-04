@@ -1,6 +1,11 @@
+import 'dart:async';
+
+import 'package:mcp_dart/mcp_dart.dart';
 import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
 import 'package:test/test.dart';
 
+import '../fixtures/greeting_server.dart';
+import '../fixtures/legacy_elicit_server.dart';
 import 'fake_mcp_session.dart';
 
 const _calculateForm = FormSpec(<FormFieldSpec>[
@@ -263,4 +268,140 @@ void main() {
     expect(session.closeCount, 1);
     expect(controller.connectionState, InspectorConnectionState.closed);
   });
+
+  group('server-initiated input over a live session', () {
+    test('a 2026 input_required call waits for the accepted form', () async {
+      final live = await _LiveFixture.start(
+        buildGreetingServer(),
+        protocol: McpProtocol.require2026,
+      );
+      addTearDown(live.stop);
+
+      expect(live.controller.tools.single.name, 'personalized_greeting');
+      final running = live.controller.run();
+      await _until(() => live.controller.pendingElicitation != null);
+      final pending = live.controller.pendingElicitation!;
+      expect(pending.prompt.message, 'What name should the greeting use?');
+      expect(pending.form.spec.fields.single.name, 'name');
+      pending.form.setText('name', 'Leo');
+      live.controller.resolveElicitation(ElicitationAction.accept);
+      await running;
+
+      expect(live.controller.outcome?.isError, isFalse);
+      expect(live.controller.outcome?.text, contains('Hello, Leo!'));
+      expect(live.controller.pendingElicitation, isNull);
+    });
+
+    test('declining a 2026 input_required call returns the refusal', () async {
+      final live = await _LiveFixture.start(
+        buildGreetingServer(),
+        protocol: McpProtocol.require2026,
+      );
+      addTearDown(live.stop);
+
+      final running = live.controller.run();
+      await _until(() => live.controller.pendingElicitation != null);
+      live.controller.resolveElicitation(ElicitationAction.decline);
+      await running;
+
+      expect(live.controller.outcome?.text, contains('Greeting declined.'));
+    });
+
+    test('the same handler answers a 2025-11-25 elicitation/create', () async {
+      final live = await _LiveFixture.start(
+        buildLegacyElicitServer(),
+        protocol: McpProtocol.legacy,
+      );
+      addTearDown(live.stop);
+
+      expect(live.controller.tools.single.name, 'register_user');
+      final running = live.controller.run();
+      await _until(() => live.controller.pendingElicitation != null);
+      final pending = live.controller.pendingElicitation!;
+      expect(pending.prompt.message, 'What name should the registration use?');
+      pending.form.setText('name', 'Leo');
+      live.controller.resolveElicitation(ElicitationAction.accept);
+      await running;
+
+      expect(live.controller.outcome?.text, 'Registered Leo.');
+    });
+
+    test('cancelling a 2025-11-25 elicitation returns the refusal', () async {
+      final live = await _LiveFixture.start(
+        buildLegacyElicitServer(),
+        protocol: McpProtocol.legacy,
+      );
+      addTearDown(live.stop);
+
+      final running = live.controller.run();
+      await _until(() => live.controller.pendingElicitation != null);
+      live.controller.resolveElicitation(ElicitationAction.cancel);
+      await running;
+
+      expect(live.controller.outcome?.text, 'Registration cancelled.');
+    });
+  });
+}
+
+/// One in-process server, session, and controller wired over `IOStreamTransport`.
+final class _LiveFixture {
+  _LiveFixture._(this.server, this.controller, this._toClient, this._toServer);
+
+  /// Starts [server] and a connected controller on [protocol].
+  static Future<_LiveFixture> start(
+    McpServer server, {
+    required McpProtocol protocol,
+  }) async {
+    // `stop()` owns both pipes; the lint only sees one function at a time.
+    // ignore: close_sinks
+    final toClient = StreamController<List<int>>();
+    // ignore: close_sinks
+    final toServer = StreamController<List<int>>();
+    await server.connect(
+      IOStreamTransport(stream: toServer.stream, sink: toClient.sink),
+    );
+    final controller = InspectorController(
+      session: LiveMcpSession.transport(
+        IOStreamTransport(stream: toClient.stream, sink: toServer.sink),
+        protocol: protocol,
+      ),
+    );
+    await controller.connect();
+    expect(
+      controller.connectionState,
+      InspectorConnectionState.connected,
+      reason: controller.errorMessage,
+    );
+    return _LiveFixture._(server, controller, toClient, toServer);
+  }
+
+  /// The in-process MCP server.
+  final McpServer server;
+
+  /// The controller under test.
+  final InspectorController controller;
+
+  final StreamController<List<int>> _toClient;
+  final StreamController<List<int>> _toServer;
+
+  /// Releases the controller, the server, and both pipes.
+  Future<void> stop() async {
+    controller.dispose();
+    await server.close();
+    await _toClient.close();
+    await _toServer.close();
+  }
+}
+
+/// Polls [condition] until it holds or the deadline passes.
+Future<void> _until(
+  bool Function() condition, {
+  Duration timeout = const Duration(seconds: 10),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (condition()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  throw StateError('Timed out waiting for the expected state.');
 }
