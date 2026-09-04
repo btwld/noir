@@ -1,0 +1,2 @@
+# The inspector follows the repository analysis contract.
+include: ../../analysis_options.yaml

@@ -16,6 +16,7 @@ analyzer:
     - lib/src/ffi/native_asset_bindings.dart
     - build/**
     - test/fixtures/source_package_consumer/**
+    - tools/**
     - android/**
     - ios/**
     - web/**
