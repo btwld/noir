@@ -180,8 +180,8 @@ final class InspectorController extends ChangeNotifier {
       _schemaTextSource = schema;
       try {
         _schemaText = const JsonEncoder.withIndent('  ').convert(schema);
-        // Dart reports unsupported wire values as an Error; this is input
-        // the inspector must explain without breaking its build method.
+        // Custom sessions can supply values the live SDK rejects. Dart's
+        // encoder reports those as an Error; keep the pane usable.
         // ignore: avoid_catching_errors
       } on JsonUnsupportedObjectError {
         _schemaText =

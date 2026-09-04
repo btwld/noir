@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:noir/noir.dart';
 
+import '../model/form_model.dart';
 import '../model/inspector_controller.dart';
 import '../session/mcp_session.dart';
 import 'console_pane.dart';
@@ -84,6 +85,7 @@ class _InspectorAppState extends State<InspectorApp> {
   final FocusNode _messageFocus = FocusNode(debugLabel: 'message');
   final FocusNode _consoleFocus = FocusNode(debugLabel: 'console');
   final Map<String, FocusNode> _fieldNodes = <String, FocusNode>{};
+  ({FormModel form, FocusNode node})? _pendingFieldFocus;
   InspectorTab _focusedTab = InspectorTab.tools;
 
   @override
@@ -96,6 +98,7 @@ class _InspectorAppState extends State<InspectorApp> {
 
   @override
   void dispose() {
+    _clearPendingFieldFocus();
     _controller
       ..removeListener(_handleControllerChanged)
       ..dispose();
@@ -133,12 +136,11 @@ class _InspectorAppState extends State<InspectorApp> {
             const StepTabIntent(1),
         const SingleActivator(LogicalKeyboardKey.keyP, control: true):
             const StepTabIntent(-1),
-        // Ctrl+O reads as "open the schema". A bare letter would hijack a
-        // focused field, and Ctrl+Enter and Ctrl with a digit never arrive
-        // without the Kitty keyboard protocol.
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true):
+        // Avoid Ctrl+O (terminal discard) and Ctrl+Q (flow control): the
+        // default macOS terminal consumes them before Noir receives input.
+        const SingleActivator(LogicalKeyboardKey.keyG, control: true):
             const ToggleSchemaIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
+        const SingleActivator(LogicalKeyboardKey.keyX, control: true):
             const ExitInspectorIntent(),
       },
       child: Actions(
@@ -260,6 +262,7 @@ class _InspectorAppState extends State<InspectorApp> {
                   focusNodeFor: _detailFieldNode,
                   runFocusNode: _runFocus,
                   schemaFocusNode: _schemaFocus,
+                  autofocusNode: _pendingFieldFocus?.node,
                   resultFocusNode: _resultFocus,
                   onChanged: _rebuild,
                 ),
@@ -293,6 +296,7 @@ class _InspectorAppState extends State<InspectorApp> {
   }
 
   void _activateRow(int index) {
+    _clearPendingFieldFocus();
     _controller.select(index);
     // The schema view replaces the form, so its field nodes are detached and
     // focusing one throws. Selecting the row is the whole action here.
@@ -305,7 +309,28 @@ class _InspectorAppState extends State<InspectorApp> {
       }
       return;
     }
-    _fieldNodes['field:$target']?.requestFocus();
+    final node = _fieldNodes['field:$target'];
+    if (node == null) return;
+    if (node.isAttached) {
+      node.requestFocus();
+    } else {
+      // Selection creates the model and nodes before the new controls mount.
+      // Let the incoming control's Focus lifecycle perform the handoff.
+      _pendingFieldFocus = (form: _controller.form!, node: node);
+      node.addListener(_handlePendingFieldFocus);
+      setState(() {});
+    }
+  }
+
+  void _handlePendingFieldFocus() {
+    if (_pendingFieldFocus?.node.hasFocus != true) return;
+    _clearPendingFieldFocus();
+    if (mounted) setState(() {});
+  }
+
+  void _clearPendingFieldFocus() {
+    _pendingFieldFocus?.node.removeListener(_handlePendingFieldFocus);
+    _pendingFieldFocus = null;
   }
 
   /// The field Enter should move to: the first one still awaiting a value,
@@ -321,6 +346,13 @@ class _InspectorAppState extends State<InspectorApp> {
   }
 
   void _handleControllerChanged() {
+    final pending = _pendingFieldFocus;
+    if (pending != null &&
+        (!identical(pending.form, _controller.form) ||
+            _controller.visibleSchema != null ||
+            _controller.pendingElicitation != null)) {
+      _clearPendingFieldFocus();
+    }
     _syncFieldNodes();
     _syncTabFocus();
     _syncModal();
@@ -398,7 +430,7 @@ class _InspectorAppState extends State<InspectorApp> {
   String get _footer => switch (_controller.connectionState) {
     InspectorConnectionState.failed =>
       _controller.errorMessage ?? 'The session failed.',
-    _ => 'Tab focus  Ctrl+R run  Ctrl+O schema  Ctrl+N/P tabs  Ctrl+Q quit',
+    _ => 'Tab  Ctrl+R run  Ctrl+G schema  Ctrl+N/P tabs  Ctrl+X quit',
   };
 
   List<SelectOption<InspectorTab>> get _tabOptions =>

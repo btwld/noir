@@ -123,8 +123,12 @@ void main() {
         );
       }
 
+      await driver.sendKey('ctrl-x');
+      expect(
+        await driver.waitForExit().timeout(const Duration(seconds: 10)),
+        0,
+      );
       quit = true;
-      expect(await driver.quit(), 0);
       await _until(() async => await _childCount(marker) == 0);
       expect(
         await _childCount(marker),
@@ -135,7 +139,48 @@ void main() {
     skip: _skipReason,
   );
 
-  test('Ctrl+O swaps the schema in and out without losing focus', () async {
+  test('activating a different tool focuses its new field', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: <String>[
+        '--protocol',
+        'legacy',
+        '--',
+        ..._fixtureCommand(
+          path.join(packageRoot, 'test', 'fixtures', 'selection_server.dart'),
+        ),
+      ],
+    );
+    addTearDown(driver.quit);
+    await driver.waitFor(const DriverLocator.byKey('field:firstValue'));
+
+    for (final name in ['second', 'first']) {
+      await driver.clickLocator(DriverLocator.byKey('primitive:$name'));
+      final field = await driver.find(
+        DriverLocator.byKey('field:${name}Value'),
+      );
+      expect(field.hasFocusedDescendant, isTrue);
+      await driver.typeText('entered');
+      await driver.sendKey('ctrl-r');
+      await driver.waitForText('$name: entered');
+    }
+
+    // A completed mount-time focus request must not fire again when the
+    // form returns from the schema view, which deliberately focuses Run.
+    await driver.sendKey('ctrl-g');
+    await driver.waitForText('Schema');
+    await driver.sendKey('ctrl-g');
+    expect(
+      (await driver.find(
+        const DriverLocator.byKey('run'),
+      )).hasFocusedDescendant,
+      isTrue,
+    );
+  });
+
+  test('Ctrl+G swaps the schema in and out without losing focus', () async {
     final driver = await NoirDriver.launch(
       entryPoint,
       width: 100,
@@ -153,7 +198,7 @@ void main() {
     // the focused element.
     await driver.clickLocator(const DriverLocator.byKey('primitive:calculate'));
 
-    await driver.sendKey('ctrl-o');
+    await driver.sendKey('ctrl-g');
     await driver.waitForText('Schema', timeout: const Duration(seconds: 10));
 
     // Enter used to focus a field the schema view had already unmounted,
@@ -163,7 +208,7 @@ void main() {
     expect(afterEnter.contains('Schema'), isTrue);
 
     // Back to the form, which is what the README promises.
-    await driver.sendKey('ctrl-o');
+    await driver.sendKey('ctrl-g');
     await driver.waitForText('operation', timeout: const Duration(seconds: 10));
 
     // The form is bounded, so Run survives both documented floors. Without
@@ -180,6 +225,11 @@ void main() {
         reason:
             'Run lost at ${size.width}x${size.height}:\n'
             '${frame.lines.join('\n')}',
+      );
+      expect(
+        frame.lines.last,
+        contains('Ctrl+X quit'),
+        reason: 'the quit shortcut must remain readable at the size floor',
       );
     }
     await driver.resize(100, 30);
@@ -215,7 +265,7 @@ void main() {
     );
     expect(form.contains('1..10'), isTrue);
 
-    await driver.sendKey('ctrl-o');
+    await driver.sendKey('ctrl-g');
     await driver.waitForText('Schema', timeout: const Duration(seconds: 10));
 
     // `if` and `dependentRequired` generate no control. The per-tool schema
@@ -230,7 +280,7 @@ void main() {
     expect(found, isTrue, reason: 'the schema view never reached "if"');
   });
 
-  test('Ctrl+O leaves every non-tool tab and its focus alone', () async {
+  test('Ctrl+G leaves every non-tool tab and its focus alone', () async {
     final driver = await NoirDriver.launch(
       entryPoint,
       width: 100,
@@ -243,7 +293,7 @@ void main() {
     for (var tab = 1; tab < 5; tab++) {
       await driver.sendKey('ctrl-n');
       final before = await driver.find(const DriverLocator.focused());
-      await driver.sendKey('ctrl-o');
+      await driver.sendKey('ctrl-g');
       final after = await driver.find(const DriverLocator.focused());
       expect(after.type, before.type);
       expect(after.key, before.key);
@@ -363,7 +413,7 @@ void main() {
       await driver.waitFor(const DriverLocator.byKey('primitive:long_form'));
       await driver.sendKey('enter');
       await driver.waitFor(const DriverLocator.byKey('elicit:field:f0'));
-      await driver.sendKey('ctrl-o');
+      await driver.sendKey('ctrl-g');
       for (var index = 0; index < 8; index++) {
         final field = await driver.find(
           DriverLocator.byKey('elicit:field:f$index'),

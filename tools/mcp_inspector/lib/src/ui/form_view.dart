@@ -19,6 +19,7 @@ class FormView extends StatefulWidget {
     required this.onChanged,
     super.key,
     this.keyPrefix = 'field',
+    this.autofocusNode,
   });
 
   /// The editable form this view presents.
@@ -32,6 +33,9 @@ class FormView extends StatefulWidget {
 
   /// Key namespace for the generated controls.
   final String keyPrefix;
+
+  /// A borrowed field node that should take focus as its control mounts.
+  final FocusNode? autofocusNode;
 
   @override
   State<FormView> createState() => _FormViewState();
@@ -180,6 +184,7 @@ class _FormViewState extends State<FormView> {
           key: key,
           value: model.flagOf(field.name),
           focusNode: node,
+          autofocus: identical(widget.autofocusNode, node),
           onChanged: (value) {
             model.setFlag(field.name, value: value);
             widget.onChanged();
@@ -197,6 +202,7 @@ class _FormViewState extends State<FormView> {
           selectedIndex: current < 0 ? 0 : current,
           height: _controlHeight(field),
           focusNode: node,
+          autofocus: identical(widget.autofocusNode, node),
           onChanged: (index, option) {
             model.setText(field.name, option.value ?? option.name);
             widget.onChanged();
@@ -207,6 +213,7 @@ class _FormViewState extends State<FormView> {
           key: key,
           controller: model.controllerFor(field.name),
           focusNode: node,
+          autofocus: identical(widget.autofocusNode, node),
           height: _controlHeight(field),
           placeholder: 'raw JSON',
           onChanged: (_) => widget.onChanged(),
@@ -218,6 +225,7 @@ class _FormViewState extends State<FormView> {
           key: key,
           controller: model.controllerFor(field.name),
           focusNode: node,
+          autofocus: identical(widget.autofocusNode, node),
           placeholder: _placeholderFor(field.kind),
           onChanged: (_) => widget.onChanged(),
         );

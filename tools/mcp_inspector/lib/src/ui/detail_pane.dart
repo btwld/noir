@@ -17,6 +17,7 @@ class DetailPane extends StatelessWidget {
     required this.resultFocusNode,
     required this.schemaFocusNode,
     required this.onChanged,
+    this.autofocusNode,
     super.key,
   });
 
@@ -37,6 +38,9 @@ class DetailPane extends StatelessWidget {
 
   /// Called after a control changes a value, so the owner can rebuild.
   final VoidCallback onChanged;
+
+  /// A field awaiting focus when its control mounts after row activation.
+  final FocusNode? autofocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +99,7 @@ class DetailPane extends StatelessWidget {
                 model: form,
                 focusNodeFor: focusNodeFor,
                 onChanged: onChanged,
+                autofocusNode: autofocusNode,
               ),
             ),
           Row(

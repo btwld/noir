@@ -47,11 +47,11 @@ stdout, and for a stdio server stdout is the protocol channel. See
 | Enter on a row | Select it, then move to the first field awaiting a value; a row with no fields sends its request |
 | Enter or Space on Run | Send the request |
 | Ctrl+R | Send the request from anywhere in the form |
-| Ctrl+O | Show the tool's raw input schema in place of the form, and back |
+| Ctrl+G | Show the tool's raw input schema in place of the form, and back |
 | Ctrl+N, Ctrl+P | Next and previous tab, from anywhere |
 | `[`, `]` | Previous and next tab, from the list, protocol, and console regions |
 | Escape in the modal | Cancel the server's request |
-| Ctrl+Q | Quit through `TuiApp.exit` |
+| Ctrl+X | Quit through `TuiApp.exit` |
 | Ctrl+C | Copy a document selection, or quit through Noir's fallback when unhandled |
 
 `[` and `]` are bound only where nothing accepts typing: `Shortcuts` outranks
@@ -60,14 +60,16 @@ make that character untypable. Ctrl+N and Ctrl+P cover the form, because
 neither the shipped drive-mode driver nor most terminals can send Ctrl with a
 digit. Ctrl+Enter and Ctrl+1..5 remain bound for custom hosts that enable Kitty
 keyboard reporting; the normal CLI does not enable it. Use Ctrl+R and Ctrl+N/P
-with the commands above.
+with the commands above. Ctrl+G and Ctrl+X also avoid terminal discard
+(Ctrl+O) and software flow control (Ctrl+Q), which can consume those keys before
+Noir receives them.
 
 ## Tabs
 
 - **Tools** — the input schema as a form, a Run action, and the result.
   Descriptions and value constraints appear below each field. Tab and Shift+Tab
   scroll focused fields into view; the mouse wheel scrolls the form too.
-  Ctrl+O opens the selected tool's full schema and focuses it for scrolling.
+  Ctrl+G opens the selected tool's full schema and focuses it for scrolling.
   It leaves other tabs and server-request modals alone.
 - **Resources** — Enter reads the selected URI.
 - **Prompts** — the declared arguments as a form; Enter gets the prompt.
@@ -79,7 +81,7 @@ with the commands above.
 The form checks required fields and basic value conversion. Constraint hints
 describe the server's schema; the server still validates those constraints.
 Conditional schemas do not change the form dynamically. Read the full schema
-with Ctrl+O, or in the Protocol tab's `tools/list` response. At narrow widths,
+with Ctrl+G, or in the Protocol tab's `tools/list` response. At narrow widths,
 the full schema also supplies the text truncated from field hints.
 
 ## Fixtures

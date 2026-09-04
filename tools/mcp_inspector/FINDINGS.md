@@ -86,9 +86,10 @@ list on a tab change, and the list and the console take focus back through
 
 *Classification.* Noir framework gap.
 
-The Ctrl+O schema view reproduced this twice more. Swapping the form out for
-the schema removes whatever field owned focus, and every binding stopped —
-Ctrl+O itself, Ctrl+N, and Ctrl+Q, leaving only Ctrl+C. Enter on a list row
+The schema view (originally Ctrl+O, now Ctrl+G) reproduced this twice more.
+Swapping the form out for the schema removes whatever field owned focus, and
+every binding stopped, including Ctrl+O itself, Ctrl+N, and Ctrl+Q, leaving
+only Ctrl+C. Enter on a list row
 then threw `FocusNode is not attached to a FocusManager`, because the code
 still focused the first field awaiting input after that field left the tree.
 
@@ -214,7 +215,7 @@ server emits one yet, so the live path is untested.
 
 ### 13. `TuiApp.exit` ends the app and its child cleanly
 
-Ctrl+Q reaches an `Actions` handler that calls `TuiApp.exit(context)`. The
+Ctrl+X reaches an `Actions` handler that calls `TuiApp.exit(context)`. The
 controller disposes, the session closes, and the stdio child exits. The drive
 test asserts that no process carrying that run's unique marker survives the
 quit. Other inspector sessions are outside that count.
@@ -230,10 +231,10 @@ same application-side coercion.
 
 ### 15. The screen holds up in iTerm2 at three grids
 
-One authorized iTerm2 run at 100x40, 80x24, and 60x18 confirmed the layout,
-the generated form, the paired protocol log, the console, and the elicitation
-modal. At 60x18 the result region loses every row, which is entry 1 seen from
-the outside. Every session closed cleanly on Ctrl+C with no cursor or mode
+The original authorized iTerm2 run at 100x40, 80x24, and 60x18 confirmed the
+layout, the generated form, the paired protocol log, the console, and the elicitation
+modal. Before the form-scroll fix, the result region lost every row at
+60x18. Every session closed cleanly on Ctrl+C with no cursor or mode
 damage, so the iTerm cursor restoration limitation in `TODO.md` did not
 appear. Evidence and the side-by-side comparison with the official MCP
 Inspector TUI live in an untracked run folder under
@@ -354,7 +355,7 @@ description. Enum choices still show other declared constraints: JSON Schema
 applies those keywords together.
 
 Conditional keywords generate no controls. The Protocol tab's `tools/list`
-response has always carried the schema. Ctrl+O now also shows it beside the
+response has always carried the schema. Ctrl+G now also shows it beside the
 selected tool: the view autofocuses as it mounts, so it
 scrolls immediately, and `test/tools/mcp_inspector_drive_test.dart` proves it
 reaches `"if"` in the constrained fixture's 64-line schema.
@@ -370,9 +371,11 @@ outside the scrolling region at the 60x18 floor. Drive tests cover the last
 constrained field even at 100x30, where the previous `Flexible`-only form
 clipped it, and all eight fields of a long elicitation at 60x18.
 
-An out-of-range numeric token such as `1e400` can decode to infinity in Dart.
-The hint retains that value as text, and the schema view reports that it cannot
-display the schema as JSON instead of throwing or inventing a replacement bound.
+Dart can decode an out-of-range numeric token such as `1e400` to infinity,
+but the pinned MCP SDK rejects it before delivery to the inspector. Custom
+`McpSession` implementations can still supply non-finite bounds; their hints
+retain the value as text and the schema view explains that JSON display is
+unavailable. This guard is covered with a fake session, not a live wire claim.
 
 ### 25. Lifecycle tests used to count unrelated inspector processes
 
@@ -385,3 +388,40 @@ count a unique process argument generated per run. The package test also keeps
 a second live fixture connected, closes the tested session, and successfully
 calls the second fixture afterward. This proves isolation without requiring
 the user to close an interactive session.
+
+### 26. Default macOS terminal modes consume Ctrl+O and Ctrl+Q
+
+The authorized follow-up in iTerm2 reproduced two shortcuts that headless drive
+checks could not validate. The owned session had `iexten` with `discard = ^O`
+and `ixon` with `start = ^Q`; an app-priority input observer received Ctrl+G and
+Ctrl+R but received neither Ctrl+O nor Ctrl+Q. The terminal intercepted both
+before Noir's parser. The app now uses Ctrl+G for schema and Ctrl+X for quit.
+The drive checks retain schema focus and non-tool/modal no-op assertions, and
+send the actual quit shortcut before asserting exit and child cleanup.
+
+The follow-up confirmed the calculator, constrained form, long legacy modal,
+and 2026 greeting flow in isolated iTerm2 windows. Tab/Shift+Tab reached the last
+field at 100x30, 80x24, and 60x18; Run and modal actions stayed visible. The
+calculator returned 8 after Home/Delete editing, conditional schema keywords
+were scrollable, all eight modal values were accepted, and the greeting flow
+handled Accept, Cancel, and Decline. The lifecycle test passed while a separate
+interactive inspector stayed open. The footer also fits every shortcut at the
+60x18 floor. Every owned window closed through Ctrl+X and existing sessions
+were preserved. Screenshots and route logs remain under
+`.context/terminal-evidence/20260904T223955Z-0bdf554/`.
+
+
+### 27. Row activation can precede the new field's attachment
+
+Selecting a tool updates the form model and creates its focus nodes before the
+next widget build attaches those nodes. Calling `requestFocus()` immediately
+then throws `FocusNode is not attached to a FocusManager`. The serial suite
+exposed this while activating a just-loaded tool; a two-tool fixture with
+distinct fields reproduces it deterministically on a mouse selection.
+
+The inspector focuses attached fields immediately and declares autofocus for
+an incoming field. The control's existing Focus lifecycle takes focus after
+mounting. The pending request clears on successful focus, form replacement,
+schema/modal entry, or teardown, so reopening the form does not steal focus
+from Run. A drive regression and an isolated iTerm2 mouse route cover switching
+tools in both directions, typing and running each form, and schema return.
