@@ -648,7 +648,7 @@ final class ClaudeStreamEventDecoder {
   }
 }
 
-/// Bounded live adapter for Claude Code 2.1.246 stream-JSON mode.
+/// Bounded live adapter validated against Claude Code 2.1.258 stream-JSON mode.
 final class ClaudeCliBackend implements AgentBackend {
   ClaudeCliBackend({
     required this.workingDirectory,
