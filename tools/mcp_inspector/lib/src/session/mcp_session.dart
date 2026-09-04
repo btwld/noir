@@ -32,6 +32,7 @@ final class FormFieldSpec {
     required this.isRequired,
     this.title,
     this.description,
+    this.constraintText,
     this.options = const <String>[],
     this.initialText = '',
     this.initialFlag = false,
@@ -52,6 +53,13 @@ final class FormFieldSpec {
   /// A human-readable description, when the schema supplies one.
   final String? description;
 
+  /// A summary of the schema's value constraints, when it declares any.
+  ///
+  /// The session layer formats this text so the user-interface layer never
+  /// reads a `package:mcp_dart` schema type. It is null when the schema
+  /// constrains nothing beyond the field's type.
+  final String? constraintText;
+
   /// The closed list of choices for [FormFieldKind.select].
   final List<String> options;
 
@@ -63,6 +71,16 @@ final class FormFieldSpec {
 
   /// The label shown beside the control.
   String get label => title ?? name;
+
+  /// The one-line hint shown under the control, or null when it has none.
+  ///
+  /// A field with both a description and constraints shows the description
+  /// first and the constraints in parentheses.
+  String? get hint {
+    if (description == null) return constraintText;
+    if (constraintText == null) return description;
+    return '$description  ($constraintText)';
+  }
 }
 
 /// An ordered set of generated form fields.
@@ -141,12 +159,128 @@ final class FormSpec {
       isRequired: isRequired,
       title: schema.title,
       description: schema.description,
+      constraintText: _constraintTextOf(schema),
       options: options ?? const <String>[],
       initialText: kind == FormFieldKind.boolean || fallback == null
           ? ''
           : '$fallback',
       initialFlag: fallback is bool && fallback,
     );
+  }
+
+  /// Summarises the value constraints [schema] declares beyond its type.
+  ///
+  /// Returns null when the schema declares none. A closed choice list already
+  /// constrains the value, so a `select` field reports nothing.
+  static String? _constraintTextOf(JsonSchema schema) {
+    final parts = <String>[];
+    switch (schema) {
+      case JsonString(
+        :final minLength,
+        :final maxLength,
+        :final pattern,
+        :final format,
+        :final enumValues,
+      ):
+        if (enumValues != null && enumValues.isNotEmpty) break;
+        final length = _rangeText(minLength, maxLength);
+        if (length != null) parts.add('length $length');
+        if (pattern != null) parts.add('pattern $pattern');
+        if (format != null) parts.add('format $format');
+      case JsonNumber(
+        :final minimum,
+        :final maximum,
+        :final exclusiveMinimum,
+        :final exclusiveMaximum,
+        :final multipleOf,
+      ):
+        parts.addAll(
+          _numericParts(
+            minimum: minimum,
+            maximum: maximum,
+            exclusiveMinimum: exclusiveMinimum,
+            exclusiveMaximum: exclusiveMaximum,
+            multipleOf: multipleOf,
+          ),
+        );
+      // The typed `int?` getters return null when the wire value is
+      // fractional, so read the `num?` forms that always carry it.
+      case JsonInteger(
+        :final minimumJson,
+        :final maximumJson,
+        :final exclusiveMinimumJson,
+        :final exclusiveMaximumJson,
+        :final multipleOfJson,
+      ):
+        parts.addAll(
+          _numericParts(
+            minimum: minimumJson,
+            maximum: maximumJson,
+            exclusiveMinimum: exclusiveMinimumJson,
+            exclusiveMaximum: exclusiveMaximumJson,
+            multipleOf: multipleOfJson,
+          ),
+        );
+      // An array renders as a raw-JSON field, which is the control that needs
+      // its constraints spelled out most.
+      case JsonArray(:final minItems, :final maxItems, :final uniqueItems):
+        final items = _rangeText(minItems, maxItems);
+        if (items != null) parts.add('items $items');
+        if (uniqueItems ?? false) parts.add('unique');
+      case JsonBoolean():
+      case JsonNull():
+      case JsonObject():
+      case JsonAny():
+      case JsonConst():
+      case JsonEnum():
+      case JsonUnion():
+      case JsonAllOf():
+      case JsonAnyOf():
+      case JsonOneOf():
+      case JsonNot():
+        break;
+    }
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+
+  static List<String> _numericParts({
+    required num? minimum,
+    required num? maximum,
+    required num? exclusiveMinimum,
+    required num? exclusiveMaximum,
+    required num? multipleOf,
+  }) {
+    final parts = <String>[];
+    final range = _rangeText(minimum, maximum);
+    if (range != null) parts.add(range);
+    if (exclusiveMinimum != null) parts.add('> ${_numText(exclusiveMinimum)}');
+    if (exclusiveMaximum != null) parts.add('< ${_numText(exclusiveMaximum)}');
+    if (multipleOf != null) parts.add('multiple of ${_numText(multipleOf)}');
+    return parts;
+  }
+
+  /// Formats an inclusive range as `low..high`, `>= low`, or `<= high`.
+  static String? _rangeText(num? low, num? high) {
+    if (low != null && high != null) {
+      return '${_numText(low)}..${_numText(high)}';
+    }
+    if (low != null) return '>= ${_numText(low)}';
+    if (high != null) return '<= ${_numText(high)}';
+    return null;
+  }
+
+  /// Writes a whole-valued number without a trailing `.0`.
+  ///
+  /// A non-finite bound, and one too large for an exact integer, both keep
+  /// their own text: `toInt` throws on the first and saturates on the second.
+  static String _numText(num value) {
+    if (value is int) return '$value';
+    if (!value.isFinite) return '$value';
+    const exactIntegerLimit = 9007199254740992.0;
+    if (value == value.truncateToDouble() && value.abs() < exactIntegerLimit) {
+      return '${value.toInt()}';
+    }
+    return '$value';
   }
 
   static List<String>? _optionsOf(JsonSchema schema) {
@@ -184,6 +318,7 @@ final class McpToolInfo {
     required this.form,
     this.title,
     this.description,
+    this.schema,
   });
 
   /// The tool name used by `tools/call`.
@@ -197,6 +332,15 @@ final class McpToolInfo {
 
   /// The tool's description, when it supplies one.
   final String? description;
+
+  /// The tool's input schema as it arrived on the wire.
+  ///
+  /// [form] cannot express every schema. `if`, `then`, `allOf`, and
+  /// `dependentRequired` all survive the parse but generate no control, so the
+  /// user interface shows this map when the reader asks for it. It is a plain
+  /// JSON map, so the user-interface layer never reads a `package:mcp_dart`
+  /// schema type.
+  final Map<String, dynamic>? schema;
 }
 
 /// One resource offered by the server.

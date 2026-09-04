@@ -200,6 +200,7 @@ final class LiveMcpSession implements McpSession {
           form: FormSpec.fromJsonSchema(tool.inputSchema),
           title: tool.title,
           description: tool.description,
+          schema: tool.inputSchema.toJson(),
         ),
     ];
   }

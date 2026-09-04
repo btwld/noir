@@ -23,6 +23,10 @@ const _calculate = McpToolInfo(
   name: 'calculate',
   form: _calculateForm,
   description: 'Perform basic arithmetic operations',
+  schema: <String, dynamic>{
+    'type': 'object',
+    'required': <String>['operation', 'a', 'b'],
+  },
 );
 
 const _echo = McpToolInfo(name: 'echo', form: FormSpec(<FormFieldSpec>[]));
@@ -64,6 +68,73 @@ void main() {
     ]);
     expect(notifications, greaterThanOrEqualTo(2));
   });
+
+  test('the schema view toggles and notifies', () async {
+    final session = _session();
+    final controller = InspectorController(session: session);
+    addTearDown(controller.dispose);
+    await controller.connect();
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    expect(controller.isSchemaVisible, isFalse);
+    expect(controller.visibleSchema, isNull);
+
+    controller.toggleSchema();
+
+    expect(controller.isSchemaVisible, isTrue);
+    expect(controller.visibleSchema, _calculate.schema);
+    expect(notifications, 1);
+
+    controller.toggleSchema();
+
+    expect(controller.isSchemaVisible, isFalse);
+    expect(controller.visibleSchema, isNull);
+  });
+
+  test('a tab without schemas ignores the toggle', () async {
+    final session = _session();
+    final controller = InspectorController(session: session);
+    addTearDown(controller.dispose);
+    await controller.connect();
+    controller.selectTab(InspectorTab.prompts);
+
+    controller.toggleSchema();
+
+    // Flipping hidden state here would make the schema appear later, on a
+    // tools tab the reader never asked to change.
+    expect(controller.isSchemaVisible, isFalse);
+  });
+
+  test('a tool that carries no schema shows none', () async {
+    final session = FakeMcpSession(tools: const <McpToolInfo>[_echo]);
+    final controller = InspectorController(session: session);
+    addTearDown(controller.dispose);
+    await controller.connect();
+
+    controller.toggleSchema();
+
+    expect(controller.isSchemaVisible, isTrue);
+    expect(controller.visibleSchema, isNull);
+    expect(controller.visibleSchemaText, isNull);
+  });
+
+  test(
+    'the schema view stays empty for a tab that carries no schema',
+    () async {
+      final session = _session();
+      final controller = InspectorController(session: session);
+      addTearDown(controller.dispose);
+      await controller.connect();
+
+      controller
+        ..toggleSchema()
+        ..selectTab(InspectorTab.resources);
+
+      expect(controller.isSchemaVisible, isTrue);
+      expect(controller.visibleSchema, isNull);
+    },
+  );
 
   test('a failed connect keeps the message and stays disconnected', () async {
     final session = _session()..connectFailure = 'no such command';

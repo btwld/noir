@@ -44,6 +44,12 @@ final class RunRequestIntent extends Intent {
   const RunRequestIntent();
 }
 
+/// Swaps the detail pane between the generated form and the raw schema.
+final class ToggleSchemaIntent extends Intent {
+  /// Creates the intent.
+  const ToggleSchemaIntent();
+}
+
 /// Ends the application through the supported [TuiApp.exit] path.
 final class ExitInspectorIntent extends Intent {
   /// Creates an exit intent.
@@ -73,6 +79,7 @@ class _InspectorAppState extends State<InspectorApp> {
   final FocusNode _tabsFocus = FocusNode(debugLabel: 'tabs');
   final FocusNode _listFocus = FocusNode(debugLabel: 'primitives');
   final FocusNode _runFocus = FocusNode(debugLabel: 'run');
+  final FocusNode _schemaFocus = FocusNode(debugLabel: 'schema');
   final FocusNode _resultFocus = FocusNode(debugLabel: 'result');
   final FocusNode _messageFocus = FocusNode(debugLabel: 'message');
   final FocusNode _consoleFocus = FocusNode(debugLabel: 'console');
@@ -99,6 +106,7 @@ class _InspectorAppState extends State<InspectorApp> {
     _tabsFocus.dispose();
     _listFocus.dispose();
     _runFocus.dispose();
+    _schemaFocus.dispose();
     _resultFocus.dispose();
     _messageFocus.dispose();
     _consoleFocus.dispose();
@@ -123,6 +131,11 @@ class _InspectorAppState extends State<InspectorApp> {
             const StepTabIntent(1),
         const SingleActivator(LogicalKeyboardKey.keyP, control: true):
             const StepTabIntent(-1),
+        // Ctrl+O reads as "open the schema". A bare letter would hijack a
+        // focused field, and Ctrl+Enter and Ctrl with a digit never arrive
+        // without the Kitty keyboard protocol.
+        const SingleActivator(LogicalKeyboardKey.keyO, control: true):
+            const ToggleSchemaIntent(),
         const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
             const ExitInspectorIntent(),
       },
@@ -142,6 +155,19 @@ class _InspectorAppState extends State<InspectorApp> {
           }),
           RunRequestIntent: CallbackAction<RunRequestIntent>((intent, context) {
             unawaited(_controller.run());
+            return KeyEventResult.handled;
+          }),
+          ToggleSchemaIntent: CallbackAction<ToggleSchemaIntent>((
+            intent,
+            context,
+          ) {
+            _controller.toggleSchema();
+            // Swapping either view out removes whatever owned focus, and
+            // `Shortcuts` are looked up from the focused element, so an
+            // unfocused tree would stop answering every binding. Opening is
+            // covered by the schema view's `autofocus`; closing has nothing
+            // that autofocuses, so hand focus to Run, which stays mounted.
+            if (_controller.visibleSchema == null) _runFocus.requestFocus();
             return KeyEventResult.handled;
           }),
           ExitInspectorIntent: CallbackAction<ExitInspectorIntent>((
@@ -228,6 +254,7 @@ class _InspectorAppState extends State<InspectorApp> {
                   controller: _controller,
                   focusNodeFor: _detailFieldNode,
                   runFocusNode: _runFocus,
+                  schemaFocusNode: _schemaFocus,
                   resultFocusNode: _resultFocus,
                   onChanged: _rebuild,
                 ),
@@ -262,6 +289,9 @@ class _InspectorAppState extends State<InspectorApp> {
 
   void _activateRow(int index) {
     _controller.select(index);
+    // The schema view replaces the form, so its field nodes are detached and
+    // focusing one throws. Selecting the row is the whole action here.
+    if (_controller.visibleSchema != null) return;
     final target = _firstFieldAwaitingInput();
     if (target == null) {
       // Nothing to fill in: a resource read, or a form the defaults complete.

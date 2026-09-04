@@ -42,7 +42,7 @@ class FormView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        for (final field in model.spec.fields)
+        for (final field in model.spec.fields) ...<Widget>[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 1,
@@ -60,6 +60,27 @@ class FormView extends StatelessWidget {
               Expanded(child: _control(field)),
             ],
           ),
+          // The hint sits under the control, indented past the label column,
+          // so a field the schema documents costs one extra row and a field
+          // it does not costs none.
+          if (field.hint case final hint?)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 1,
+              children: <Widget>[
+                const SizedBox(width: formLabelWidth),
+                Expanded(
+                  child: Text(
+                    hint,
+                    style: TextStyle(color: theme.textMuted),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+        ],
       ],
     );
   }

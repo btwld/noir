@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:noir/noir.dart';
 
@@ -102,6 +103,9 @@ final class InspectorController extends ChangeNotifier {
   PendingElicitation? _pendingElicitation;
   String? _errorMessage;
   bool _isRunning = false;
+  bool _isSchemaVisible = false;
+  Map<String, dynamic>? _schemaTextSource;
+  String? _schemaText;
   bool _closed = false;
 
   /// Where the session stands.
@@ -152,6 +156,42 @@ final class InspectorController extends ChangeNotifier {
 
   /// Whether a request is in flight.
   bool get isRunning => _isRunning;
+
+  /// Whether the detail pane shows the raw schema instead of the form.
+  bool get isSchemaVisible => _isSchemaVisible;
+
+  /// The schema the detail pane must show, or null when it must show the form.
+  ///
+  /// Only a tool carries a schema, so this stays null on every other tab even
+  /// while [isSchemaVisible] holds.
+  Map<String, dynamic>? get visibleSchema {
+    if (!_isSchemaVisible || _activeTab != InspectorTab.tools) return null;
+    return selectedTool?.schema;
+  }
+
+  /// The schema the detail pane must show, encoded once for display.
+  ///
+  /// The pane rebuilds on every notification, so encoding here keeps one
+  /// conversion per schema instead of one per keystroke.
+  String? get visibleSchemaText {
+    final schema = visibleSchema;
+    if (schema == null) return null;
+    if (!identical(schema, _schemaTextSource)) {
+      _schemaTextSource = schema;
+      _schemaText = const JsonEncoder.withIndent('  ').convert(schema);
+    }
+    return _schemaText;
+  }
+
+  /// Swaps the detail pane between the generated form and the raw schema.
+  ///
+  /// Only a tool carries a schema, so the other tabs ignore the request
+  /// instead of changing hidden state the reader cannot see.
+  void toggleSchema() {
+    if (_activeTab != InspectorTab.tools) return;
+    _isSchemaVisible = !_isSchemaVisible;
+    notifyListeners();
+  }
 
   /// The elicitation awaiting an answer, or null when there is none.
   PendingElicitation? get pendingElicitation => _pendingElicitation;

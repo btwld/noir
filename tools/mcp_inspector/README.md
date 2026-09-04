@@ -47,6 +47,7 @@ stdout, and for a stdio server stdout is the protocol channel. See
 | Enter on a row | Select it, then move to the first field awaiting a value; a row with no fields sends its request |
 | Enter or Space on Run | Send the request |
 | Ctrl+Enter | Send the request from anywhere in the form |
+| Ctrl+O | Show the tool's raw input schema in place of the form, and back |
 | Ctrl+N, Ctrl+P | Next and previous tab, from anywhere |
 | `[`, `]` | Previous and next tab, from the list, protocol, and console regions |
 | Ctrl+1 .. Ctrl+5 | Jump to a tab, in terminals that report the chord |
@@ -75,6 +76,7 @@ digit.
 | Fixture | Profile | What it shows |
 | --- | --- | --- |
 | `fixtures/calculate_server.dart` | default | `calculate` with an enum and two numbers, `file:///logs`, and the `analyze-code` prompt |
+| `fixtures/constrained_server.dart` | default | `schedule` declares every value constraint the form renders, plus `if` / `then` and `dependentRequired`, which it does not |
 | `fixtures/greeting_server.dart` | `--protocol 2026` | `personalized_greeting` answers with `input_required`, then returns a greeting |
 | `fixtures/legacy_elicit_server.dart` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
 
@@ -90,7 +92,7 @@ lib/src/session/            the boundary: McpSession, LiveMcpSession,
                             TracingTransport, ProtocolLog
 lib/src/model/              FormModel and InspectorController
 lib/src/ui/                 the screen; imports package:noir only
-fixtures/                   three MCP servers written with package:mcp_dart
+fixtures/                   four MCP servers written with package:mcp_dart
 ```
 
 `McpSession` plays the role `PubCatalog` plays in

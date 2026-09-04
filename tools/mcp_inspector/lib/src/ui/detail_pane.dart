@@ -15,6 +15,7 @@ class DetailPane extends StatelessWidget {
     required this.focusNodeFor,
     required this.runFocusNode,
     required this.resultFocusNode,
+    required this.schemaFocusNode,
     required this.onChanged,
     super.key,
   });
@@ -30,6 +31,9 @@ class DetailPane extends StatelessWidget {
 
   /// The node that owns keyboard focus for the result view.
   final FocusNode resultFocusNode;
+
+  /// The node that owns keyboard focus for the raw-schema view.
+  final FocusNode schemaFocusNode;
 
   /// Called after a control changes a value, so the owner can rebuild.
   final VoidCallback onChanged;
@@ -48,6 +52,7 @@ class DetailPane extends StatelessWidget {
       );
     }
     final form = controller.form;
+    final schemaText = controller.visibleSchemaText;
     return Panel(
       title: title,
       child: Column(
@@ -60,11 +65,38 @@ class DetailPane extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          if (form != null)
-            FormView(
-              model: form,
-              focusNodeFor: focusNodeFor,
-              onChanged: onChanged,
+          // The schema takes the form's place, not the whole pane, so the
+          // reader keeps the Run action and the last result while reading it.
+          // It outweighs the result three to one: a schema worth opening is
+          // longer than the pane, and the result below it is usually empty.
+          if (schemaText != null)
+            Expanded(
+              flex: 3,
+              child: Panel(
+                title: 'Schema',
+                focused: schemaFocusNode.hasFocus,
+                child: CodeView(
+                  key: const ValueKey<String>('schema'),
+                  code: schemaText,
+                  showLineNumbers: false,
+                  focusNode: schemaFocusNode,
+                  // The view takes focus as it mounts, the same way each tab
+                  // region does. That keeps a node focused across the swap and
+                  // makes the schema scrollable without hunting for it.
+                  autofocus: true,
+                ),
+              ),
+            )
+          // `Flexible` bounds a long form instead of pushing Run and the
+          // result off the pane. Noir cannot measure the terminal, so the
+          // form cannot decide for itself how many rows it may take.
+          else if (form != null)
+            Flexible(
+              child: FormView(
+                model: form,
+                focusNodeFor: focusNodeFor,
+                onChanged: onChanged,
+              ),
             ),
           Row(
             spacing: 1,

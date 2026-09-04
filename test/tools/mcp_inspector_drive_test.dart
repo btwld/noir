@@ -29,6 +29,11 @@ void main() {
     'fixtures',
     'calculate_server.dart',
   );
+  final constrainedFixture = path.join(
+    packageRoot,
+    'fixtures',
+    'constrained_server.dart',
+  );
   final greetingFixture = path.join(
     packageRoot,
     'fixtures',
@@ -127,6 +132,102 @@ void main() {
     },
     skip: _skipReason,
   );
+
+  test('Ctrl+O swaps the schema in and out without losing focus', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: <String>['--', ..._fixtureCommand(calculateFixture)],
+    );
+    addTearDown(driver.quit);
+
+    await driver.waitFor(
+      const DriverLocator.byKey('primitive:calculate'),
+      timeout: const Duration(seconds: 30),
+    );
+    // Put focus inside the form, which is the state that used to break: the
+    // toggle unmounts the focused field, and `Shortcuts` are looked up from
+    // the focused element.
+    await driver.clickLocator(const DriverLocator.byKey('primitive:calculate'));
+
+    await driver.sendKey('ctrl-o');
+    await driver.waitForText('Schema', timeout: const Duration(seconds: 10));
+
+    // Enter used to focus a field the schema view had already unmounted,
+    // which threw. The app must still be answering after it.
+    await driver.sendKey('enter');
+    final afterEnter = await driver.capture();
+    expect(afterEnter.contains('Schema'), isTrue);
+
+    // Back to the form, which is what the README promises.
+    await driver.sendKey('ctrl-o');
+    await driver.waitForText('operation', timeout: const Duration(seconds: 10));
+
+    // The form is bounded, so Run survives both documented floors. Without
+    // that bound the per-field hint rows push it off the pane.
+    for (final size in const <({int width, int height})>[
+      (width: 80, height: 24),
+      (width: 60, height: 18),
+    ]) {
+      await driver.resize(size.width, size.height);
+      final frame = await driver.capture();
+      expect(
+        frame.contains('Run'),
+        isTrue,
+        reason:
+            'Run lost at ${size.width}x${size.height}:\n'
+            '${frame.lines.join('\n')}',
+      );
+    }
+    await driver.resize(100, 30);
+
+    // Ctrl+N still steps the tab strip, so no binding was lost on the way.
+    await driver.sendKey('ctrl-n');
+    final afterTab = await driver.waitForText(
+      'file:///logs',
+      timeout: const Duration(seconds: 10),
+    );
+    expect(afterTab.contains('file:///logs'), isTrue);
+  }, skip: _skipReason);
+
+  test('the schema view reaches the keywords the form cannot show', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 40,
+      arguments: <String>['--', ..._fixtureCommand(constrainedFixture)],
+    );
+    addTearDown(driver.quit);
+
+    await driver.waitFor(
+      const DriverLocator.byKey('primitive:schedule'),
+      timeout: const Duration(seconds: 30),
+    );
+    await driver.clickLocator(const DriverLocator.byKey('primitive:schedule'));
+
+    // The form shows the value constraints it can express.
+    final form = await driver.waitForText(
+      'Retry budget',
+      timeout: const Duration(seconds: 10),
+    );
+    expect(form.contains('1..10'), isTrue);
+
+    await driver.sendKey('ctrl-o');
+    await driver.waitForText('Schema', timeout: const Duration(seconds: 10));
+
+    // `if` and `dependentRequired` generate no control, so the schema view is
+    // the only place the reader can see them. FINDINGS entry 24 says so; this
+    // proves they are reachable rather than clipped away.
+    // The schema view autofocuses as it mounts, so it scrolls straight away.
+    var found = false;
+    for (var step = 0; step < 60 && !found; step++) {
+      final frame = await driver.capture();
+      found = frame.contains('"if"');
+      if (!found) await driver.sendKey('down');
+    }
+    expect(found, isTrue, reason: 'the schema view never reached "if"');
+  }, skip: _skipReason);
 
   test('the modal answers a 2026 input_required call', () async {
     final driver = await NoirDriver.launch(

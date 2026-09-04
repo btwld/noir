@@ -70,6 +70,20 @@ void main() {
     ]);
   });
 
+  test('the tool list carries the raw input schema', () async {
+    final tools = await session.listTools();
+
+    final calculate = tools.singleWhere((tool) => tool.name == 'calculate');
+    final schema = calculate.schema;
+    expect(schema, isNotNull);
+    expect(schema!['type'], 'object');
+    expect(
+      (schema['properties']! as Map<String, dynamic>).keys,
+      containsAll(<String>['operation', 'a', 'b']),
+    );
+    expect(schema['required'], <String>['operation', 'a', 'b']);
+  });
+
   test('calling calculate returns the sum', () async {
     final outcome = await session.callTool('calculate', <String, Object?>{
       'operation': 'add',

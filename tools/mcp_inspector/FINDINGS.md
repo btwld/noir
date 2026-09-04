@@ -86,6 +86,17 @@ list on a tab change, and the list and the console take focus back through
 
 *Classification.* Noir framework gap.
 
+The Ctrl+O schema view reproduced this twice more. Swapping the form out for
+the schema removes whatever field owned focus, and every binding stopped —
+Ctrl+O itself, Ctrl+N, and Ctrl+Q, leaving only Ctrl+C. Enter on a list row
+then threw `FocusNode is not attached to a FocusManager`, because the code
+still focused the first field awaiting input after that field left the tree.
+
+The working pattern is the one `_syncTabFocus` already uses: the incoming
+region takes focus through `autofocus`, and the outgoing swap hands focus to a
+widget that is mounted in both states. Any widget that replaces a focused
+subtree needs both halves.
+
 ### 4. Disposing an attached `FocusNode` throws on the next dispatch
 
 An application that generates one field per selection wants to dispose the
@@ -292,3 +303,68 @@ capability by delegation would remove the trade-off.
 
 The plan listed this as a candidate. The inspector never sends `ping`, so this
 build neither confirms nor refutes it. It stays open.
+
+### 22. `JsonObject.extra` preserves the wire keywords
+
+The typed builder hierarchy models `oneOf`, `anyOf`, `allOf`, and `not`, but
+not `if` / `then` / `else`. Those keywords still survive a round trip:
+`JsonObject.extra` holds every object-level keyword the typed API does not
+model, and `json_schema.dart` names `$schema`, `$defs`, `allOf`, `if`, `then`,
+and `else` in its documentation. `json_schema_engine.dart` validates them.
+
+So a conditional tool schema arrives fully described. Anything a client drops
+after that, the client dropped on its own.
+
+`Tool.fromJson` also calls `_validateObjectRootSchema`, which rejects any
+`inputSchema` whose root type is not `object`. A root `oneOf` never reaches a
+client.
+
+### 23. `compileJsonSchemaValidator` is hidden from the public API
+
+`json_schema_validator.dart` exposes
+`compileJsonSchemaValidator(JsonSchema) -> void Function(dynamic)`, backed by a
+complete draft 2020-12 engine. It is exactly what a client needs to check tool
+arguments before `tools/call`.
+
+`shared/module.dart` re-exports the file with
+`hide JsonSchemaDefinitionException, compileJsonSchemaValidator`, so only
+`JsonSchemaValidationException` reaches a consumer. A client on the public SDK
+cannot validate arguments locally; it can only send them and read the server's
+error. Exporting the compile function would remove a round trip.
+
+## Inspector limitations
+
+### 24. The generated form cannot express conditional keywords
+
+`FormSpec.fromJsonSchema` reads `properties` and `required`. It ignores
+`JsonObject.extra` and `JsonObject.dependentRequired`, so a schema that
+constrains its arguments with `if` / `then` or `allOf` generates controls for
+the unconditional properties only.
+
+Value constraints are the common case, and the form now shows them:
+`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`,
+`minLength`, `maxLength`, `pattern`, and `format` all render as hint text
+under the control, beside the property description.
+
+Conditional keywords remain unrendered. Ctrl+O shows the raw schema beside the
+tool so the reader can see them: the view autofocuses as it mounts, so it
+scrolls immediately, and `test/tools/mcp_inspector_drive_test.dart` proves it
+reaches `"if"` in the constrained fixture's 64-line schema.
+
+Evaluating those keywords to drive the form live is a deliberate non-goal:
+real servers rarely send them, and a form that silently applies a condition
+incorrectly is worse than one that does not try.
+
+Both forms are wrapped in `Flexible`. Noir cannot measure the terminal, which
+is entry 1, so the form cannot decide how many rows it may take; bounding it
+keeps Run, and the modal's Accept row, on the pane at the 60x18 floor.
+
+### 25. The stdio lifecycle test counts processes machine-wide
+
+`test/stdio_lifecycle_test.dart` asserts that `close()` leaves no child, and
+counts with `pgrep -f fixtures/calculate_server.dart`. The pattern matches
+every process on the machine, so an interactive
+`dart run bin/mcp_inspector.dart -- dart run ... fixtures/calculate_server.dart`
+session running beside the suite fails the test. The reading is correct for
+the machine and wrong for the test. Scoping the count to the child the session
+started would fix it.
