@@ -19,22 +19,33 @@ The inspector imports only `package:noir/noir.dart` and
 
 ## Noir framework gaps
 
-### 1. An application cannot measure the terminal
+### 1. An application could not measure the terminal — fixed
 
 `ListView` occupies exactly its `height` rows
-(`lib/src/widgets/list_view.dart:59-61`), and the application surface exposes
-no viewport size: there is no `LayoutBuilder`, no `MediaQuery`, and no size on
-the `TuiApp` handle. An application that wants a list to fill its pane has to
+(`lib/src/widgets/list_view.dart`), and the application surface exposed no
+viewport size: there was no `LayoutBuilder`, no `MediaQuery`, and no size on
+the `TuiApp` handle. An application that wanted a list to fill its pane had to
 hard-code a row budget for the smallest grid it supports.
 
-*Reproduction.* `lib/src/ui/primitives_pane.dart` sets `primitiveListRows` to
-12, chosen for a 60x18 grid. At 100x30 the list leaves unused rows in the pane.
-The inspector's forms now use bounded scroll viewports, so their field count
-does not push Run or the modal actions outside the pane.
+*Original reproduction.* `lib/src/ui/primitives_pane.dart` set
+`primitiveListRows` to 12, chosen for a 60x18 grid. At 100x30 the list left
+unused rows in the pane.
+
+*Fix.* `package:noir/noir.dart` exports `LayoutBuilder` and
+`LayoutWidgetBuilder`. The builder runs during layout and its child is laid out
+in the same frame, so the constraints it reads are the constraints its child
+receives. `ListView` also follows its highlight when its own height changes, so
+a resized list keeps the selected row on screen.
+
+*Effect on this tool.* The primitives pane derives its list height and its
+scroll indicator from the rows the pane actually offers.
+`primitiveListFallbackRows` remains only for an unbounded host. The inspector's
+forms still use bounded scroll viewports, so their field count does not push
+Run or the modal actions outside the pane.
 
 *Layer.* Widgets and layout.
 
-*Classification.* Noir framework gap.
+*Classification.* Noir framework gap, now closed.
 
 ### 2. A keyed `ListView` row resolved to two driver nodes — fixed
 

@@ -194,6 +194,13 @@ class _ListViewState extends State<ListView>
     } else if (widget.itemCount != oldWidget.itemCount) {
       _highlighted = _highlighted.clamp(0, _maxIndex);
       _viewport.ensureVisible(_highlighted, _highlighted + 1);
+    } else if (_selectable &&
+        (widget.height != oldWidget.height ||
+            widget.itemExtent != oldWidget.itemExtent)) {
+      // A resized selectable list keeps its highlight on screen. A
+      // plain-scroll list has no highlight to follow, so its window keeps the
+      // offset `_syncViewportExtents` has already clamped.
+      _viewport.ensureVisible(_highlighted, _highlighted + 1);
     }
   }
 

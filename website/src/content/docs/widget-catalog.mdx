@@ -21,10 +21,15 @@ for every constructor parameter and published signature.
 | Fill, border, and child composition     | `Container`, `DecoratedBox`    | Use Container for composition; DecoratedBox only paints  |
 | Overlapping children                    | `Stack`, `Positioned`          | Positions are integer cell offsets                       |
 | Children that continue onto another run | `Wrap`                         | Use Row when wrapping would be surprising                |
+| A child that must read its own space    | `LayoutBuilder`                | Builds during layout from the offered `BoxConstraints`   |
 
 Read [Widgets and layout](/docs/widgets-layout) before fixing widths throughout
 a screen. Terminal proportions make one row of spacing visually larger than
 one column.
+
+`LayoutBuilder` is the only widget that reports the space a parent offers.
+Reach for it when a region must size a list, a viewport, or a summary to the
+terminal it lands in; an unbounded axis reports a `null` maximum.
 
 ## Text, status, and feedback
 

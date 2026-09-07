@@ -34,6 +34,7 @@ void main() {
   const greetingFixture = 'bin/greeting_server.dart';
   const legacyFixture = 'bin/legacy_elicit_server.dart';
   const slowFixture = 'bin/slow_server.dart';
+  const manyToolsFixture = 'bin/many_tools_server.dart';
 
   setUpAll(() async {
     // The fixtures resolve first: the inspector depends on that package.
@@ -392,6 +393,41 @@ void main() {
     );
   });
 
+  test('the primitives list fills the rows each grid offers', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: ['--', ...await _fixtureCommand(manyToolsFixture)],
+    );
+    addTearDown(driver.quit);
+    await driver.waitFor(const DriverLocator.byKey('primitive:tool01'));
+
+    final tall = await _visibleRowCount(driver);
+    expect(tall, greaterThan(12), reason: 'a tall pane beats the old budget');
+
+    await driver.resize(60, 18);
+    await driver.waitStable();
+    final short = await _visibleRowCount(driver);
+    expect(short, lessThan(tall));
+    expect(short, greaterThan(0));
+
+    // The selected row must survive both directions of the resize. The detail
+    // pane title is the selection, so it proves more than the row's presence.
+    await driver.clickLocator(const DriverLocator.byKey('primitive:tool03'));
+    await driver.waitForText('Echo a note from tool03');
+    await driver.resize(100, 30);
+    await driver.waitStable();
+    expect(await _visibleRowCount(driver), tall);
+    await driver.waitFor(const DriverLocator.byKey('primitive:tool03'));
+    expect(
+      (await driver.waitForText(
+        'Echo a note from tool03',
+      )).contains('Echo a note from tool03'),
+      isTrue,
+    );
+  });
+
   test('shortcuts keep working while a request is in flight', () async {
     final driver = await NoirDriver.launch(
       entryPoint,
@@ -522,6 +558,23 @@ Future<void> _answerElicitation(
 final String? _skipReason = Platform.isWindows
     ? 'Child-process inventory uses pgrep, which Windows does not provide.'
     : null;
+
+/// Counts the primitives rows the list currently builds.
+///
+/// `ListView` inflates only its visible window, so this is the number of rows
+/// the pane shows at the current grid.
+Future<int> _visibleRowCount(NoirDriver driver) async {
+  final root = (await driver.tree()).root;
+  if (root == null) return 0;
+  var count = 0;
+  void visit(DriverNode node) {
+    if (node.key?.startsWith('primitive:') ?? false) count++;
+    node.children.forEach(visit);
+  }
+
+  visit(root);
+  return count;
+}
 
 /// The command the inspector runs for [fixture], compiled on first use.
 ///

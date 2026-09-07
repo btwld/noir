@@ -204,6 +204,8 @@ export 'src/widgets/intents.dart'
         ScrollToStartIntent,
         ScrollUpIntent,
         SubmitTextIntent;
+export 'src/widgets/layout_builder.dart'
+    show LayoutBuilder, LayoutWidgetBuilder;
 export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
 export 'src/widgets/markdown_view.dart'
     show MarkdownBlockRenderer, MarkdownThemeData, MarkdownView;

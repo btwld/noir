@@ -107,9 +107,37 @@ minimum or maximum without promising an exact result.
 | Custom content appears above the root | `OverlayPortal`          |
 | A centered flow blocks the background | `Modal`                  |
 | A command list follows its launcher   | `MenuAnchor`             |
+| A child must read the space it gets   | `LayoutBuilder`          |
 
 The [Widget catalog](/docs/widget-catalog) covers the rest of the public
 composition surface.
+
+## Read the offered space with LayoutBuilder
+
+Every other widget declares a size and lets layout resolve it. `LayoutBuilder`
+is the one place an application reads the `BoxConstraints` its parent offers,
+so a region can show more rows in a tall pane and fewer in a short one.
+
+```dart
+LayoutBuilder(
+  builder: (context, constraints) => ListView(
+    itemCount: items.length,
+    height: constraints.maxHeight ?? 8,
+    itemBuilder: buildRow,
+  ),
+)
+```
+
+The builder runs during layout and its result is laid out in the same frame,
+so the constraints it reads are the constraints its child receives. It runs on
+the first layout, on a constraint change, on a widget update, on an inherited
+dependency change, and on reassembly; laying the same subtree out again at
+unchanged constraints does not run it.
+
+An unbounded axis reports a `null` maximum, so supply a fallback as the example
+does. Put `LayoutBuilder` inside a region whose size is already bounded — a
+`Panel`, an `Expanded`, or a `SizedBox` — rather than at the root of an
+unbounded column.
 
 ## Put modal behavior around a Panel
 
