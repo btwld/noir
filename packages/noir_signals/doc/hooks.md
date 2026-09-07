@@ -142,7 +142,7 @@ the build queue to drain repeated effect-driven rebuilds. Assigning an
 from timers, futures, streams, or input callbacks are also valid because the
 effect has returned by then.
 
-The runtime guard is deliberately owned by the opt-in hooks library. It covers
+The runtime guard is deliberately owned by this package. It covers
 rebuilds requested through `HookState`, but does not modify core `State.setState`
 or `BuildOwner`. An effect must therefore also avoid synchronously invoking an
 ordinary state callback; that path does not receive the hook-specific error and

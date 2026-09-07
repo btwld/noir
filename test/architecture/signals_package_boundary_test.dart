@@ -346,6 +346,11 @@ void main() {
       expect(hooks, contains('`$path`'), reason: path);
     }
     expect(hooks, contains('package:noir_signals/noir_signals.dart'));
+    expect(
+      hooks,
+      contains('`../../../$_companionRoot/doc/signals.md`'),
+      reason: 'the skill must route reactive-state questions too',
+    );
     expect(hooks, contains('Call hooks unconditionally'));
     expect(hooks, contains('input callbacks'));
     expect(hooks, contains('effect'));
