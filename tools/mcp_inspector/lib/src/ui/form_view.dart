@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:noir/noir.dart';
 
 import '../model/form_model.dart';
@@ -60,28 +58,6 @@ class _FormViewState extends State<FormView> {
     super.didUpdateWidget(oldWidget);
     _syncNodes();
     if (!identical(oldWidget.model, widget.model)) _scroll.jumpTo(0);
-    _focusUpdatedField(oldWidget);
-  }
-
-  void _focusUpdatedField(FormView oldWidget) {
-    final node = widget.autofocusNode;
-    if (node == null ||
-        (identical(oldWidget.autofocusNode, node) &&
-            identical(oldWidget.model, widget.model))) {
-      return;
-    }
-    final model = widget.model;
-    // Focus currently handles autofocus on mount only. Complete an updated
-    // request after the form's controls finish their synchronous rebuild.
-    scheduleMicrotask(() {
-      if (!mounted ||
-          !identical(widget.model, model) ||
-          !identical(widget.autofocusNode, node) ||
-          !node.isAttached) {
-        return;
-      }
-      node.requestFocus();
-    });
   }
 
   void _syncNodes() {

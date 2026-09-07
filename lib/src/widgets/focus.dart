@@ -37,7 +37,10 @@ class Focus extends StatefulWidget {
   /// Caller-owned node to attach, or `null` for a state-owned node.
   final FocusNode? focusNode;
 
-  /// Whether to request focus once after the node is attached.
+  /// Whether to request focus on mount or when changed from false to true.
+  ///
+  /// Keeping this true across updates does not reclaim focus, even when the
+  /// node changes.
   final bool autofocus;
 
   /// Whether the attached node may become primary focus.
@@ -136,9 +139,10 @@ class _FocusState extends State<Focus> with FocusNodeOwnerStateMixin<Focus> {
         ..onKeyEvent = widget.onKeyEvent;
       _applyTraversalPolicy(focusNode);
       _attachment?.reparent(context);
-      if (!oldWidget.autofocus && widget.autofocus) {
-        _didAutofocus = false;
-      }
+    }
+    if (!oldWidget.autofocus && widget.autofocus) {
+      _didAutofocus = false;
+      _scheduleAutofocus();
     }
   }
 
@@ -147,6 +151,10 @@ class _FocusState extends State<Focus> with FocusNodeOwnerStateMixin<Focus> {
     super.didChangeDependencies();
     _attachment ??= focusNode.attach(context);
     _attachment!.reparent(context);
+    _scheduleAutofocus();
+  }
+
+  void _scheduleAutofocus() {
     if (widget.autofocus && !_didAutofocus) {
       _didAutofocus = true;
       final node = focusNode;
