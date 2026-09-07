@@ -48,6 +48,89 @@ FakeMcpSession _session() => FakeMcpSession(
 );
 
 void main() {
+  test(
+    'startup protocol events cannot expose tools before their form',
+    () async {
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final session = _session()
+        ..beforeListResources = () {
+          entered.complete();
+          return release.future;
+        };
+      final controller = InspectorController(session: session);
+      var exposedToolsWithoutForm = false;
+      controller.addListener(() {
+        if (controller.tools.isNotEmpty && controller.form == null) {
+          exposedToolsWithoutForm = true;
+        }
+      });
+      final connection = controller.connect();
+      try {
+        await entered.future;
+        session.emitProtocol(
+          ProtocolEntry(
+            sequence: 1,
+            direction: ProtocolDirection.outgoing,
+            message: const {'id': 2, 'method': 'resources/list'},
+            timestamp: DateTime(2026),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.protocolEntries, hasLength(1));
+        expect(exposedToolsWithoutForm, isFalse);
+        expect(controller.tools, isEmpty);
+
+        release.complete();
+        await connection;
+        expect(controller.tools.single.name, 'calculate');
+        expect(controller.form?.spec, same(_calculateForm));
+        expect(controller.connectionState, InspectorConnectionState.connected);
+      } finally {
+        if (!release.isCompleted) release.complete();
+        await connection;
+        controller.dispose();
+      }
+    },
+  );
+
+  test(
+    'a pending or failed refresh preserves the published inventory and form',
+    () async {
+      final session = _session();
+      final controller = InspectorController(session: session);
+      addTearDown(controller.dispose);
+      await controller.connect();
+      final form = controller.form!;
+      form.setText('a', '7');
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      session
+        ..tools = const [_echo]
+        ..beforeListResources = () {
+          entered.complete();
+          return release.future;
+        };
+      final failedRefresh = expectLater(
+        controller.refreshInventory(),
+        throwsStateError,
+      );
+      try {
+        await entered.future;
+        expect(controller.selectedTool?.name, 'calculate');
+        expect(controller.form, same(form));
+        expect(form.textOf('a'), '7');
+      } finally {
+        release.completeError(StateError('resource inventory unavailable'));
+        await failedRefresh;
+      }
+      expect(controller.selectedTool?.name, 'calculate');
+      expect(controller.form, same(form));
+      expect(form.textOf('a'), '7');
+    },
+  );
+
   test('connect loads the inventory and builds the first form', () async {
     final session = _session();
     final controller = InspectorController(session: session);

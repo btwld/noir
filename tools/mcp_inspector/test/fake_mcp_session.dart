@@ -23,6 +23,9 @@ final class FakeMcpSession implements McpSession {
   /// Prompts returned by [listPrompts].
   List<McpPromptInfo> prompts;
 
+  /// Optional barrier or failure before returning the resource inventory.
+  Future<void> Function()? beforeListResources;
+
   /// Fails [connect] with this message when it is not null.
   String? connectFailure;
 
@@ -108,7 +111,11 @@ final class FakeMcpSession implements McpSession {
   }
 
   @override
-  Future<List<McpResourceInfo>> listResources() async => resources;
+  Future<List<McpResourceInfo>> listResources() async {
+    final before = beforeListResources;
+    if (before != null) await before();
+    return resources;
+  }
 
   @override
   Future<List<McpPromptInfo>> listPrompts() async => prompts;

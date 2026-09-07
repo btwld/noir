@@ -263,24 +263,29 @@ final class InspectorController extends ChangeNotifier {
       _connectionState = InspectorConnectionState.failed;
       _errorMessage = '$error';
     }
-    _rebuildForm();
     notifyListeners();
   }
 
-  /// Reloads the tool, resource, and prompt lists the server advertises.
+  /// Reloads and publishes the inventory and its selected form together.
+  ///
+  /// Protocol notifications can rebuild the screen while these calls await.
+  /// Keep the previous inventory visible until every advertised list succeeds.
   Future<void> refreshInventory({bool notify = true}) async {
     final capabilities = session.capabilities;
-    if (capabilities.contains('tools')) _tools = await session.listTools();
-    if (capabilities.contains('resources')) {
-      _resources = await session.listResources();
-    }
-    if (capabilities.contains('prompts')) {
-      _prompts = await session.listPrompts();
-    }
-    if (notify) {
-      _rebuildForm();
-      notifyListeners();
-    }
+    final tools = capabilities.contains('tools')
+        ? await session.listTools()
+        : _tools;
+    final resources = capabilities.contains('resources')
+        ? await session.listResources()
+        : _resources;
+    final prompts = capabilities.contains('prompts')
+        ? await session.listPrompts()
+        : _prompts;
+    _tools = tools;
+    _resources = resources;
+    _prompts = prompts;
+    _rebuildForm();
+    if (notify) notifyListeners();
   }
 
   /// Moves to [tab] and rebuilds the form for its selection.

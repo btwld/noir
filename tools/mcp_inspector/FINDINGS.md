@@ -461,3 +461,20 @@ in one guarded microtask after its controls update. It checks the current
 model, requested node, attachment, and mount state; it never retries or steals
 focus on an unchanged request. Package regressions cover all six field kinds,
 request cancellation, and teardown.
+
+### 28. Startup exposed tool rows before their forms were ready
+
+Inventory loading used to assign the tools list before awaiting resources and
+prompts. Protocol traffic during those later calls notifies the controller's
+listeners, so the screen could show a tool while its form was still null.
+Clicking that row had no field to focus. This caused the calculator's Ubuntu
+drive failure even after the retained-control autofocus workaround passed.
+The same partial publication could pair a refreshed tool list with the old
+form when a later inventory call failed.
+
+`refreshInventory` now stages all advertised lists, then publishes them and
+builds the selected form in one synchronous update. A failed load keeps the
+previous inventory, form, and edits. Controlled session regressions pause
+resource loading, deliver protocol traffic, and fail a refresh to verify both
+states. The drive test continues to click the first visible tool immediately;
+it does not need a longer wait or a connection-state workaround.
