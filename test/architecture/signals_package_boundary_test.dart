@@ -260,6 +260,18 @@ void main() {
       reason: 'companion analysis settings must be self-contained',
     );
 
+    // One consumer check per package, each resolving from outside its tree.
+    final companionConsumer = File(
+      '$_companionRoot/test/package_consumer_test.dart',
+    ).readAsStringSync();
+    expect(companionConsumer, contains('stage_companion_package.dart'));
+    expect(companionConsumer, contains('noir_only'));
+    expect(
+      File('test/source_package_consumer_test.dart').readAsStringSync(),
+      contains("'noir_signals',"),
+      reason: 'the Noir consumer must assert the companion stays absent',
+    );
+
     expect(changelog, contains('Removed `package:noir/hooks.dart`'));
     expect(readme, contains('package:noir_signals'));
     expect(readme, isNot(contains('package:noir/hooks.dart')));

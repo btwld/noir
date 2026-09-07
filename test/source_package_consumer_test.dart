@@ -100,6 +100,19 @@ void main() {
       isTrue,
       reason: 'consumer must resolve noir to the current source repository',
     );
+
+    // A Noir-only application never resolves the optional companion or the
+    // Signals engine behind it.
+    final resolvedNames = packages
+        .map((package) => package['name']! as String)
+        .toSet();
+    for (final absent in const <String>[
+      'noir_signals',
+      'signals_core',
+      'preact_signals',
+    ]) {
+      expect(resolvedNames, isNot(contains(absent)), reason: absent);
+    }
   });
 
   test('positive high, high+low, and FFI-only consumers analyze', () async {

@@ -23,6 +23,54 @@ The repository stays private. A historical GitHub prerelease exists for
 GitHub release remains deferred to beta.1. Neither repository visibility nor
 that next release is cleared by this publication.
 
+## Unreleased — `0.0.1-alpha.5` and `noir_signals 0.0.1-alpha.0`
+
+Neither package is published. This candidate adds one framework lifecycle
+seam, moves the opt-in hooks library out of `noir`, and introduces the
+optional companion package `noir_signals` with the Signals integration.
+
+Closed on this tree:
+
+- [x] **Framework seam**: `State.deferDispose` and `HookState.deferDispose`
+      release a retired resource after the host updates its descendants and
+      the removed descendants unmount, and during unmount before
+      `State.dispose`. Nine focused framework cases and two hook cases cover
+      ordering, failure containment, nesting, and idle scheduling.
+- [x] **Hooks extraction**: `package:noir/hooks.dart`, `lib/src/hooks/`,
+      `test/hooks/`, the counter example, the hook consumer fixture, and the
+      hooks guide moved to `packages/noir_signals/`. Every hook name, return
+      type, and lifecycle rule is unchanged.
+- [x] **Signals integration**: `useSignal`, `useComputed`, `useSignalValue`,
+      `useSignalEffect`, and `SignalValueBuilder`. Automatic whole-build
+      tracking through `SignalWidget` and `SignalBuilder` is deliberately not
+      part of this release.
+- [x] **Boundary**: the repository is one Pub workspace. Companion production
+      code imports only `package:noir/noir.dart` and the public
+      `signals_core` surface. Noir's manifest and sources carry no Signals or
+      companion dependency, and a Noir-only consumer resolves neither.
+- [x] **Checks**: format and fatal-info analysis passed for both packages;
+      211 architecture tests and the 2,169-test serial root suite passed; the
+      companion's 106 tests passed; the website formatted, linted,
+      type-checked, and built; both publish dry-runs reported zero warnings.
+
+Open gates:
+
+- [ ] **Independent behavior and diff review** of the exact candidate tree.
+- [ ] **Platform CI** on the merge commit, including the companion steps added
+      to every job.
+- [ ] **Native artifact verification** with
+      `dart run scripts/fetch_opentui_binaries.dart --verify-only` on the
+      candidate.
+- [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
+      `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
+      consumer with no local override.
+
+Known distribution limitation: pub applies the ignore files of every ancestor
+directory, so the root `.pubignore` rule that keeps `packages/` out of Noir's
+archive also hides the companion's own files when the companion is published
+in place. `scripts/stage_companion_package.dart` stages a copy outside the
+checkout; the companion's archive and its outside-consumer check both use it.
+
 ## Released — `0.0.1-alpha.4`
 
 Every gate below was closed on the exact tagged candidate

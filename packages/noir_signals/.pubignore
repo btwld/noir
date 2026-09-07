@@ -10,6 +10,7 @@ build/
 # imports Noir's private test files by relative path and only resolves inside
 # this repository.
 test/
+dart_test.yaml
 
 # IDE and editor files
 .vscode/
