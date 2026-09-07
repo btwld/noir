@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_positional_boolean_parameters, unnecessary_getters_setters
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
@@ -156,12 +157,21 @@ class FocusNode extends ChangeNotifier {
   bool get canRequestFocus => _canRequestFocus;
 
   /// Updates the canRequestFocus value.
+  ///
+  /// Disabling the node that currently holds focus is involuntary loss, not an
+  /// intentional [unfocus]: the application disabled a control, it did not ask
+  /// for an unfocused tree. The scope disposition still runs first, and the
+  /// manager schedules recovery for the case where it leaves nothing focused.
   set canRequestFocus(bool value) {
     if (_canRequestFocus == value) return;
     _canRequestFocus = value;
     _manager?._invalidateTraversalCache();
     if (!value && hasFocus) {
-      unfocus();
+      final manager = _manager;
+      if (manager == null) return;
+      final anchor = _parent;
+      manager._unfocus(this, descendants: false);
+      manager._scheduleFocusRecovery(anchor);
     }
   }
 
@@ -203,19 +213,33 @@ class FocusNode extends ChangeNotifier {
   }
 
   /// Requests primary focus, throwing unless this node is attached to a manager.
+  ///
+  /// This is a deliberate focus decision, so it also drops any focus recovery
+  /// the manager has queued for an earlier involuntary loss.
   void requestFocus() {
     if (_manager == null) {
       throw StateError('FocusNode is not attached to a FocusManager');
     }
-    _manager!._requestFocus(this);
+    _manager!
+      .._cancelFocusRecovery()
+      .._requestFocus(this);
   }
 
   /// Unfocuses this node or its currently focused descendant; [descendants]
   /// also recurses through every child subtree. Unattached nodes are a no-op.
+  ///
+  /// This is the intentional form: focus moves to the nearest enclosing scope
+  /// that can hold it, and clears when only the synthetic root scope remains.
+  /// An empty focus is the requested outcome here, so the manager does not
+  /// recover it, and it drops any recovery queued for an earlier involuntary
+  /// loss. Disabling or removing the focused control is the involuntary form,
+  /// and the manager does recover that.
   void unfocus({bool descendants = false}) {
     final manager = _manager;
     if (manager == null) return;
-    manager._unfocus(this, descendants: descendants);
+    manager
+      .._cancelFocusRecovery()
+      .._unfocus(this, descendants: descendants);
   }
 
   KeyEventResult _handleKeyEvent(KeyEvent event) {
@@ -335,6 +359,16 @@ class FocusManager {
       Map<FocusNode, Element>.identity();
   final Expando<FocusNode> _elementToNode = Expando<FocusNode>('FocusNode');
 
+  /// Enclosing scopes of the node that most recently lost focus
+  /// involuntarily, nearest first. Read once by [_recoverFocus], then cleared.
+  List<FocusScopeNode>? _recoveryScopes;
+
+  /// Whether a queued [_recoverFocus] should still act. A later explicit focus
+  /// decision clears this without cancelling the microtask itself.
+  bool _recoveryPending = false;
+  bool _recoveryScheduled = false;
+  bool _disposed = false;
+
   /// Cached depth-first, tree-order list of attached focus nodes used by the
   /// default Tab / Shift-Tab traversal. Null when the cache is dirty.
   List<FocusNode>? _traversalOrderCache;
@@ -350,6 +384,8 @@ class FocusManager {
 
   /// Release input subscriptions owned by this focus manager.
   void dispose() {
+    _disposed = true;
+    _cancelFocusRecovery();
     _keySubscription.cancel();
   }
 
@@ -459,6 +495,7 @@ class FocusManager {
     }
     if (identical(_primaryFocus, node) || node._isAncestorOf(_primaryFocus)) {
       _clearFocus(node);
+      _scheduleFocusRecovery(oldParent);
     }
     node._manager = null;
     node._isAttached = false;
@@ -696,6 +733,81 @@ class FocusManager {
       }
       node._setDescendantsHaveFocus(false);
     }
+  }
+
+  /// Queues focus recovery for the tree under [anchor] after the current
+  /// synchronous tree updates finish.
+  ///
+  /// Recovery answers involuntary loss only: disabling the focused control, or
+  /// removing it from the tree. Both leave [primaryFocus] null, and
+  /// [Shortcuts] routes from the focused element, so an unfocused tree stops
+  /// answering every binding without reporting anything.
+  ///
+  /// The work is deferred because the loss usually happens mid-build: the
+  /// replacement subtree may not be mounted yet, and an explicit
+  /// `requestFocus()` or an incoming `autofocus` may still claim focus first.
+  /// A microtask runs after the whole build pass, so recovery sees the settled
+  /// tree and yields to whoever already took focus.
+  void _scheduleFocusRecovery(FocusNode? anchor) {
+    if (_disposed) return;
+    // Record the chain now, while it is still whole. Detaching a node clears
+    // its own parent edge, so a scope that leaves in the same batch as the
+    // control it held would otherwise end the walk at itself.
+    _recoveryScopes = _enclosingScopes(anchor);
+    _recoveryPending = true;
+    if (_recoveryScheduled) return;
+    _recoveryScheduled = true;
+    scheduleMicrotask(_recoverFocus);
+  }
+
+  /// Drops a queued recovery because a later focus decision superseded it.
+  ///
+  /// The microtask stays queued and finds nothing to do. A new involuntary
+  /// loss before it runs makes it pending again, with its own scope chain.
+  void _cancelFocusRecovery() {
+    _recoveryPending = false;
+    _recoveryScopes = null;
+  }
+
+  /// Explicit scopes at or above [node], nearest first, excluding the
+  /// synthetic [rootScope].
+  List<FocusScopeNode> _enclosingScopes(FocusNode? node) {
+    final scopes = <FocusScopeNode>[];
+    var candidate = node;
+    while (candidate != null) {
+      if (candidate is FocusScopeNode && !identical(candidate, rootScope)) {
+        scopes.add(candidate);
+      }
+      candidate = candidate._parent;
+    }
+    return scopes;
+  }
+
+  /// Gives focus back to the settled tree when involuntary loss left none.
+  ///
+  /// Takes the nearest scope, of those recorded at the loss, that is still
+  /// attached and can hold focus. That keeps a modal, or any other focus
+  /// region, in charge of its own repair. Falls back to the first node in
+  /// traversal order, and leaves focus empty when the tree has no eligible
+  /// node at all.
+  void _recoverFocus() {
+    _recoveryScheduled = false;
+    final pending = _recoveryPending;
+    final scopes = _recoveryScopes;
+    _cancelFocusRecovery();
+    // A later focus decision superseded this recovery, or someone already
+    // claimed focus: an explicit request, an intentional `unfocus`, or the
+    // autofocus of the subtree that replaced the lost one.
+    if (!pending || _disposed || _primaryFocus != null) return;
+    for (final scope in scopes ?? const <FocusScopeNode>[]) {
+      if (scope.isAttachedTo(this) && scope.canRequestFocus) {
+        _requestFocus(scope);
+        return;
+      }
+    }
+    final order = _ensureTraversalOrder();
+    if (order.isEmpty) return;
+    _requestFocus(order.first);
   }
 
   FocusScopeNode _findEnclosingScope(FocusNode node) {

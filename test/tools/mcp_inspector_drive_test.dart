@@ -33,6 +33,7 @@ void main() {
   const constrainedFixture = 'bin/constrained_server.dart';
   const greetingFixture = 'bin/greeting_server.dart';
   const legacyFixture = 'bin/legacy_elicit_server.dart';
+  const slowFixture = 'bin/slow_server.dart';
 
   setUpAll(() async {
     // The fixtures resolve first: the inspector depends on that package.
@@ -387,6 +388,42 @@ void main() {
     await driver.sendKey('ctrl-r');
     expect(
       (await driver.waitForText('Result: 8')).contains('Result: 8'),
+      isTrue,
+    );
+  });
+
+  test('shortcuts keep working while a request is in flight', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      arguments: ['--', ...await _fixtureCommand(slowFixture)],
+    );
+    addTearDown(driver.quit);
+    await driver.waitFor(const DriverLocator.byKey('primitive:slow'));
+    await driver.clickLocator(const DriverLocator.byKey('primitive:slow'));
+    await _waitForFocusIn(driver, const DriverLocator.byKey('field:note'));
+    await driver.typeText('waiting');
+
+    // Run must own focus when it is disabled: that is the case that used to
+    // leave the tree with no primary focus and silence every binding.
+    await driver.sendKey('tab');
+    expect(
+      (await driver.find(
+        const DriverLocator.byKey('run'),
+      )).hasFocusedDescendant,
+      isTrue,
+    );
+    await driver.sendKey('enter');
+
+    expect(await driver.findAll(const DriverLocator.focused()), isNotEmpty);
+    await driver.sendKey('ctrl-n');
+    await driver.waitForText('No resources');
+    await driver.sendKey('ctrl-p');
+
+    expect(
+      (await driver.waitForText(
+        'slow: waiting',
+        timeout: const Duration(seconds: 30),
+      )).contains('slow: waiting'),
       isTrue,
     );
   });
