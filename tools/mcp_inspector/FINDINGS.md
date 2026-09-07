@@ -36,14 +36,14 @@ does not push Run or the modal actions outside the pane.
 
 *Classification.* Noir framework gap.
 
-### 2. A keyed `ListView` row resolves to two driver nodes
+### 2. A keyed `ListView` row resolved to two driver nodes — fixed
 
-`ListView._buildRow` copies the row's own `LocalKey` onto the `SizedBox` it
-wraps the row in (`lib/src/widgets/list_view.dart:323-336`), so the key exists
-twice in the element tree. A strict driver locator then fails.
+`ListView._buildRow` used to copy the row's own `LocalKey` onto the `SizedBox`
+it wraps the row in, so the key existed twice in the element tree. A strict
+driver locator then failed.
 
-*Reproduction.* Give a row `key: ValueKey('primitive:calculate')` and run
-`wait key primitive:calculate` through `scripts/noir_drive.dart`:
+*Original reproduction.* Give a row `key: ValueKey('primitive:calculate')` and
+run `wait key primitive:calculate` through `scripts/noir_drive.dart`:
 
 ```
 Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
@@ -51,12 +51,18 @@ Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
   - Text(key: primitive:calculate, ...)
 ```
 
-*Workaround in this tool.* The row builder returns an unkeyed `Align` and puts
-the key on the inner `Text`, so only one node carries it.
+*Fix.* `ListView` now derives a private `_ListRowKey` from the row's key for
+the wrapper, so the wrapper still reconciles by row identity and the row's own
+key names exactly one element. `test/widgets/list_view_test.dart`, group
+*ListView row identity*, covers the single match, state preservation across
+scrolling and reordering, and disposal of a row that leaves the window.
+
+*Effect on this tool.* The row builder puts the key on the `Align` it already
+needed for the full-width highlight. No extra wrapper remains.
 
 *Layer.* Widgets and the drive-mode tree.
 
-*Classification.* Noir framework gap.
+*Classification.* Noir framework gap, now closed.
 
 ### 3. Losing the focused node silently disables every `Shortcuts` binding
 
