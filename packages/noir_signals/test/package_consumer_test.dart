@@ -7,6 +7,8 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'helpers/package_paths.dart';
+
 /// Checks that an application outside this Pub workspace can depend on the
 /// staged companion artifact and use both public libraries.
 ///
@@ -15,18 +17,13 @@ import 'package:test/test.dart';
 /// exactly as its publish dry-run is. The consumer therefore resolves the same
 /// files the archive would carry.
 void main() {
-  late Directory repositoryRoot;
+  late Directory repository;
   late Directory staged;
   late Directory sandbox;
   late ProcessResult resolution;
 
   setUpAll(() async {
-    repositoryRoot = Directory.current.absolute.parent.parent;
-    expect(
-      File('${repositoryRoot.path}/pubspec.yaml').readAsStringSync(),
-      contains('name: noir'),
-      reason: 'run this from packages/noir_signals in the Noir checkout',
-    );
+    repository = repositoryRoot;
 
     final workspace = Directory.systemTemp.createTempSync(
       'noir_signals_consumer.',
@@ -43,7 +40,7 @@ void main() {
       'scripts/stage_companion_package.dart',
       '--output',
       staged.path,
-    ], workingDirectory: repositoryRoot.path);
+    ], workingDirectory: repository.path);
     expect(
       stage.exitCode,
       0,
@@ -54,7 +51,7 @@ void main() {
     );
 
     final fixture = Directory(
-      '${Directory.current.absolute.path}/test/fixtures/package_consumer',
+      '${companionRoot.path}/test/fixtures/package_consumer',
     );
     expect(fixture.existsSync(), isTrue);
     _copyDirectory(fixture, sandbox);
@@ -65,7 +62,7 @@ void main() {
     expect(template, contains('path: NOIR_SIGNALS_PATH'));
     pubspec.writeAsStringSync(
       template
-          .replaceAll('path: NOIR_PATH', 'path: ${repositoryRoot.path}')
+          .replaceAll('path: NOIR_PATH', 'path: ${repository.path}')
           .replaceFirst('path: NOIR_SIGNALS_PATH', 'path: ${staged.path}'),
     );
 
@@ -132,7 +129,7 @@ void main() {
       '\n'
       'dependencies:\n'
       '  noir:\n'
-      '    path: ${repositoryRoot.path}\n',
+      '    path: ${repository.path}\n',
     );
 
     final result = await Process.run(Platform.resolvedExecutable, <String>[

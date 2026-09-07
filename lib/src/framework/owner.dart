@@ -75,9 +75,10 @@ class BuildOwner {
   final Set<Element> _inactiveElements = HashSet<Element>.identity();
 
   /// Retired [State.deferDispose] batches awaiting release by [finalizeTree],
-  /// in the order their hosts finished reconciling — descendants first.
-  final Queue<DeferredDisposalBatch> _deferredDisposals =
-      Queue<DeferredDisposalBatch>();
+  /// bucketed by their host's maintained depth. Deepest bucket drains first,
+  /// and one host's batches keep the order they retired in.
+  final SplayTreeMap<int, Queue<DeferredDisposalBatch>> _deferredDisposals =
+      SplayTreeMap<int, Queue<DeferredDisposalBatch>>();
 
   FrameCallback? _onFrame;
   late final bool _ownsPipelineOwner;
@@ -653,11 +654,17 @@ class BuildOwner {
 
   /// Queues [batch] for release at the end of the current build pass.
   ///
-  /// Called by [State.endReconcile] once its host successfully updated its
-  /// descendants; not public app API.
+  /// [host] fixes the release order: the batch is filed under the host's depth
+  /// at retire time, so a descendant's resources always release before an
+  /// ancestor's even when the two hosts reconciled in separate batches of the
+  /// same pass. Called by [State.endReconcile] once its host successfully
+  /// updated its descendants; not public app API.
   @internal
-  void enqueueDeferredDisposal(DeferredDisposalBatch batch) {
-    _deferredDisposals.add(batch);
+  void enqueueDeferredDisposal(Element host, DeferredDisposalBatch batch) {
+    final depth = _depths[host] ?? 0;
+    _deferredDisposals
+        .putIfAbsent(depth, Queue<DeferredDisposalBatch>.new)
+        .add(batch);
   }
 
   /// Permanently unmounts every inactive element at the end of a build pass,
@@ -678,8 +685,16 @@ class BuildOwner {
         failures.attempt(element.unmount);
       }
     }
+    // Deepest first. A cleanup that retires another host's batch mid-drain
+    // rejoins this loop at its own depth.
     while (_deferredDisposals.isNotEmpty) {
-      failures.attempt(_deferredDisposals.removeFirst().drain);
+      final depth = _deferredDisposals.lastKey()!;
+      final bucket = _deferredDisposals[depth]!;
+      final batch = bucket.removeFirst();
+      if (bucket.isEmpty) {
+        _deferredDisposals.remove(depth);
+      }
+      failures.attempt(batch.drain);
     }
     failures.rethrowFirst();
   }

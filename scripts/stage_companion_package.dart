@@ -26,7 +26,12 @@ library;
 import 'dart:io';
 
 const _companionPath = 'packages/noir_signals';
-const _skippedEntries = <String>{
+
+/// Entries the staged copy never carries, matched at the package root only.
+///
+/// `.pubignore` decides the archive; this list only keeps local build state
+/// and a stale override out of the copy.
+const _skippedRootEntries = <String>{
   '.dart_tool',
   'build',
   'pubspec_overrides.yaml',
@@ -69,18 +74,24 @@ Future<int> _stage(List<String> arguments) async {
     return 66;
   }
 
-  final destination = output == null
-      ? Directory.systemTemp.createTempSync('noir_signals_stage_')
-      : (Directory(output)..createSync(recursive: true));
-  if (output != null && destination.listSync().isNotEmpty) {
-    stderr.writeln(
-      'Refusing to stage into a non-empty directory: '
-      '${destination.path}',
-    );
-    return 73;
+  final Directory destination;
+  if (output == null) {
+    destination = Directory.systemTemp.createTempSync('noir_signals_stage_');
+  } else {
+    if (File(output).existsSync()) {
+      stderr.writeln('Refusing to stage over a file: $output');
+      return 73;
+    }
+    destination = Directory(output)..createSync(recursive: true);
+    if (destination.listSync().isNotEmpty) {
+      stderr.writeln(
+        'Refusing to stage into a non-empty directory: ${destination.path}',
+      );
+      return 73;
+    }
   }
 
-  _copyDirectory(companion, destination);
+  _copyDirectory(companion, destination, skipRootEntries: true);
   _rewritePubspec(destination);
   _writeNoirOverride(destination, repositoryRoot);
 
@@ -89,26 +100,38 @@ Future<int> _stage(List<String> arguments) async {
     return 0;
   }
 
-  final get = await _run('dart', <String>['pub', 'get'], destination);
+  final get = await _run(Platform.resolvedExecutable, <String>[
+    'pub',
+    'get',
+  ], destination);
   if (get != 0) {
     return get;
   }
   return _runPublishDryRun(destination);
 }
 
-void _copyDirectory(Directory from, Directory to) {
-  for (final entity in from.listSync()) {
+void _copyDirectory(
+  Directory from,
+  Directory to, {
+  bool skipRootEntries = false,
+}) {
+  for (final entity in from.listSync(followLinks: false)) {
     final name = entity.uri.pathSegments
         .where((segment) => segment.isNotEmpty)
         .last;
-    if (_skippedEntries.contains(name)) {
+    if (skipRootEntries && _skippedRootEntries.contains(name)) {
       continue;
     }
     final target = '${to.path}${Platform.pathSeparator}$name';
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target)..createSync(recursive: true));
-    } else if (entity is File) {
-      entity.copySync(target);
+    switch (entity) {
+      case final Directory directory:
+        _copyDirectory(directory, Directory(target)..createSync());
+      case final File file:
+        file.copySync(target);
+      case final Link link:
+        // A published package must not depend on a link this copy would
+        // silently resolve or drop.
+        throw StateError('$_companionPath cannot contain links: ${link.path}');
     }
   }
 }

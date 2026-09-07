@@ -49,13 +49,27 @@ Closed on this tree:
       `signals_core` surface. Noir's manifest and sources carry no Signals or
       companion dependency, and a Noir-only consumer resolves neither.
 - [x] **Checks**: format and fatal-info analysis passed for both packages;
-      211 architecture tests and the 2,169-test serial root suite passed; the
-      companion's 106 tests passed; the website formatted, linted,
-      type-checked, and built; both publish dry-runs reported zero warnings.
+      212 architecture tests and the 2,172-test serial root suite passed; the
+      companion's 113 tests passed from both its own directory and the
+      repository root; the website formatted, linted, type-checked, and built;
+      both publish dry-runs reported zero warnings.
+- [x] **Independent behavior and diff review**: two reviews, one on the
+      framework seam and one on the companion package. No blocker. Resolved:
+      the deferred-disposal drain is now ordered by host depth rather than
+      retire order, so a descendant releases before an ancestor even when the
+      two reconciled in separate batches of one pass; the `useSignalEffect`
+      documentation no longer claims Signals wraps an install failure, which
+      it does not; the effect guard's isolate-wide scope is documented; and a
+      cancellation error is no longer swallowed when the replacement
+      subscription also fails. Added the coverage the reviews found missing:
+      cross-batch release order, the unmount flush running after the
+      descendants unmount, two distinct cleanup failures, `deactivate`
+      detachment for owned and borrowed observation, the guarded lifecycle
+      cleanup, a subscription that outlives a throwing cancellation, and a
+      frozen companion export surface. Each new case was mutation-checked
+      against the defect it pins.
 
 Open gates:
-
-- [ ] **Independent behavior and diff review** of the exact candidate tree.
 - [ ] **Platform CI** on the merge commit, including the companion steps added
       to every job.
 - [ ] **Native artifact verification** with

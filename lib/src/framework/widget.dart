@@ -191,9 +191,14 @@ abstract class State<T extends StatefulWidget> {
   /// Timing at the edges: a call from inside [dispose] runs [cleanup]
   /// synchronously, a call while no reconciliation is running schedules the
   /// rebuild that retires it, and a cleanup registered while this host is
-  /// draining joins the drain already in flight. Calling this after the
-  /// State/Element association is severed throws a [StateError]; release the
-  /// resource directly there instead.
+  /// draining joins the drain already in flight. A call from [deactivate] is
+  /// valid too: the element is already on its way out, so the rebuild this
+  /// schedules is skipped once the element goes inactive and unmount flushes
+  /// the cleanup instead. A cleanup that registers
+  /// on a *different* live host is retired by that host's next reconciliation,
+  /// not by the drain in flight. Calling this after the State/Element
+  /// association is severed throws a [StateError]; release the resource
+  /// directly there instead.
   ///
   /// Every eligible cleanup is attempted even after one of them throws, and
   /// the first failure is rethrown once the drain completes.
@@ -254,7 +259,8 @@ abstract class State<T extends StatefulWidget> {
     final batch = DeferredDisposalBatch._(this, _pendingDeferredDisposals);
     _pendingDeferredDisposals = Queue<VoidCallback>();
     _retiredDeferredDisposals.add(batch);
-    _context!.owner.enqueueDeferredDisposal(batch);
+    final context = _context!;
+    context.owner.enqueueDeferredDisposal(context.element, batch);
   }
 
   /// Releases this state's retired and still-pending cleanups, oldest first.
@@ -336,10 +342,12 @@ abstract class State<T extends StatefulWidget> {
 
 /// One host's retired [State.deferDispose] cleanups, waiting for release.
 ///
-/// [BuildOwner] queues these in reconciliation order — descendants before
-/// ancestors — and drains them from [BuildOwner.finalizeTree]. A batch drains
-/// once: [StatefulElement.unmount] may reach it first, and the queued entry is
-/// then a no-op.
+/// [BuildOwner] buckets these by the host's depth and drains them from
+/// [BuildOwner.finalizeTree], deepest bucket first, so a descendant's
+/// resources release before an ancestor's even when the two hosts reconciled
+/// in separate batches of one pass. A batch drains once:
+/// [StatefulElement.unmount] may reach it first, and the queued entry is then
+/// a no-op.
 @internal
 final class DeferredDisposalBatch {
   DeferredDisposalBatch._(this._state, this._callbacks);

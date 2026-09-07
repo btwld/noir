@@ -143,9 +143,16 @@ dependency changes. Return a cleanup to release what the run acquired; Signals
 runs it before the next run and once at teardown.
 
 The install and the lifecycle cleanup run under the same guard as `useEffect`,
-so neither may synchronously request a hook rebuild. Signals wraps a failure
-raised by the body in a `SignalEffectException`, whose `error` holds the
-original. Later dependency-driven reruns keep upstream timing.
+so neither may request a hook rebuild while it runs. That guard covers every
+hook host in the isolate, not only the one that owns the effect: a cleanup
+that writes a signal another `HookWidget` observes makes that widget's rebuild
+request throw, and the failure escapes the frame. Write to shared signals from
+an input callback, a timer, or a future instead — the effect has returned by
+then. Later dependency-driven reruns are not guarded and keep upstream timing.
+
+A failure raised by the install run propagates unchanged. Signals wraps a
+failure raised by a later rerun in a `SignalEffectException`, whose `error`
+holds the original.
 
 ## What this is not
 

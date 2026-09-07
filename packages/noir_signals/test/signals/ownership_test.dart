@@ -293,7 +293,60 @@ void main() {
           ),
         ),
         throwsA(
-          // Signals wraps a failure raised by an effect body.
+          // The write notifies the `useSignal` subscription from inside the
+          // effect, so the rejection surfaces through Signals' batch, which
+          // wraps it.
+          isA<SignalEffectException>().having(
+            (exception) => exception.error,
+            'error',
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('cannot request a rebuild'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('propagates an install failure unchanged', () {
+      final host = TestElementHost();
+      addTearDown(host.dispose);
+
+      expect(
+        () => host.mount(
+          HookBuilder(
+            builder: (context) {
+              useSignalEffect(() => throw const _InstallFailure());
+              return const Container();
+            },
+          ),
+        ),
+        // Upstream rethrows the install failure; only a later rerun is
+        // wrapped in a SignalEffectException.
+        throwsA(isA<_InstallFailure>()),
+      );
+    });
+
+    test('guards the cleanup it runs when the host leaves the tree', () {
+      final host = TestElementHost();
+      addTearDown(host.dispose);
+      var show = true;
+
+      Widget buildRoot() => HookBuilder(
+        builder: (context) =>
+            Column(children: <Widget>[if (show) const _GuardedCleanupWidget()]),
+      );
+
+      host.mount(buildRoot());
+
+      show = false;
+      // The cleanup writes a signal this host still observes. The guard
+      // rejects the rebuild that write asks for, and Signals surfaces the
+      // rejection when it ends the batch.
+      expect(
+        () => host.update(buildRoot()),
+        throwsA(
           isA<SignalEffectException>().having(
             (exception) => exception.error,
             'error',
@@ -307,4 +360,139 @@ void main() {
       );
     });
   });
+
+  group('deactivation detaches observation', () {
+    test('an owned signal stops being watched before the pass finalizes', () {
+      final host = TestElementHost();
+      addTearDown(host.dispose);
+      var unwatched = 0;
+      var show = true;
+
+      Widget buildRoot() => HookBuilder(
+        builder: (context) => Column(
+          children: <Widget>[
+            if (show) _OwnedWatchProbe(onUnwatched: () => unwatched++),
+          ],
+        ),
+      );
+
+      host.mount(buildRoot());
+      expect(unwatched, 0);
+
+      show = false;
+      host.update(buildRoot());
+
+      // `deactivate` must cancel now, before finalizeTree disposes anything.
+      expect(unwatched, 1);
+    });
+
+    test('a borrowed source stops being watched before the pass finalizes', () {
+      final host = TestElementHost();
+      addTearDown(host.dispose);
+      var watched = 0;
+      var unwatched = 0;
+      final source = signal(
+        0,
+        options: SignalOptions<int>(
+          watched: () => watched++,
+          unwatched: () => unwatched++,
+        ),
+      );
+      addTearDown(source.dispose);
+      var show = true;
+
+      Widget buildRoot() => HookBuilder(
+        builder: (context) => Column(
+          children: <Widget>[
+            if (show)
+              SignalValueBuilder<int>(
+                signal: source,
+                builder: (context, value) => Text('$value'),
+              ),
+          ],
+        ),
+      );
+
+      host.mount(buildRoot());
+      expect(<int>[watched, unwatched], <int>[1, 0]);
+
+      show = false;
+      host.update(buildRoot());
+
+      expect(unwatched, 1);
+    });
+
+    test('cancelling twice is safe and leaves the source untouched', () {
+      final host = TestElementHost();
+      var unwatched = 0;
+      final source = signal(
+        0,
+        options: SignalOptions<int>(unwatched: () => unwatched++),
+      );
+      addTearDown(source.dispose);
+      var show = true;
+
+      Widget buildRoot() => HookBuilder(
+        builder: (context) => Column(
+          children: <Widget>[
+            if (show)
+              SignalValueBuilder<int>(
+                signal: source,
+                builder: (context, value) => Text('$value'),
+              ),
+          ],
+        ),
+      );
+
+      host.mount(buildRoot());
+      show = false;
+      host.update(buildRoot());
+      expect(unwatched, 1);
+
+      // deactivate cancelled; finalizeTree then disposes the hook, which
+      // retires the same observation, and teardown repeats it once more.
+      host.pumpBuild();
+      host.dispose();
+
+      expect(unwatched, 1, reason: 'the source is unsubscribed exactly once');
+      expect(source.disposed, isFalse);
+      source.value = 1;
+      expect(source.value, 1);
+    });
+  });
+}
+
+class _InstallFailure implements Exception {
+  const _InstallFailure();
+}
+
+/// Writes its own observed signal from the cleanup Noir runs at teardown.
+class _GuardedCleanupWidget extends HookWidget {
+  const _GuardedCleanupWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useSignal(0);
+    useSignalEffect(
+      () =>
+          () => count.value++,
+    );
+    return Text('${count.value}');
+  }
+}
+
+/// Reports when its hook-owned signal loses its last observer.
+class _OwnedWatchProbe extends HookWidget {
+  const _OwnedWatchProbe({required this.onUnwatched});
+
+  final VoidCallback onUnwatched;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useSignal(
+      0,
+      options: SignalOptions<int>(unwatched: onUnwatched),
+    );
+    return Text('${count.value}');
+  }
 }

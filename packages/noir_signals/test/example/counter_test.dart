@@ -1,10 +1,9 @@
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
 import '../../example/counter.dart';
 import '../helpers/noir_test_helpers.dart';
+import '../helpers/package_paths.dart';
 
 final _accent = Color.fromHex('#7DD3FC');
 
@@ -60,7 +59,7 @@ void main() {
   });
 
   test('counter example entrypoint enables basic mouse reporting once', () {
-    final source = io.File('example/counter.dart').readAsStringSync();
+    final source = companionFile('example/counter.dart').readAsStringSync();
 
     expect(RegExp('enableMouse: true').allMatches(source), hasLength(1));
     expect(source, isNot(contains('enableMouse(enableMovement: true)')));

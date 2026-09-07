@@ -78,6 +78,25 @@ void main() {
       owner.dispose();
     });
 
+    test('releases a deeper host first across separate build batches', () {
+      final log = <String>[];
+      final owner = BuildOwner();
+      final element = _SplitBatchHostWidget(log).createElement()
+        ..mount(null, owner);
+
+      // Both hosts retire outside any reconciliation, ancestor first, so
+      // retire order alone would release the ancestor first. Depth decides.
+      final ancestor = (element as StatefulElement).state as _SplitBatchState;
+      ancestor.retire();
+      _SplitBatchInnerState.instance!.retire();
+      owner.buildScope();
+
+      expect(log, <String>['release:inner', 'release:outer']);
+
+      element.unmount();
+      owner.dispose();
+    });
+
     test('flushes retired resources during unmount before dispose', () {
       final log = <String>[];
       final owner = BuildOwner();
@@ -92,6 +111,27 @@ void main() {
       expect(released, isNonNegative);
       expect(disposed, isNonNegative);
       expect(released, lessThan(disposed));
+
+      owner.dispose();
+    });
+
+    test('flushes after the descendants unmount, not before', () {
+      final log = <String>[];
+      final owner = BuildOwner();
+      final element = _StatefulChildHostWidget(
+        generation: 1,
+        log: log,
+      ).createElement()..mount(null, owner);
+
+      element.update(_StatefulChildHostWidget(generation: 2, log: log));
+      element.unmount();
+
+      expect(log, <String>[
+        'dispose:child',
+        'release:host-1',
+        'dispose:host',
+        'release:host-2',
+      ]);
 
       owner.dispose();
     });
@@ -136,9 +176,20 @@ void main() {
 
       state.retireThrowing('first');
       state.retire('second');
+      state.retireThrowing('third');
 
-      expect(owner.buildScope, throwsA(isA<_CleanupFailure>()));
-      expect(log, <String>['release:first', 'release:second']);
+      // Two distinct failures: the earliest one must escape, not the last.
+      expect(
+        owner.buildScope,
+        throwsA(
+          isA<_CleanupFailure>().having(
+            (failure) => failure.name,
+            'name',
+            'first',
+          ),
+        ),
+      );
+      expect(log, <String>['release:first', 'release:second', 'release:third']);
 
       element.unmount();
       owner.dispose();
@@ -187,7 +238,9 @@ class _BuildFailure implements Exception {
 }
 
 class _CleanupFailure implements Exception {
-  const _CleanupFailure();
+  const _CleanupFailure(this.name);
+
+  final String name;
 }
 
 /// Owns one generation-tagged resource that its child still reads while the
@@ -372,7 +425,7 @@ class _IdleDeferState extends State<_IdleDeferWidget> {
 
   void retireThrowing(String name) => deferDispose(() {
     widget.log.add('release:$name');
-    throw const _CleanupFailure();
+    throw _CleanupFailure(name);
   });
 
   void retireNesting(String outer, String nested) => deferDispose(() {
@@ -406,4 +459,112 @@ class _Resource {
     _released = true;
     _log.add('release:$name');
   }
+}
+
+/// A host whose retired resource must outlive its stateful child's teardown.
+class _StatefulChildHostWidget extends StatefulWidget {
+  const _StatefulChildHostWidget({required this.generation, required this.log});
+
+  final int generation;
+  final List<String> log;
+
+  @override
+  State<_StatefulChildHostWidget> createState() => _StatefulChildHostState();
+}
+
+class _StatefulChildHostState extends State<_StatefulChildHostWidget> {
+  late _Resource _resource;
+
+  @override
+  void initState() {
+    super.initState();
+    _resource = _Resource('host-${widget.generation}', widget.log);
+  }
+
+  @override
+  void didUpdateWidget(_StatefulChildHostWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final retired = _resource;
+    _resource = _Resource('host-${widget.generation}', widget.log);
+    deferDispose(retired.release);
+  }
+
+  @override
+  void dispose() {
+    widget.log.add('dispose:host');
+    _resource.release();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _LoggingChildWidget(widget.log);
+}
+
+/// Records its own teardown so the flush can be ordered against it.
+class _LoggingChildWidget extends StatefulWidget {
+  const _LoggingChildWidget(this.log);
+
+  final List<String> log;
+
+  @override
+  State<_LoggingChildWidget> createState() => _LoggingChildState();
+}
+
+class _LoggingChildState extends State<_LoggingChildWidget> {
+  @override
+  void dispose() {
+    widget.log.add('dispose:child');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
+}
+
+/// Two nested hosts that retire outside any reconciliation of each other.
+class _SplitBatchHostWidget extends StatefulWidget {
+  const _SplitBatchHostWidget(this.log);
+
+  final List<String> log;
+
+  @override
+  State<_SplitBatchHostWidget> createState() => _SplitBatchState();
+}
+
+class _SplitBatchState extends State<_SplitBatchHostWidget> {
+  void retire() => deferDispose(_Resource('outer', widget.log).release);
+
+  @override
+  Widget build(BuildContext context) => _SplitBatchInnerWidget(widget.log);
+}
+
+class _SplitBatchInnerWidget extends StatefulWidget {
+  const _SplitBatchInnerWidget(this.log);
+
+  final List<String> log;
+
+  @override
+  State<_SplitBatchInnerWidget> createState() => _SplitBatchInnerState();
+}
+
+class _SplitBatchInnerState extends State<_SplitBatchInnerWidget> {
+  /// The single live inner state, so the test can retire it directly.
+  static _SplitBatchInnerState? instance;
+
+  void retire() => deferDispose(_Resource('inner', widget.log).release);
+
+  @override
+  void initState() {
+    super.initState();
+    instance = this;
+  }
+
+  @override
+  void dispose() {
+    if (identical(instance, this)) instance = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

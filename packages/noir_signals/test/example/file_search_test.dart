@@ -1,5 +1,3 @@
-import 'dart:io' as io;
-
 import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 import 'package:test/test.dart';
@@ -7,6 +5,7 @@ import 'package:test/test.dart';
 import '../../example/file_search.dart';
 import '../../example/models/file_search_model.dart';
 import '../helpers/noir_test_helpers.dart';
+import '../helpers/package_paths.dart';
 
 void main() {
   test('file search filters the list from parsed keystrokes', () async {
@@ -100,7 +99,7 @@ void main() {
   });
 
   test('the example entry point enables basic mouse reporting once', () {
-    final source = io.File('example/file_search.dart').readAsStringSync();
+    final source = companionFile('example/file_search.dart').readAsStringSync();
 
     expect(RegExp('enableMouse: true').allMatches(source), hasLength(1));
     expect(source, isNot(contains('enableMouse(enableMovement: true)')));

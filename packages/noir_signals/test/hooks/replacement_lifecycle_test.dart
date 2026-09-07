@@ -189,7 +189,9 @@ void main() {
 
     Widget buildRoot() => HookBuilder(
       builder: (context) {
-        final resource = use(_DeferredResourceHook(<Object?>[key], log));
+        final resource = use(
+          _DeferredResourceHook(<Object?>[key], log, 'resource-$key'),
+        );
         return _ResourceReader(resource: resource, log: log);
       },
     );
@@ -220,15 +222,17 @@ void main() {
     host.mount(
       HookBuilder(
         builder: (context) {
-          final resource = use(_DeferredResourceHook(const <Object?>[], log));
+          final resource = use(
+            _DeferredResourceHook(const <Object?>[], log, 'solo'),
+          );
           return _ResourceReader(resource: resource, log: log);
         },
       ),
     );
-    final read = log.single;
+    expect(log, <String>['read:solo']);
     host.dispose();
 
-    expect(log, <String>[read, read.replaceFirst('read:', 'release:')]);
+    expect(log, <String>['read:solo', 'release:solo']);
   });
 
   test('keyed effects detach later listeners before old cleanup', () {
@@ -296,9 +300,11 @@ final class _CountingListenable extends ChangeNotifier {
 
 /// Hook that hands its retired resource to [HookState.deferDispose].
 class _DeferredResourceHook extends Hook<_TrackedResource> {
-  const _DeferredResourceHook(List<Object?> keys, this.log) : super(keys: keys);
+  const _DeferredResourceHook(List<Object?> keys, this.log, this.name)
+    : super(keys: keys);
 
   final List<String> log;
+  final String name;
 
   @override
   HookState<_TrackedResource, _DeferredResourceHook> createState() =>
@@ -308,11 +314,12 @@ class _DeferredResourceHook extends Hook<_TrackedResource> {
 class _DeferredResourceHookState
     extends HookState<_TrackedResource, _DeferredResourceHook> {
   late final _TrackedResource _resource;
-  static int _serial = 0;
 
   @override
   void initHook() {
-    _resource = _TrackedResource('resource-${_serial++}', hook.log);
+    // Named by the caller, so the expectations do not depend on how many
+    // other tests in this file ran first.
+    _resource = _TrackedResource(hook.name, hook.log);
   }
 
   @override

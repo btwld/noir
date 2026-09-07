@@ -148,6 +148,13 @@ or `BuildOwner`. An effect must therefore also avoid synchronously invoking an
 ordinary state callback; that path does not receive the hook-specific error and
 can still schedule work during the current build drain.
 
+The guard is isolate-wide, not per host. While any synchronous effect callback
+or cleanup runs, a rebuild requested through `HookState` is rejected for every
+hook widget, including one that is unrelated to the effect. That is deliberate:
+a cleanup that writes state a *different* host observes can drive the same
+build-drain loop the guard exists to stop. Route cross-widget writes through an
+input callback, a timer, or a future, after the effect has returned.
+
 `useState` and other `ValueNotifier`-based sources update their notifier value
 before notifying listeners. When an observed notifier changes during an effect,
 the notifier keeps that value and `ChangeNotifier` reports the rejected hook

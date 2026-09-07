@@ -57,10 +57,18 @@ T useSignalValue<T>(ReadonlySignal<T> source) =>
 /// the run acquired. The hook cancels the effect when the host leaves the tree
 /// and ignores callbacks after that.
 ///
-/// [callback] and [options] are retained until [keys] change. The install and
-/// the lifecycle cleanup run under the same guard as `useEffect`, so neither
-/// may synchronously request a hook rebuild. Signals wraps a failure raised by
-/// the body in a [SignalEffectException], whose `error` holds the original.
+/// [callback] and [options] are retained until [keys] change.
+///
+/// The install and the lifecycle cleanup run under the same guard as
+/// `useEffect`, so neither may request a hook rebuild while it runs. That
+/// guard covers every hook host in the isolate, not only this one: a cleanup
+/// that writes a signal another `HookWidget` observes makes that widget's
+/// rebuild request throw. Write to shared signals from an input callback, a
+/// timer, or a future instead.
+///
+/// A failure raised by the install run propagates unchanged. Signals wraps a
+/// failure raised by a later dependency-driven rerun in a
+/// [SignalEffectException], whose `error` holds the original.
 void useSignalEffect(
   EffectCallback callback, {
   List<Object?> keys = const <Object?>[],
@@ -92,18 +100,21 @@ final class _SignalObservation<T> {
     _source = source;
     final generation = ++_generation;
     var attaching = true;
-    try {
-      _cancel = source.subscribe((_) {
-        // Upstream notifies immediately when the subscription attaches. The
-        // build that installed it already read the current value.
-        if (attaching || _retired || generation != _generation) {
-          return;
-        }
-        _requestRebuild();
-      });
-    } finally {
-      attaching = false;
-    }
+    failures.attempt(() {
+      try {
+        _cancel = source.subscribe((_) {
+          // Upstream notifies immediately when the subscription attaches. The
+          // build that installed it already read the current value.
+          if (attaching || _retired || generation != _generation) {
+            return;
+          }
+          _requestRebuild();
+        });
+      } finally {
+        attaching = false;
+      }
+    });
+    // First error wins even when both the cancellation and the attach fail.
     failures.rethrowFirst();
   }
 
@@ -121,7 +132,9 @@ final class _SignalObservation<T> {
     _cancel = null;
     _source = null;
     // Invalidate before cancelling, so a throwing cancellation cannot leave a
-    // live callback behind.
+    // live callback behind. Defense in depth on this path: `retire()` already
+    // makes the callback inert, and Noir drops a rebuild requested for an
+    // inactive element. The order matters only if either of those changes.
     _generation++;
     if (cancel != null) {
       cancel();
@@ -288,6 +301,9 @@ final class _SignalEffectHookState
     // there. Later dependency-driven reruns keep upstream timing.
     _cancel = EffectExecutionGuard.run(
       () => effect(() {
+        // Defense in depth. Upstream already skips a disposed effect, and it
+        // disposes one whose cleanup throws, so this only matters if that
+        // ever stops holding.
         if (_retired) {
           return null;
         }

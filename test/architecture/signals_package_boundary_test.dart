@@ -83,6 +83,10 @@ void main() {
   });
 
   test('the companion barrel exports the hook families', () {
+    // Exact membership, not a substring search: `contains('useSignal')` is
+    // satisfied by `useSignalValue`, and `contains('HookWidget')` by a
+    // mention in the library doc comment.
+    final exported = _shownSymbols(companionBarrel);
     for (final symbol in <String>[
       'HookWidget',
       'HookBuilder',
@@ -98,11 +102,12 @@ void main() {
       'useScrollController',
       'useViewportController',
     ]) {
-      expect(companionBarrel, contains(symbol), reason: symbol);
+      expect(exported, contains(symbol), reason: symbol);
     }
   });
 
   test('the companion barrel exports the signal families', () {
+    final exported = _shownSymbols(companionBarrel);
     for (final symbol in <String>[
       'useSignal',
       'useComputed',
@@ -111,8 +116,14 @@ void main() {
       'SignalValueBuilder',
       'SignalValueWidgetBuilder',
     ]) {
-      expect(companionBarrel, contains(symbol), reason: symbol);
+      expect(exported, contains(symbol), reason: symbol);
     }
+  });
+
+  test('the companion barrel exports nothing but the approved surface', () {
+    // The whole export set is frozen, so a new public name has to be an
+    // intentional edit here rather than an accidental re-export.
+    expect(_shownSymbols(companionBarrel), _companionSurface);
   });
 
   test('the Signals contract has one guide and one website page', () {
@@ -191,12 +202,24 @@ void main() {
       expect(bridge, contains("export '../../../../test/helpers/$helper';"));
       expect(File('test/helpers/$helper').existsSync(), isTrue);
     }
+    final helperFiles = Directory(
+      '$_companionRoot/test/helpers',
+    ).listSync().whereType<File>().toList(growable: false);
     expect(
-      Directory(
-        '$_companionRoot/test/helpers',
-      ).listSync().whereType<File>().map((file) => file.uri.pathSegments.last),
-      <String>['noir_test_helpers.dart'],
+      helperFiles.map((file) => file.uri.pathSegments.last),
+      unorderedEquals(<String>['noir_test_helpers.dart', 'package_paths.dart']),
     );
+    // No helper may redeclare a harness the bridge already re-exports.
+    for (final file in helperFiles) {
+      final source = file.readAsStringSync();
+      for (final owned in <String>[
+        'class TestElementHost',
+        'class BufferCapture',
+        'TuiTestApp createTuiTestApp',
+      ]) {
+        expect(source, isNot(contains(owned)), reason: '${file.path}: $owned');
+      }
+    }
 
     const lifecycleTestNames = <String>{
       'controllers_animation_test.dart',
@@ -384,3 +407,90 @@ List<String> _dartFilesUnder(String directory) =>
         .where((file) => file.endsWith('.dart'))
         .toList(growable: false)
       ..sort();
+
+/// Every symbol the barrel names in a `show` clause.
+Set<String> _shownSymbols(String barrel) => <String>{
+  for (final match in RegExp(
+    r'export\s+[^;]*?\bshow\b([^;]*);',
+    dotAll: true,
+  ).allMatches(barrel))
+    ...match
+        .group(1)!
+        .split(',')
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty),
+};
+
+/// The frozen public surface of `package:noir_signals/noir_signals.dart`.
+const Set<String> _companionSurface = <String>{
+  // Upstream Signals primitives an application needs to declare a model.
+  'Computed',
+  'ComputedOptions',
+  'EffectCallback',
+  'EffectCleanup',
+  'EffectOptions',
+  'ReadonlySignal',
+  'ReadonlySignalOptions',
+  'Signal',
+  'SignalEffectException',
+  'SignalOptions',
+  'SignalsError',
+  'SignalsReadAfterDisposeError',
+  'SignalsWriteAfterDisposeError',
+  'batch',
+  'computed',
+  'effect',
+  'signal',
+  'untracked',
+  // Hook runtime.
+  'Hook',
+  'HookBuilder',
+  'HookState',
+  'HookWidget',
+  'HookWidgetBuilder',
+  'use',
+  'useContext',
+  'useTickerProvider',
+  // Built-in hooks.
+  'AsyncSnapshot',
+  'ConnectionState',
+  'Dispose',
+  'Effect',
+  'ObjectRef',
+  'Reducer',
+  'Store',
+  'ValueEquality',
+  'useAnimation',
+  'useAnimationController',
+  'useAnimationStatus',
+  'useCallback',
+  'useChangeNotifier',
+  'useDisposable',
+  'useEffect',
+  'useFocusNode',
+  'useFuture',
+  'useIsMounted',
+  'useListenable',
+  'useListenableSelector',
+  'useMemoized',
+  'useOnDispose',
+  'useOnListenableChange',
+  'usePrevious',
+  'useReducer',
+  'useRef',
+  'useScrollController',
+  'useState',
+  'useStream',
+  'useTextEditingController',
+  'useValueChanged',
+  'useValueListenable',
+  'useValueNotifier',
+  'useViewportController',
+  // Signals integration.
+  'SignalValueBuilder',
+  'SignalValueWidgetBuilder',
+  'useComputed',
+  'useSignal',
+  'useSignalEffect',
+  'useSignalValue',
+};
