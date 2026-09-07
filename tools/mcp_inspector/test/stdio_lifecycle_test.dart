@@ -10,28 +10,34 @@ import 'dart:io';
 import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
 import 'package:test/test.dart';
 
-const _fixture = 'fixtures/calculate_server.dart';
+import 'compiled_fixture.dart';
+
+const _fixturePackage = '../mcp_fixtures';
+const _fixture = 'bin/calculate_server.dart';
 
 void main() {
+  final fixtures = CompiledFixtures(workingDirectory: _fixturePackage);
+  late String executable;
+
+  setUpAll(() async {
+    executable = await fixtures.executableFor(_fixture);
+  });
+  tearDownAll(fixtures.dispose);
+
   test(
     'a stdio session calls a tool, shows stderr, and ends its child',
     () async {
       // Another inspector must not contaminate this test's lifetime check.
-      final neighbor = LiveMcpSession.stdio(
-        command: Platform.resolvedExecutable,
-        args: const <String>['run', '--verbosity=error', _fixture],
-      );
+      final neighbor = LiveMcpSession.stdio(command: executable);
       addTearDown(neighbor.close);
       await neighbor.connect();
       final marker =
           'noir-mcp-fixture-$pid-${DateTime.now().microsecondsSinceEpoch}';
       final session = LiveMcpSession.stdio(
-        command: Platform.resolvedExecutable,
-        // `--verbosity=error` keeps `dart run` build-hook progress lines off the
-        // child's stdout, which is the MCP protocol channel.
+        command: executable,
         // The fixture ignores this extra argument. It identifies only this
         // session in the process table, even beside another copy of the app.
-        args: <String>['run', '--verbosity=error', _fixture, marker],
+        args: <String>[marker],
       );
       addTearDown(session.close);
       final consoleLines = <String>[];

@@ -20,7 +20,7 @@ dart pub get
 
 # Start a server as a child process.
 dart run bin/mcp_inspector.dart -- \
-  dart run --verbosity=error fixtures/calculate_server.dart
+  dart run ../mcp_fixtures/bin/calculate_server.dart
 
 # Or connect to a Streamable HTTP endpoint.
 dart run bin/mcp_inspector.dart --url http://localhost:3000/mcp
@@ -34,9 +34,12 @@ Options:
 | `--url <uri>` | Streamable HTTP endpoint of a running server. |
 | `-- <command> [args...]` | Everything after `--` starts a server as a child process. |
 
-`--verbosity=error` on the child matters. In a package whose dependency graph
-has a native-assets build hook, `dart run` writes `Running build hooks...` to
-stdout, and for a stdio server stdout is the protocol channel. See
+The child's stdout is the protocol channel, so nothing else may write to it.
+In a package whose dependency graph has a native-assets build hook, `dart run`
+writes `Running build hooks...` there. `--verbosity=error` suppresses that only
+from Dart 3.11 on. The fixtures live in `tools/mcp_fixtures`, which depends on
+`package:mcp_dart` alone and therefore has no hook. Give a server of your own
+either a hook-free package or a compiled executable. See
 [`FINDINGS.md`](FINDINGS.md), entry 16.
 
 ## Keys
@@ -88,10 +91,10 @@ the full schema also supplies the text truncated from field hints.
 
 | Fixture | Profile | What it shows |
 | --- | --- | --- |
-| `fixtures/calculate_server.dart` | default | `calculate` with an enum and two numbers, `file:///logs`, and the `analyze-code` prompt |
-| `fixtures/constrained_server.dart` | default | `schedule` declares numeric and string constraints, plus `if` / `then` and `dependentRequired`, which generate no controls |
-| `fixtures/greeting_server.dart` | `--protocol 2026` | `personalized_greeting` answers with `input_required`, then returns a greeting |
-| `fixtures/legacy_elicit_server.dart` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
+| `../mcp_fixtures/bin/calculate_server.dart` | default | `calculate` with an enum and two numbers, `file:///logs`, and the `analyze-code` prompt |
+| `../mcp_fixtures/bin/constrained_server.dart` | default | `schedule` declares numeric and string constraints, plus `if` / `then` and `dependentRequired`, which generate no controls |
+| `../mcp_fixtures/bin/greeting_server.dart` | `--protocol 2026` | `personalized_greeting` answers with `input_required`, then returns a greeting |
+| `../mcp_fixtures/bin/legacy_elicit_server.dart` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
 
 The two elicitation fixtures exist to prove that one handler and one modal
 serve both the MCP 2026-07-28 `input_required` retry loop and the 2025-11-25
@@ -105,7 +108,7 @@ lib/src/session/            the boundary: McpSession, LiveMcpSession,
                             TracingTransport, ProtocolLog
 lib/src/model/              FormModel and InspectorController
 lib/src/ui/                 the screen; imports package:noir only
-fixtures/                   four MCP servers written with package:mcp_dart
+../mcp_fixtures/            six MCP servers written with package:mcp_dart
 ```
 
 `McpSession` plays the role `PubCatalog` plays in
@@ -145,7 +148,7 @@ printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick 
   dart run --verbosity=error scripts/noir_drive.dart \
     "$PWD/tools/mcp_inspector/bin/mcp_inspector.dart" --size 100x30 -- \
     -- dart run --verbosity=error \
-      "$PWD/tools/mcp_inspector/fixtures/calculate_server.dart"
+      "$PWD/tools/mcp_fixtures/bin/calculate_server.dart"
 ```
 
 ## What the build exposed

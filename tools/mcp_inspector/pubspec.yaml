@@ -15,4 +15,6 @@ dependencies:
 
 dev_dependencies:
   lints: ^6.0.0
+  noir_mcp_fixtures:
+    path: ../mcp_fixtures
   test: ^1.25.0

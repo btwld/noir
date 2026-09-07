@@ -5,11 +5,7 @@
 /// the second pass returns the greeting. This is the 2026 profile of the same
 /// user-input flow that `legacy_elicit_server.dart` performs with
 /// `elicitation/create`.
-///
-/// Run with: `dart run fixtures/greeting_server.dart`
 library;
-
-import 'dart:io';
 
 import 'package:mcp_dart/mcp_dart.dart';
 
@@ -76,10 +72,4 @@ McpServer buildGreetingServer() {
   );
 
   return server;
-}
-
-/// Starts the greeting server on stdio.
-Future<void> main() async {
-  stderr.writeln('greeting_server ready');
-  await buildGreetingServer().connect(StdioServerTransport());
 }

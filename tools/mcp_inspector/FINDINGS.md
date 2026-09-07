@@ -253,8 +253,35 @@ protocol channel, and the client rejects the stream:
 StdioClientTransport: Error processing read buffer: ... Skipping data.
 ```
 
-`dart run --verbosity=error <server>.dart` fixes it. Every fixture command in
-this package and in the two root tests carries that flag.
+`--verbosity=error` suppresses it only from Dart 3.11 on. Dart 3.10 — the
+minimum this package supports and the version its CI pins — wraps the hooks in
+a progress indicator unconditionally
+(`pkg/dartdev/lib/src/commands/run.dart`), and the non-terminal progress
+implementation writes to stdout with no newline
+(`pkg/dartdev/lib/src/progress.dart`). Dart 3.11 added the verbosity guard.
+The failure is therefore invisible on a 3.11 developer machine and fatal on a
+3.10 runner: the first JSON-RPC line arrives with text in front of it and the
+`initialize` request times out.
+
+Dart 3.10 also refuses `dart compile exe` for a package graph that has build
+hooks: *'dart compile' does not support build hooks, use 'dart build' instead*.
+`dart build cli` only accepts a target inside `bin/`, so neither command
+reaches a fixture that inherits the hook.
+
+*Fix in this package.* The fixtures moved to `tools/mcp_fixtures`, which
+depends on `package:mcp_dart` alone and therefore has no build hook. `lib/`
+builds each server without a transport for the in-process tests, and `bin/`
+starts it on stdio. Tests compile the entry point with `dart compile exe`,
+which that package permits, and start the executable, so its stdout carries
+only what the server writes on every supported SDK.
+`tools/mcp_inspector/test/compiled_fixture.dart` and the matching helper in
+`test/tools/mcp_inspector_drive_test.dart` own that step, and
+`test/tools/mcp_inspector_package_test.dart` asserts that the fixture package
+keeps its single dependency.
+
+A host that starts a server through `dart run` still needs `--verbosity=error`,
+still needs Dart 3.11 or later for it to work, and is better served by a
+hook-free package or a compiled executable.
 
 ### 17. The SDK's runtime logger writes to stderr and would corrupt a frame
 

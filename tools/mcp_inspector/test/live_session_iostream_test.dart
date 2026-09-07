@@ -1,10 +1,9 @@
 import 'dart:async';
 
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:noir_mcp_fixtures/calculate_server.dart';
 import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
 import 'package:test/test.dart';
-
-import '../fixtures/calculate_server.dart';
 
 void main() {
   late McpServer server;

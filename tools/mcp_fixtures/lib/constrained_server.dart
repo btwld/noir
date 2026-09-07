@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:mcp_dart/mcp_dart.dart';
 
 /// Builds a server whose one tool declares the constraints a form must show.
@@ -86,10 +84,4 @@ McpServer buildConstrainedServer() {
   );
 
   return server;
-}
-
-/// Starts the constrained server on stdio.
-Future<void> main() async {
-  stderr.writeln('constrained_server ready');
-  await buildConstrainedServer().connect(StdioServerTransport());
 }

@@ -23,40 +23,36 @@ void main() {
     'tools',
     'mcp_inspector',
   );
+  final fixtureRoot = path.join(
+    Directory.current.absolute.path,
+    'tools',
+    'mcp_fixtures',
+  );
   final entryPoint = path.join(packageRoot, 'bin', 'mcp_inspector.dart');
-  final calculateFixture = path.join(
-    packageRoot,
-    'fixtures',
-    'calculate_server.dart',
-  );
-  final constrainedFixture = path.join(
-    packageRoot,
-    'fixtures',
-    'constrained_server.dart',
-  );
-  final greetingFixture = path.join(
-    packageRoot,
-    'fixtures',
-    'greeting_server.dart',
-  );
-  final legacyFixture = path.join(
-    packageRoot,
-    'fixtures',
-    'legacy_elicit_server.dart',
-  );
+  const calculateFixture = 'bin/calculate_server.dart';
+  const constrainedFixture = 'bin/constrained_server.dart';
+  const greetingFixture = 'bin/greeting_server.dart';
+  const legacyFixture = 'bin/legacy_elicit_server.dart';
 
   setUpAll(() async {
-    final resolution = await Process.run(
-      Platform.resolvedExecutable,
-      const <String>['pub', 'get'],
-      workingDirectory: packageRoot,
-    );
-    expect(
-      resolution.exitCode,
-      0,
-      reason: 'stdout:\n${resolution.stdout}\nstderr:\n${resolution.stderr}',
-    );
+    // The fixtures resolve first: the inspector depends on that package.
+    for (final root in <String>[fixtureRoot, packageRoot]) {
+      final resolution = await Process.run(
+        Platform.resolvedExecutable,
+        const <String>['pub', 'get'],
+        workingDirectory: root,
+      );
+      expect(
+        resolution.exitCode,
+        0,
+        reason:
+            'pub get failed in $root\n'
+            'stdout:\n${resolution.stdout}\nstderr:\n${resolution.stderr}',
+      );
+    }
+    _compiledFixtures = _CompiledFixtures(fixtureRoot);
   });
+  tearDownAll(() => _compiledFixtures.dispose());
 
   test(
     'the inspector calls a tool, logs the exchange, and ends its child',
@@ -67,7 +63,11 @@ void main() {
         entryPoint,
         width: 100,
         height: 30,
-        arguments: <String>['--', ..._fixtureCommand(calculateFixture), marker],
+        arguments: <String>[
+          '--',
+          ...await _fixtureCommand(calculateFixture),
+          marker,
+        ],
       );
       var quit = false;
       addTearDown(() async {
@@ -148,9 +148,7 @@ void main() {
         '--protocol',
         'legacy',
         '--',
-        ..._fixtureCommand(
-          path.join(packageRoot, 'test', 'fixtures', 'selection_server.dart'),
-        ),
+        ...await _fixtureCommand('bin/selection_server.dart'),
       ],
     );
     addTearDown(driver.quit);
@@ -158,10 +156,7 @@ void main() {
 
     for (final name in ['second', 'first']) {
       await driver.clickLocator(DriverLocator.byKey('primitive:$name'));
-      final field = await driver.find(
-        DriverLocator.byKey('field:${name}Value'),
-      );
-      expect(field.hasFocusedDescendant, isTrue);
+      await _waitForFocusIn(driver, DriverLocator.byKey('field:${name}Value'));
       await driver.typeText('entered');
       await driver.sendKey('ctrl-r');
       await driver.waitForText('$name: entered');
@@ -185,7 +180,7 @@ void main() {
       entryPoint,
       width: 100,
       height: 30,
-      arguments: <String>['--', ..._fixtureCommand(calculateFixture)],
+      arguments: <String>['--', ...await _fixtureCommand(calculateFixture)],
     );
     addTearDown(driver.quit);
 
@@ -248,7 +243,7 @@ void main() {
       entryPoint,
       width: 100,
       height: 40,
-      arguments: <String>['--', ..._fixtureCommand(constrainedFixture)],
+      arguments: <String>['--', ...await _fixtureCommand(constrainedFixture)],
     );
     addTearDown(driver.quit);
 
@@ -285,7 +280,7 @@ void main() {
       entryPoint,
       width: 100,
       height: 30,
-      arguments: <String>['--', ..._fixtureCommand(calculateFixture)],
+      arguments: <String>['--', ...await _fixtureCommand(calculateFixture)],
     );
     addTearDown(driver.quit);
     await driver.waitFor(const DriverLocator.byKey('primitive:calculate'));
@@ -307,7 +302,7 @@ void main() {
       entryPoint,
       width: 100,
       height: 30,
-      arguments: <String>['--', ..._fixtureCommand(constrainedFixture)],
+      arguments: <String>['--', ...await _fixtureCommand(constrainedFixture)],
     );
     addTearDown(driver.quit);
     await driver.waitFor(const DriverLocator.byKey('primitive:schedule'));
@@ -355,7 +350,7 @@ void main() {
         '--protocol',
         '2026',
         '--',
-        ..._fixtureCommand(greetingFixture),
+        ...await _fixtureCommand(greetingFixture),
       ],
     );
     addTearDown(driver.quit);
@@ -376,11 +371,14 @@ void main() {
   test('Ctrl+R sends from a field and editing keys stay local', () async {
     final driver = await NoirDriver.launch(
       entryPoint,
-      arguments: ['--', ..._fixtureCommand(calculateFixture)],
+      arguments: ['--', ...await _fixtureCommand(calculateFixture)],
     );
     addTearDown(driver.quit);
     await driver.waitFor(const DriverLocator.byKey('primitive:calculate'));
     await driver.clickLocator(const DriverLocator.byKey('primitive:calculate'));
+    // The generated field takes focus as it mounts, a frame after the click
+    // that created it. Typing before that loses the characters.
+    await _waitForFocusIn(driver, const DriverLocator.byKey('field:a'));
     await driver.typeText('5');
     await driver.sendKey('tab');
     await driver.typeText('13');
@@ -404,9 +402,7 @@ void main() {
           '--protocol',
           'legacy',
           '--',
-          ..._fixtureCommand(
-            path.join(packageRoot, 'test', 'fixtures', 'long_form_server.dart'),
-          ),
+          ...await _fixtureCommand('bin/long_form_server.dart'),
         ],
       );
       addTearDown(driver.quit);
@@ -450,7 +446,7 @@ void main() {
         '--protocol',
         'legacy',
         '--',
-        ..._fixtureCommand(legacyFixture),
+        ...await _fixtureCommand(legacyFixture),
       ],
     );
     addTearDown(driver.quit);
@@ -490,16 +486,94 @@ final String? _skipReason = Platform.isWindows
     ? 'Child-process inventory uses pgrep, which Windows does not provide.'
     : null;
 
-/// The command the inspector runs for [fixture].
+/// The command the inspector runs for [fixture], compiled on first use.
 ///
-/// `--verbosity=error` keeps `dart run` build-hook progress lines off the
-/// child's stdout, which is the MCP protocol channel.
-List<String> _fixtureCommand(String fixture) => <String>[
-  Platform.resolvedExecutable,
-  'run',
-  '--verbosity=error',
-  fixture,
+/// [fixture] is relative to `tools/mcp_fixtures`, which depends only on
+/// `package:mcp_dart` and so has no native-assets build hook. That matters
+/// twice. `dart run` on a hook-bearing package writes hook progress to
+/// **stdout** — the MCP protocol channel — and `--verbosity=error` suppresses
+/// it only from Dart 3.11 on. The same SDKs also refuse `dart compile exe` for
+/// a hook-bearing package. A hook-free fixture compiles everywhere, and its
+/// stdout carries only what the server writes.
+Future<List<String>> _fixtureCommand(String fixture) async => <String>[
+  await _compiledFixtures.executableFor(fixture),
 ];
+
+late final _CompiledFixtures _compiledFixtures;
+
+/// Compiles fixture servers into one temporary directory for this process.
+class _CompiledFixtures {
+  _CompiledFixtures(this.workingDirectory);
+
+  /// Package root whose dependencies the fixtures resolve against.
+  final String workingDirectory;
+
+  final Map<String, Future<String>> _executables = <String, Future<String>>{};
+  Directory? _output;
+
+  /// The executable for [fixture], compiling it on the first request.
+  Future<String> executableFor(String fixture) =>
+      _executables.putIfAbsent(fixture, () => _compile(fixture));
+
+  Future<String> _compile(String fixture) async {
+    final output = _output ??= Directory.systemTemp.createTempSync(
+      'noir-mcp-fixtures-',
+    );
+    final base = path.basenameWithoutExtension(fixture);
+    final target = path.join(
+      output.path,
+      Platform.isWindows ? '$base.exe' : base,
+    );
+    final result = await Process.run(Platform.resolvedExecutable, <String>[
+      'compile',
+      'exe',
+      fixture,
+      '-o',
+      target,
+    ], workingDirectory: workingDirectory);
+    if (result.exitCode != 0) {
+      throw StateError(
+        'dart compile exe $fixture failed\n'
+        'stdout:\n${result.stdout}\nstderr:\n${result.stderr}',
+      );
+    }
+    return target;
+  }
+
+  /// Removes every executable this instance compiled.
+  void dispose() {
+    final output = _output;
+    _output = null;
+    _executables.clear();
+    if (output != null && output.existsSync()) {
+      output.deleteSync(recursive: true);
+    }
+  }
+}
+
+/// Polls until [locator] resolves to one node that owns focus or contains it.
+///
+/// The inspector focuses a generated field as the field mounts, a frame after
+/// the row activation that created it. A test that types straight after a
+/// click therefore races that focus, and loses its first characters whenever
+/// the machine is slower than the developer's.
+Future<void> _waitForFocusIn(
+  NoirDriver driver,
+  DriverLocator locator, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  DriverNode? last;
+  while (DateTime.now().isBefore(deadline)) {
+    final matches = (await driver.tree()).findAll(locator);
+    if (matches.length == 1) {
+      last = matches.single;
+      if (last.focused || last.hasFocusedDescendant) return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  throw StateError('Timed out waiting for focus in $locator. Last: $last');
+}
 
 /// Counts only the app and fixture processes carrying this test's marker.
 Future<int> _childCount(String marker) async {

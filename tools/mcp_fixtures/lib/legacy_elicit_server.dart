@@ -4,11 +4,7 @@
 /// the elicitation. The inspector serves this request with the same modal and
 /// the same handler it uses for the 2026 `input_required` flow, which is what
 /// the pair of fixtures exists to prove.
-///
-/// Run with: `dart run fixtures/legacy_elicit_server.dart`
 library;
-
-import 'dart:io';
 
 import 'package:mcp_dart/mcp_dart.dart';
 
@@ -66,10 +62,4 @@ McpServer buildLegacyElicitServer() {
   );
 
   return server;
-}
-
-/// Starts the legacy elicitation server on stdio.
-Future<void> main() async {
-  stderr.writeln('legacy_elicit_server ready');
-  await buildLegacyElicitServer().connect(StdioServerTransport());
 }

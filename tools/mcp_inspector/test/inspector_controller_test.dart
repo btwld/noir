@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:noir_mcp_fixtures/greeting_server.dart';
+import 'package:noir_mcp_fixtures/legacy_elicit_server.dart';
 import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
 import 'package:test/test.dart';
 
-import '../fixtures/greeting_server.dart';
-import '../fixtures/legacy_elicit_server.dart';
 import 'fake_mcp_session.dart';
 
 const _calculateForm = FormSpec(<FormFieldSpec>[

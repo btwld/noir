@@ -4,11 +4,7 @@
 /// MCP Inspector screenshots use, so the two inspectors show the same server.
 /// The code is written against the public `package:mcp_dart` API and does not
 /// depend on the upstream clone at run time.
-///
-/// Run with: `dart run fixtures/calculate_server.dart`
 library;
-
-import 'dart:io';
 
 import 'package:mcp_dart/mcp_dart.dart';
 
@@ -109,12 +105,4 @@ McpServer buildCalculateServer() {
   );
 
   return server;
-}
-
-/// Starts the calculate server on stdio.
-Future<void> main() async {
-  // The inspector captures child stderr into its console pane, so a banner
-  // here proves that pane end to end.
-  stderr.writeln('calculate_server ready');
-  await buildCalculateServer().connect(StdioServerTransport());
 }
