@@ -361,10 +361,15 @@ class _InspectorAppState extends State<InspectorApp> {
 
   /// Keeps one node focused across a tab change.
   ///
-  /// A tab change can remove the region that owns focus, and `Shortcuts` are
-  /// looked up from the focused element, so an unfocused tree would stop
-  /// answering every binding. The list and the console own their tab's focus;
-  /// each takes it back through `autofocus` when its region remounts.
+  /// The list and the console own their tab's focus; each takes it back
+  /// through `autofocus` when its region remounts. This runs from the
+  /// controller notification, before the rebuild, so it reads the node that
+  /// the outgoing tab left attached.
+  ///
+  /// An empty tab builds no list at all, so `_listFocus` can be detached here.
+  /// Requesting focus on a detached node throws, and Noir now recovers focus
+  /// on its own when a tab change removes the focused control, so an
+  /// unreachable list is simply left alone.
   void _syncTabFocus() {
     final tab = _controller.activeTab;
     final previous = _focusedTab;
@@ -373,7 +378,9 @@ class _InspectorAppState extends State<InspectorApp> {
     if (tab == InspectorTab.console || previous == InspectorTab.console) {
       return;
     }
-    if (!_listFocus.hasFocus) _listFocus.requestFocus();
+    if (!_listFocus.hasFocus && _listFocus.isAttached) {
+      _listFocus.requestFocus();
+    }
   }
 
   void _rebuild() {

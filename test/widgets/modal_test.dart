@@ -1064,7 +1064,7 @@ void main() {
   });
 
   test(
-    'close skips an unavailable restore node without choosing a fallback',
+    'close drops an unavailable restore node and lets recovery settle focus',
     () async {
       final controller = ModalController();
       final launcher = FocusNode(debugLabel: 'launcher');
@@ -1091,10 +1091,21 @@ void main() {
         launcher.canRequestFocus = false;
 
         controller.close();
+
+        // The modal drops the unavailable snapshot instead of inventing a
+        // fallback, so focus is still on the closing overlay's own action.
+        expect(app.binding.buildOwner.focusManager.primaryFocus, same(action));
+
         await _settle(app);
 
-        expect(launcher.hasFocus, isFalse);
-        expect(app.binding.buildOwner.focusManager.primaryFocus, isNull);
+        // The overlay has unmounted and taken the focused node with it. Focus
+        // recovery, not the modal, gives the settled tree an owner again: the
+        // launcher is the only live focusable control, and its own widget
+        // re-enabled it on the rebuild that closed the modal.
+        expect(
+          app.binding.buildOwner.focusManager.primaryFocus,
+          same(launcher),
+        );
       } finally {
         app.dispose();
         launcher.dispose();

@@ -105,15 +105,16 @@ class DetailPane extends StatelessWidget {
           Row(
             spacing: 1,
             children: <Widget>[
-              // The button stays enabled while a request is in flight. A
-              // disabled Button drops primary focus, and every `Shortcuts`
-              // binding stops working while no node is focused.
-              // `InspectorController.run` already ignores a second call.
+              // The button is disabled while a request is in flight, which is
+              // what a user expects to see. Noir recovers focus when the
+              // disabled button was the focused control, so every `Shortcuts`
+              // binding keeps working. `InspectorController.run` still ignores
+              // a second call.
               Button(
                 key: const ValueKey<String>('run'),
                 label: _runLabel,
                 focusNode: runFocusNode,
-                onPressed: controller.run,
+                onPressed: controller.isRunning ? null : controller.run,
               ),
               if (controller.isRunning) Spinner(color: theme.accent),
             ],
