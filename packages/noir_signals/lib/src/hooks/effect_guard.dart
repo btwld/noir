@@ -7,9 +7,9 @@ import 'package:meta/meta.dart';
 /// Without this guard, a keyless effect that updates hook state can schedule
 /// itself repeatedly and keep that drain from completing.
 ///
-/// The guard stays inside the unexported hooks implementation so the optional
-/// `package:noir_signals/noir_signals.dart` surface does not add an effect dependency to core
-/// `State` or `BuildOwner`. `HookState.setState` is the hook-owned scheduling
+/// The guard stays inside this package's unexported hooks implementation, so
+/// the optional companion surface adds no effect dependency to core `State`
+/// or `BuildOwner`. `HookState.setState` is the hook-owned scheduling
 /// boundary that consults it. Ordinary `State.setState` remains a core
 /// framework concern and is not intercepted here.
 @internal

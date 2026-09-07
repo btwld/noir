@@ -27,11 +27,13 @@ export 'package:signals_core/signals_core.dart'
     show
         Computed,
         ComputedOptions,
+        EffectCallback,
         EffectCleanup,
         EffectOptions,
         ReadonlySignal,
         ReadonlySignalOptions,
         Signal,
+        SignalEffectException,
         SignalOptions,
         SignalsError,
         SignalsReadAfterDisposeError,
@@ -89,3 +91,7 @@ export 'src/hooks/primitives.dart'
         useRef,
         useState,
         useValueChanged;
+export 'src/hooks/signals.dart'
+    show useComputed, useSignal, useSignalEffect, useSignalValue;
+export 'src/signal_value_builder.dart'
+    show SignalValueBuilder, SignalValueWidgetBuilder;

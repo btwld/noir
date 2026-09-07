@@ -82,7 +82,7 @@ void main() {
     }
   });
 
-  test('the companion barrel exports the hook and signal families', () {
+  test('the companion barrel exports the hook families', () {
     for (final symbol in <String>[
       'HookWidget',
       'HookBuilder',
@@ -100,6 +100,51 @@ void main() {
     ]) {
       expect(companionBarrel, contains(symbol), reason: symbol);
     }
+  });
+
+  test('the companion barrel exports the signal families', () {
+    for (final symbol in <String>[
+      'useSignal',
+      'useComputed',
+      'useSignalValue',
+      'useSignalEffect',
+      'SignalValueBuilder',
+      'SignalValueWidgetBuilder',
+    ]) {
+      expect(companionBarrel, contains(symbol), reason: symbol);
+    }
+  });
+
+  test('the Signals contract has one guide and one website page', () {
+    final guide = File('$_companionRoot/doc/signals.md').readAsStringSync();
+    final page = File(
+      'website/src/content/docs/signals.mdx',
+    ).readAsStringSync();
+    final navigation = File(
+      'website/src/content/docs/_meta.ts',
+    ).readAsStringSync();
+
+    expect(navigation, contains("signals: 'Signals'"));
+    for (final contract in <String>[
+      'useSignal',
+      'useComputed',
+      'useSignalValue',
+      'SignalValueBuilder',
+      'autoDispose',
+    ]) {
+      expect(guide, contains(contract), reason: 'guide: $contract');
+      expect(page, contains(contract), reason: 'page: $contract');
+    }
+    // Automatic whole-build tracking is a separate feature; neither document
+    // may promise it.
+    for (final source in <String>[guide, page]) {
+      expect(source, contains('no automatic whole-build tracking'));
+      expect(source, isNot(contains('SignalWidget(')));
+    }
+    expect(
+      File('$_companionRoot/README.md').readAsStringSync(),
+      contains('doc/signals.md'),
+    );
   });
 
   test('the companion barrel keeps the hook Effect typedef', () {

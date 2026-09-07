@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 import 'package:noir/noir.dart';
 
 import 'effect_guard.dart';
+import 'first_error.dart';
 
 /// Builds a widget from a [BuildContext] while hooks are active.
 typedef HookWidgetBuilder = Widget Function(BuildContext context);
@@ -370,7 +371,7 @@ final class _HookWidgetState extends State<HookWidget>
     _reassemblePending = false;
 
     Widget? result;
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     try {
       failures.attempt(() {
         result = widget.build(context);
@@ -392,7 +393,7 @@ final class _HookWidgetState extends State<HookWidget>
 
   @override
   void deactivate() {
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     for (final hook in _hooks.reversed) {
       failures.attempt(hook._deactivateEntry);
     }
@@ -405,7 +406,7 @@ final class _HookWidgetState extends State<HookWidget>
   @override
   void reassemble() {
     _reassemblePending = true;
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     final wasResolvingHook = _isResolvingHook;
     _isResolvingHook = true;
     try {
@@ -423,7 +424,7 @@ final class _HookWidgetState extends State<HookWidget>
 
   @override
   void dispose() {
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     final hooks = List<HookState<dynamic, dynamic>>.of(_hooks);
     final pendingDisposals = List<HookState<dynamic, dynamic>>.of(
       _pendingDisposals,
@@ -467,7 +468,7 @@ final class _HookWidgetState extends State<HookWidget>
     }
     final removed = _hooks.sublist(index);
     _hooks.removeRange(index, _hooks.length);
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     final wasResolvingHook = _isResolvingHook;
     _isResolvingHook = true;
     try {
@@ -486,7 +487,7 @@ final class _HookWidgetState extends State<HookWidget>
     }
     final removed = List<HookState<dynamic, dynamic>>.of(_pendingDisposals);
     _pendingDisposals.clear();
-    final failures = _FirstErrorRecorder();
+    final failures = FirstErrorRecorder();
     final wasResolvingHook = _isResolvingHook;
     _isResolvingHook = true;
     try {
@@ -529,25 +530,4 @@ bool _keysEqual(List<Object?>? left, List<Object?>? right) {
     }
   }
   return true;
-}
-
-final class _FirstErrorRecorder {
-  Object? _error;
-  StackTrace? _stackTrace;
-
-  void attempt(void Function() action) {
-    try {
-      action();
-    } on Object catch (error, stackTrace) {
-      _error ??= error;
-      _stackTrace ??= stackTrace;
-    }
-  }
-
-  void rethrowFirst() {
-    final error = _error;
-    if (error != null) {
-      Error.throwWithStackTrace(error, _stackTrace!);
-    }
-  }
 }

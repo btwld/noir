@@ -178,3 +178,16 @@ CounterState useCounter([int initialValue = 0]) {
 For lifecycle behavior that composition cannot express, extend `Hook` and
 `HookState`. A class hook can initialize, update, reassemble, rebuild, access
 the host context and ticker provider, and dispose resources.
+
+`HookState.deferDispose` releases a resource this slot retires after the host
+successfully updates its descendants and the removed descendants finish
+unmounting. Use it when the widgets built by the previous configuration may
+still read the retired resource. Detach this hook's own observation at once and
+defer only the disposal.
+
+## Signals
+
+The same package adds `useSignal`, `useComputed`, `useSignalValue`,
+`useSignalEffect`, and `SignalValueBuilder`. They follow the hook rules above
+and connect the `signals_core` engine to Noir rebuilds. Read
+[`signals.md`](signals.md) for their ownership and observation contract.

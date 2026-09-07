@@ -1,0 +1,138 @@
+---
+title: Signals
+description: Connect the signals_core reactive engine to Noir rebuilds with explicit ownership and observation.
+---
+
+# Signals
+
+The optional companion package `noir_signals` connects the
+[`signals_core`](https://pub.dev/packages/signals_core) reactive engine to
+Noir’s widget lifecycle. Signals owns the reactive graph. Noir keeps owning
+scheduling, reconciliation, layout, paint recording, and native resources.
+
+A subscription callback never runs a builder, flushes a frame, or paints. It
+only asks Noir to rebuild, and Noir’s scheduler coalesces repeated requests
+into one frame.
+
+## Add the companion package
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals: ^0.0.1-alpha.0
+```
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+One entrypoint carries the hooks, the signal hooks, and the upstream
+primitives an application normally needs: `Signal`, `Computed`, `signal`,
+`computed`, `effect`, `batch`, and `untracked`.
+
+## Own local reactive state
+
+```dart
+class Counter extends HookWidget {
+  const Counter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = useSignal(0);
+
+    return Column(
+      children: [
+        Text('Count: ${count.value}'),
+        Button(
+          autofocus: true,
+          label: '+ Add one',
+          onPressed: () => count.value++,
+        ),
+      ],
+    );
+  }
+}
+```
+
+`useState` stays simpler for a plain local counter. Signals earn their place
+when state is derived or shared: filtered lists, selected-item details, counts,
+and progress across several widgets.
+
+## Keep the model out of the widget
+
+An application model is ordinary Signals code with no Noir import:
+
+```dart
+import 'package:signals_core/signals_core.dart';
+
+class FileModel {
+  final query = signal('');
+  final files = signal<List<String>>(const []);
+  late final visibleFiles = computed(() {
+    final term = query.value.toLowerCase();
+    return List<String>.unmodifiable(
+      files.value.where((file) => file.toLowerCase().contains(term)),
+    );
+  });
+
+  void dispose() {
+    visibleFiles.dispose();
+    files.dispose();
+    query.dispose();
+  }
+}
+```
+
+One owner creates and disposes the model. Observe it from a widget with
+`useSignalValue`, or scope the rebuild to a subtree with
+`SignalValueBuilder`:
+
+```dart
+final visible = useSignalValue(model.visibleFiles);
+```
+
+Replace a collection signal’s value instead of mutating the list in place. A
+newly allocated list normally has different equality even when its contents
+match.
+
+## Match the API to the ownership
+
+| Need                                    | Use                  |
+| --------------------------------------- | -------------------- |
+| Own and observe local reactive state    | `useSignal`          |
+| Own and observe a derived value         | `useComputed`        |
+| Observe a source somebody else owns     | `useSignalValue`     |
+| Rebuild only one subtree                | `SignalValueBuilder` |
+| Run a reactive side effect with cleanup | `useSignalEffect`    |
+
+`useSignal` and `useComputed` own what they create, so `options.autoDispose`
+must stay false; the hooks reject `true`. `useSignalValue` and
+`SignalValueBuilder` borrow and never dispose the source.
+
+When a key change replaces an owned signal, the hook detaches its own
+observation at once and hands disposal to Noir’s `deferDispose`. Noir releases
+the retired signal after the host updates its descendants and the removed ones
+unmount, so a child observer never reads a signal released too early.
+
+## Keys and captured values
+
+Signals read inside `useComputed` or `useSignalEffect` are tracked by Signals,
+including dependencies that change between evaluations. Ordinary Dart values
+the closure captures are not tracked: list them in `keys`, which recreates the
+slot when they change. The initial value, the computation, the effect callback,
+and the creation options are used only when the slot is created.
+
+## What this is not
+
+Reads inside event handlers, asynchronous callbacks, and deferred child
+builders are outside any observation these hooks install. A widget that reads
+`model.value.value` without one of the APIs above is not reactive.
+
+There is no automatic whole-build tracking yet. Observe explicitly with
+`useSignalValue` or `SignalValueBuilder`.
+
+Read [Hooks](/docs/hooks) for the lifecycle rules the signal hooks share, and
+run the repository’s
+[file search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart)
+for a complete application.
