@@ -72,12 +72,22 @@ Closed on this tree:
       all six bundled binaries on this tree. The OpenTUI gitlink, the native
       ABI, and the bundled binaries have no delta from alpha.4.
 
+- [x] **Release PR and platform CI**: PR
+      [#46](https://github.com/conceptadev/noir/pull/46) from `feat/signals`.
+      Its first run failed identically on Linux, macOS, and Windows: moving
+      the hooks guide left the root `doc/` directory empty, git does not track
+      an empty directory, and the stale-guidance scan still listed it, so the
+      scan passed locally against a leftover directory and failed in every
+      clean checkout. After the fix, run
+      [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990)
+      passed all five jobs on exact commit `e39d8a6`: analysis, website build
+      and browser smoke, and the Linux, macOS, and Windows suites including
+      the companion steps.
+
 Open gates:
 
-- [ ] **Push and open the release PR**: this branch has no upstream yet, so no
-      platform CI run exists for the candidate.
-- [ ] **Platform CI** on the PR and on the merge commit, including the
-      companion steps added to every job.
+- [ ] **Independent review and merge** of PR #46.
+- [ ] **Platform CI on the merge commit.**
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
       consumer with no local override.
