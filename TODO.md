@@ -68,13 +68,16 @@ Closed on this tree:
       cleanup, a subscription that outlives a throwing cancellation, and a
       frozen companion export surface. Each new case was mutation-checked
       against the defect it pins.
+- [x] **Native artifacts**: `--verify-only` matched `native_manifest.json` and
+      all six bundled binaries on this tree. The OpenTUI gitlink, the native
+      ABI, and the bundled binaries have no delta from alpha.4.
 
 Open gates:
-- [ ] **Platform CI** on the merge commit, including the companion steps added
-      to every job.
-- [ ] **Native artifact verification** with
-      `dart run scripts/fetch_opentui_binaries.dart --verify-only` on the
-      candidate.
+
+- [ ] **Push and open the release PR**: this branch has no upstream yet, so no
+      platform CI run exists for the candidate.
+- [ ] **Platform CI** on the PR and on the merge commit, including the
+      companion steps added to every job.
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
       consumer with no local override.
