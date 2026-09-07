@@ -452,3 +452,12 @@ mounting. The pending request clears on successful focus, form replacement,
 schema/modal entry, or teardown, so reopening the form does not steal focus
 from Run. A drive regression and an isolated iTerm2 mouse route cover switching
 tools in both directions, typing and running each form, and schema return.
+
+On an already-mounted control, changing `Focus.autofocus` from false to true
+does not schedule a focus request in the current framework. This also affects
+activation of the selected tool when its form is retained. Until the framework
+fix in the focus follow-up, `FormView.didUpdateWidget` completes a new request
+in one guarded microtask after its controls update. It checks the current
+model, requested node, attachment, and mount state; it never retries or steals
+focus on an unchanged request. Package regressions cover all six field kinds,
+request cancellation, and teardown.
