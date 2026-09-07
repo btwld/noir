@@ -61,14 +61,13 @@ class PrimitivesPane extends StatelessWidget {
     );
   }
 
-  // The key sits on an inner child on purpose. `ListView` copies a row's own
-  // `LocalKey` onto the `SizedBox` it wraps the row in, so a keyed row would
-  // resolve to two nodes for a strict driver locator.
+  // `Align` fills the row, so the list paints its highlight across the whole
+  // pane rather than only behind the label.
   Widget _buildRow(BuildContext context, int index, bool selected) => Align(
+    key: ValueKey<String>(_rowKey(index)),
     alignment: Alignment.centerLeft,
     child: Text(
       _labelAt(index),
-      key: ValueKey<String>(_rowKey(index)),
       maxLines: 1,
       softWrap: false,
       overflow: TextOverflow.ellipsis,
