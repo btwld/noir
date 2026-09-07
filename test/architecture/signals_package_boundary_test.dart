@@ -1,0 +1,324 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
+const _companionRoot = 'packages/noir_signals';
+
+void main() {
+  final rootPubspec = File('pubspec.yaml').readAsStringSync();
+  final companionPubspec = File(
+    '$_companionRoot/pubspec.yaml',
+  ).readAsStringSync();
+  final companionBarrel = File(
+    '$_companionRoot/lib/noir_signals.dart',
+  ).readAsStringSync();
+
+  test('hooks live in the companion package, not in Noir', () {
+    expect(File('lib/hooks.dart').existsSync(), isFalse);
+    expect(Directory('lib/src/hooks').existsSync(), isFalse);
+    expect(Directory('test/hooks').existsSync(), isFalse);
+    expect(Directory('packages/noir_hooks').existsSync(), isFalse);
+    expect(Directory('$_companionRoot/lib/src/hooks').existsSync(), isTrue);
+
+    final mainBarrel = File('lib/noir.dart').readAsStringSync();
+    expect(mainBarrel, isNot(contains("export 'hooks.dart'")));
+    expect(mainBarrel, isNot(contains('src/hooks/')));
+    expect(
+      File('lib/noir_low_level.dart').readAsStringSync(),
+      isNot(contains('src/hooks/')),
+    );
+  });
+
+  test('the repository is one Pub workspace with an explicit member', () {
+    expect(rootPubspec, contains('workspace:\n  - packages/noir_signals'));
+    expect(companionPubspec, contains('resolution: workspace'));
+    expect(companionPubspec, contains('name: noir_signals'));
+    expect(companionPubspec, contains('noir: ^0.0.1-alpha.5'));
+    expect(companionPubspec, contains('signals_core: ^7.0.0'));
+  });
+
+  test('Noir carries no dependency on the companion or on Signals', () {
+    expect(rootPubspec, isNot(contains('noir_signals:')));
+    expect(rootPubspec, isNot(contains('signals_core')));
+    expect(rootPubspec, isNot(contains('preact_signals')));
+
+    for (final file in _dartFilesUnder('lib')) {
+      final source = File(file).readAsStringSync();
+      expect(source, isNot(contains('package:signals_core/')), reason: file);
+      expect(source, isNot(contains('package:noir_signals/')), reason: file);
+    }
+  });
+
+  test('companion production code uses only supported public API', () {
+    final sourceFiles = _dartFilesUnder('$_companionRoot/lib');
+    expect(sourceFiles, isNotEmpty);
+
+    for (final file in sourceFiles) {
+      final source = File(file).readAsStringSync();
+      expect(source, isNot(contains('package:noir/src/')), reason: file);
+      expect(
+        source,
+        isNot(contains('package:noir/noir_low_level.dart')),
+        reason: file,
+      );
+      expect(
+        source,
+        isNot(contains('package:noir/noir_ffi.dart')),
+        reason: file,
+      );
+      expect(
+        source,
+        isNot(contains('package:signals_core/src/')),
+        reason: file,
+      );
+      expect(source, isNot(contains('package:preact_signals/')), reason: file);
+      expect(source, isNot(contains('dart:ffi')), reason: file);
+
+      final noirImports = RegExp(
+        r'''import\s+['"](package:noir/[^'"]+)['"]''',
+      ).allMatches(source).map((match) => match.group(1)!).toList();
+      expect(noirImports, everyElement('package:noir/noir.dart'), reason: file);
+    }
+  });
+
+  test('the companion barrel exports the hook and signal families', () {
+    for (final symbol in <String>[
+      'HookWidget',
+      'HookBuilder',
+      'HookState',
+      'useState',
+      'useEffect',
+      'useListenableSelector',
+      'useFuture',
+      'useStream',
+      'useAnimationController',
+      'useTextEditingController',
+      'useFocusNode',
+      'useScrollController',
+      'useViewportController',
+    ]) {
+      expect(companionBarrel, contains(symbol), reason: symbol);
+    }
+  });
+
+  test('the companion barrel keeps the hook Effect typedef', () {
+    // `signals_core` also declares `Effect`. The hook typedef wins, so the
+    // upstream class must stay out of the export list.
+    expect(companionBarrel, contains("export 'src/hooks/primitives.dart'"));
+    final upstreamExport = RegExp(
+      r"export 'package:signals_core/signals_core\.dart'\s+show([^;]+);",
+    ).firstMatch(companionBarrel);
+    expect(upstreamExport, isNotNull);
+    final shown = upstreamExport!
+        .group(1)!
+        .split(',')
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet();
+    expect(shown, isNot(contains('Effect')));
+    for (final symbol in <String>[
+      'Signal',
+      'ReadonlySignal',
+      'Computed',
+      'SignalOptions',
+      'ComputedOptions',
+      'EffectOptions',
+      'signal',
+      'computed',
+      'effect',
+      'batch',
+      'untracked',
+    ]) {
+      expect(shown, contains(symbol), reason: symbol);
+    }
+  });
+
+  test('companion tests reuse the repository harnesses, not a copy', () {
+    final bridge = File(
+      '$_companionRoot/test/helpers/noir_test_helpers.dart',
+    ).readAsStringSync();
+    for (final helper in <String>[
+      'buffer_capture.dart',
+      'test_element_host.dart',
+      'tui_test_app.dart',
+    ]) {
+      expect(bridge, contains("export '../../../../test/helpers/$helper';"));
+      expect(File('test/helpers/$helper').existsSync(), isTrue);
+    }
+    expect(
+      Directory(
+        '$_companionRoot/test/helpers',
+      ).listSync().whereType<File>().map((file) => file.uri.pathSegments.last),
+      <String>['noir_test_helpers.dart'],
+    );
+
+    const lifecycleTestNames = <String>{
+      'controllers_animation_test.dart',
+      'framework_integration_test.dart',
+      'framework_primitives_test.dart',
+      'listenable_async_test.dart',
+      'replacement_lifecycle_test.dart',
+    };
+    final tests = Directory('$_companionRoot/test/hooks')
+        .listSync()
+        .whereType<File>()
+        .where(
+          (file) => lifecycleTestNames.contains(file.uri.pathSegments.last),
+        )
+        .toList(growable: false);
+
+    expect(tests, hasLength(lifecycleTestNames.length));
+    for (final file in tests) {
+      final source = file.readAsStringSync();
+      expect(
+        source,
+        contains("import '../helpers/noir_test_helpers.dart';"),
+        reason: file.path,
+      );
+      expect(source, contains('TestElementHost'), reason: file.path);
+    }
+  });
+
+  test('distribution keeps each package archive to its own tree', () {
+    final rootPubignore = File('.pubignore').readAsStringSync();
+    final companionPubignore = File(
+      '$_companionRoot/.pubignore',
+    ).readAsStringSync();
+    final changelog = File('CHANGELOG.md').readAsStringSync();
+    final readme = File('README.md').readAsStringSync();
+
+    expect(rootPubignore, contains('/packages/'));
+    expect(companionPubignore, contains('test/'));
+    // Pub applies ancestor ignore files, so the companion cannot be archived
+    // in place. One script owns the staged dry-run.
+    final stagingScript = File(
+      'scripts/stage_companion_package.dart',
+    ).readAsStringSync();
+    expect(stagingScript, contains("const _companionPath = '$_companionRoot'"));
+    expect(stagingScript, contains("'resolution: workspace'"));
+    expect(stagingScript, contains('pubspec_overrides.yaml'));
+    expect(
+      File('AGENTS.md').readAsStringSync(),
+      contains('dart run scripts/stage_companion_package.dart --verify'),
+    );
+    expect(
+      File('.gitignore').readAsStringSync(),
+      contains('pubspec_overrides.yaml'),
+    );
+    expect(File('$_companionRoot/LICENSE').existsSync(), isTrue);
+    expect(File('$_companionRoot/README.md').existsSync(), isTrue);
+    expect(File('$_companionRoot/CHANGELOG.md').existsSync(), isTrue);
+    expect(
+      File('$_companionRoot/analysis_options.yaml').readAsStringSync(),
+      isNot(contains('../')),
+      reason: 'companion analysis settings must be self-contained',
+    );
+
+    expect(changelog, contains('Removed `package:noir/hooks.dart`'));
+    expect(readme, contains('package:noir_signals'));
+    expect(readme, isNot(contains('package:noir/hooks.dart')));
+  });
+
+  test('companion install guidance matches its own manifest', () {
+    final version = RegExp(
+      r'^version: (.+)$',
+      multiLine: true,
+    ).firstMatch(companionPubspec)!.group(1)!.trim();
+    final noirConstraint = RegExp(
+      r'^  noir: (.+)$',
+      multiLine: true,
+    ).firstMatch(companionPubspec)!.group(1)!.trim();
+    final companionConstraint = '^${version.split('+').first}';
+
+    for (final path in <String>[
+      '$_companionRoot/README.md',
+      '$_companionRoot/doc/hooks.md',
+      'website/src/content/docs/hooks.mdx',
+    ]) {
+      final source = File(path).readAsStringSync();
+      expect(source, contains('noir: $noirConstraint'), reason: path);
+      expect(
+        source,
+        contains('noir_signals: $companionConstraint'),
+        reason: path,
+      );
+    }
+
+    final changelogVersions = RegExp(r'^##\s+([^\s]+)\s*$', multiLine: true)
+        .allMatches(File('$_companionRoot/CHANGELOG.md').readAsStringSync())
+        .map((match) => match.group(1))
+        .toList();
+    expect(changelogVersions.first, version);
+  });
+
+  test('the Noir skill routes hook guidance to the companion guide', () {
+    final skillDirectory = Directory('skills/noir').absolute.uri;
+    final canonicalHooksGuide = File.fromUri(
+      skillDirectory.resolve('../../$_companionRoot/doc/hooks.md'),
+    );
+    final hooksReference = File.fromUri(
+      skillDirectory.resolve('references/hooks.md'),
+    );
+    final skill = File.fromUri(
+      skillDirectory.resolve('SKILL.md'),
+    ).readAsStringSync();
+
+    expect(canonicalHooksGuide.existsSync(), isTrue);
+    expect(hooksReference.existsSync(), isTrue);
+    expect(File('doc/hooks.md').existsSync(), isFalse);
+    expect(skill, contains('`references/hooks.md`'));
+    expect(skill, contains('`../../$_companionRoot/doc/hooks.md`'));
+    expect(skill, isNot(contains('noir-hooks')));
+
+    final hooks = hooksReference.readAsStringSync();
+    final referenceDirectory = Directory('skills/noir/references').absolute.uri;
+    for (final path in <String>[
+      '../../../$_companionRoot/doc/hooks.md',
+      'design.md',
+      'inputs-and-focus.md',
+      'testing.md',
+      '../SKILL.md#see-and-drive-a-running-app-drive-mode',
+    ]) {
+      final filePath = path.split('#').first;
+      expect(
+        File.fromUri(referenceDirectory.resolve(filePath)).existsSync(),
+        isTrue,
+        reason: path,
+      );
+      expect(hooks, contains('`$path`'), reason: path);
+    }
+    expect(hooks, contains('package:noir_signals/noir_signals.dart'));
+    expect(hooks, contains('Call hooks unconditionally'));
+    expect(hooks, contains('input callbacks'));
+    expect(hooks, contains('effect'));
+    expect(hooks, contains('retained hook state'));
+  });
+
+  test('hook guidance uses the existing Noir discovery entry points', () {
+    for (final linkPath in <String>[
+      '.agents/skills/noir',
+      '.claude/skills/noir',
+    ]) {
+      final link = Link(linkPath);
+      expect(link.existsSync(), isTrue, reason: linkPath);
+      expect(
+        link.targetSync(),
+        path.join('..', '..', 'skills', 'noir'),
+        reason: linkPath,
+      );
+    }
+    expect(Directory('skills/noir-hooks').existsSync(), isFalse);
+    expect(Link('.agents/skills/noir-hooks').existsSync(), isFalse);
+    expect(Link('.claude/skills/noir-hooks').existsSync(), isFalse);
+  });
+}
+
+List<String> _dartFilesUnder(String directory) =>
+    Directory(directory)
+        .listSync(recursive: true)
+        .whereType<File>()
+        .map((file) => file.path.replaceAll(Platform.pathSeparator, '/'))
+        .where((file) => file.endsWith('.dart'))
+        .toList(growable: false)
+      ..sort();

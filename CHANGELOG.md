@@ -2,9 +2,10 @@
 
 ## 0.0.1-alpha.5
 
-Unreleased. This prerelease adds one framework lifecycle seam. Noir's public
-API shapes are otherwise unchanged, and the native ABI and the bundled native
-artifacts are unchanged from alpha.4.
+Unreleased. This prerelease adds one framework lifecycle seam and moves the
+opt-in hooks library to a separate package. Noir's public API shapes are
+otherwise unchanged, and the native ABI and the bundled native artifacts are
+unchanged from alpha.4.
 
 ### Added
 
@@ -16,6 +17,17 @@ artifacts are unchanged from alpha.4.
   release descendants before ancestors, registration order is preserved inside
   one host, and a failed initialization, widget update, or build keeps the
   resource alive until a later reconciliation succeeds.
+
+### Removed
+
+- Removed `package:noir/hooks.dart`. The hook runtime, the built-in resource
+  hooks, and their guide now live in the optional companion package
+  `noir_signals`, published from `packages/noir_signals/` in this repository.
+  Replace `package:noir/hooks.dart` with
+  `package:noir_signals/noir_signals.dart` and add `noir_signals` to the
+  application's dependencies. Every hook name, return type, and lifecycle rule
+  is unchanged: `useState` still returns a `ValueNotifier` and
+  `useTextEditingController` still returns a `TextEditingController`.
 
 ## 0.0.1-alpha.4
 

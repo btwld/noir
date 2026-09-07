@@ -1,23 +1,28 @@
 # Widget lifecycle hooks
 
-`package:noir/hooks.dart` provides reusable widget lifecycle hooks as an
-opt-in library in the main `noir` package. Its production code uses no private
-Element, low-level renderer, or FFI API.
+`package:noir_signals/noir_signals.dart` provides reusable widget lifecycle
+hooks for Noir. They live in the optional companion package `noir_signals`,
+not in `noir`. The companion's production code uses no private Element,
+low-level renderer, or FFI API.
 
-## Import
+## Install and import
 
-Hooks ship with `noir` and remain outside the default `noir.dart` namespace:
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals: ^0.0.1-alpha.0
+```
 
 ```dart
 import 'package:noir/noir.dart';
-import 'package:noir/hooks.dart';
+import 'package:noir_signals/noir_signals.dart';
 ```
 
 ## Quick start
 
 ```dart
 import 'package:noir/noir.dart';
-import 'package:noir/hooks.dart';
+import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
@@ -44,7 +49,7 @@ class CounterApp extends HookWidget {
 Input-driven state changes belong in input callbacks like `onPressed`. Do not
 route a button action through `useEffect`; effects synchronize external
 resources and their cleanup. See the polished version in
-[`example/hooks_counter.dart`](../example/hooks_counter.dart).
+[`example/counter.dart`](../example/counter.dart).
 
 Use `HookBuilder` when an inline builder needs hooks:
 

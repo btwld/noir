@@ -211,9 +211,9 @@ depending on terminal images, semantic links, or OSC52 clipboard behavior.
 `StatefulWidget` and `State` are the normal retained state boundary.
 `ValueNotifier` and `ChangeNotifier` separate testable state from one widget.
 `AnimationController`, `TickerProviderStateMixin`, and
-`SingleTickerProviderStateMixin` drive time-based values. The optional
-`package:noir/hooks.dart` surface offers the same ownership model through
-composable hooks.
+`SingleTickerProviderStateMixin` drive time-based values. The optional companion
+package `noir_signals` offers the same ownership model through composable
+hooks.
 
 Read [State and lifecycle](/docs/state-lifecycle) for deterministic cleanup or
 [Hooks](/docs/hooks) when one lifecycle concern should be reusable.

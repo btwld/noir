@@ -1,4 +1,4 @@
-import 'package:noir/hooks.dart';
+import 'package:noir_signals/noir_signals.dart';
 import 'package:test/test.dart';
 
 void main() {

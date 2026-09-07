@@ -1,0 +1,17 @@
+# noir_signals package - pub ignore rules
+# Excludes checkout-only development files from the published package.
+
+# Local workspace state
+.dart_tool/
+build/
+*.log
+
+# Checkout-only test helpers and repository fixtures. The harness bridge
+# imports Noir's private test files by relative path and only resolves inside
+# this repository.
+test/
+
+# IDE and editor files
+.vscode/
+.idea/
+.DS_Store

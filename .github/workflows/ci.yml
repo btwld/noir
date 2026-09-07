@@ -16,7 +16,7 @@ jobs:
   analyze:
     name: Format and analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
 
     steps:
       - name: Checkout repository
@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -49,6 +49,16 @@ jobs:
 
       - name: Run strict analysis
         timeout-minutes: 4
+        run: dart analyze --fatal-infos
+
+      - name: Check companion formatting
+        timeout-minutes: 2
+        working-directory: packages/noir_signals
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/
+
+      - name: Run strict companion analysis
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
         run: dart analyze --fatal-infos
 
   website:
@@ -102,7 +112,7 @@ jobs:
     name: Test (Ubuntu)
     needs: analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 16
 
     steps:
       - name: Checkout repository
@@ -123,7 +133,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -139,6 +149,11 @@ jobs:
         timeout-minutes: 10
         run: dart test --concurrency=1
 
+      - name: Run companion tests
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
+        run: dart test --concurrency=1
+
   desktop-test:
     name: Test (${{ matrix.os }})
     needs: analyze
@@ -147,7 +162,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 12
+    timeout-minutes: 16
 
     steps:
       - name: Checkout repository
@@ -168,7 +183,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -180,4 +195,9 @@ jobs:
 
       - name: Run ordinary tests
         timeout-minutes: 10
+        run: dart test --concurrency=1
+
+      - name: Run companion tests
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
         run: dart test --concurrency=1

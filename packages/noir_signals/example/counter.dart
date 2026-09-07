@@ -1,5 +1,5 @@
-import 'package:noir/hooks.dart';
 import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
 
 final _counterTheme = ThemeData.dark.copyWith(accent: Color.fromHex('#7DD3FC'));
 

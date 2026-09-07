@@ -198,7 +198,8 @@ evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
       with zero warnings.
 - [x] On the combined alpha.2 hooks-and-parity tree, 96 focused hook API,
       ownership, example, and downstream-consumer checks pass. The opt-in
-      `package:noir/hooks.dart` surface, guide, skill, example, and complete
+      `package:noir/hooks.dart` surface (moved to `noir_signals` in alpha.5),
+      guide, skill, example, and complete
       regression suite from `main` remain present alongside the parity work.
 - [x] The pre-parity alpha.2 hook tree passed its authorized manual
       real-terminal hot-reload check. Because the combined parity candidate

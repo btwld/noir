@@ -14,6 +14,11 @@ topics:
 environment:
   sdk: '>=3.10.0 <4.0.0'
 
+# Optional companion package resolved from this checkout. Noir itself has no
+# dependency on it; publishing and consuming `noir` never pulls it in.
+workspace:
+  - packages/noir_signals
+
 platforms:
   linux:
   macos:

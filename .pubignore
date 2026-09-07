@@ -11,12 +11,18 @@
 .conductor/
 /skills/
 
+# Optional companion package published separately as `noir_signals`.
+# Match its entries, not the `packages/` or package directories themselves, so
+# the companion's own `.pubignore` can re-include them for its own archive.
+/packages/
+
 # Development and build tools
 .github/
 /scripts/
 /tools/
 /website/
 /.impeccable/
+
 
 # External dependencies and submodules
 /external/

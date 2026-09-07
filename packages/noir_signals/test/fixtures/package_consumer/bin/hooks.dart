@@ -1,5 +1,5 @@
-import 'package:noir/hooks.dart';
 import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
 
 final class HooksConsumer extends HookWidget {
   const HooksConsumer({super.key});

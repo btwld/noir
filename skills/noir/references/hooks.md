@@ -6,7 +6,8 @@ another hook library.
 
 ## Start from the canonical contract
 
-Read `../../../doc/hooks.md` completely before changing hook behavior or
+Read `../../../packages/noir_signals/doc/hooks.md` completely before changing
+hook behavior or
 writing lifecycle-sensitive application code. Load only the complementary
 guidance needed for the task:
 
@@ -15,7 +16,8 @@ guidance needed for the task:
 - Consumer and repository test strategy: `testing.md`
 - Live capture and input: `../SKILL.md#see-and-drive-a-running-app-drive-mode`
 
-Verify signatures in `package:noir/hooks.dart` and a nearby working example.
+Verify signatures in `package:noir_signals/noir_signals.dart` and a nearby
+working example.
 Do not import `package:noir/src/**`, `package:noir/noir_low_level.dart`, or
 `package:noir/noir_ffi.dart` for hook application code.
 

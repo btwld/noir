@@ -2,7 +2,8 @@
 name: noir
 description: >-
   Build, review, and test Dart terminal applications with package:noir, a
-  Flutter-inspired framework, and its opt-in package:noir/hooks.dart surface.
+  Flutter-inspired framework, and its opt-in companion package:noir_signals
+  surface.
   Use for Noir widgets, layout, styling, state, animation, focus, input,
   scrolling, forms, lifecycle, hot reload, drive mode, application tests,
   HookWidget, HookBuilder, custom hooks, hook ordering, effects, or hook-owned
@@ -24,9 +25,10 @@ Import the complete application-authoring surface from one library:
 import 'package:noir/noir.dart';
 ```
 
-Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`; import it
-together with `package:noir/noir.dart` when using `HookWidget` or `use...`
-functions.
+Widget lifecycle hooks and Signals reactive state are opt-in through the
+companion `package:noir_signals` package. Add it as a separate dependency and
+import `package:noir_signals/noir_signals.dart` together with
+`package:noir/noir.dart` when using `HookWidget` or `use...` functions.
 
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
@@ -58,7 +60,7 @@ almost never need the low-level or FFI import.
 | Layout, geometry, painting, text, themes, and chrome | `references/widgets.md` |
 | Fields, lists, tables, scrolling, focus, keys, shortcuts, and pointer input | `references/inputs-and-focus.md` |
 | Stateful lifecycle, notifiers, controllers, animation, and inherited data | `references/state-and-animation.md` |
-| Opt-in widget lifecycle hooks and effect rules | `references/hooks.md`, then `../../doc/hooks.md` |
+| Opt-in widget lifecycle hooks and effect rules | `references/hooks.md`, then `../../packages/noir_signals/doc/hooks.md` |
 | Screen composition, spacing, palette, and terminal visual review | `references/design.md` |
 | Consumer-facing test strategy and supported seams | `references/testing.md` |
 
@@ -209,7 +211,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
-| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir/hooks.dart` | `references/hooks.md` |
+| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir_signals/noir_signals.dart` | `references/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
