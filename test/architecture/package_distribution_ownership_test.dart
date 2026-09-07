@@ -440,12 +440,14 @@ void main() {
       'hot_reload_driver.dart',
     ].join('/');
     final guidanceFiles = <File>[
+      // The hooks guide moved to the companion package, so the root `doc/`
+      // directory no longer exists in a clean checkout.
       for (final root in <String>[
         'bin',
-        'doc',
         'example',
         'hook',
         'lib',
+        'packages/noir_signals',
         'scripts',
         'skills',
       ])
