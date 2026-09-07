@@ -392,6 +392,73 @@ void main() {
     });
   });
 
+  group('ListView height changes', () {
+    test('a shorter list scrolls the highlight back into view', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      try {
+        host
+          ..mount(_heightList(controller: viewport, height: 6))
+          ..pumpFrame(constraints: _rowConstraints);
+        expect(viewport.scrollOffset, 4);
+
+        host
+          ..update(_heightList(controller: viewport, height: 3))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 7);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('a resized plain list keeps the window where the user left it', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      Widget build(int height) => ListView(
+        itemCount: 10,
+        height: height,
+        controller: viewport,
+        itemBuilder: (context, index, selected) => Text('item $index'),
+      );
+      try {
+        host
+          ..mount(build(3))
+          ..pumpFrame(constraints: _rowConstraints);
+        viewport.jumpTo(5);
+        host
+          ..update(build(4))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 5);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('a taller list keeps a scroll position its content allows', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      try {
+        host
+          ..mount(_heightList(controller: viewport, height: 3))
+          ..pumpFrame(constraints: _rowConstraints);
+        expect(viewport.scrollOffset, 7);
+
+        host
+          ..update(_heightList(controller: viewport, height: 8))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 2);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+  });
+
   group('ListView plain scroll mode', () {
     test('ArrowDown scrolls the window without a selection callback', () async {
       final recorder = _Recorder();
@@ -538,6 +605,19 @@ Future<void> _settle(TuiTestApp app) async {
   await Future<void>.delayed(Duration.zero);
   app.pumpFrame();
 }
+
+/// A ten-row list whose last row is selected, used to watch the window follow
+/// the highlight as the list height changes.
+Widget _heightList({
+  required ViewportController controller,
+  required int height,
+}) => ListView(
+  itemCount: 10,
+  height: height,
+  controller: controller,
+  selectedIndex: 9,
+  itemBuilder: (context, index, selected) => Text('item $index'),
+);
 
 /// Constraints wide enough for a three-row window of short labels.
 const _rowConstraints = BoxConstraints(maxWidth: 20, maxHeight: 10);
