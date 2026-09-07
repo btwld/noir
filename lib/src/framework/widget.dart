@@ -1,5 +1,8 @@
+import 'dart:collection';
+
 import 'package:meta/meta.dart';
 
+import '../foundation/first_error.dart';
 import '../foundation/listenable.dart';
 import '../rendering/object.dart';
 import 'build_context.dart';
@@ -70,6 +73,19 @@ abstract class State<T extends StatefulWidget> {
   BuildContext? _context;
 
   void Function()? _requestRebuild;
+
+  /// Cleanups registered since the last successful reconciliation.
+  Queue<VoidCallback> _pendingDeferredDisposals = Queue<VoidCallback>();
+
+  /// Retired batches queued with [BuildOwner], newest last.
+  final Queue<DeferredDisposalBatch> _retiredDeferredDisposals =
+      Queue<DeferredDisposalBatch>();
+
+  /// The queue a running drain appends to, so nested registrations join it.
+  Queue<VoidCallback>? _deferredDrainTarget;
+
+  /// Nesting depth of the reconciliation currently running for this state.
+  int _reconcileDepth = 0;
 
   /// Called when this object is inserted into the tree.
   ///
@@ -156,11 +172,127 @@ abstract class State<T extends StatefulWidget> {
     if (cb != null) cb();
   }
 
+  /// Releases a retired resource after its previous consumers finish cleanup.
+  ///
+  /// Use this when this state replaces a resource that the descendants built
+  /// by the previous configuration may still read — a controller, a signal, a
+  /// subscription source. Disposing it inline would tear it down while the old
+  /// children are still mounted; [deferDispose] holds [cleanup] until the
+  /// replacement is safe.
+  ///
+  /// [cleanup] becomes eligible once this state successfully updates its
+  /// descendants and the inactive descendants finish unmounting; the framework
+  /// then runs it from [BuildOwner.finalizeTree]. A failed [initState],
+  /// [didUpdateWidget], or [build] keeps the resource alive until a later
+  /// reconciliation succeeds or the element unmounts. Descendant batches run
+  /// before ancestor batches, and registration order is preserved inside one
+  /// host.
+  ///
+  /// Timing at the edges: a call from inside [dispose] runs [cleanup]
+  /// synchronously, a call while no reconciliation is running schedules the
+  /// rebuild that retires it, and a cleanup registered while this host is
+  /// draining joins the drain already in flight. Calling this after the
+  /// State/Element association is severed throws a [StateError]; release the
+  /// resource directly there instead.
+  ///
+  /// Every eligible cleanup is attempted even after one of them throws, and
+  /// the first failure is rethrown once the drain completes.
+  void deferDispose(VoidCallback cleanup) {
+    // Ordered like setState(): _disposing is never reset, so the unmounted
+    // branch must own every call that arrives after detach().
+    if (!_mounted) {
+      throw StateError(
+        'deferDispose() called after dispose(): $runtimeType is no longer '
+        'mounted. Nothing can retire the resource now; release it directly '
+        'at the call site instead.',
+      );
+    }
+    if (_disposing) {
+      cleanup();
+      return;
+    }
+    final drain = _deferredDrainTarget;
+    if (drain != null) {
+      drain.add(cleanup);
+      return;
+    }
+    _pendingDeferredDisposals.add(cleanup);
+    if (_reconcileDepth == 0) {
+      // Retirement only happens at the end of a successful reconciliation, so
+      // an idle registration has to ask for the build that retires it.
+      final cb = _requestRebuild;
+      if (cb != null) cb();
+    }
+  }
+
   /// Describes the part of the UI represented by this state.
   Widget build(BuildContext context);
 
   // Internal wiring from Element. Framework-internal: called only by
   // StatefulElement, never by application code.
+
+  /// Opens a reconciliation window for this state, so [deferDispose] holds
+  /// registrations instead of requesting another rebuild. Called only by
+  /// [StatefulElement]; not public app API.
+  @internal
+  void beginReconcile() {
+    _reconcileDepth++;
+  }
+
+  /// Closes the window opened by [beginReconcile] and, when the outermost one
+  /// [succeeded], retires this state's pending cleanups to [BuildOwner].
+  /// Called only by [StatefulElement]; not public app API.
+  @internal
+  void endReconcile({required bool succeeded}) {
+    _reconcileDepth--;
+    if (_reconcileDepth > 0 || !succeeded) {
+      return;
+    }
+    if (_pendingDeferredDisposals.isEmpty) {
+      return;
+    }
+    final batch = DeferredDisposalBatch._(this, _pendingDeferredDisposals);
+    _pendingDeferredDisposals = Queue<VoidCallback>();
+    _retiredDeferredDisposals.add(batch);
+    _context!.owner.enqueueDeferredDisposal(batch);
+  }
+
+  /// Releases this state's retired and still-pending cleanups, oldest first.
+  ///
+  /// Called only by [StatefulElement.unmount], after the descendants unmount
+  /// and before [dispose] releases this state's current resources; not public
+  /// app API.
+  @internal
+  void flushDeferredDisposals() {
+    final failures = FirstErrorRecorder();
+    while (_retiredDeferredDisposals.isNotEmpty) {
+      final batch = _retiredDeferredDisposals.removeFirst();
+      failures.attempt(batch.drain);
+    }
+    if (_pendingDeferredDisposals.isNotEmpty) {
+      final pending = _pendingDeferredDisposals;
+      _pendingDeferredDisposals = Queue<VoidCallback>();
+      failures.attempt(() => _drainDeferred(pending));
+    }
+    failures.rethrowFirst();
+  }
+
+  void _drainDeferred(Queue<VoidCallback> callbacks) {
+    final previous = _deferredDrainTarget;
+    _deferredDrainTarget = callbacks;
+    final failures = FirstErrorRecorder();
+    try {
+      // Removing before invoking keeps a throwing cleanup from being retried
+      // and lets a nested registration join this same loop.
+      while (callbacks.isNotEmpty) {
+        failures.attempt(callbacks.removeFirst());
+      }
+    } finally {
+      _deferredDrainTarget = previous;
+      callbacks.clear();
+    }
+    failures.rethrowFirst();
+  }
 
   /// Binds this state to its widget, context, and rebuild callback. Called
   /// only by [StatefulElement.mount]; not public app API.
@@ -199,6 +331,31 @@ abstract class State<T extends StatefulWidget> {
     _mounted = false;
     _requestRebuild = null;
     _context = null;
+  }
+}
+
+/// One host's retired [State.deferDispose] cleanups, waiting for release.
+///
+/// [BuildOwner] queues these in reconciliation order — descendants before
+/// ancestors — and drains them from [BuildOwner.finalizeTree]. A batch drains
+/// once: [StatefulElement.unmount] may reach it first, and the queued entry is
+/// then a no-op.
+@internal
+final class DeferredDisposalBatch {
+  DeferredDisposalBatch._(this._state, this._callbacks);
+
+  final State<StatefulWidget> _state;
+  final Queue<VoidCallback> _callbacks;
+  bool _drained = false;
+
+  /// Runs this batch's cleanups once, oldest first.
+  void drain() {
+    if (_drained) {
+      return;
+    }
+    _drained = true;
+    _state._retiredDeferredDisposals.remove(this);
+    _state._drainDeferred(_callbacks);
   }
 }
 

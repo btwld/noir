@@ -181,6 +181,56 @@ void main() {
     expect(cleanupCount, 3);
   });
 
+  test('deferDispose holds a replaced hook resource until children move', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final log = <String>[];
+    var key = 0;
+
+    Widget buildRoot() => HookBuilder(
+      builder: (context) {
+        final resource = use(_DeferredResourceHook(<Object?>[key], log));
+        return _ResourceReader(resource: resource, log: log);
+      },
+    );
+
+    host.mount(buildRoot());
+    expect(log, <String>['read:resource-0']);
+
+    key = 1;
+    host.update(buildRoot());
+
+    // The replacement build already read the new resource; the retired one is
+    // still alive because the pass has not finalized.
+    expect(log, <String>['read:resource-0', 'read:resource-1']);
+
+    host.pumpBuild();
+    expect(log, <String>[
+      'read:resource-0',
+      'read:resource-1',
+      'release:resource-0',
+    ]);
+  });
+
+  test('deferDispose runs synchronously while the host tears down', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final log = <String>[];
+
+    host.mount(
+      HookBuilder(
+        builder: (context) {
+          final resource = use(_DeferredResourceHook(const <Object?>[], log));
+          return _ResourceReader(resource: resource, log: log);
+        },
+      ),
+    );
+    final read = log.single;
+    host.dispose();
+
+    expect(log, <String>[read, read.replaceFirst('read:', 'release:')]);
+  });
+
   test('keyed effects detach later listeners before old cleanup', () {
     final host = TestElementHost();
     addTearDown(host.dispose);
@@ -242,4 +292,72 @@ final class _CountingListenable extends ChangeNotifier {
   }
 
   void fire() => notifyListeners();
+}
+
+/// Hook that hands its retired resource to [HookState.deferDispose].
+class _DeferredResourceHook extends Hook<_TrackedResource> {
+  const _DeferredResourceHook(List<Object?> keys, this.log) : super(keys: keys);
+
+  final List<String> log;
+
+  @override
+  HookState<_TrackedResource, _DeferredResourceHook> createState() =>
+      _DeferredResourceHookState();
+}
+
+class _DeferredResourceHookState
+    extends HookState<_TrackedResource, _DeferredResourceHook> {
+  late final _TrackedResource _resource;
+  static int _serial = 0;
+
+  @override
+  void initHook() {
+    _resource = _TrackedResource('resource-${_serial++}', hook.log);
+  }
+
+  @override
+  _TrackedResource build(BuildContext context) => _resource;
+
+  @override
+  void dispose() {
+    deferDispose(_resource.release);
+    super.dispose();
+  }
+}
+
+/// Reads the borrowed resource on every build, so an early release shows up.
+class _ResourceReader extends StatelessWidget {
+  const _ResourceReader({required this.resource, required this.log});
+
+  final _TrackedResource resource;
+  final List<String> log;
+
+  @override
+  Widget build(BuildContext context) {
+    log.add('read:${resource.read()}');
+    return const Container();
+  }
+}
+
+class _TrackedResource {
+  _TrackedResource(this.name, this._log);
+
+  final String name;
+  final List<String> _log;
+  bool _released = false;
+
+  String read() {
+    if (_released) {
+      throw StateError('Resource $name was read after release.');
+    }
+    return name;
+  }
+
+  void release() {
+    if (_released) {
+      return;
+    }
+    _released = true;
+    _log.add('release:$name');
+  }
 }

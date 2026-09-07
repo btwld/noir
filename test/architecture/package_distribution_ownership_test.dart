@@ -135,7 +135,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$')));
-    expect(packageVersion, '0.0.1-alpha.4');
+    expect(packageVersion, '0.0.1-alpha.5');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -155,9 +155,32 @@ void main() {
       changelog,
       isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
     );
-    for (final heading in const ['Changed', 'Fixed']) {
+    for (final heading in const ['Added']) {
       expect(
         RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
+        hasLength(1),
+        reason: heading,
+      );
+    }
+    for (final contract in const [
+      'Unreleased.',
+      'State.deferDispose',
+      'HookState.deferDispose',
+      'native ABI',
+      'bundled native artifacts are unchanged',
+    ]) {
+      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+    }
+  });
+
+  test('published alpha.4 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedAlpha = _changelogSection(changelog, '0.0.1-alpha.4');
+
+    expect(publishedAlpha, isNotEmpty);
+    for (final heading in const ['Changed', 'Fixed']) {
+      expect(
+        RegExp('^### $heading\$', multiLine: true).allMatches(publishedAlpha),
         hasLength(1),
         reason: heading,
       );
@@ -171,7 +194,7 @@ void main() {
       'native ABI',
       'bundled native artifacts are unchanged',
     ]) {
-      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+      expect(_normalized(publishedAlpha), contains(contract), reason: contract);
     }
   });
 

@@ -745,6 +745,15 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   (path: 'lib/src/framework/widget.dart', name: 'ProxyWidget'): {
     'createElement',
   },
+  (path: 'lib/src/framework/widget.dart', name: 'State'): {
+    'attach',
+    'updateWidget',
+    'disposeState',
+    'detach',
+    'beginReconcile',
+    'endReconcile',
+    'flushDeferredDisposals',
+  },
   (path: 'lib/src/framework/widget.dart', name: 'RenderObjectWidget'): {
     'createElement',
   },
@@ -823,6 +832,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
     'validateGlobalKeyPlacement',
     'deactivateChild',
     'finalizeTree',
+    'enqueueDeferredDisposal',
   },
   (path: 'lib/src/rendering/object.dart', name: 'RenderObject'): {
     'pipelineOwner',

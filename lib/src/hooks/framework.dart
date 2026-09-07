@@ -128,6 +128,30 @@ abstract class HookState<R, H extends Hook<R>> {
   @protected
   void markMayNeedRebuild() => setState(() {});
 
+  /// Releases a retired resource after its previous consumers finish cleanup.
+  ///
+  /// The hosting widget owns the queue, so this gives a custom hook the same
+  /// guarantee as [State.deferDispose]: a resource this slot hands over when
+  /// its [keys] change stays alive until the replacement build's descendants
+  /// have reconciled and the removed ones have unmounted. Detach this hook's
+  /// own observation immediately and defer only the disposal.
+  ///
+  /// A call from inside [dispose] while the host is tearing down runs
+  /// [cleanup] synchronously. Calling this after this hook state detaches from
+  /// its host throws a [StateError].
+  @protected
+  void deferDispose(VoidCallback cleanup) {
+    final owner = _owner;
+    if (owner == null) {
+      throw StateError(
+        'HookState.deferDispose() called after dispose(): $runtimeType is no '
+        'longer attached to a HookWidget. Release the resource directly at '
+        'the call site instead.',
+      );
+    }
+    owner.deferDispose(cleanup);
+  }
+
   Type get _hookType => _hook!.runtimeType;
 
   List<Object?>? get _storedKeys => _keySnapshot;

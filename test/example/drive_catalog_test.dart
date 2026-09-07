@@ -204,7 +204,7 @@ void main() {
       final frame = await driver.capture();
       expect(frame.contains('Confirm deployment'), isFalse);
       expect(
-        frame.contains('Deployment scheduled for noir 0.0.1-alpha.4.'),
+        frame.contains('Deployment scheduled for noir 0.0.1-alpha.5.'),
         isTrue,
       );
     });

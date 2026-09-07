@@ -107,6 +107,31 @@ Hot reload calls `reassemble` on retained state, then rebuilds, lays out, and
 paints the tree. Override it only when code in `initState` produced a cached
 value that must be recalculated; call `super.reassemble()` first.
 
+## Retire a resource the old children still read
+
+`didUpdateWidget` sometimes replaces a resource that the descendants of the
+previous build still hold — a controller, a model, a subscription source.
+Disposing it there releases it while those children are still mounted. Register
+the release with `deferDispose` instead:
+
+```dart
+@override
+void didUpdateWidget(SearchPanel oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  if (oldWidget.query == widget.query) return;
+  final retired = _model;
+  _model = SearchModel(widget.query);
+  deferDispose(retired.dispose);
+}
+```
+
+Noir runs the cleanup after this state successfully updates its descendants and
+the removed descendants finish unmounting, or during unmount before `dispose`
+releases what the state currently owns. A failed `initState`,
+`didUpdateWidget`, or `build` keeps the resource alive until a later
+reconciliation succeeds. Release ordinary state-owned resources in `dispose` as
+before; `deferDispose` is only for a resource that outlives its replacement.
+
 ## Choose the smallest clear owner
 
 - Keep short-lived UI values in the nearest `State` that owns them.

@@ -74,6 +74,11 @@ class BuildOwner {
   /// corrupt teardown membership.
   final Set<Element> _inactiveElements = HashSet<Element>.identity();
 
+  /// Retired [State.deferDispose] batches awaiting release by [finalizeTree],
+  /// in the order their hosts finished reconciling — descendants first.
+  final Queue<DeferredDisposalBatch> _deferredDisposals =
+      Queue<DeferredDisposalBatch>();
+
   FrameCallback? _onFrame;
   late final bool _ownsPipelineOwner;
   RenderObjectWithSingleChild? _rootRenderObject;
@@ -646,17 +651,35 @@ class BuildOwner {
             ));
   }
 
-  /// Permanently unmounts every inactive element at the end of a build pass.
+  /// Queues [batch] for release at the end of the current build pass.
+  ///
+  /// Called by [State.endReconcile] once its host successfully updated its
+  /// descendants; not public app API.
+  @internal
+  void enqueueDeferredDisposal(DeferredDisposalBatch batch) {
+    _deferredDisposals.add(batch);
+  }
+
+  /// Permanently unmounts every inactive element at the end of a build pass,
+  /// then releases the retired [State.deferDispose] cleanups.
+  ///
+  /// A retired resource stays alive until its host's old descendants are gone,
+  /// so the drain runs after — never before — the unmount loop.
   @internal
   void finalizeTree() {
-    if (_inactiveElements.isEmpty) {
+    if (_inactiveElements.isEmpty && _deferredDisposals.isEmpty) {
       return;
     }
-    final leftover = _inactiveElements.toList();
-    _inactiveElements.clear();
     final failures = FirstErrorRecorder();
-    for (final element in leftover) {
-      failures.attempt(element.unmount);
+    if (_inactiveElements.isNotEmpty) {
+      final leftover = _inactiveElements.toList();
+      _inactiveElements.clear();
+      for (final element in leftover) {
+        failures.attempt(element.unmount);
+      }
+    }
+    while (_deferredDisposals.isNotEmpty) {
+      failures.attempt(_deferredDisposals.removeFirst().drain);
     }
     failures.rethrowFirst();
   }
@@ -704,6 +727,7 @@ class BuildOwner {
       _pendingBuckets = _DirtyBuckets();
       _globalKeyRegistry.clear();
       _inactiveElements.clear();
+      _deferredDisposals.clear();
       _tickerScheduler.setFrameCallback(null);
       _onFrame = null;
       _building = false;

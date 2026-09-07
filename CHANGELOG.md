@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.1-alpha.5
+
+Unreleased. This prerelease adds one framework lifecycle seam. Noir's public
+API shapes are otherwise unchanged, and the native ABI and the bundled native
+artifacts are unchanged from alpha.4.
+
+### Added
+
+- Added `State.deferDispose` and `HookState.deferDispose`. A host registers a
+  cleanup for a resource it retires while the descendants built by the previous
+  configuration may still read it. The framework releases that resource after
+  the host successfully updates its descendants and the removed descendants
+  finish unmounting, or during unmount before `State.dispose` runs. Batches
+  release descendants before ancestors, registration order is preserved inside
+  one host, and a failed initialization, widget update, or build keeps the
+  resource alive until a later reconciliation succeeds.
+
 ## 0.0.1-alpha.4
 
 This release corrects the package archive and moves checkout-only code to its
