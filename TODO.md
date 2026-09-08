@@ -29,13 +29,11 @@ Neither package is published. This candidate adds one framework lifecycle
 seam, moves the opt-in hooks library out of `noir`, and introduces the
 optional companion package `noir_signals` with the Signals integration.
 
-`feat/signals` is the top of a stack. It sits on `feat/layout-builder`, which
-sits on `fix/focus-recovery` and `fix/list-view-row-keys` in that order.
-`feat/mcp-inspector` merged as PR #42 at `bea8885`. The remaining parents
-merge first; this branch is last so
-its version bump and changelog describe the whole release. This candidate also
-includes the independent `fix/hot-reload-stale-timestamps` change and its
-alpha.5 changelog entry; PR #47 merges before this branch.
+This candidate combines the MCP inspector, keyed-row and focus fixes,
+`LayoutBuilder`, hot reload, and the Signals companion. The integration order
+is #42 → #43 → #44 → #45 → #47 → #46, using merge commits for the stack.
+The alpha.5 changelog covers the complete candidate, including hot reload's
+forced-recompilation cost.
 
 Closed on this tree:
 
@@ -57,8 +55,8 @@ Closed on this tree:
       `signals_core` surface. Noir's manifest and sources carry no Signals or
       companion dependency, and a Noir-only consumer resolves neither.
 - [x] **Checks**: format and fatal-info analysis passed for both packages;
-      212 architecture tests and the 2,224-test serial root suite passed on the
-      combined stack tree; the companion's 113 tests passed from both its own
+      213 architecture tests and the 2,232-test serial root suite passed on the
+      combined candidate tree; the companion's 113 tests passed from both its own
       directory and the repository root; the website formatted, linted,
       type-checked, and built. The root publish dry-run reported zero
       warnings; the staged companion reported zero warnings and one expected
@@ -83,40 +81,14 @@ Closed on this tree:
       all six bundled binaries on this tree. The OpenTUI gitlink, the native
       ABI, and the bundled binaries have no delta from alpha.4.
 
-- [x] **Release PR and platform CI**: PR
-      [#46](https://github.com/conceptadev/noir/pull/46) from `feat/signals`.
-      Its first run failed identically on Linux, macOS, and Windows: moving
-      the hooks guide left the root `doc/` directory empty, git does not track
-      an empty directory, and the stale-guidance scan still listed it, so the
-      scan passed locally against a leftover directory and failed in every
-      clean checkout. After the fix, run
-      [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990)
-      passed all five jobs: analysis, website build and browser smoke, and the
-      Linux, macOS, and Windows suites including the companion steps. The
-      branch was then rebased onto the stack. The rebased candidate, exact
-      commit `8a77af6`, passed all five jobs again in run
-      [`34247603920`](https://github.com/conceptadev/noir/actions/runs/34247603920).
-      That run is the first to compile this work together with
-      `feat/layout-builder` and the fixes beneath it. A later run then killed
-      the Windows serial suite six seconds after it reported
-      `2214 tests passed`: the combined tree needs about 10 minutes there, and
-      the step ceiling was exactly 10. The serial-suite step now allows 15
-      minutes on both platform jobs, and each job budget equals the sum of its
-      step ceilings so a step timeout always reports before the job timeout.
-      `analyze` follows the same rule, and
-      `test/architecture/ci_workflow_ownership_test.dart` now asserts it for
-      every job rather than pinning the numbers alone.
-      Run
-      [`34250223453`](https://github.com/conceptadev/noir/actions/runs/34250223453)
-      then passed all five jobs on exact commit `ce6d987`, with the Windows
-      serial suite at 9m51s inside its 15-minute allowance. A later Windows
-      run then failed one unrelated test,
-      `test/tools/patch_manager_git_test.dart`, on the 30-second default: its
-      `setUp` rebuilds a real repository with five `git` spawns before every
-      one of 39 tests. That file is now tagged `safe-process-spawning` like
-      every other subprocess test and carries a two-minute budget. Run
-      [`34254540352`](https://github.com/conceptadev/noir/actions/runs/34254540352)
-      passed all five jobs on exact commit `794b051`.
+- [x] **Recorded platform checkpoint**: the combined Signals/LayoutBuilder
+      tree at `f0a1680` passed all five jobs in run
+      [`34268531511`](https://github.com/conceptadev/noir/actions/runs/34268531511).
+      Earlier clean-checkout CI exposed a stale scan of the empty root `doc/`
+      directory after the hooks guide moved. The corrected scan passed all
+      platforms in run
+      [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990).
+      Final-candidate and merge-commit checks remain the release gates below.
 
 - [x] **Adversarial review of the whole stack**: one keep/reject pass per open
       PR, each with mutation testing. No rejection; every PR fixes something
@@ -130,45 +102,40 @@ Closed on this tree:
       tooling were corrected, and the CI budget invariant was made true for
       `analyze` rather than narrowed.
 
-- [x] **Like Reactor initial-frame regression**: Windows runs
-      [`34264680059`](https://github.com/conceptadev/noir/actions/runs/34264680059)
-      and
-      [`34264681796`](https://github.com/conceptadev/noir/actions/runs/34264681796)
-      failed the exact two-cell initial spacing assertion. The test's settle
-      helper admitted wall-clock frame timers before capturing timestamp zero.
-      It now pumps explicit frames and flushes only autofocus microtasks.
-      A queued 300 ms frame reproduces the original `Expected: 2, Actual: 3`
-      failure against the old helper; the fixed test retains the exact spacing
-      and additionally asserts zero particle age. All 10 example tests pass on
-      both this tree and #43; format, fatal-info analysis, 213 architecture
-      tests, and the 2,227-test serial root suite pass here. The fix is also on
-      #43 as `2aef0bc`, so it reaches the remaining stack before merge.
-      The Windows job passed in run
-      [`34268226581`](https://github.com/conceptadev/noir/actions/runs/34268226581),
-      and #44 passed all five jobs in run
-      [`34268374519`](https://github.com/conceptadev/noir/actions/runs/34268374519).
-      After absorbing the restacked base and the two already-merged main
-      changes, the local root suite passed 2,232 tests and the companion passed
-      113. Both archives reported zero warnings, with the expected staging
-      override hint for the companion; all six native binaries verified.
-- [x] **Parent-branch CI timing corrections**: the macOS job in run
-      `34268226581` exceeded the packaged runner test's 10-second cold-start
-      wait, then hit the serial step's 10-minute ceiling. Windows run
+- [x] **Like Reactor initial frame**: the test now pumps explicit frames and
+      flushes only autofocus microtasks. A queued 300 ms frame reproduces the
+      original Windows `Expected: 2, Actual: 3` failure against the old helper.
+      The exact two-cell spacing remains, with an added zero-particle-age
+      assertion. The correction passed Windows in run
+      [`34268226581`](https://github.com/conceptadev/noir/actions/runs/34268226581).
+- [x] **CI timing corrections**: the cold consumer startup wait is 30 seconds;
+      watcher/reload waits remain 10 seconds, within a 90-second test bound.
+      The real-Git fixture has a two-minute budget and the
+      `safe-process-spawning` tag, including on the parent branches. These
+      correct observed startup and five-spawn fixture timeouts without changing
+      test assertions. The parent serial suites allow 15 minutes. Windows run
       [`34268405234`](https://github.com/conceptadev/noir/actions/runs/34268405234)
-      printed `2229 tests passed, 10 skipped` and was killed less than a second
-      later by the same ceiling. The parent branches now have the 15-minute
-      serial allowance already used here, with 20-minute job budgets for their
-      3 + 2 + 15 minute steps. The runner test allows 30 seconds for cold
-      startup, retains 10 seconds for watcher/reload readiness, and has a
-      90-second overall bound. Assertions are unchanged. Exact candidate CI
-      remains part of the merge gate below.
+      printed `2229 tests passed, 10 skipped` before its old 10-minute ceiling
+      killed it. On this combined candidate, Ubuntu allows 15 minutes and the
+      desktop matrix allows 20: macOS run
+      [`34270008318`](https://github.com/conceptadev/noir/actions/runs/34270008318)
+      made steady progress without an assertion failure but exceeded 15
+      minutes. Job budgets equal the sum of their step limits, enforced by the
+      CI ownership test.
+- [x] **Focus-form drive startup**: a mounted Save button can appear in the
+      driver tree before its first layout provides a pointer route. The
+      catalog test now asserts `waitStable()` before clicking; it retains the
+      strict pointer click and both blank-field error assertions. An in-process
+      probe reproduced the missing route before settling and its presence
+      afterward.
 
 Open review follow-ups:
 
 - [ ] **#47**: `force: true` costs about 34x reload latency (30 ms to 1012 ms
-      on a Noir-sized app, measured), undisclosed; and the fix misses edits
-      that preserve both mtime and size. `scripts/driver/noir_driver.dart:309`
-      keeps the original bug.
+      on a Noir-sized app in the prior review). The changelog now discloses the
+      recompilation cost. Edits preserving both mtime and size remain invisible,
+      and `NoirDriver.reload` in `scripts/driver/noir_driver.dart` still uses
+      the original VM timestamp filtering.
 - [ ] **#44**: recovery onto a `FocusScopeNode` leaves bindings inside that
       scope unanswered, which is the stated motive for the fix.
 - [ ] **#45**: building elements during layout is a new ownership seam with no
@@ -177,13 +144,18 @@ Open review follow-ups:
 - [ ] **#42**: fixture servers resolve an unpinned `mcp_dart` from pub.dev
       inside the shared suite.
 
-Open gates:
+Release gates:
 
-- [ ] **Merge the remaining stack first**, bottom-up, with merge commits rather
-      than squash so each child's merge base advances: #43, #44, #45, then
-      #47, then this branch.
-- [ ] **Independent review and merge** of PR #46.
-- [ ] **Platform CI on the merge commit.**
+Before publication, the candidate must be merged and its merge commit must
+pass platform CI. Merge completion is tracked by the PR records for
+[#43](https://github.com/conceptadev/noir/pull/43),
+[#44](https://github.com/conceptadev/noir/pull/44),
+[#45](https://github.com/conceptadev/noir/pull/45),
+[#47](https://github.com/conceptadev/noir/pull/47), and the final candidate
+[#46](https://github.com/conceptadev/noir/pull/46). Use the checks on that exact
+head and the [main CI runs](https://github.com/conceptadev/noir/actions/workflows/ci.yml?query=branch%3Amain)
+for current status; a historical green run does not replace either gate.
+
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
       consumer with no local override.
