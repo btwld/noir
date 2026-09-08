@@ -7,6 +7,7 @@ const pages = {
     title: 'Start',
   },
   'getting-started': 'Getting started',
+  'command-line-arguments': 'Command-line arguments',
   '---build': {
     type: 'separator',
     title: 'Build',
