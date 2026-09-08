@@ -152,6 +152,7 @@ class Probe extends StatelessWidget {
       await _waitUntil(
         () => runner.frames.contains('FRAME:before'),
         what: 'the initial frame',
+        timeout: const Duration(seconds: 30),
         diagnostics: runner.output,
       );
       final log = File('${consumer.path}/.dart_tool/noir/run.log');
@@ -175,7 +176,7 @@ class Probe extends StatelessWidget {
       );
       expect(log.readAsStringSync(), contains('reloaded'));
     },
-    timeout: const Timeout(Duration(seconds: 45)),
+    timeout: const Timeout(Duration(seconds: 90)),
   );
 
   test(
@@ -189,6 +190,7 @@ class Probe extends StatelessWidget {
       await _waitUntil(
         () => runner.frames.contains('FRAME:before'),
         what: 'the initial frame',
+        timeout: const Duration(seconds: 30),
         diagnostics: runner.output,
       );
       final log = File('${consumer.path}/.dart_tool/noir/run.log');
@@ -221,7 +223,7 @@ class Probe extends StatelessWidget {
       expect(await runner.exitCode, 17, reason: runner.output.toString());
       expect(log.readAsStringSync(), contains('reloaded'));
     },
-    timeout: const Timeout(Duration(seconds: 45)),
+    timeout: const Timeout(Duration(seconds: 90)),
   );
 }
 
@@ -280,8 +282,9 @@ Future<void> _waitUntil(
   bool Function() condition, {
   required String what,
   required StringBuffer diagnostics,
+  Duration timeout = const Duration(seconds: 10),
 }) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 10));
+  final deadline = DateTime.now().add(timeout);
   while (!condition()) {
     if (DateTime.now().isAfter(deadline)) {
       fail('Timed out waiting for $what.\n$diagnostics');

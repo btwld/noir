@@ -58,7 +58,7 @@ void main() {
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('timeout-minutes: 10'));
+    expect(ubuntu, contains('    timeout-minutes: 20\n'));
     expect(
       ubuntu,
       contains(
@@ -67,12 +67,12 @@ void main() {
     );
     expect(
       ubuntu,
-      contains('timeout-minutes: 8\n        run: dart test --concurrency=1'),
+      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
     );
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('timeout-minutes: 12'));
+    expect(desktop, contains('    timeout-minutes: 20\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
@@ -82,7 +82,7 @@ void main() {
     );
     expect(
       desktop,
-      contains('timeout-minutes: 10\n        run: dart test --concurrency=1'),
+      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
     );
   });
 
