@@ -102,7 +102,12 @@ Closed on this tree:
       Run
       [`34250223453`](https://github.com/conceptadev/noir/actions/runs/34250223453)
       then passed all five jobs on exact commit `ce6d987`, with the Windows
-      serial suite at 9m51s inside its 15-minute allowance.
+      serial suite at 9m51s inside its 15-minute allowance. A later Windows
+      run then failed one unrelated test,
+      `test/tools/patch_manager_git_test.dart`, on the 30-second default: its
+      `setUp` rebuilds a real repository with five `git` spawns before every
+      one of 39 tests. That file is now tagged `safe-process-spawning` like
+      every other subprocess test and carries a two-minute budget.
 
 Open gates:
 
