@@ -152,7 +152,7 @@ void main() {
       changelog,
       isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
     );
-    for (final heading in const ['Added']) {
+    for (final heading in const ['Added', 'Fixed', 'Removed']) {
       expect(
         RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
         hasLength(1),
@@ -163,6 +163,9 @@ void main() {
       'Unreleased.',
       'State.deferDispose',
       'HookState.deferDispose',
+      'LayoutBuilder',
+      'FocusManager',
+      'keyed `ListView` row',
       'native ABI',
       'bundled native artifacts are unchanged',
     ]) {

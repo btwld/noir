@@ -29,6 +29,13 @@ Neither package is published. This candidate adds one framework lifecycle
 seam, moves the opt-in hooks library out of `noir`, and introduces the
 optional companion package `noir_signals` with the Signals integration.
 
+`feat/signals` is the top of a stack. It sits on `feat/layout-builder`, which
+sits on `fix/focus-recovery`, `fix/list-view-row-keys`, and
+`feat/mcp-inspector` in that order. Those merge first; this branch is last so
+its version bump and changelog describe the whole release. The independent
+`fix/hot-reload-stale-timestamps` is not in this tree and still needs its own
+alpha.5 changelog entry when it lands.
+
 Closed on this tree:
 
 - [x] **Framework seam**: `State.deferDispose` and `HookState.deferDispose`
@@ -49,10 +56,10 @@ Closed on this tree:
       `signals_core` surface. Noir's manifest and sources carry no Signals or
       companion dependency, and a Noir-only consumer resolves neither.
 - [x] **Checks**: format and fatal-info analysis passed for both packages;
-      212 architecture tests and the 2,172-test serial root suite passed; the
-      companion's 113 tests passed from both its own directory and the
-      repository root; the website formatted, linted, type-checked, and built;
-      both publish dry-runs reported zero warnings.
+      212 architecture tests and the 2,224-test serial root suite passed on the
+      combined stack tree; the companion's 113 tests passed from both its own
+      directory and the repository root; the website formatted, linted,
+      type-checked, and built; both publish dry-runs reported zero warnings.
 - [x] **Independent behavior and diff review**: two reviews, one on the
       framework seam and one on the companion package. No blocker. Resolved:
       the deferred-disposal drain is now ordered by host depth rather than
@@ -80,12 +87,17 @@ Closed on this tree:
       scan passed locally against a leftover directory and failed in every
       clean checkout. After the fix, run
       [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990)
-      passed all five jobs on exact commit `e39d8a6`: analysis, website build
-      and browser smoke, and the Linux, macOS, and Windows suites including
-      the companion steps.
+      passed all five jobs: analysis, website build and browser smoke, and the
+      Linux, macOS, and Windows suites including the companion steps. The
+      branch was then rebased onto the stack, so that run's commit is no longer
+      an ancestor; the rebased candidate needs its own green run before merge.
 
 Open gates:
 
+- [ ] **Platform CI on the rebased candidate.**
+- [ ] **Merge the stack first**, bottom-up, with merge commits rather than
+      squash so each child's merge base advances: #42, #43, #44, #45, then
+      #47, then this branch.
 - [ ] **Independent review and merge** of PR #46.
 - [ ] **Platform CI on the merge commit.**
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
