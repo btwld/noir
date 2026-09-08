@@ -502,9 +502,11 @@ class StatefulElement extends _ElementBase {
     mounted = true;
     _state.attach(widget as StatefulWidget, buildContext, _markNeedsBuild);
     _registerGlobalKey();
-    _state.initState();
-    _state.didChangeDependencies();
-    _buildSubtree();
+    _reconcile(() {
+      _state.initState();
+      _state.didChangeDependencies();
+      _buildSubtree();
+    });
   }
 
   @override
@@ -513,8 +515,27 @@ class StatefulElement extends _ElementBase {
     final oldWidget = widget;
     widget = newWidget;
     _updateGlobalKeyForUpdate(oldWidget, newWidget);
-    _state.updateWidget(newWidget as StatefulWidget);
-    rebuild();
+    _reconcile(() {
+      _state.updateWidget(newWidget as StatefulWidget);
+      rebuild();
+    });
+  }
+
+  /// Runs [body] as one reconciliation of this element's [State].
+  ///
+  /// A resource retired by [State.deferDispose] anywhere inside [body] is
+  /// handed to [BuildOwner] only when the outermost window completes without
+  /// throwing, so a failed initialization, widget update, or build keeps the
+  /// old children's resources alive.
+  void _reconcile(void Function() body) {
+    _state.beginReconcile();
+    var succeeded = false;
+    try {
+      body();
+      succeeded = true;
+    } finally {
+      _state.endReconcile(succeeded: succeeded);
+    }
   }
 
   @override
@@ -550,6 +571,10 @@ class StatefulElement extends _ElementBase {
     // this node's own `dispose()`/`detach()` still run after every
     // descendant's.
     failures.attempt(super.unmount);
+    // Retired resources outlive the descendants that still read them, so they
+    // are released here — after that recursion — and still before `dispose()`
+    // releases what this State currently owns.
+    failures.attempt(_state.flushDeferredDisposals);
     failures.attempt(_state.disposeState);
     failures.attempt(_state.detach);
     failures.rethrowFirst();
@@ -557,12 +582,14 @@ class StatefulElement extends _ElementBase {
 
   @override
   void performRebuild() {
-    if (_dependenciesChanged) {
-      _state.didChangeDependencies();
-      _dependenciesChanged = false;
-    }
-    final built = _state.build(buildContext);
-    _updateChild(built);
+    _reconcile(() {
+      if (_dependenciesChanged) {
+        _state.didChangeDependencies();
+        _dependenciesChanged = false;
+      }
+      final built = _state.build(buildContext);
+      _updateChild(built);
+    });
   }
 
   @override

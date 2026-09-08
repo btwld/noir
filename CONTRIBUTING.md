@@ -25,15 +25,27 @@ If the repository was cloned without submodules:
 The submodule and bundled libraries are read-only under ordinary contribution
 work. See [`AGENTS.md`](AGENTS.md#opentui-reference-and-ownership).
 
+The repository is one Pub workspace. `dart pub get` at the root resolves both
+the `noir` package and the optional companion package under
+`packages/noir_signals/`, which owns the widget lifecycle hooks and the
+Signals integration.
+
 ## Required checks
 
-Run focused tests while developing, then:
+Run focused tests while developing, then, from the repository root:
 
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
+
+When a change touches the companion package, also run, from
+`packages/noir_signals/`:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ example/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.

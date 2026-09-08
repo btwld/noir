@@ -1,0 +1,18 @@
+name: noir_signals_consumer
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  noir:
+    path: NOIR_PATH
+  noir_signals:
+    path: NOIR_SIGNALS_PATH
+
+# The staged companion declares the hosted Noir version it will be published
+# against. That version is unreleased while this repository builds it, so the
+# consumer resolves Noir from this checkout instead.
+dependency_overrides:
+  noir:
+    path: NOIR_PATH

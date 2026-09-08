@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.0.1-alpha.5
+
+Unreleased. This prerelease adds `LayoutBuilder` and one framework lifecycle
+seam, fixes focus recovery and keyed `ListView` rows, and moves the opt-in
+hooks library to a separate package. The native ABI and the bundled native
+artifacts are unchanged from alpha.4.
+
+### Added
+
+- Added `LayoutBuilder`, which builds its child from the incoming
+  `BoxConstraints`. The builder runs during layout and its result is laid out
+  in the same frame, so the constraints it reads are the constraints its child
+  receives. It runs on the first layout, on a constraint change, on a widget
+  update, on an inherited dependency change, and on reassembly; repeated layout
+  at unchanged constraints does not run it. A builder that throws leaves the
+  element marked, so the next layout retries.
+- Added `State.deferDispose` and `HookState.deferDispose`. A host registers a
+  cleanup for a resource it retires while the descendants built by the previous
+  configuration may still read it. The framework releases that resource after
+  the host successfully updates its descendants and the removed descendants
+  finish unmounting, or during unmount before `State.dispose` runs. Batches
+  release descendants before ancestors, registration order is preserved inside
+  one host, and a failed initialization, widget update, or build keeps the
+  resource alive until a later reconciliation succeeds.
+
+### Fixed
+
+- The packaged hot-reload runner now recompiles detected edits whose file
+  timestamps predate compilation, including recovery after a rejected reload.
+  This forces recompilation and can take longer than an incremental reload.
+- `FocusManager` now recovers focus after an involuntary loss. Disabling the
+  focused control or removing the region that owns focus previously left the
+  tree with no primary focus, and `Shortcuts.handleKeyEvent` routes from the
+  focused element, so the tree stopped answering every binding. Recovery runs
+  after the synchronous tree updates finish and prefers the nearest surviving
+  focusable explicit scope, then the first node in traversal order, and leaves
+  focus empty when nothing is eligible. An explicit `requestFocus()` and an
+  incoming `autofocus` both claim focus first, and an intentional `unfocus()`
+  is not recovered.
+- `autofocus` is now honored when it is enabled after mount.
+- A keyed `ListView` row now names exactly one element. The row's `LocalKey`
+  was copied onto the `SizedBox` wrapping it, so the key named two elements and
+  a strict driver locator reported an ambiguous match. A keyed row that stays
+  in the window still keeps its `State` while the window scrolls or the rows
+  reorder, and a row that leaves the window is still disposed.
+- `ListView` now follows its highlight when its own height or item extent
+  changes, so a resized list keeps the selected row on screen while the
+  controller keeps a valid scroll position.
+
+### Removed
+
+- Removed `package:noir/hooks.dart`. The hook runtime, the built-in resource
+  hooks, and their guide now live in the optional companion package
+  `noir_signals`, published from `packages/noir_signals/` in this repository.
+  Replace `package:noir/hooks.dart` with
+  `package:noir_signals/noir_signals.dart` and add `noir_signals` to the
+  application's dependencies. Every hook name, return type, and lifecycle rule
+  is unchanged: `useState` still returns a `ValueNotifier` and
+  `useTextEditingController` still returns a `TextEditingController`.
+
 ## 0.0.1-alpha.4
 
 This release corrects the package archive and moves checkout-only code to its

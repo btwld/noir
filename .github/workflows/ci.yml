@@ -16,7 +16,7 @@ jobs:
   analyze:
     name: Format and analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -49,6 +49,16 @@ jobs:
 
       - name: Run strict analysis
         timeout-minutes: 4
+        run: dart analyze --fatal-infos
+
+      - name: Check companion formatting
+        timeout-minutes: 2
+        working-directory: packages/noir_signals
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/
+
+      - name: Run strict companion analysis
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
         run: dart analyze --fatal-infos
 
   website:
@@ -102,7 +112,7 @@ jobs:
     name: Test (Ubuntu)
     needs: analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 24
 
     steps:
       - name: Checkout repository
@@ -123,7 +133,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -134,8 +144,15 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        # The serial suite includes cold consumer builds and MCP fixtures.
+        # The serial suite compiles consumer packages and MCP fixture servers.
+        # Windows finished in 9m56s under the previous 10-minute ceiling and
+        # was killed while the process was still exiting.
         timeout-minutes: 15
+        run: dart test --concurrency=1
+
+      - name: Run companion tests
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
         run: dart test --concurrency=1
 
   desktop-test:
@@ -146,7 +163,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 29
 
     steps:
       - name: Checkout repository
@@ -167,7 +184,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -178,6 +195,11 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        # The serial suite includes cold consumer builds and MCP fixtures.
-        timeout-minutes: 15
+        # A loaded macOS runner exceeded 15 minutes without an assertion failure.
+        timeout-minutes: 20
+        run: dart test --concurrency=1
+
+      - name: Run companion tests
+        timeout-minutes: 4
+        working-directory: packages/noir_signals
         run: dart test --concurrency=1

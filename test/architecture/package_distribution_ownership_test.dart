@@ -19,7 +19,6 @@ void main() {
   final contributorGuide = _read('AGENTS.md');
   final appSource = _read('lib/src/app/app.dart');
   final highLevelBarrel = _read('lib/noir.dart');
-  final hooksBarrel = _read('lib/hooks.dart');
   final lowLevelBarrel = _read('lib/noir_low_level.dart');
   final ffiBarrel = _read('lib/noir_ffi.dart');
   final chatDemo = _read('example/src/chat/app.dart');
@@ -44,7 +43,6 @@ void main() {
         'pubspec.yaml',
         'bin/ffi.dart',
         'bin/high_level.dart',
-        'bin/hooks.dart',
         'bin/low_level_multi_child.dart',
         'bin/low_level_single_child.dart',
         'bin/render.dart',
@@ -63,7 +61,6 @@ void main() {
 
     final expectedImports = <String, Set<String>>{
       'high_level.dart': {'package:noir/noir.dart'},
-      'hooks.dart': {'package:noir/hooks.dart', 'package:noir/noir.dart'},
       'low_level_multi_child.dart': {
         'package:noir/noir.dart',
         'package:noir/noir_low_level.dart',
@@ -135,7 +132,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$')));
-    expect(packageVersion, '0.0.1-alpha.4');
+    expect(packageVersion, '0.0.1-alpha.5');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -155,9 +152,35 @@ void main() {
       changelog,
       isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
     );
-    for (final heading in const ['Changed', 'Fixed']) {
+    for (final heading in const ['Added', 'Fixed', 'Removed']) {
       expect(
         RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
+        hasLength(1),
+        reason: heading,
+      );
+    }
+    for (final contract in const [
+      'Unreleased.',
+      'State.deferDispose',
+      'HookState.deferDispose',
+      'LayoutBuilder',
+      'FocusManager',
+      'keyed `ListView` row',
+      'native ABI',
+      'bundled native artifacts are unchanged',
+    ]) {
+      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+    }
+  });
+
+  test('published alpha.4 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedAlpha = _changelogSection(changelog, '0.0.1-alpha.4');
+
+    expect(publishedAlpha, isNotEmpty);
+    for (final heading in const ['Changed', 'Fixed']) {
+      expect(
+        RegExp('^### $heading\$', multiLine: true).allMatches(publishedAlpha),
         hasLength(1),
         reason: heading,
       );
@@ -171,7 +194,7 @@ void main() {
       'native ABI',
       'bundled native artifacts are unchanged',
     ]) {
-      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+      expect(_normalized(publishedAlpha), contains(contract), reason: contract);
     }
   });
 
@@ -420,12 +443,14 @@ void main() {
       'hot_reload_driver.dart',
     ].join('/');
     final guidanceFiles = <File>[
+      // The hooks guide moved to the companion package, so the root `doc/`
+      // directory no longer exists in a clean checkout.
       for (final root in <String>[
         'bin',
-        'doc',
         'example',
         'hook',
         'lib',
+        'packages/noir_signals',
         'scripts',
         'skills',
       ])
@@ -599,9 +624,8 @@ void main() {
     expect(chatDemo, isNot(contains('..stop();')));
   });
 
-  test('shipped guidance describes the four supported import surfaces', () {
+  test('shipped guidance describes the three supported import surfaces', () {
     expect(highLevelBarrel, contains("export 'src/app/app.dart' show TuiApp"));
-    expect(hooksBarrel, contains("export 'src/hooks/framework.dart'"));
     expect(
       highLevelBarrel,
       contains('show Attr, BorderSides, BoxOptions, TextAlign'),
@@ -617,7 +641,6 @@ void main() {
     final skillFlat = _normalized(skill);
     for (final evidence in <String>[
       '`package:noir/noir.dart` — ordinary application and widget authoring',
-      '`package:noir/hooks.dart` — opt-in widget lifecycle hooks',
       '`package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer access, and supported custom rendering',
       '`package:noir/noir_ffi.dart` — ABI-unstable raw FFI access',
       'Concrete Element implementations and the recorder/display-list/compositor backend remain framework-owned',
@@ -625,7 +648,7 @@ void main() {
       expect(readmeFlat, contains(evidence), reason: evidence);
     }
     for (final evidence in <String>[
-      'Widget lifecycle hooks are opt-in through `package:noir/hooks.dart`',
+      'Widget lifecycle hooks and Signals reactive state are opt-in through the companion `package:noir_signals`',
       'advanced hosting, renderer/buffer access, and supported custom render-object protocols',
       'Concrete Element implementations and the recorder/display-list/compositor backend stay framework-owned',
     ]) {
@@ -1197,7 +1220,6 @@ void main() {
       imports,
       unorderedEquals(<String>{
         'package:noir/noir.dart',
-        'package:noir/hooks.dart',
         'package:noir/noir_low_level.dart',
         'package:noir/noir_ffi.dart',
       }),

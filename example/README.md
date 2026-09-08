@@ -18,7 +18,7 @@ describe their keybindings and special requirements in the file header.
 | `dart run example/main.dart` | The canonical minimal application entrypoint. |
 | `dart run example/hello.dart` | A small stateless widget tree with shared example chrome. |
 | `dart run example/counter.dart` | Stateful updates through keyboard and pointer activation. |
-| `dart run example/hooks_counter.dart` | The same state pattern through `HookWidget` and `useState`. |
+| `dart run packages/noir_signals/example/counter.dart` | The same state pattern through `HookWidget` and `useState`, from the companion `noir_signals` package. |
 
 ## Core concepts
 

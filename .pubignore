@@ -11,6 +11,12 @@
 .conductor/
 /skills/
 
+# Optional companion package published separately as `noir_signals`.
+# Pub applies this rule to nested packages too, so the companion is published
+# from a copy staged outside this checkout by
+# `scripts/stage_companion_package.dart`.
+/packages/
+
 # Development and build tools
 .github/
 /scripts/

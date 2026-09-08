@@ -1,0 +1,13 @@
+# The companion resolves Noir's native code asset through its dependency; no
+# environment override is needed here.
+
+test_on: vm
+
+timeout: 60s
+
+add_tags:
+  - vm
+
+tags:
+  safe-process-spawning:
+    skip: false

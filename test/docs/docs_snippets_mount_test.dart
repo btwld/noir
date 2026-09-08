@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:noir/hooks.dart';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
@@ -92,32 +89,6 @@ class _FilterFieldState extends State<FilterField> {
   }
 }
 
-class PollingBadge extends HookWidget {
-  const PollingBadge({required this.interval, super.key});
-
-  final Duration interval;
-
-  @override
-  Widget build(BuildContext context) {
-    final ticks = useState<int>(0);
-
-    useEffect(() {
-      final timer = Timer.periodic(interval, (_) {
-        ticks.value++;
-      });
-      return timer.cancel;
-    }, <Object?>[interval]);
-
-    return Row(
-      spacing: 1,
-      children: [
-        const Badge(label: 'POLLING', variant: BadgeVariant.info),
-        Text('${ticks.value} checks'),
-      ],
-    );
-  }
-}
-
 final class SaveIntent extends Intent {
   const SaveIntent();
 }
@@ -203,15 +174,6 @@ void main() {
 
   test('FilterField paints the unapplied label', () {
     expect(capture.capture(const FilterField()).toText(), contains('filter'));
-  });
-
-  test('PollingBadge paints its status', () {
-    expect(
-      capture
-          .capture(const PollingBadge(interval: Duration(hours: 1)))
-          .toText(),
-      contains('POLLING'),
-    );
   });
 
   test('SaveShortcut paints its child', () {

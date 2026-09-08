@@ -100,8 +100,10 @@ void main() {
       expect((await driver.capture()).lines.any(_isCountLine('1')), isTrue);
     });
 
-    test('hooks counter add-one key click advances the count', () async {
-      final driver = await NoirDriver.launch('example/hooks_counter.dart');
+    test('companion counter add-one key click advances the count', () async {
+      final driver = await NoirDriver.launch(
+        'packages/noir_signals/example/counter.dart',
+      );
       addTearDown(driver.quit);
 
       expect((await driver.capture()).contains('Count: 0'), isTrue);
@@ -206,7 +208,7 @@ void main() {
       final frame = await driver.capture();
       expect(frame.contains('Confirm deployment'), isFalse);
       expect(
-        frame.contains('Deployment scheduled for noir 0.0.1-alpha.4.'),
+        frame.contains('Deployment scheduled for noir 0.0.1-alpha.5.'),
         isTrue,
       );
     });

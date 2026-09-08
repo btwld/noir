@@ -53,13 +53,13 @@ void main() {
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('timeout-minutes: 8'));
+    expect(analyze, contains('    timeout-minutes: 15\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
     expect(analyze, contains('timeout-minutes: 2\n        run: dart format'));
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('    timeout-minutes: 20\n'));
+    expect(ubuntu, contains('    timeout-minutes: 24\n'));
     expect(
       ubuntu,
       contains(
@@ -73,7 +73,7 @@ void main() {
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('    timeout-minutes: 20\n'));
+    expect(desktop, contains('    timeout-minutes: 29\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
@@ -83,7 +83,65 @@ void main() {
     );
     expect(
       desktop,
-      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
+      contains('timeout-minutes: 20\n        run: dart test --concurrency=1'),
+    );
+  });
+
+  test('each job budget equals the sum of its step ceilings', () {
+    // A step timeout then always reports before the job timeout, so a slow
+    // step is named instead of the whole job being killed anonymously.
+    for (final name in const <String>[
+      'analyze',
+      'ubuntu-test',
+      'desktop-test',
+    ]) {
+      final job = _job(workflow, name);
+      final budget = int.parse(
+        RegExp(
+          r'^    timeout-minutes: (\d+)',
+          multiLine: true,
+        ).firstMatch(job)!.group(1)!,
+      );
+      final ceilings = RegExp(
+        r'^        timeout-minutes: (\d+)',
+        multiLine: true,
+      ).allMatches(job).map((match) => int.parse(match.group(1)!)).toList();
+      expect(ceilings, isNotEmpty, reason: name);
+      expect(
+        budget,
+        ceilings.reduce((a, b) => a + b),
+        reason: '$name: job budget must equal the sum of its step ceilings',
+      );
+    }
+  });
+
+  test('every platform job also checks the companion package', () {
+    const companionTest =
+        'timeout-minutes: 4\n'
+        '        working-directory: packages/noir_signals\n'
+        '        run: dart test --concurrency=1';
+
+    expect(companionTest.allMatches(workflow), hasLength(2));
+    expect(_job(workflow, 'ubuntu-test'), contains(companionTest));
+    expect(_job(workflow, 'desktop-test'), contains(companionTest));
+
+    final analyze = _job(workflow, 'analyze');
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 2\n'
+        '        working-directory: packages/noir_signals\n'
+        '        run: dart format --output=none --set-exit-if-changed '
+        'lib/ test/ example/',
+      ),
+    );
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 4\n'
+        '        working-directory: packages/noir_signals\n'
+        '        run: dart analyze --fatal-infos',
+      ),
     );
   });
 
@@ -96,7 +154,8 @@ void main() {
         hasLength(3),
       );
       expect(
-        r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}"
+        r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', "
+                "'packages/noir_signals/pubspec.yaml') }}"
             .allMatches(workflow),
         hasLength(3),
       );

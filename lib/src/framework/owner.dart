@@ -74,6 +74,12 @@ class BuildOwner {
   /// corrupt teardown membership.
   final Set<Element> _inactiveElements = HashSet<Element>.identity();
 
+  /// Retired [State.deferDispose] batches awaiting release by [finalizeTree],
+  /// bucketed by their host's maintained depth. Deepest bucket drains first,
+  /// and one host's batches keep the order they retired in.
+  final SplayTreeMap<int, Queue<DeferredDisposalBatch>> _deferredDisposals =
+      SplayTreeMap<int, Queue<DeferredDisposalBatch>>();
+
   FrameCallback? _onFrame;
   late final bool _ownsPipelineOwner;
   RenderObjectWithSingleChild? _rootRenderObject;
@@ -646,17 +652,49 @@ class BuildOwner {
             ));
   }
 
-  /// Permanently unmounts every inactive element at the end of a build pass.
+  /// Queues [batch] for release at the end of the current build pass.
+  ///
+  /// [host] fixes the release order: the batch is filed under the host's depth
+  /// at retire time, so a descendant's resources always release before an
+  /// ancestor's even when the two hosts reconciled in separate batches of the
+  /// same pass. Called by [State.endReconcile] once its host successfully
+  /// updated its descendants; not public app API.
+  @internal
+  void enqueueDeferredDisposal(Element host, DeferredDisposalBatch batch) {
+    final depth = _depths[host] ?? 0;
+    _deferredDisposals
+        .putIfAbsent(depth, Queue<DeferredDisposalBatch>.new)
+        .add(batch);
+  }
+
+  /// Permanently unmounts every inactive element at the end of a build pass,
+  /// then releases the retired [State.deferDispose] cleanups.
+  ///
+  /// A retired resource stays alive until its host's old descendants are gone,
+  /// so the drain runs after — never before — the unmount loop.
   @internal
   void finalizeTree() {
-    if (_inactiveElements.isEmpty) {
+    if (_inactiveElements.isEmpty && _deferredDisposals.isEmpty) {
       return;
     }
-    final leftover = _inactiveElements.toList();
-    _inactiveElements.clear();
     final failures = FirstErrorRecorder();
-    for (final element in leftover) {
-      failures.attempt(element.unmount);
+    if (_inactiveElements.isNotEmpty) {
+      final leftover = _inactiveElements.toList();
+      _inactiveElements.clear();
+      for (final element in leftover) {
+        failures.attempt(element.unmount);
+      }
+    }
+    // Deepest first. A cleanup that retires another host's batch mid-drain
+    // rejoins this loop at its own depth.
+    while (_deferredDisposals.isNotEmpty) {
+      final depth = _deferredDisposals.lastKey()!;
+      final bucket = _deferredDisposals[depth]!;
+      final batch = bucket.removeFirst();
+      if (bucket.isEmpty) {
+        _deferredDisposals.remove(depth);
+      }
+      failures.attempt(batch.drain);
     }
     failures.rethrowFirst();
   }
@@ -704,6 +742,7 @@ class BuildOwner {
       _pendingBuckets = _DirtyBuckets();
       _globalKeyRegistry.clear();
       _inactiveElements.clear();
+      _deferredDisposals.clear();
       _tickerScheduler.setFrameCallback(null);
       _onFrame = null;
       _building = false;

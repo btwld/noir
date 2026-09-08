@@ -15,6 +15,7 @@ const pages = {
   'widgets-layout': 'Widgets and layout',
   'state-lifecycle': 'State and lifecycle',
   hooks: 'Hooks',
+  signals: 'Signals',
   'input-focus': 'Input and focus',
   testing: 'Testing',
   '---understand': {

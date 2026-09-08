@@ -31,8 +31,9 @@ methods remain the primary resource owner.
 - `package:noir/noir_low_level.dart`: supported advanced hosting and custom
   render-object protocols.
 - `package:noir/noir_ffi.dart`: guarded but ABI-unstable raw bindings.
-- `package:noir/hooks.dart`: opt-in widget lifecycle hooks built only on
-  Noir's high-level public surface.
+- `package:noir_signals/noir_signals.dart`: the optional companion package
+  under `packages/noir_signals/`. It owns the widget lifecycle hooks and the
+  Signals integration, and is built only on Noir's high-level public surface.
 
 Generated bindings, library discovery, concrete Element implementations, and
 recording/compositing internals remain framework-owned.
@@ -71,6 +72,8 @@ remove obsolete API shapes instead of adding compatibility shims.
 
 ## Authorized local verification
 
+Run these from the repository root, for the `noir` package:
+
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
@@ -78,6 +81,25 @@ remove obsolete API shapes instead of adding compatibility shims.
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
+
+Run these from `packages/noir_signals/`, for the companion package:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ example/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
+
+The repository is one Pub workspace. `dart pub get` at the root resolves both
+packages together, and `dart analyze --fatal-infos` at the root also covers
+the companion tree.
+
+Check the companion archive from the repository root instead of in place:
+
+    dart run scripts/stage_companion_package.dart --verify
+
+Pub applies the ignore files of every ancestor directory, so the root
+`.pubignore` rule that keeps `packages/` out of Noir's archive also hides the
+companion's own files when the companion is published in place. The script
+stages a copy outside the checkout and runs the dry-run there.
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.
@@ -114,6 +136,15 @@ deliberately exercise a restricted behavior.
   `KeyDriver` for parsed synthetic input, and `createTuiTestApp` for binding
   integration. Do not invent a fifth harness.
 - Prefer `BufferMatchers` for cell-level assertions.
+
+## Companion package boundary
+
+`packages/noir_signals/` is an optional companion package, not part of Noir's
+archive. Its production code imports only `package:noir/noir.dart` and the
+public `signals_core` surface: no Noir private libraries, no low-level or FFI
+barrels, and no native access. Noir never depends on it, and Noir's manifest
+carries no Signals dependency. Its checkout-only test helpers stay out of the
+published archive.
 
 ## Current release boundary
 

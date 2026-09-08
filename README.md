@@ -17,7 +17,8 @@ stable 1.0.
   protocol negotiation and deterministic block-cell fallback.
 - Handle text editing, selection, scrolling, keyboard focus, mouse input, and
   application-wide shortcuts.
-- Opt into reusable widget lifecycle hooks with `package:noir/hooks.dart`.
+- Opt into reusable widget lifecycle hooks and Signals reactive state with
+  the companion `package:noir_signals` package.
 - Present tabs, sliders, ASCII-art headings, rich static tables, source code,
   unified or split diffs, and GitHub-flavoured Markdown with native terminal
   links and explicit OSC52 selection copy.
@@ -212,14 +213,19 @@ with different arguments.
 
 ## Widget Lifecycle Hooks
 
-Hooks ship in the main `noir` package but remain outside the default
-`noir.dart` namespace. Import `package:noir/hooks.dart` together with
+Hooks live in the optional companion package `noir_signals`, not in `noir`.
+Run `dart pub add noir_signals` beside Noir, then import
+`package:noir_signals/noir_signals.dart` together with
 `package:noir/noir.dart`.
 
-The opt-in library includes state, effects, memoization, listenables,
-asynchronous snapshots, animation, focus, editing, scroll, and viewport hooks.
-Hooks use call order as identity. See [the hooks guide](doc/hooks.md) and the
-[interactive hooks counter example](example/hooks_counter.dart).
+The companion includes state, effects, memoization, listenables, asynchronous
+snapshots, animation, focus, editing, scroll, and viewport hooks, plus the
+Signals reactive integration. Hooks use call order as identity.
+
+The companion ships its own guide, README, and runnable examples. Read them on
+[pub.dev](https://pub.dev/packages/noir_signals) or in the repository under
+[`packages/noir_signals/`](https://github.com/conceptadev/noir/tree/main/packages/noir_signals);
+this package's archive does not carry them.
 
 ## Component Catalog
 
@@ -307,16 +313,19 @@ it for you, so a development driver can invoke it over the VM service
 extension `ext.noir.reassemble`; `registerHotReloadExtension(app)` stays
 exported for custom hosts that mount their own app.
 
-Noir has four supported import surfaces:
+Noir has three supported import surfaces:
 
 - `package:noir/noir.dart` — ordinary application and widget authoring.
-- `package:noir/hooks.dart` — opt-in widget lifecycle hooks.
 - `package:noir/noir_low_level.dart` — advanced hosting, renderer/buffer
   access, and supported custom rendering.
 - `package:noir/noir_ffi.dart` — ABI-unstable raw FFI access.
 
 Concrete Element implementations and the recorder/display-list/compositor
 backend remain framework-owned; they are not supported package surfaces.
+
+The optional companion package `noir_signals` adds a fourth surface,
+`package:noir_signals/noir_signals.dart`. It is a separate dependency built
+only on Noir's high-level API; `noir` never depends on it.
 
 ## Examples
 

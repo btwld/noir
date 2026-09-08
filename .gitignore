@@ -3,6 +3,7 @@
 .mcp.json
 .dart_tool/
 pubspec.lock
+pubspec_overrides.yaml
 doc/api/
 coverage/
 **/.DS_Store

@@ -1,4 +1,4 @@
-# Release TODO — `0.0.1-alpha.4`
+# Release TODO — `0.0.1-alpha.5`
 
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
@@ -22,6 +22,149 @@ The repository stays private. A historical GitHub prerelease exists for
 `v0.0.1-alpha.1`; alpha.3 and alpha.4 have no GitHub releases, and the next
 GitHub release remains deferred to beta.1. Neither repository visibility nor
 that next release is cleared by this publication.
+
+## Unreleased — `0.0.1-alpha.5` and `noir_signals 0.0.1-alpha.0`
+
+Neither package is published. This candidate adds one framework lifecycle
+seam, moves the opt-in hooks library out of `noir`, and introduces the
+optional companion package `noir_signals` with the Signals integration.
+
+This candidate combines the MCP inspector, keyed-row and focus fixes,
+`LayoutBuilder`, hot reload, and the Signals companion. The integration order
+is #42 → #43 → #44 → #45 → #47 → #46, using merge commits for the stack.
+The alpha.5 changelog covers the complete candidate, including hot reload's
+forced-recompilation cost.
+
+Closed on this tree:
+
+- [x] **Framework seam**: `State.deferDispose` and `HookState.deferDispose`
+      release a retired resource after the host updates its descendants and
+      the removed descendants unmount, and during unmount before
+      `State.dispose`. Eleven focused framework cases and two hook cases cover
+      ordering, failure containment, nesting, and idle scheduling.
+- [x] **Hooks extraction**: `package:noir/hooks.dart`, `lib/src/hooks/`,
+      `test/hooks/`, the counter example, the hook consumer fixture, and the
+      hooks guide moved to `packages/noir_signals/`. Every hook name, return
+      type, and lifecycle rule is unchanged.
+- [x] **Signals integration**: `useSignal`, `useComputed`, `useSignalValue`,
+      `useSignalEffect`, and `SignalValueBuilder`. Automatic whole-build
+      tracking through `SignalWidget` and `SignalBuilder` is deliberately not
+      part of this release.
+- [x] **Boundary**: the repository is one Pub workspace. Companion production
+      code imports only `package:noir/noir.dart` and the public
+      `signals_core` surface. Noir's manifest and sources carry no Signals or
+      companion dependency, and a Noir-only consumer resolves neither.
+- [x] **Checks**: format and fatal-info analysis passed for both packages;
+      213 architecture tests and the 2,232-test serial root suite passed on the
+      combined candidate tree; the companion's 113 tests passed from both its own
+      directory and the repository root; the website formatted, linted,
+      type-checked, and built. The root publish dry-run reported zero
+      warnings; the staged companion reported zero warnings and one expected
+      hint, because staging overrides `noir` to this checkout until alpha.5
+      is published.
+- [x] **Independent behavior and diff review**: two reviews, one on the
+      framework seam and one on the companion package. No blocker. Resolved:
+      the deferred-disposal drain is now ordered by host depth rather than
+      retire order, so a descendant releases before an ancestor even when the
+      two reconciled in separate batches of one pass; the `useSignalEffect`
+      documentation no longer claims Signals wraps an install failure, which
+      it does not; the effect guard's isolate-wide scope is documented; and a
+      cancellation error is no longer swallowed when the replacement
+      subscription also fails. Added the coverage the reviews found missing:
+      cross-batch release order, the unmount flush running after the
+      descendants unmount, two distinct cleanup failures, `deactivate`
+      detachment for owned and borrowed observation, the guarded lifecycle
+      cleanup, a subscription that outlives a throwing cancellation, and a
+      frozen companion export surface. Each new case was mutation-checked
+      against the defect it pins.
+- [x] **Native artifacts**: `--verify-only` matched `native_manifest.json` and
+      all six bundled binaries on this tree. The OpenTUI gitlink, the native
+      ABI, and the bundled binaries have no delta from alpha.4.
+
+- [x] **Recorded platform checkpoint**: the combined Signals/LayoutBuilder
+      tree at `f0a1680` passed all five jobs in run
+      [`34268531511`](https://github.com/conceptadev/noir/actions/runs/34268531511).
+      Earlier clean-checkout CI exposed a stale scan of the empty root `doc/`
+      directory after the hooks guide moved. The corrected scan passed all
+      platforms in run
+      [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990).
+      Final-candidate and merge-commit checks remain the release gates below.
+
+- [x] **Adversarial review of the whole stack**: one keep/reject pass per open
+      PR, each with mutation testing. No rejection; every PR fixes something
+      real. Two defects were found and fixed here. `FocusNode.requestFocus`
+      and `unfocus` cancelled a queued focus recovery unconditionally, so an
+      unrelated node re-created the empty-focus state that recovery exists to
+      prevent; removing that guard had left all 669 tests passing. And the
+      companion's frozen export set only read `show` clauses, so a bare
+      `export` published a public symbol invisibly. Both now fail against the
+      previous code. Three release-record claims that did not match the
+      tooling were corrected, and the CI budget invariant was made true for
+      `analyze` rather than narrowed.
+
+- [x] **Like Reactor initial frame**: the test now pumps explicit frames and
+      flushes only autofocus microtasks. A queued 300 ms frame reproduces the
+      original Windows `Expected: 2, Actual: 3` failure against the old helper.
+      The exact two-cell spacing remains, with an added zero-particle-age
+      assertion. The correction passed Windows in run
+      [`34268226581`](https://github.com/conceptadev/noir/actions/runs/34268226581).
+- [x] **CI timing corrections**: the cold consumer startup wait is 30 seconds;
+      watcher/reload waits remain 10 seconds, within a 90-second test bound.
+      The real-Git fixture has a two-minute budget and the
+      `safe-process-spawning` tag, including on the parent branches. These
+      correct observed startup and five-spawn fixture timeouts without changing
+      test assertions. The parent serial suites allow 15 minutes. Windows run
+      [`34268405234`](https://github.com/conceptadev/noir/actions/runs/34268405234)
+      printed `2229 tests passed, 10 skipped` before its old 10-minute ceiling
+      killed it. On this combined candidate, Ubuntu allows 15 minutes and the
+      desktop matrix allows 20: macOS run
+      [`34270008318`](https://github.com/conceptadev/noir/actions/runs/34270008318)
+      made steady progress without an assertion failure but exceeded 15
+      minutes. Job budgets equal the sum of their step limits, enforced by the
+      CI ownership test.
+- [x] **Focus-form drive startup**: a mounted Save button can appear in the
+      driver tree before its first layout provides a pointer route. The
+      catalog test now asserts `waitStable()` before clicking; it retains the
+      strict pointer click and both blank-field error assertions. An in-process
+      probe reproduced the missing route before settling and its presence
+      afterward.
+
+Open review follow-ups:
+
+- [ ] **#47**: `force: true` costs about 34x reload latency (30 ms to 1012 ms
+      on a Noir-sized app in the prior review). The changelog now discloses the
+      recompilation cost. Edits preserving both mtime and size remain invisible,
+      and `NoirDriver.reload` in `scripts/driver/noir_driver.dart` still uses
+      the original VM timestamp filtering.
+- [ ] **#44**: recovery onto a `FocusScopeNode` leaves bindings inside that
+      scope unanswered, which is the stated motive for the fix.
+- [ ] **#45**: building elements during layout is a new ownership seam with no
+      fitness test, though the repository freezes comparable seams elsewhere.
+      A layout-time `markNeedsLayout` is dropped and never retried.
+- [ ] **#42**: fixture servers resolve an unpinned `mcp_dart` from pub.dev
+      inside the shared suite.
+
+Release gates:
+
+Before publication, the candidate must be merged and its merge commit must
+pass platform CI. Merge completion is tracked by the PR records for
+[#43](https://github.com/conceptadev/noir/pull/43),
+[#44](https://github.com/conceptadev/noir/pull/44),
+[#45](https://github.com/conceptadev/noir/pull/45),
+[#47](https://github.com/conceptadev/noir/pull/47), and the final candidate
+[#46](https://github.com/conceptadev/noir/pull/46). Use the checks on that exact
+head and the [main CI runs](https://github.com/conceptadev/noir/actions/workflows/ci.yml?query=branch%3Amain)
+for current status; a historical green run does not replace either gate.
+
+- [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
+      `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
+      consumer with no local override.
+
+Known distribution limitation: pub applies the ignore files of every ancestor
+directory, so the root `.pubignore` rule that keeps `packages/` out of Noir's
+archive also hides the companion's own files when the companion is published
+in place. `scripts/stage_companion_package.dart` stages a copy outside the
+checkout; the companion's archive and its outside-consumer check both use it.
 
 ## Released — `0.0.1-alpha.4`
 
@@ -198,7 +341,8 @@ evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
       with zero warnings.
 - [x] On the combined alpha.2 hooks-and-parity tree, 96 focused hook API,
       ownership, example, and downstream-consumer checks pass. The opt-in
-      `package:noir/hooks.dart` surface, guide, skill, example, and complete
+      `package:noir/hooks.dart` surface (moved to `noir_signals` in alpha.5),
+      guide, skill, example, and complete
       regression suite from `main` remain present alongside the parity work.
 - [x] The pre-parity alpha.2 hook tree passed its authorized manual
       real-terminal hot-reload check. Because the combined parity candidate
@@ -226,13 +370,22 @@ evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
 
 ## Verification commands
 
+From the repository root:
+
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
+    dart run scripts/stage_companion_package.dart --verify
     git diff --check
+
+From `packages/noir_signals/`:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ example/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
 
 Real terminal, PTY/ConPTY, raw-mode, signal/termination, crash, sanitizer, and
 leak checks stay outside ordinary verification and require explicit
@@ -338,5 +491,5 @@ authorization.
   offers a supported way to request the package's native deployment floor.
 - Execute downstream smoke tests on the three shipped OS/architecture
   combinations not exercised by the ordinary host-runner matrix.
-- Add a lower-bound lane that runs analysis plus focused widget-hook and
-  native-asset build-hook tests after `dart pub downgrade` when practical.
+- Add a lower-bound lane that runs analysis plus focused companion-hook
+  and native-asset build-hook tests after `dart pub downgrade` when practical.

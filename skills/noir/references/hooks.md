@@ -1,21 +1,31 @@
-# Noir hooks
+# Noir hooks and Signals
 
 Keep hook code declarative, ordered, and explicit about resource ownership.
 Treat Noir's hook contracts as authoritative rather than assuming parity with
 another hook library.
 
+Hooks and the Signals integration ship together in the optional companion
+package `noir_signals`. For reactive state, read
+`../../../packages/noir_signals/doc/signals.md` after the hooks contract
+below: `useSignal` and `useComputed` own and observe what they create,
+`useSignalValue` and `SignalValueBuilder` observe a source somebody else owns,
+and `useSignalEffect` owns a reactive effect. There is no automatic
+whole-build tracking; observe explicitly.
+
 ## Start from the canonical contract
 
-Read `../../../doc/hooks.md` completely before changing hook behavior or
-writing lifecycle-sensitive application code. Load only the complementary
-guidance needed for the task:
+Read `../../../packages/noir_signals/doc/hooks.md` completely before changing
+hook behavior or writing lifecycle-sensitive application code. Load only the
+complementary guidance needed for the task:
 
 - Screen composition and terminal visual review: `design.md`
 - Buttons, focus, keyboard, and pointer input: `inputs-and-focus.md`
 - Consumer and repository test strategy: `testing.md`
 - Live capture and input: `../SKILL.md#see-and-drive-a-running-app-drive-mode`
 
-Verify signatures in `package:noir/hooks.dart` and a nearby working example.
+Verify signatures in `package:noir_signals/noir_signals.dart` and a nearby
+working example. Add `noir_signals` to the application's dependencies; it is a
+separate package from `noir`.
 Do not import `package:noir/src/**`, `package:noir/noir_low_level.dart`, or
 `package:noir/noir_ffi.dart` for hook application code.
 

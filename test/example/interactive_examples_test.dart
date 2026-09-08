@@ -54,7 +54,9 @@ void main() {
     () {
       const expected = <String, List<String>>{
         'example/counter.dart': <String>["ValueKey<String>('increment')"],
-        'example/hooks_counter.dart': <String>["ValueKey<String>('add-one')"],
+        'packages/noir_signals/example/counter.dart': <String>[
+          "ValueKey<String>('add-one')",
+        ],
         'example/select_demo.dart': <String>["ValueKey<String>('fruit')"],
         'example/scrollbox_demo.dart': <String>["ValueKey<String>('content')"],
         'example/components_demo.dart': <String>[

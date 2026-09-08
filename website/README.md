@@ -76,7 +76,8 @@ Each fact should have one primary home:
 - The repository `README.md` owns the package introduction, installation,
   public API tiers, and concise platform status.
 - `example/README.md` owns the runnable example catalog.
-- `doc/hooks.md` owns the exact hooks contract shipped with the package.
+- `packages/noir_signals/doc/hooks.md` owns the exact hooks contract shipped
+  with the companion package.
 - Dartdoc owns API signatures and member-level behavior.
 - This website owns tutorials, task guides, concepts, and browser reference
   pages.
