@@ -211,10 +211,12 @@ Run `dart pub add noir_signals` beside Noir, then import
 
 The companion includes state, effects, memoization, listenables, asynchronous
 snapshots, animation, focus, editing, scroll, and viewport hooks, plus the
-Signals reactive integration. Hooks use call order as identity. See
-[the hooks guide](packages/noir_signals/doc/hooks.md), the
-[companion README](packages/noir_signals/README.md), and the
-[interactive counter example](packages/noir_signals/example/counter.dart).
+Signals reactive integration. Hooks use call order as identity.
+
+The companion ships its own guide, README, and runnable examples. Read them on
+[pub.dev](https://pub.dev/packages/noir_signals) or in the repository under
+[`packages/noir_signals/`](https://github.com/conceptadev/noir/tree/main/packages/noir_signals);
+this package's archive does not carry them.
 
 ## Component Catalog
 

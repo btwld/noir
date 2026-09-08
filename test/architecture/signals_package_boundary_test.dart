@@ -121,6 +121,23 @@ void main() {
   });
 
   test('the companion barrel exports nothing but the approved surface', () {
+    // `_shownSymbols` can only read a `show` clause, so a bare `export`
+    // would slip past the frozen set entirely. Require the clause first,
+    // then freeze what it names.
+    final exports = RegExp(
+      r'^export\s+[^;]*;',
+      multiLine: true,
+      dotAll: true,
+    ).allMatches(companionBarrel).map((match) => match.group(0)!).toList();
+    expect(exports, isNotEmpty);
+    for (final directive in exports) {
+      expect(
+        directive,
+        matches(RegExp(r'\bshow\b')),
+        reason: 'every export must name its symbols: $directive',
+      );
+    }
+
     // The whole export set is frozen, so a new public name has to be an
     // intentional edit here rather than an accidental re-export.
     expect(_shownSymbols(companionBarrel), _companionSurface);

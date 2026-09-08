@@ -53,7 +53,7 @@ void main() {
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('timeout-minutes: 12'));
+    expect(analyze, contains('    timeout-minutes: 15\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
     expect(analyze, contains('timeout-minutes: 2\n        run: dart format'));
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
@@ -85,6 +85,34 @@ void main() {
       desktop,
       contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
     );
+  });
+
+  test('each job budget equals the sum of its step ceilings', () {
+    // A step timeout then always reports before the job timeout, so a slow
+    // step is named instead of the whole job being killed anonymously.
+    for (final name in const <String>[
+      'analyze',
+      'ubuntu-test',
+      'desktop-test',
+    ]) {
+      final job = _job(workflow, name);
+      final budget = int.parse(
+        RegExp(
+          r'^    timeout-minutes: (\d+)',
+          multiLine: true,
+        ).firstMatch(job)!.group(1)!,
+      );
+      final ceilings = RegExp(
+        r'^        timeout-minutes: (\d+)',
+        multiLine: true,
+      ).allMatches(job).map((match) => int.parse(match.group(1)!)).toList();
+      expect(ceilings, isNotEmpty, reason: name);
+      expect(
+        budget,
+        ceilings.reduce((a, b) => a + b),
+        reason: '$name: job budget must equal the sum of its step ceilings',
+      );
+    }
   });
 
   test('every platform job also checks the companion package', () {

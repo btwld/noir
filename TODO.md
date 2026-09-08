@@ -41,7 +41,7 @@ Closed on this tree:
 - [x] **Framework seam**: `State.deferDispose` and `HookState.deferDispose`
       release a retired resource after the host updates its descendants and
       the removed descendants unmount, and during unmount before
-      `State.dispose`. Nine focused framework cases and two hook cases cover
+      `State.dispose`. Eleven focused framework cases and two hook cases cover
       ordering, failure containment, nesting, and idle scheduling.
 - [x] **Hooks extraction**: `package:noir/hooks.dart`, `lib/src/hooks/`,
       `test/hooks/`, the counter example, the hook consumer fixture, and the
@@ -59,7 +59,10 @@ Closed on this tree:
       212 architecture tests and the 2,224-test serial root suite passed on the
       combined stack tree; the companion's 113 tests passed from both its own
       directory and the repository root; the website formatted, linted,
-      type-checked, and built; both publish dry-runs reported zero warnings.
+      type-checked, and built. The root publish dry-run reported zero
+      warnings; the staged companion reported zero warnings and one expected
+      hint, because staging overrides `noir` to this checkout until alpha.5
+      is published.
 - [x] **Independent behavior and diff review**: two reviews, one on the
       framework seam and one on the companion package. No blocker. Resolved:
       the deferred-disposal drain is now ordered by host depth rather than
@@ -99,6 +102,9 @@ Closed on this tree:
       the step ceiling was exactly 10. The serial-suite step now allows 15
       minutes on both platform jobs, and each job budget equals the sum of its
       step ceilings so a step timeout always reports before the job timeout.
+      `analyze` follows the same rule, and
+      `test/architecture/ci_workflow_ownership_test.dart` now asserts it for
+      every job rather than pinning the numbers alone.
       Run
       [`34250223453`](https://github.com/conceptadev/noir/actions/runs/34250223453)
       then passed all five jobs on exact commit `ce6d987`, with the Windows
