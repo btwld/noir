@@ -33,6 +33,8 @@ void main() {
   const constrainedFixture = 'bin/constrained_server.dart';
   const greetingFixture = 'bin/greeting_server.dart';
   const legacyFixture = 'bin/legacy_elicit_server.dart';
+  const slowFixture = 'bin/slow_server.dart';
+  const manyToolsFixture = 'bin/many_tools_server.dart';
 
   setUpAll(() async {
     // The fixtures resolve first: the inspector depends on that package.
@@ -391,6 +393,77 @@ void main() {
     );
   });
 
+  test('the primitives list fills the rows each grid offers', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      width: 100,
+      height: 30,
+      arguments: ['--', ...await _fixtureCommand(manyToolsFixture)],
+    );
+    addTearDown(driver.quit);
+    await driver.waitFor(const DriverLocator.byKey('primitive:tool01'));
+
+    final tall = await _visibleRowCount(driver);
+    expect(tall, greaterThan(12), reason: 'a tall pane beats the old budget');
+
+    await driver.resize(60, 18);
+    await driver.waitStable();
+    final short = await _visibleRowCount(driver);
+    expect(short, lessThan(tall));
+    expect(short, greaterThan(0));
+
+    // The selected row must survive both directions of the resize. The detail
+    // pane title is the selection, so it proves more than the row's presence.
+    await driver.clickLocator(const DriverLocator.byKey('primitive:tool03'));
+    await driver.waitForText('Echo a note from tool03');
+    await driver.resize(100, 30);
+    await driver.waitStable();
+    expect(await _visibleRowCount(driver), tall);
+    await driver.waitFor(const DriverLocator.byKey('primitive:tool03'));
+    expect(
+      (await driver.waitForText(
+        'Echo a note from tool03',
+      )).contains('Echo a note from tool03'),
+      isTrue,
+    );
+  });
+
+  test('shortcuts keep working while a request is in flight', () async {
+    final driver = await NoirDriver.launch(
+      entryPoint,
+      arguments: ['--', ...await _fixtureCommand(slowFixture)],
+    );
+    addTearDown(driver.quit);
+    await driver.waitFor(const DriverLocator.byKey('primitive:slow'));
+    await driver.clickLocator(const DriverLocator.byKey('primitive:slow'));
+    await _waitForFocusIn(driver, const DriverLocator.byKey('field:note'));
+    await driver.typeText('waiting');
+
+    // Run must own focus when it is disabled: that is the case that used to
+    // leave the tree with no primary focus and silence every binding.
+    await driver.sendKey('tab');
+    expect(
+      (await driver.find(
+        const DriverLocator.byKey('run'),
+      )).hasFocusedDescendant,
+      isTrue,
+    );
+    await driver.sendKey('enter');
+
+    expect(await driver.findAll(const DriverLocator.focused()), isNotEmpty);
+    await driver.sendKey('ctrl-n');
+    await driver.waitForText('No resources');
+    await driver.sendKey('ctrl-p');
+
+    expect(
+      (await driver.waitForText(
+        'slow: waiting',
+        timeout: const Duration(seconds: 30),
+      )).contains('slow: waiting'),
+      isTrue,
+    );
+  });
+
   test(
     'a long modal scrolls every field into view and preserves actions',
     () async {
@@ -485,6 +558,23 @@ Future<void> _answerElicitation(
 final String? _skipReason = Platform.isWindows
     ? 'Child-process inventory uses pgrep, which Windows does not provide.'
     : null;
+
+/// Counts the primitives rows the list currently builds.
+///
+/// `ListView` inflates only its visible window, so this is the number of rows
+/// the pane shows at the current grid.
+Future<int> _visibleRowCount(NoirDriver driver) async {
+  final root = (await driver.tree()).root;
+  if (root == null) return 0;
+  var count = 0;
+  void visit(DriverNode node) {
+    if (node.key?.startsWith('primitive:') ?? false) count++;
+    node.children.forEach(visit);
+  }
+
+  visit(root);
+  return count;
+}
 
 /// The command the inspector runs for [fixture], compiled on first use.
 ///

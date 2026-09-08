@@ -10,6 +10,7 @@ const _safeProcessTests = <String>[
   'test/rendering/paragraph_max_lines_test.dart',
   'test/rendering/render_setter_invalidation_release_test.dart',
   'test/source_package_consumer_test.dart',
+  'test/tools/patch_manager_git_test.dart',
   'test/widgets/geometry_validation_test.dart',
   'test/widgets/text_editing_owner_release_test.dart',
   'test/widgets/text_max_lines_release_test.dart',
@@ -58,7 +59,7 @@ void main() {
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('timeout-minutes: 10'));
+    expect(ubuntu, contains('    timeout-minutes: 20\n'));
     expect(
       ubuntu,
       contains(
@@ -67,12 +68,12 @@ void main() {
     );
     expect(
       ubuntu,
-      contains('timeout-minutes: 8\n        run: dart test --concurrency=1'),
+      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
     );
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('timeout-minutes: 12'));
+    expect(desktop, contains('    timeout-minutes: 20\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
@@ -82,7 +83,7 @@ void main() {
     );
     expect(
       desktop,
-      contains('timeout-minutes: 10\n        run: dart test --concurrency=1'),
+      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
     );
   });
 

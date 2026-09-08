@@ -207,6 +207,7 @@ void main() {
         <String, int>{
           'lib/src/framework/element.dart': 3,
           'lib/src/widgets/flexible.dart': 1,
+          'lib/src/widgets/layout_builder.dart': 1,
           'lib/src/widgets/overlay.dart': 3,
         },
         reason: 'every production deactivation caller must be inventoried',

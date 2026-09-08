@@ -1,3 +1,13 @@
+@TestOn('vm')
+@Tags(['safe-process-spawning'])
+// Every test in this group rebuilds a real repository in `setUp`: a temp
+// directory plus five `git` process spawns, before the test body runs. That
+// costs about 80ms here and 39 tests finish in three seconds, but a loaded
+// Windows runner scanning each file operation has pushed one past the 30s
+// default and failed the suite. Budget for the stall, not for the mean.
+@Timeout(Duration(minutes: 2))
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

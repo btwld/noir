@@ -4,6 +4,8 @@
 
 import 'dart:math' as math;
 
+import 'package:meta/meta.dart';
+
 import '../core/color.dart';
 import '../core/input.dart';
 import '../framework/build_context.dart';
@@ -192,6 +194,13 @@ class _ListViewState extends State<ListView>
     } else if (widget.itemCount != oldWidget.itemCount) {
       _highlighted = _highlighted.clamp(0, _maxIndex);
       _viewport.ensureVisible(_highlighted, _highlighted + 1);
+    } else if (_selectable &&
+        (widget.height != oldWidget.height ||
+            widget.itemExtent != oldWidget.itemExtent)) {
+      // A resized selectable list keeps its highlight on screen. A
+      // plain-scroll list has no highlight to follow, so its window keeps the
+      // offset `_syncViewportExtents` has already clamped.
+      _viewport.ensureVisible(_highlighted, _highlighted + 1);
     }
   }
 
@@ -325,7 +334,7 @@ class _ListViewState extends State<ListView>
     final item = widget.itemBuilder(context, index, selected);
     final itemKey = item.key;
     return SizedBox(
-      key: itemKey is LocalKey ? itemKey : null,
+      key: itemKey is LocalKey ? _ListRowKey(itemKey) : null,
       height: widget.itemExtent,
       child: Container(
         color: selected ? selectedBackground : Color.transparent,
@@ -414,4 +423,20 @@ class _ListViewState extends State<ListView>
     if (row == 0 && _viewport.scrollOffset > 0) return Icons.triangleUp;
     return ' ';
   }
+}
+
+/// The wrapper key a [ListView] derives from a row's own [LocalKey].
+///
+/// The wrapper needs the row's identity so a row that stays in the window
+/// keeps its `State` while the window scrolls or the rows reorder. It must
+/// not reuse the row's key itself: the key would then name two elements, and
+/// a strict driver locator reports that as an ambiguous match. Deriving a
+/// distinct key type keeps reconciliation exact and leaves the row's own key
+/// on the row.
+@immutable
+class _ListRowKey extends ValueKey<LocalKey> {
+  const _ListRowKey(super.value);
+
+  @override
+  String toString() => '_ListRowKey($value)';
 }

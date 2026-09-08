@@ -19,31 +19,42 @@ The inspector imports only `package:noir/noir.dart` and
 
 ## Noir framework gaps
 
-### 1. An application cannot measure the terminal
+### 1. An application could not measure the terminal — fixed
 
 `ListView` occupies exactly its `height` rows
-(`lib/src/widgets/list_view.dart:59-61`), and the application surface exposes
-no viewport size: there is no `LayoutBuilder`, no `MediaQuery`, and no size on
-the `TuiApp` handle. An application that wants a list to fill its pane has to
+(`lib/src/widgets/list_view.dart`), and the application surface exposed no
+viewport size: there was no `LayoutBuilder`, no `MediaQuery`, and no size on
+the `TuiApp` handle. An application that wanted a list to fill its pane had to
 hard-code a row budget for the smallest grid it supports.
 
-*Reproduction.* `lib/src/ui/primitives_pane.dart` sets `primitiveListRows` to
-12, chosen for a 60x18 grid. At 100x30 the list leaves unused rows in the pane.
-The inspector's forms now use bounded scroll viewports, so their field count
-does not push Run or the modal actions outside the pane.
+*Original reproduction.* `lib/src/ui/primitives_pane.dart` set
+`primitiveListRows` to 12, chosen for a 60x18 grid. At 100x30 the list left
+unused rows in the pane.
+
+*Fix.* `package:noir/noir.dart` exports `LayoutBuilder` and
+`LayoutWidgetBuilder`. The builder runs during layout and its child is laid out
+in the same frame, so the constraints it reads are the constraints its child
+receives. `ListView` also follows its highlight when its own height changes, so
+a resized list keeps the selected row on screen.
+
+*Effect on this tool.* The primitives pane derives its list height and its
+scroll indicator from the rows the pane actually offers.
+`primitiveListFallbackRows` remains only for an unbounded host. The inspector's
+forms still use bounded scroll viewports, so their field count does not push
+Run or the modal actions outside the pane.
 
 *Layer.* Widgets and layout.
 
-*Classification.* Noir framework gap.
+*Classification.* Noir framework gap, now closed.
 
-### 2. A keyed `ListView` row resolves to two driver nodes
+### 2. A keyed `ListView` row resolved to two driver nodes — fixed
 
-`ListView._buildRow` copies the row's own `LocalKey` onto the `SizedBox` it
-wraps the row in (`lib/src/widgets/list_view.dart:323-336`), so the key exists
-twice in the element tree. A strict driver locator then fails.
+`ListView._buildRow` used to copy the row's own `LocalKey` onto the `SizedBox`
+it wraps the row in, so the key existed twice in the element tree. A strict
+driver locator then failed.
 
-*Reproduction.* Give a row `key: ValueKey('primitive:calculate')` and run
-`wait key primitive:calculate` through `scripts/noir_drive.dart`:
+*Original reproduction.* Give a row `key: ValueKey('primitive:calculate')` and
+run `wait key primitive:calculate` through `scripts/noir_drive.dart`:
 
 ```
 Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
@@ -51,40 +62,58 @@ Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
   - Text(key: primitive:calculate, ...)
 ```
 
-*Workaround in this tool.* The row builder returns an unkeyed `Align` and puts
-the key on the inner `Text`, so only one node carries it.
+*Fix.* `ListView` now derives a private `_ListRowKey` from the row's key for
+the wrapper, so the wrapper still reconciles by row identity and the row's own
+key names exactly one element. `test/widgets/list_view_test.dart`, group
+*ListView row identity*, covers the single match, state preservation across
+scrolling and reordering, and disposal of a row that leaves the window.
+
+*Effect on this tool.* The row builder puts the key on the `Align` it already
+needed for the full-width highlight. No extra wrapper remains.
 
 *Layer.* Widgets and the drive-mode tree.
 
-*Classification.* Noir framework gap.
+*Classification.* Noir framework gap, now closed.
 
-### 3. Losing the focused node silently disables every `Shortcuts` binding
+### 3. Losing the focused node silently disabled every `Shortcuts` binding — fixed
 
 `Shortcuts.handleKeyEvent` walks ancestors starting at the focused element
 (`lib/src/widgets/shortcuts.dart:110-124`). When nothing owns primary focus
-there is no starting point, so no binding fires and no error is reported.
-Noir repairs escaped focus inside a `Modal`, but the root scope does not
+there is no starting point, so no binding fired and no error was reported.
+Noir repaired escaped focus inside a `Modal`, but the root scope did not
 repair it.
 
-Two ordinary application actions leave the tree unfocused:
+Two ordinary application actions left the tree unfocused:
 
 - Disabling the focused control. `Button(onPressed: null)` while a request is
-  in flight drops focus. `find focused` then reports *No node in this tree has
-  primary focus*, and Ctrl+N stops switching tabs until the user clicks or
-  presses Tab.
+  in flight dropped focus. `find focused` then reported *No node in this tree
+  has primary focus*, and Ctrl+N stopped switching tabs until the user clicked
+  or pressed Tab.
 - Removing the region that owns focus. Switching from a tab whose detail pane
-  holds focus to one that does not build that pane leaves the focused node
+  holds focus to one that does not build that pane left the focused node
   detached.
 
-*Workarounds in this tool.* The Run button stays enabled and
-`InspectorController.run` ignores a second call
-(`lib/src/ui/detail_pane.dart`). `_syncTabFocus` moves focus to the primitives
-list on a tab change, and the list and the console take focus back through
-`autofocus` when their region remounts (`lib/src/ui/inspector_app.dart`).
+*Fix.* `FocusManager` now schedules focus recovery when disabling or removing
+the focused control leaves no primary focus. It records the enclosing scopes at
+the loss, while the chain is still whole, then runs after the synchronous tree
+updates finish. Recovery takes the nearest recorded scope that survived and can
+hold focus, otherwise the first node in traversal order, and leaves focus empty
+when nothing is eligible. A deliberate focus decision supersedes a queued
+recovery: `FocusNode.requestFocus()` and `FocusNode.unfocus()` both drop it, so
+an incoming `autofocus` wins and an intentional clear stays cleared even when
+an earlier involuntary loss is still queued. `test/widgets/focus_recovery_test.dart` covers each case.
+
+*Effect on this tool.* The Run button is disabled while a request is in
+flight, which is what a user expects to see; `InspectorController.run` keeps
+its second-call guard. `_syncTabFocus` still hands focus to the primitives
+list on a tab change, but only when that list is attached: an empty tab builds
+no list at all. `test/tools/mcp_inspector_drive_test.dart`, *shortcuts keep
+working while a request is in flight*, drives the disabled-Run case against a
+fixture that answers slowly.
 
 *Layer.* Focus manager and `Shortcuts`.
 
-*Classification.* Noir framework gap.
+*Classification.* Noir framework gap, now closed.
 
 The schema view (originally Ctrl+O, now Ctrl+G) reproduced this twice more.
 Swapping the form out for the schema removes whatever field owned focus, and
@@ -93,10 +122,10 @@ only Ctrl+C. Enter on a list row
 then threw `FocusNode is not attached to a FocusManager`, because the code
 still focused the first field awaiting input after that field left the tree.
 
-The working pattern is the one `_syncTabFocus` already uses: the incoming
-region takes focus through `autofocus`, and the outgoing swap hands focus to a
-widget that is mounted in both states. Any widget that replaces a focused
-subtree needs both halves.
+The inspector keeps the pattern `_syncTabFocus` uses: the incoming region
+takes focus through `autofocus`, and the outgoing swap hands focus to a widget
+that is mounted in both states. Recovery is the backstop for what an
+application misses, not a replacement for a deliberate focus target.
 
 ### 4. Disposing an attached `FocusNode` throws on the next dispatch
 
@@ -109,12 +138,15 @@ Bad state: FocusNode is not attached to a FocusManager
 ```
 
 The `FocusNode` documentation says to always dispose; it does not say that
-disposal must wait until the node is detached, and there is no public
-`isAttached` to test.
+disposal must wait until the node is detached. `FocusNode.isAttached` is
+public and exported from `package:noir/noir.dart`, so an application can test
+before it acts; the documentation is what does not connect the two.
 
 *Workaround in this tool.* `_syncFieldNodes` keeps one node per field for the
 life of the state, only surrendering focus when a field disappears, and
-disposes every node in `State.dispose`.
+disposes every node in `State.dispose`. `_syncTabFocus` reads
+`FocusNode.isAttached` before it requests focus on the primitives list, which
+an empty tab does not build.
 
 *Layer.* Focus manager.
 
@@ -454,13 +486,14 @@ from Run. A drive regression and an isolated iTerm2 mouse route cover switching
 tools in both directions, typing and running each form, and schema return.
 
 On an already-mounted control, changing `Focus.autofocus` from false to true
-does not schedule a focus request in the current framework. This also affects
-activation of the selected tool when its form is retained. Until the framework
-fix in the focus follow-up, `FormView.didUpdateWidget` completes a new request
-in one guarded microtask after its controls update. It checks the current
-model, requested node, attachment, and mount state; it never retries or steals
-focus on an unchanged request. Package regressions cover all six field kinds,
-request cancellation, and teardown.
+previously did not schedule a focus request. This also affected activation of
+the selected tool when its form was retained. The framework now schedules the
+same guarded autofocus request when an update enables it as on mounting.
+An unchanged true flag preserves existing focus decisions, including when
+nodes are replaced. The inspector's temporary `FormView.didUpdateWidget`
+workaround has been removed. Package regressions cover all six field kinds,
+unchanged requests, cancellation, and teardown; framework tests cover owned
+and supplied nodes, replacement, and deferred request cancellation.
 
 ### 28. Startup exposed tool rows before their forms were ready
 

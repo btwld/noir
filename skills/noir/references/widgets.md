@@ -5,7 +5,7 @@ for each. Sizes are integer character cells; colors are `0.0–1.0` channels.
 
 ## Contents
 
-- [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`
+- [Layout](#layout): `Container`, `Row` / `Column` / `Flex`, `Expanded` / `Flexible`, `Stack` / `Positioned`, `Wrap`, `Padding`, `SizedBox`, `Align`, `ConstrainedBox`, `DecoratedBox`, `LayoutBuilder`
 - [Overlay and menus](#overlay-and-menus): `OverlayPortal`, `Modal`, `MenuAnchor`
 - [Theme](#theme): `Theme`, `ThemeData`
 - [Chrome](#chrome): `Panel`, `Divider`, `Badge`, `ProgressBar`, `Spinner`, `Icons`
@@ -192,6 +192,38 @@ const DecoratedBox({
   Key? key,
 })
 ```
+
+### LayoutBuilder
+
+Builds its child from the `BoxConstraints` its parent offers. This is the only
+widget that reports the available space to an application.
+
+```dart
+const LayoutBuilder({ required LayoutWidgetBuilder builder, Key? key })
+
+typedef LayoutWidgetBuilder =
+    Widget Function(BuildContext context, BoxConstraints constraints);
+```
+
+The builder runs during layout and its result is laid out in the same frame. It
+runs on the first layout, on a constraint change, on a widget update, on an
+inherited dependency change, and on reassembly; repeated layout at unchanged
+constraints does not run it. An unbounded axis reports a `null` maximum, so
+supply a fallback:
+
+```dart
+LayoutBuilder(
+  builder: (context, constraints) => ListView(
+    itemCount: items.length,
+    height: constraints.maxHeight ?? 8,
+    itemBuilder: buildRow,
+  ),
+)
+```
+
+Place it inside a region whose size is already bounded — a `Panel`, an
+`Expanded`, or a `SizedBox`. Do not do work in the builder that a repeated run
+would duplicate.
 
 ---
 

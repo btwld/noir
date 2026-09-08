@@ -183,6 +183,8 @@ void main() {
       final driver = await NoirDriver.launch('example/focus_form.dart');
       addTearDown(driver.quit);
 
+      // The driver service can be ready before autofocus and layout finish.
+      expect(await driver.waitStable(), isTrue);
       await driver.clickLocator(const DriverLocator.byKey('save'));
       final frame = await driver.capture();
       expect(frame.contains('Name error: Enter your name.'), isTrue);

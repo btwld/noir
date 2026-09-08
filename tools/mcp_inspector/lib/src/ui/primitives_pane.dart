@@ -2,12 +2,12 @@ import 'package:noir/noir.dart';
 
 import '../model/inspector_controller.dart';
 
-/// Greatest number of rows the primitives list shows at once.
+/// Rows the primitives list falls back to when its pane is unbounded.
 ///
-/// `ListView` occupies exactly its `height`, and `package:noir/noir.dart`
-/// exposes no terminal size to an application, so this budget is chosen for
-/// the 60x18 floor the drive checks use.
-const primitiveListRows = 12;
+/// The pane is bounded in the inspector layout, so `LayoutBuilder` reports a
+/// real height and this value is never used there. It keeps the pane usable
+/// if a host embeds it in an unbounded column.
+const primitiveListFallbackRows = 12;
 
 /// The left pane: the rows of the active tab.
 ///
@@ -41,34 +41,44 @@ class PrimitivesPane extends StatelessWidget {
       width: 26,
       child: count == 0
           ? Text(_empty, style: TextStyle(color: theme.textMuted))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ListView(
-                  itemCount: count,
-                  height: count < primitiveListRows ? count : primitiveListRows,
-                  selectedIndex: controller.selectedIndex,
-                  focusNode: focusNode,
-                  showScrollIndicator: count > primitiveListRows,
-                  autofocus: true,
-                  itemBuilder: _buildRow,
-                  onChanged: controller.select,
-                  onSelect: onActivate,
-                ),
-                const Expanded(child: SizedBox()),
-              ],
+          : LayoutBuilder(
+              builder: (context, constraints) =>
+                  _buildList(count, constraints.maxHeight),
             ),
     );
   }
 
-  // The key sits on an inner child on purpose. `ListView` copies a row's own
-  // `LocalKey` onto the `SizedBox` it wraps the row in, so a keyed row would
-  // resolve to two nodes for a strict driver locator.
+  /// Fills [availableRows] of the pane with the list, or the whole list when
+  /// it is shorter. An unbounded pane falls back to a fixed budget.
+  Widget _buildList(int count, int? availableRows) {
+    final budget = availableRows ?? primitiveListFallbackRows;
+    final rows = count < budget ? count : budget;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ListView(
+          itemCount: count,
+          height: rows,
+          selectedIndex: controller.selectedIndex,
+          focusNode: focusNode,
+          showScrollIndicator: count > rows,
+          autofocus: true,
+          itemBuilder: _buildRow,
+          onChanged: controller.select,
+          onSelect: onActivate,
+        ),
+        const Expanded(child: SizedBox()),
+      ],
+    );
+  }
+
+  // `Align` fills the row, so the list paints its highlight across the whole
+  // pane rather than only behind the label.
   Widget _buildRow(BuildContext context, int index, bool selected) => Align(
+    key: ValueKey<String>(_rowKey(index)),
     alignment: Alignment.centerLeft,
     child: Text(
       _labelAt(index),
-      key: ValueKey<String>(_rowKey(index)),
       maxLines: 1,
       softWrap: false,
       overflow: TextOverflow.ellipsis,

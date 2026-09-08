@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' as io;
 import 'dart:math' as math;
 
@@ -90,6 +91,13 @@ void main() {
         width: 72,
       );
 
+      app.pumpFrame();
+      // Model a frame timer ready to advance the introductory burst. Capturing
+      // the initial frame must finish before this event, even on a slow runner.
+      final queuedFrame = Timer(Duration.zero, () {
+        app.pumpFrame(const Duration(milliseconds: 300));
+      });
+
       try {
         await _settle(app);
         final frame = app.captureFrame();
@@ -125,6 +133,10 @@ void main() {
         expect(stageTop - title.y, greaterThanOrEqualTo(2));
         expect(footprintTop - particleBottom, 2);
         expect(
+          simulation.particles.map((particle) => particle.age),
+          everyElement(0),
+        );
+        expect(
           help.y - (footprintTop + _heartFootprintHeight - 1),
           greaterThanOrEqualTo(3),
         );
@@ -134,6 +146,7 @@ void main() {
           top: footprintTop,
         );
       } finally {
+        queuedFrame.cancel();
         app.dispose();
       }
     },
@@ -484,7 +497,8 @@ class _SimulationSwapHostState extends State<_SimulationSwapHost> {
 }
 
 Future<void> _settle(TuiTestApp app) async {
-  await Future<void>.delayed(Duration.zero);
-  await Future<void>.delayed(Duration.zero);
+  app.pumpFrame();
+  // Install autofocus without admitting wall-clock animation frame timers.
+  await Future<void>.microtask(() {});
   app.pumpFrame();
 }

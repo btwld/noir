@@ -1,10 +1,12 @@
 // ignore_for_file: avoid_positional_boolean_parameters
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/framework/element.dart';
 import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 import '../helpers/key_driver.dart';
+import '../helpers/test_element_host.dart';
 import '../helpers/tui_test_app.dart';
 import '../helpers/widget_tester.dart';
 
@@ -308,6 +310,155 @@ void main() {
     });
   });
 
+  group('ListView row identity', () {
+    test('a keyed row carries its key on exactly one element', () {
+      final tester = WidgetTester();
+      try {
+        tester.pumpWidget(
+          ListView(
+            itemCount: 3,
+            height: 3,
+            itemBuilder: (context, index, selected) =>
+                Text('item $index', key: ValueKey<String>('row-$index')),
+          ),
+        );
+        expect(_countKey(tester.element!, const ValueKey<String>('row-1')), 1);
+      } finally {
+        tester.dispose();
+      }
+    });
+
+    test('a keyed row keeps its State while it stays in the window', () {
+      final log = _RowStateLog();
+      final viewport = ViewportController();
+      final host = TestElementHost();
+      try {
+        host
+          ..mount(_keyedList(log: log, itemCount: 6, controller: viewport))
+          ..pumpFrame(constraints: _rowConstraints);
+        final before = log.stateOf('b');
+        viewport.jumpTo(1);
+        host.pumpFrame(constraints: _rowConstraints);
+        expect(log.stateOf('b'), same(before));
+        expect(log.disposed, ['a']);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('reordering keyed rows moves their State with the key', () {
+      final log = _RowStateLog();
+      final viewport = ViewportController();
+      final host = TestElementHost();
+      try {
+        host
+          ..mount(_keyedList(log: log, itemCount: 3, controller: viewport))
+          ..pumpFrame(constraints: _rowConstraints);
+        final before = log.stateOf('c');
+        host
+          ..update(
+            _keyedList(
+              log: log,
+              itemCount: 3,
+              controller: viewport,
+              reversed: true,
+            ),
+          )
+          ..pumpFrame(constraints: _rowConstraints);
+        expect(log.stateOf('c'), same(before));
+        expect(log.disposed, isEmpty);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('a row leaving the window disposes its State', () {
+      final log = _RowStateLog();
+      final viewport = ViewportController();
+      final host = TestElementHost();
+      try {
+        host
+          ..mount(_keyedList(log: log, itemCount: 6, controller: viewport))
+          ..pumpFrame(constraints: _rowConstraints);
+        viewport.jumpTo(3);
+        host.pumpFrame(constraints: _rowConstraints);
+        expect(log.disposed..sort(), ['a', 'b', 'c']);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+  });
+
+  group('ListView height changes', () {
+    test('a shorter list scrolls the highlight back into view', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      try {
+        host
+          ..mount(_heightList(controller: viewport, height: 6))
+          ..pumpFrame(constraints: _rowConstraints);
+        expect(viewport.scrollOffset, 4);
+
+        host
+          ..update(_heightList(controller: viewport, height: 3))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 7);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('a resized plain list keeps the window where the user left it', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      Widget build(int height) => ListView(
+        itemCount: 10,
+        height: height,
+        controller: viewport,
+        itemBuilder: (context, index, selected) => Text('item $index'),
+      );
+      try {
+        host
+          ..mount(build(3))
+          ..pumpFrame(constraints: _rowConstraints);
+        viewport.jumpTo(5);
+        host
+          ..update(build(4))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 5);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+
+    test('a taller list keeps a scroll position its content allows', () {
+      final host = TestElementHost();
+      final viewport = ViewportController();
+      try {
+        host
+          ..mount(_heightList(controller: viewport, height: 3))
+          ..pumpFrame(constraints: _rowConstraints);
+        expect(viewport.scrollOffset, 7);
+
+        host
+          ..update(_heightList(controller: viewport, height: 8))
+          ..pumpFrame(constraints: _rowConstraints);
+
+        expect(viewport.scrollOffset, 2);
+      } finally {
+        host.dispose();
+        viewport.dispose();
+      }
+    });
+  });
+
   group('ListView plain scroll mode', () {
     test('ArrowDown scrolls the window without a selection callback', () async {
       final recorder = _Recorder();
@@ -453,4 +604,91 @@ Future<void> _settle(TuiTestApp app) async {
   await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
   app.pumpFrame();
+}
+
+/// A ten-row list whose last row is selected, used to watch the window follow
+/// the highlight as the list height changes.
+Widget _heightList({
+  required ViewportController controller,
+  required int height,
+}) => ListView(
+  itemCount: 10,
+  height: height,
+  controller: controller,
+  selectedIndex: 9,
+  itemBuilder: (context, index, selected) => Text('item $index'),
+);
+
+/// Constraints wide enough for a three-row window of short labels.
+const _rowConstraints = BoxConstraints(maxWidth: 20, maxHeight: 10);
+
+/// Row identifiers used by the keyed-row identity tests, in list order.
+const _rowIds = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+/// Builds a three-row window of keyed [_RowProbe] rows over [itemCount] items.
+///
+/// [reversed] keeps the same identifiers and reverses only their order, so a
+/// rebuild reorders keyed rows without adding or removing any.
+Widget _keyedList({
+  required _RowStateLog log,
+  required int itemCount,
+  required ViewportController controller,
+  bool reversed = false,
+}) => ListView(
+  itemCount: itemCount,
+  height: 3,
+  controller: controller,
+  itemBuilder: (context, index, selected) {
+    final id = _rowIds[reversed ? itemCount - 1 - index : index];
+    return _RowProbe(key: ValueKey<String>(id), id: id, log: log);
+  },
+);
+
+/// Counts the elements whose widget carries [key].
+int _countKey(Element element, Key key) {
+  var count = element.widget.key == key ? 1 : 0;
+  for (final child in element.children) {
+    count += _countKey(child, key);
+  }
+  return count;
+}
+
+/// Records which row [State] currently serves each identifier, and which
+/// identifiers have been disposed.
+class _RowStateLog {
+  final Map<String, State<_RowProbe>> _current = {};
+
+  /// Identifiers whose row [State] the framework has disposed, in order.
+  final List<String> disposed = [];
+
+  /// The [State] that most recently built the row named [id].
+  State<_RowProbe>? stateOf(String id) => _current[id];
+}
+
+/// A row that reports its [State] identity and disposal to [log].
+class _RowProbe extends StatefulWidget {
+  const _RowProbe({required this.id, required this.log, super.key});
+
+  /// Identifier this row shows and reports under.
+  final String id;
+
+  /// Log this row reports to.
+  final _RowStateLog log;
+
+  @override
+  State<_RowProbe> createState() => _RowProbeState();
+}
+
+class _RowProbeState extends State<_RowProbe> {
+  @override
+  void dispose() {
+    widget.log.disposed.add(widget.id);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    widget.log._current[widget.id] = this;
+    return Text(widget.id);
+  }
 }
