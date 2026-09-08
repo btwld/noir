@@ -56,6 +56,16 @@ Architecture tests in `test/architecture` are executable package boundaries,
 not snapshots of old plans. Visual goldens use `.buffer.txt` plus style and
 cursor sidecars by default. Prefer `BufferMatchers` for cell assertions.
 
+`tools/mcp_inspector` is a separate package with its own format, analyze, and
+test commands, and the root analysis options exclude `tools/**`. Its fixture
+servers live in `tools/mcp_fixtures`, which depends on `package:mcp_dart`
+alone: a fixture that inherited Noir's native-assets build hook would let
+`dart run` write hook progress onto the MCP protocol channel. Two root tests
+keep both packages in the ordinary suite:
+`test/tools/mcp_inspector_package_test.dart` runs their gates as subprocesses,
+and `test/tools/mcp_inspector_drive_test.dart` drives the real screen against
+the fixture servers.
+
 For behavior changes:
 
 1. Add a focused test that fails for the intended reason.

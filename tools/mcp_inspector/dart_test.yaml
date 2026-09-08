@@ -1,0 +1,7 @@
+test_on: vm
+
+timeout: 60s
+
+tags:
+  safe-process-spawning:
+    skip: false
