@@ -8,10 +8,10 @@ export function PrereleaseNotice({ children }: PrereleaseNoticeProps) {
   return (
     <aside className="prerelease-notice" aria-label="Prerelease notice">
       <strong>Prerelease</strong>
-      <span>
+      <div>
         {children ??
           'Noir is an alpha preview. APIs and platform guarantees may change before 1.0.'}
-      </span>
+      </div>
     </aside>
   );
 }

@@ -17,7 +17,7 @@ import repository helpers or `package:noir/src/**` into application tests.
 | The public app tree can mount and dispose          | `runTuiApp(..., headless: true)`                        |
 | A live repository example responds and paints      | Repository-only Noir Driver                             |
 | Noir layout, cells, parser input, or golden output | The repository contributor harness that owns that layer |
-| A terminal accepts raw input or an escape protocol | A separately authorized real-terminal check             |
+| A terminal accepts raw input or an escape protocol | A check in the target terminal                          |
 
 This split keeps fast application tests independent of terminal rendering and
 keeps framework-only helpers out of the published API.
@@ -91,8 +91,8 @@ Always dispose the app handle, focus nodes, editing and scroll controllers,
 notifiers, subscriptions, and animation controllers in the layer that created
 them.
 
-Application tests stop here. The rest of this page is for inspecting a live
-repository checkout or contributing to Noir itself.
+The sections below cover tools available in a Noir repository checkout.
+They are useful when inspecting an example or contributing to the framework.
 
 ## Inspect a live app with Noir Driver
 

@@ -195,6 +195,11 @@ The active route uses a narrow ink marker instead of a filled block. Section
 labels describe reader intent: Start, Build, Understand, and Reference. Final
 links name a concrete next task rather than saying only “Learn more.”
 
+Tutorial checkpoints use native disclosure controls with step-specific labels
+and targets at least 44px tall. Their headings use compact navigation type,
+without article-heading margins. Keep each screenshot and its caption in one
+figure, with a thin rule and small sans-serif caption text.
+
 ## Shape, spacing, and motion
 
 Geometry is square. Separation comes from whitespace, 1px rules, and the

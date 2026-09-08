@@ -334,6 +334,7 @@ async function runSmoke() {
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
       ['/docs/state-lifecycle', '#let-one-state-own-the-field', 1],
       ['/docs/hooks', '#preserve-hook-order', 1],
+      ['/docs/signals', '#observe-each-source-explicitly', 1],
       ['/docs/signals-task-list', 'main img', 6],
       ['/docs/input-focus', '#use-local-pointer-coordinates', 1],
       ['/docs/testing', 'main table', 1],
@@ -439,6 +440,21 @@ async function runSmoke() {
       .getByRole('link', { name: 'Build a task list', exact: true })
       .click();
     await page.waitForURL('**/docs/signals-task-list/');
+    assert.equal(
+      await page.locator('main figure:has(img) figcaption').count(),
+      6,
+      'each walkthrough screenshot must retain its caption',
+    );
+    assert.equal(
+      await page
+        .getByRole('link', {
+          name: 'View source on GitHub',
+          includeHidden: true,
+        })
+        .getAttribute('href'),
+      'https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md',
+      'the source link must open the canonical guide rather than the generated page',
+    );
     for (const picture of await page.locator('main img').all()) {
       await picture.scrollIntoViewIfNeeded();
       await picture.evaluate((image) => image.decode());
@@ -450,7 +466,21 @@ async function runSmoke() {
     const finalCheckpoint = page.locator('details').filter({
       has: page.getByText('Complete code after step 5', { exact: true }),
     });
-    await finalCheckpoint.locator('summary').click();
+    const checkpointControl = finalCheckpoint.locator('summary');
+    await checkpointControl.focus();
+    await checkpointControl.press('Enter');
+    assert.equal(
+      await finalCheckpoint.evaluate((element) => element.hasAttribute('open')),
+      true,
+      'complete code must open with the keyboard',
+    );
+    const controlHeight = await checkpointControl.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    assert.ok(
+      controlHeight >= 44 && controlHeight < 80,
+      'mobile code controls must have a usable target without article-heading margins',
+    );
     assert.equal(
       // Shiki renders otherwise empty lines with a space to preserve height.
       (await finalCheckpoint.locator('pre').innerText())

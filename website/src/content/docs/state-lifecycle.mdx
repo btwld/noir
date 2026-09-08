@@ -63,7 +63,7 @@ class _FilterFieldState extends State<FilterField> {
 }
 ```
 
-The rule is mechanical: the layer that constructs a `FocusNode`,
+The code that creates a `FocusNode`,
 `TextEditingController`, `ScrollController`, notifier, subscription, or
 `AnimationController` also disposes it. Finalizers are a safety net, not the
 normal lifecycle.
@@ -108,6 +108,9 @@ paints the tree. Override it only when code in `initState` produced a cached
 value that must be recalculated; call `super.reassemble()` first.
 
 ## Retire a resource the old children still read
+
+`deferDispose` requires the unreleased Noir alpha.5. Use a
+[local checkout](/api#evaluate-repository-source) to try it.
 
 `didUpdateWidget` sometimes replaces a resource that the descendants of the
 previous build still hold — a controller, a model, a subscription source.

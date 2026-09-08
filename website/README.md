@@ -78,6 +78,9 @@ Edit those sources, then run `node scripts/sync-signals-guide.mjs` from
 the sync. Commit the regenerated `src/content/docs/signals-task-list.mdx` and
 `public/demos/signals-task-list/` images with the source changes. While the dev
 server is already running, rerun the sync after editing the source guide.
+The generated page sets `sourceUrl` to the canonical Markdown. The MDX page
+wrapper uses that URL for **View source on GitHub**; other pages keep Nextra's
+default source path.
 
 Each fact should have one primary home:
 

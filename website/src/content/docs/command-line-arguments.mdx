@@ -26,9 +26,8 @@ needs flags, options, generated usage, or subcommands:
 dart pub add args
 ```
 
-Noir does not re-export that package or add another command model around it.
-The parser, commands, and typed launch values below belong to the consuming
-application; they are not new Noir framework classes.
+Your application owns the parser, commands, and typed launch values. Noir
+receives the widget tree after parsing succeeds.
 
 ## Choose the smallest parser
 
@@ -36,7 +35,7 @@ For one application root whose initial configuration changes through flags or
 positional values, use `ArgParser` directly. Parse once in `main`, convert the
 result into an application-owned type, and pass that value to the root widget.
 
-Use `CommandRunner` only when a command name selects a genuinely distinct
+Use `CommandRunner` when a command name selects a separate
 shell operation or startup workflow, such as `patcher review` versus
 `patcher search`. A subcommand is not in-app navigation: after Noir mounts,
 ordinary widget state owns tabs, pages, dialogs, and command palettes.
@@ -159,9 +158,8 @@ sealed result type such as `PatcherLaunch`. Each leaf returns one subtype, and
 
 That product root may own shared themes, services, overlays, and subsequent
 in-app navigation. It should not receive `arguments`, `ArgResults`, or a
-`CommandRunner`: startup parsing is already complete. A generic Noir
-`CommandApp` would add CLI policy without adding a new application-lifecycle
-invariant, so Noir deliberately leaves this composition to the application.
+`CommandRunner`: startup parsing is already complete. Keep that startup logic in the application so each subcommand can choose
+its own options and root widget.
 
 Run it normally:
 

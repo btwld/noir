@@ -89,11 +89,9 @@ the button. Each activation changes the count by one.
   sourceHref="https://github.com/conceptadev/noir/blob/main/example/counter.dart"
 />
 
-This recording uses the repository’s complete counter, which adds application
-chrome, arrow keys, `+`, `-`, and explicit pointer handling to the smaller app
-above. The capture runs Noir’s production ANSI parser and retained render
-pipeline against OpenTUI’s non-terminal testing renderer. It is a reproducible
-framework capture, not a hand-written mock or evidence from a real terminal.
+The recording shows the repository’s larger counter, with a border and extra
+keyboard controls. It uses real Noir rendering captured in headless mode; the
+smaller app above has the same increment behavior.
 
 If the keyboard does nothing, focus the terminal window. The Button has
 `autofocus: true`, so Noir gives it primary focus when the tree mounts. Press
@@ -105,8 +103,8 @@ For a normal launch without the source watcher, run
 ## Change the running app
 
 Leave the development runner open. Change `Count:` to `Total:` in the `Text`
-widget and save the file. The running frame should update to `Total: 1`; the
-current value and focus stay in place.
+widget and save the file. The label changes while the current count and focus
+stay in place. If the count was `1`, you should now see `Total: 1`.
 
 The runner watches Dart files under `lib/` and beside the entry point. It asks
 the Dart VM to swap the changed sources, then tells Noir to rebuild, lay out,
@@ -126,3 +124,7 @@ or read [State and lifecycle](/docs/state-lifecycle) before adding controllers,
 subscriptions, or animation. The repository’s
 [complete Counter](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
 adds arrow keys, `+`, `-`, and explicit pointer handling.
+
+To try reusable state hooks, continue with [Hooks](/docs/hooks) and then
+[Build a task list](/docs/signals-task-list). Those guides use the unreleased
+`noir_signals` companion and currently require a repository checkout.

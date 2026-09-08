@@ -1,39 +1,23 @@
 ---
 title: Signals
-description: Connect the signals_core reactive engine to Noir rebuilds with explicit ownership and observation.
+description: Keep derived and shared state in sync with noir_signals.
 ---
 
 # Signals
 
-The optional companion package `noir_signals` connects the
-[`signals_core`](https://pub.dev/packages/signals_core) reactive engine to
-Noir’s widget lifecycle. Signals owns the reactive graph. Noir keeps owning
-scheduling, reconciliation, layout, paint recording, and native resources.
+Use a signal for state that other values depend on. In a task list, the tasks
+are a signal and the remaining count is computed from them. Completing a task
+updates both the checkbox and the count.
 
-A subscription callback never runs a builder, flushes a frame, or paints. It
-only asks Noir to rebuild, and Noir’s scheduler coalesces repeated requests
-into one frame.
+The optional `noir_signals` package connects
+[`signals_core`](https://pub.dev/packages/signals_core) to Noir widgets. For a
+single local value with no derived state, `useState` is usually enough.
 
-## Add the companion package
-
-The companion and its required Noir alpha.5 are unpublished candidates. For
-now, use the repository checkout commands below. After publication, add both
-dependencies to your application:
-
-```yaml
-dependencies:
-  noir: ^0.0.1-alpha.5
-  noir_signals: ^0.0.1-alpha.0
-```
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-```
-
-One entrypoint carries the hooks, the signal hooks, and the upstream
-primitives an application normally needs: `Signal`, `Computed`, `signal`,
-`computed`, `effect`, `batch`, and `untracked`.
+<PrereleaseNotice>
+  `noir_signals` and its required Noir alpha.5 are not yet on pub.dev. These
+  examples need a checkout of the private Noir repository. For your own project,
+  use the [local dependency setup](/api#evaluate-repository-source).
+</PrereleaseNotice>
 
 ## Run the task list
 
@@ -59,6 +43,16 @@ contains the runnable files and their command index.
 
 ## Own local reactive state
 
+Import widgets and the companion’s hooks in the same file:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+The companion also exports the upstream `Signal`, `Computed`, `signal`,
+`computed`, `effect`, `batch`, and `untracked` APIs.
+
 ```dart
 class Counter extends HookWidget {
   const Counter({super.key});
@@ -81,9 +75,9 @@ class Counter extends HookWidget {
 }
 ```
 
-`useState` stays simpler for a plain local counter. Signals earn their place
-when state is derived or shared: filtered lists, selected-item details, counts,
-and progress across several widgets.
+`useSignal` creates and observes the counter above. Reading `count.value`
+gets its current value; assigning to it asks Noir to rebuild the widget.
+Signals become more useful when you add a value derived from that state.
 
 ## Derive a remaining count
 
@@ -230,14 +224,17 @@ upstream Signals timing. See the package’s
 [effects contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md#effects)
 for the complete cleanup and error rules.
 
-## What this is not
+## Observe each source explicitly
 
-Reads inside event handlers, asynchronous callbacks, and deferred child
-builders are outside any observation these hooks install. A widget that reads
-`model.value.value` without one of the APIs above is not reactive.
+Reading a borrowed signal’s `.value` does not subscribe a widget to it. Use
+`useSignalValue` or `SignalValueBuilder` to request rebuilds when it changes.
+Reads in event handlers, asynchronous callbacks, and deferred child builders
+also do not create widget subscriptions.
 
-There is no automatic whole-build tracking yet. Observe explicitly with
-`useSignalValue` or `SignalValueBuilder`.
+Noir does not automatically track every signal read during a build.
+Subscription callbacks request rebuilds; Noir schedules the frame and combines
+repeated requests. Signals owns reactive dependencies, while Noir owns the
+widget tree, layout, painting, and native resources.
 
 Read [Hooks](/docs/hooks) for the lifecycle rules the signal hooks share, and
 run the repository’s

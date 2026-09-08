@@ -114,6 +114,9 @@ composition surface.
 
 ## Read the offered space with LayoutBuilder
 
+`LayoutBuilder` requires the unreleased Noir alpha.5. Use a
+[local checkout](/api#evaluate-repository-source) to try this section.
+
 Every other widget declares a size and lets layout resolve it. `LayoutBuilder`
 is the one place an application reads the `BoxConstraints` its parent offers,
 so a region can show more rows in a tall pane and fewer in a short one.

@@ -602,6 +602,68 @@ main[data-pagefind-body='true'] blockquote {
   color: var(--quiet);
 }
 
+main[data-pagefind-body='true'] details {
+  border: 0;
+  border-block: 1px solid var(--rule);
+  border-radius: 0;
+  margin-block: 1rem;
+}
+
+main[data-pagefind-body='true'] summary {
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.91rem;
+  line-height: 1.5;
+  min-height: 44px;
+  padding: 0.75rem 0.25rem;
+}
+
+main[data-pagefind-body='true'] summary h3 {
+  font: inherit;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+}
+
+main[data-pagefind-body='true'] .prerelease-notice p {
+  margin: 0;
+}
+
+main[data-pagefind-body='true'] summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+main[data-pagefind-body='true'] figure:has(img) {
+  border: 1px solid var(--rule);
+  margin-block: 2rem;
+}
+
+main[data-pagefind-body='true'] figure:has(img) > p {
+  margin: 0;
+  max-width: none;
+}
+
+main[data-pagefind-body='true'] figure img {
+  display: block;
+  height: auto;
+  margin: 0;
+  width: 100%;
+}
+
+main[data-pagefind-body='true'] figure:has(img) figcaption {
+  border-top: 1px solid var(--rule);
+  color: var(--quiet);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  padding: 0.8rem 1rem;
+}
+
+main[data-pagefind-body='true'] figcaption p {
+  margin: 0;
+}
+
 main[data-pagefind-body='true'] code {
   font-size: 0.86em;
 }

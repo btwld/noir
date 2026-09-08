@@ -198,8 +198,9 @@ For chronological output, construct its controller with `followTail: true`.
 It follows layout extent changes while at the end, detaches when scrolled above
 the end, and reattaches when returned to the maximum extent.
 
-Stable `ValueKey`s belong in repository drive scripts, not in ordinary app
-input code. See [Testing](/docs/testing) for Driver inspection, the
+Use stable `ValueKey`s to preserve row identity when items move or disappear.
+The repository’s driver can also use those keys to find controls. See
+[Testing](/docs/testing) for Driver inspection, the
 [Widget catalog](/docs/widget-catalog#input-and-selection) for the built-in
 interactive controls, and the repository’s
 [Focus Form](https://github.com/conceptadev/noir/blob/main/example/focus_form.dart)

@@ -1,38 +1,23 @@
 ---
 title: Hooks
-description: Use the noir_signals HookWidget surface without hiding state identity, external resources, or cleanup.
+description: Keep local state and manage controllers, timers, and cleanup with noir_signals hooks.
 ---
 
 # Hooks
 
-Hooks package one local state or lifecycle concern into a reusable function.
-They are optional, and they run on Noir’s normal retained widget lifecycle.
+Hooks let a widget keep local state and manage resources without a separate
+`State` class. Use `useState` for a counter, `useTextEditingController` for an
+editable field, or `useEffect` to start and clean up a timer.
 
-## Add the companion package
-
-Hooks live in the optional companion package `noir_signals`, not in `noir`:
-
-The companion and its required Noir alpha.5 are unpublished candidates. Use
-the repository examples below until publication; the intended application
-dependencies are:
-
-```yaml
-dependencies:
-  noir: ^0.0.1-alpha.5
-  noir_signals: ^0.0.1-alpha.0
-```
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-```
-
-Files that do not use `HookWidget`, `HookBuilder`, or a `use...` function need
-only `package:noir/noir.dart`.
+<PrereleaseNotice>
+  Hooks are part of the optional `noir_signals` package. It requires the
+  unreleased Noir alpha.5, so these examples currently need a repository
+  checkout and access to the private Noir repository.
+</PrereleaseNotice>
 
 ## Start with a runnable example
 
-From the repository root, run the hooks counter:
+With Dart 3.10 or later, run these commands from the Noir repository root:
 
 ```sh
 dart pub get
@@ -40,15 +25,27 @@ dart run packages/noir_signals/example/counter.dart
 ```
 
 The [counter source](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)
-uses `HookWidget` and `useState`. Enter, Space, or a click increments the
-count; Ctrl+C exits. No effect is needed for an input-driven update.
+uses `HookWidget` and `useState`. Press Enter or Space, or click the button,
+to increment the count. Ctrl+C exits.
 
-Then follow [Build a task list](/docs/signals-task-list) to
-combine `useTextEditingController`, `useState`, `useSignal`, and `useComputed`.
-The walkthrough pairs each code change with a screenshot and a complete
-checkpoint. Browse the
+For a larger app, follow [Build a task list](/docs/signals-task-list). You’ll
+add an editable field, task state, a computed count, and a visibility filter,
+with code and a screenshot at each step. The
 [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
-for all three runnable apps.
+contains all three runnable apps.
+
+## Import hooks alongside Noir
+
+The checkout resolves both packages together. In a file that uses hooks, import:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+Files that only use Noir widgets need just `package:noir/noir.dart`.
+To use the companion in your own project before publication, follow the
+[local dependency setup](/api#evaluate-repository-source).
 
 ## Tie cleanup to the resource
 
@@ -90,11 +87,11 @@ class PollingBadge extends HookWidget {
 ```
 
 `useState` owns and observes a `ValueNotifier`. Changing `ticks.value` requests
-a rebuild. The Timer callback runs after the effect has returned, so the state
-change is valid.
+a rebuild. The timer callback runs later, after the effect has returned, so it can
+update the state.
 
-Effects run synchronously during build. Use them to acquire, synchronize, and
-release external resources—not to handle a Button press. An effect or cleanup
+Effects run synchronously during build. Use them to start external work and
+return its cleanup. Handle button presses in `onPressed`. An effect or cleanup
 must not synchronously update an observed hook value.
 
 ## Preserve hook order
@@ -103,7 +100,7 @@ Stateful hooks use call order as identity. Call them unconditionally at the top
 level of `build`, in the same order on every build. Do not call a hook from a
 branch, loop, event callback, effect, or cleanup function.
 
-Keys identify an individual hook slot. When the keys for `useEffect` change,
+Keys control when a hook replaces its retained resource. When the keys for `useEffect` change,
 Noir installs the new effect and releases the previous resource. Without keys,
 the cleanup and effect run on every build. An empty key list keeps the resource
 for the life of that mounted hook slot.

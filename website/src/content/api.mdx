@@ -29,10 +29,12 @@ responsibility.
       <strong>
         HookWidget, reusable lifecycle hooks, and Signals reactive state.
       </strong>{' '}
-      A separate optional package. Add <code>noir_signals</code> to the
-      application and import it alongside <code>noir.dart</code> when a hook
-      owns a local lifecycle concern or a widget observes a signal.
-      <span className="api-surface-status">Supported companion package</span>
+      A separate optional package for local state, controllers, cleanup, and
+      reactive values. See [Hooks](/docs/hooks) and [Signals](/docs/signals) for
+      working examples.
+      <span className="api-surface-status">
+        Unpublished companion candidate
+      </span>
     </dd>
   </div>
   <div>
@@ -78,13 +80,30 @@ prerelease, so match the reference to the version in your `pubspec.lock`.
 
 ## Evaluate repository source
 
-To try an unreleased API from a repository checkout, use a path dependency:
+To try an unreleased API, use a local checkout of the private Noir repository.
+The paths below assume it sits beside your application directory:
 
 ```yaml
 dependencies:
   noir:
     path: ../noir
 ```
+
+For hooks or Signals, also point to the companion in that same checkout:
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals:
+    path: ../noir/packages/noir_signals
+dependency_overrides:
+  noir:
+    path: ../noir
+```
+
+Run `dart pub get` from your application directory. Both packages come from
+one revision; `noir_signals` requires Noir alpha.5, which is not yet published.
+The override also routes the companion’s Noir dependency to your checkout.
 
 Do not copy generated bindings, bundled native artifacts, or framework-owned
 internals into an application to reach a newer feature. Either stay on the
