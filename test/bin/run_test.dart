@@ -198,11 +198,14 @@ class Probe extends StatelessWidget {
         diagnostics: runner.output,
       );
 
-      final unchangedStamp = DateTime.fromMillisecondsSinceEpoch(
-        DateTime.now().millisecondsSinceEpoch ~/ 1000 * 1000,
+      // An old timestamp makes the VM's modification-time filter relevant on
+      // every run. Each edit changes size, so the watcher must still detect it.
+      final unchangedStamp = DateTime.utc(2000);
+      await _replaceWithTimestamp(
+        label,
+        'String frameLabel() => ;\n',
+        unchangedStamp,
       );
-      await label.writeAsString('String frameLabel() => ;\n');
-      await label.setLastModified(unchangedStamp);
       await _waitUntil(
         () => log.readAsStringSync().contains('reload rejected'),
         what: 'the rejected reload diagnostic',
@@ -210,8 +213,11 @@ class Probe extends StatelessWidget {
       );
       expect(runner.hasExited, isFalse, reason: runner.output.toString());
 
-      await label.writeAsString("String frameLabel() => 'after';\n");
-      await label.setLastModified(unchangedStamp);
+      await _replaceWithTimestamp(
+        label,
+        "String frameLabel() => 'after';\n",
+        unchangedStamp,
+      );
       await _waitUntil(
         () => runner.frames.contains('FRAME:after'),
         what: 'recovery after the rejected reload',
@@ -219,10 +225,24 @@ class Probe extends StatelessWidget {
       );
 
       expect(await runner.exitCode, 17, reason: runner.output.toString());
+      expect(runner.frames, ['FRAME:before', 'FRAME:after']);
       expect(log.readAsStringSync(), contains('reloaded'));
     },
     timeout: const Timeout(Duration(seconds: 45)),
   );
+}
+
+Future<void> _replaceWithTimestamp(
+  File file,
+  String source,
+  DateTime timestamp,
+) async {
+  // Publish content and timestamp together; the watcher must not observe the
+  // fresh timestamp between writing an edit and restoring its timestamp.
+  final staged = File('${file.path}.tmp');
+  await staged.writeAsString(source);
+  await staged.setLastModified(timestamp);
+  await staged.rename(file.path);
 }
 
 class _RunningProbe {
