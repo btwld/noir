@@ -163,7 +163,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 24
+    timeout-minutes: 29
 
     steps:
       - name: Checkout repository
@@ -195,7 +195,8 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        timeout-minutes: 15
+        # A loaded macOS runner exceeded 15 minutes without an assertion failure.
+        timeout-minutes: 20
         run: dart test --concurrency=1
 
       - name: Run companion tests
