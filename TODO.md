@@ -117,6 +117,32 @@ Closed on this tree:
       [`34254540352`](https://github.com/conceptadev/noir/actions/runs/34254540352)
       passed all five jobs on exact commit `794b051`.
 
+- [x] **Adversarial review of the whole stack**: one keep/reject pass per open
+      PR, each with mutation testing. No rejection; every PR fixes something
+      real. Two defects were found and fixed here. `FocusNode.requestFocus`
+      and `unfocus` cancelled a queued focus recovery unconditionally, so an
+      unrelated node re-created the empty-focus state that recovery exists to
+      prevent; removing that guard had left all 669 tests passing. And the
+      companion's frozen export set only read `show` clauses, so a bare
+      `export` published a public symbol invisibly. Both now fail against the
+      previous code. Three release-record claims that did not match the
+      tooling were corrected, and the CI budget invariant was made true for
+      `analyze` rather than narrowed.
+
+Findings on the branches below this one, left with their owners:
+
+- [ ] **#47**: `force: true` costs about 34x reload latency (30 ms to 1012 ms
+      on a Noir-sized app, measured), undisclosed; and the fix misses edits
+      that preserve both mtime and size. `scripts/driver/noir_driver.dart:309`
+      keeps the original bug.
+- [ ] **#44**: recovery onto a `FocusScopeNode` leaves bindings inside that
+      scope unanswered, which is the stated motive for the fix.
+- [ ] **#45**: building elements during layout is a new ownership seam with no
+      fitness test, though the repository freezes comparable seams elsewhere.
+      A layout-time `markNeedsLayout` is dropped and never retried.
+- [ ] **#42**: consumed the serial-suite CI margin without raising it, and
+      resolves an unpinned `mcp_dart` from pub.dev inside the shared suite.
+
 Open gates:
 
 - [ ] **Merge the stack first**, bottom-up, with merge commits rather than
