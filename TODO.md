@@ -143,7 +143,25 @@ Closed on this tree:
       both this tree and #43; format, fatal-info analysis, 213 architecture
       tests, and the 2,227-test serial root suite pass here. The fix is also on
       #43 as `2aef0bc`, so it reaches the remaining stack before merge.
-      Windows CI on the corrected tree remains pending.
+      The Windows job passed in run
+      [`34268226581`](https://github.com/conceptadev/noir/actions/runs/34268226581),
+      and #44 passed all five jobs in run
+      [`34268374519`](https://github.com/conceptadev/noir/actions/runs/34268374519).
+      After absorbing the restacked base and the two already-merged main
+      changes, the local root suite passed 2,232 tests and the companion passed
+      113. Both archives reported zero warnings, with the expected staging
+      override hint for the companion; all six native binaries verified.
+- [x] **Parent-branch CI timing corrections**: the macOS job in run
+      `34268226581` exceeded the packaged runner test's 10-second cold-start
+      wait, then hit the serial step's 10-minute ceiling. Windows run
+      [`34268405234`](https://github.com/conceptadev/noir/actions/runs/34268405234)
+      printed `2229 tests passed, 10 skipped` and was killed less than a second
+      later by the same ceiling. The parent branches now have the 15-minute
+      serial allowance already used here, with 20-minute job budgets for their
+      3 + 2 + 15 minute steps. The runner test allows 30 seconds for cold
+      startup, retains 10 seconds for watcher/reload readiness, and has a
+      90-second overall bound. Assertions are unchanged. Exact candidate CI
+      remains part of the merge gate below.
 
 Open review follow-ups:
 
@@ -156,8 +174,8 @@ Open review follow-ups:
 - [ ] **#45**: building elements during layout is a new ownership seam with no
       fitness test, though the repository freezes comparable seams elsewhere.
       A layout-time `markNeedsLayout` is dropped and never retried.
-- [ ] **#42**: consumed the serial-suite CI margin without raising it, and
-      resolves an unpinned `mcp_dart` from pub.dev inside the shared suite.
+- [ ] **#42**: fixture servers resolve an unpinned `mcp_dart` from pub.dev
+      inside the shared suite.
 
 Open gates:
 
