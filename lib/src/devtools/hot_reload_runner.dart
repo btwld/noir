@@ -152,7 +152,9 @@ Future<void> _reloadAndReassemble(
 ) async {
   final ReloadReport report;
   try {
-    report = await service.reloadSources(isolateId);
+    // The watcher already detected an edit, possibly by size alone. Do not let
+    // the VM skip it because its modification time predates compilation.
+    report = await service.reloadSources(isolateId, force: true);
   } on RPCError catch (error) {
     _log(logFile, 'reload rejected: ${error.details ?? error.message}');
     return;
