@@ -4,8 +4,7 @@ Reusable widget lifecycle hooks and Signals reactive state for
 [Noir](https://pub.dev/packages/noir), the Flutter-like terminal UI framework
 for Dart.
 
-This package is optional. Noir does not depend on it, and an application that
-never writes a hook or a signal never resolves it.
+This package is optional. Installing Noir alone does not pull it in.
 
 Start with the [task-list walkthrough](doc/getting-started.md). It connects
 hook-owned text input, signals, a computed remaining count, and user actions
@@ -33,53 +32,10 @@ import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 ```
 
-## Hooks
+## Use SignalWidget
 
-Hooks package one local state or lifecycle concern into a reusable function.
-They run on Noir's ordinary retained widget lifecycle and use call order as
-identity.
-
-```dart
-class Counter extends SignalWidget {
-  const Counter({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final count = useState<int>(0);
-
-    return Column(
-      children: [
-        Text('Count: ${count.value}'),
-        Button(
-          autofocus: true,
-          label: '+ Add one',
-          onPressed: () => count.value++,
-        ),
-      ],
-    );
-  }
-}
-```
-
-Read [`doc/hooks.md`](doc/hooks.md) for the complete contract, and run
-[`example/counter.dart`](example/counter.dart) for a finished application.
-
-## Signals
-
-The package connects the
-[`signals_core`](https://pub.dev/packages/signals_core) reactive engine to
-Noir's rebuild scheduling. It re-exports the upstream primitives an
-application needs to declare a model, so a widget file normally imports only
-Noir and this package. Import `package:signals_core/signals_core.dart`
-directly when a model needs the wider upstream surface.
-
-| API | Ownership | Rebuild behavior |
-| --- | --- | --- |
-| `useSignal(initialValue, {keys, options})` | Creates and disposes a `Signal`. | Rebuilds the host after the value changes. |
-| `useComputed(compute, {keys, options})` | Creates and disposes a `Computed`. | Rebuilds the host after the result changes. |
-| `useSignalValue(source)` | Borrows the source; owns only the subscription. | Rebuilds the host and returns the current value. |
-| `useSignalEffect(callback, {keys, options})` | Owns a reactive effect and its cleanup. | Requests no rebuild. |
-| `SignalValueBuilder(signal:, builder:)` | Borrows one source. | Rebuilds only its own subtree. |
+Extend `SignalWidget` to retain lifecycle hooks and reactive state across
+builds. Use `SignalBuilder` when a small inline subtree needs hooks.
 
 ```dart
 class Counter extends SignalWidget {
@@ -93,26 +49,25 @@ class Counter extends SignalWidget {
 }
 ```
 
-Extend `SignalWidget`, or use `SignalBuilder` for an inline subtree. Both
-hosts support lifecycle hooks and signal hooks. There is no automatic
-whole-build tracking: observe borrowed signals explicitly with
-`useSignalValue` or `SignalValueBuilder`. Read
-[`doc/signals.md`](doc/signals.md) for the complete contract.
+`useSignal` owns and observes the value above. Use `useState` for a simple
+local value, or `useComputed` for a value derived from other signals. Hooks
+must be called in the same order on every build.
 
-## Examples
+There is no automatic whole-build tracking. Observe borrowed signals with
+`useSignalValue` or `SignalValueBuilder`; a plain `.value` read does not
+subscribe the widget. The package also re-exports the public `signals_core`
+primitives needed to define a model.
 
-Open the [example directory](example/README.md) for runnable files and setup
-instructions. Run these from `packages/noir_signals/` after resolving the
-workspace:
+## Examples and reference
 
-| Source | Command | What it shows |
-| --- | --- | --- |
-| [Counter](example/counter.dart) | `dart run example/counter.dart` | `SignalWidget` and `useState` for local state. |
-| [Task list](example/task_list.dart) | `dart run example/task_list.dart` | `useSignal`, `useComputed`, and retained text input; add, complete, filter, and remove tasks. |
-| [File search](example/file_search.dart) | `dart run example/file_search.dart` | A Signals model behind a text field, with explicit observation and a builder subtree. |
+The [example directory](example/README.md) contains the runnable counter, task list,
+and file search, with setup and run commands. Follow
+[Build a task list](doc/getting-started.md) for the step-by-step tutorial.
 
-The [hooks guide](doc/hooks.md) covers lifecycle and custom hooks. The
-[Signals guide](doc/signals.md) covers owned and borrowed reactive state.
+- [Hooks reference](doc/hooks.md): hook families, call order, resource ownership,
+  and custom hooks.
+- [Signals reference](doc/signals.md): signal ownership, observation, replacement,
+  and effect cleanup.
 
 ## Boundaries
 

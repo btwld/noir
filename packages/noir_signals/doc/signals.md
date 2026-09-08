@@ -1,4 +1,4 @@
-# Signals in Noir
+# Signals reference
 
 `package:noir_signals/noir_signals.dart` connects the
 [`signals_core`](https://pub.dev/packages/signals_core) reactive engine to
@@ -11,7 +11,7 @@ into one frame.
 
 ## Install and import
 
-Start with [Build a task list with hooks and Signals](getting-started.md) for
+Start with [Build a task list](getting-started.md) for
 a runnable walkthrough of `useSignal`, `useComputed`, and text input. It
 includes checkout commands for the current unpublished candidates; the versions
 below describe the intended consumer dependencies after publication.
@@ -44,74 +44,29 @@ same name is not re-exported.
 | `useSignalEffect(callback, {keys, options})` | Owns a reactive effect and its cleanup. | Requests no rebuild; runs an application side effect. |
 | `SignalValueBuilder(signal:, builder:)` | Borrows one source. | Rebuilds only its own subtree. |
 
-Local state:
+## Observe borrowed state
 
-```dart
-class Counter extends SignalWidget {
-  const Counter({super.key});
+A model owns the signals it creates and exposes them to widgets through
+constructors or an `InheritedWidget`. The
+[file-search model](../example/models/file_search_model.dart) and its
+[screen](../example/file_search.dart) show the complete ownership pattern.
 
-  @override
-  Widget build(BuildContext context) {
-    final count = useSignal(0);
-
-    return Column(
-      children: [
-        Text('Count: ${count.value}'),
-        Button(
-          autofocus: true,
-          label: '+ Add one',
-          onPressed: () => count.value++,
-        ),
-      ],
-    );
-  }
-}
-```
-
-`useState` remains simpler for a plain local counter. Signals earn their place
-when state is derived or shared: filtered lists, selected-item details, counts,
-and progress across several widgets.
-
-## Keep the model out of the widget
-
-An application model is ordinary Signals code:
-
-```dart
-import 'package:signals_core/signals_core.dart';
-
-class FileModel {
-  final query = signal('');
-  final files = signal<List<String>>(const []);
-  late final visibleFiles = computed(() {
-    final term = query.value.toLowerCase();
-    return List<String>.unmodifiable(
-      files.value.where((file) => file.toLowerCase().contains(term)),
-    );
-  });
-  late final visibleCount = computed(() => visibleFiles.value.length);
-
-  void dispose() {
-    visibleCount.dispose();
-    visibleFiles.dispose();
-    files.dispose();
-    query.dispose();
-  }
-}
-```
-
-One owner creates and disposes the model. Pass it through constructors or an
-`InheritedWidget`. Observe it from a widget with `useSignalValue`, or scope the
-rebuild to a subtree with `SignalValueBuilder`:
+Inside `SignalWidget.build`, use `useSignalValue` to observe the model’s source:
 
 ```dart
 final visible = useSignalValue(model.visibleFiles);
-...
+```
+
+Use `SignalValueBuilder` to observe one source in a smaller subtree:
+
+```dart
 SignalValueBuilder<int>(
   signal: model.visibleCount,
   builder: (context, count) => Text('$count files'),
 )
 ```
 
+These observers borrow their source; the model remains responsible for disposal.
 Replace a collection signal's value instead of mutating the list in place. A
 newly allocated list normally has different equality even when its contents
 match.
@@ -161,11 +116,11 @@ A failure raised by the install run propagates unchanged. Signals wraps a
 failure raised by a later rerun in a `SignalEffectException`, whose `error`
 holds the original.
 
-## What this is not
+## Observation limits
 
 Reads inside event handlers, asynchronous callbacks, and deferred child
-builders are outside any observation this package installs. A widget that
-reads `model.value.value` without one of the hooks above is not reactive.
+builders are outside any observation this package installs. Reading
+`model.visibleFiles.value` alone does not subscribe the widget.
 
 There is no automatic whole-build tracking. `SignalWidget` and
 `SignalBuilder` retain lifecycle and signal hooks; reading a borrowed signal

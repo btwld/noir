@@ -1,4 +1,4 @@
-# Widget lifecycle hooks
+# Hooks reference
 
 `package:noir_signals/noir_signals.dart` provides reusable widget lifecycle
 hooks for Noir. They live in the optional companion package `noir_signals`,
@@ -8,7 +8,7 @@ low-level renderer, or FFI API.
 ## Install and import
 
 For the current unpublished candidates, use the checkout commands in
-[Build a task list with hooks and Signals](getting-started.md). That walkthrough
+[Build a task list](getting-started.md). That walkthrough
 shows hooks and derived state together; the versions below describe the
 intended consumer dependencies after publication.
 
@@ -23,38 +23,13 @@ import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 ```
 
-## Quick start
+## Host hooks
 
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-
-void main() => runTuiApp(const CounterApp(), enableMouse: true);
-
-class CounterApp extends SignalWidget {
-  const CounterApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final count = useState<int>(0);
-    return Column(
-      children: [
-        Text('Count: ${count.value}'),
-        Button(
-          autofocus: true,
-          label: '+ Add one',
-          onPressed: () => count.value++,
-        ),
-      ],
-    );
-  }
-}
-```
-
-Input-driven state changes belong in input callbacks like `onPressed`. Do not
-route a button action through `useEffect`; effects synchronize external
-resources and their cleanup. See the polished version in
-[`example/counter.dart`](../example/counter.dart).
+Extend `SignalWidget` and call hooks at the top of `build`. See the runnable
+[counter](../example/counter.dart) for `useState` and the
+[task-list tutorial](getting-started.md) for controllers, signals, and computed
+state in one app. Handle input in callbacks such as `onPressed`; effects own
+external work and its cleanup.
 
 Use `SignalBuilder` when an inline builder needs hooks:
 

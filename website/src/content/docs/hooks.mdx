@@ -7,8 +7,9 @@ description: Keep local state and manage controllers, timers, and cleanup with n
 
 Hooks let a widget keep local state and manage resources without a separate
 `State` class. Extend `SignalWidget`, or use `SignalBuilder` for an inline
-subtree. Both hosts support ordinary lifecycle hooks and signal hooks. Use `useState` for a counter, `useTextEditingController` for an
-editable field, or `useEffect` to start and clean up a timer.
+subtree. Both hosts support lifecycle hooks and signal hooks. Use `useState`
+for a counter, `useTextEditingController` for an editable field, or `useEffect`
+to start and clean up a timer.
 
 <PrereleaseNotice>
   Hooks are part of the optional `noir_signals` package. It requires the
@@ -148,8 +149,8 @@ Creating it on every build restarts the asynchronous work.
 Use a state class when several lifecycle methods, related resources, or a
 longer transition are easier to understand together. Use a hook when one
 concern can be named and composed without hiding who owns it. `SignalBuilder` is
-available when only a small stable subtree needs hooks; Noir does not expose a
-`StatefulSignalWidget`.
+available when a small stable subtree needs hooks inside an ordinary
+`StatefulWidget`.
 
 Hot reload forwards `reassemble` to retained hook state. An ordinary build
 reports reordered or conditional stateful hooks instead of silently accepting

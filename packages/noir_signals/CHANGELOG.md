@@ -12,8 +12,8 @@ First prerelease of the optional companion package for
   `SignalBuilder`, `Hook`, `HookState`, `use`, `useContext`, `useTickerProvider`,
   the state and effect primitives, the listenable and asynchronous hooks, and
   the controller and animation hooks. The hosts are renamed from `HookWidget`
-  and `HookBuilder` (including `SignalWidgetBuilder`); hook names, return types,
-  and lifecycle rules are unchanged. `useState` returns a `ValueNotifier` and
+  and `HookBuilder`; `HookWidgetBuilder` becomes `SignalWidgetBuilder`. Hook
+  functions, return types, and lifecycle rules are unchanged. `useState` returns a `ValueNotifier` and
   `useTextEditingController` returns a `TextEditingController`.
 - Added the Signals integration: `useSignal` and `useComputed` own and observe
   the upstream object they create, `useSignalValue` observes a borrowed source,
