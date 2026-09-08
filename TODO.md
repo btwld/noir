@@ -93,7 +93,12 @@ Closed on this tree:
       commit `8a77af6`, passed all five jobs again in run
       [`34247603920`](https://github.com/conceptadev/noir/actions/runs/34247603920).
       That run is the first to compile this work together with
-      `feat/layout-builder` and the fixes beneath it.
+      `feat/layout-builder` and the fixes beneath it. A later run then killed
+      the Windows serial suite six seconds after it reported
+      `2214 tests passed`: the combined tree needs about 10 minutes there, and
+      the step ceiling was exactly 10. The serial-suite step now allows 15
+      minutes on both platform jobs, and each job budget equals the sum of its
+      step ceilings so a step timeout always reports before the job timeout.
 
 Open gates:
 

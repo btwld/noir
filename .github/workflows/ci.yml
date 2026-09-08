@@ -112,7 +112,7 @@ jobs:
     name: Test (Ubuntu)
     needs: analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 24
 
     steps:
       - name: Checkout repository
@@ -144,9 +144,10 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        # The serial suite compiles consumer packages and MCP fixture servers;
-        # give it the same allowance as the desktop jobs.
-        timeout-minutes: 10
+        # The serial suite compiles consumer packages and MCP fixture servers.
+        # Windows finished in 9m56s under the previous 10-minute ceiling and
+        # was killed while the process was still exiting.
+        timeout-minutes: 15
         run: dart test --concurrency=1
 
       - name: Run companion tests
@@ -162,7 +163,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 16
+    timeout-minutes: 24
 
     steps:
       - name: Checkout repository
@@ -194,7 +195,7 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: dart test --concurrency=1
 
       - name: Run companion tests
