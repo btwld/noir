@@ -334,6 +334,7 @@ async function runSmoke() {
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
       ['/docs/state-lifecycle', '#let-one-state-own-the-field', 1],
       ['/docs/hooks', '#preserve-hook-order', 1],
+      ['/docs/signals-task-list', 'main img', 6],
       ['/docs/input-focus', '#use-local-pointer-coordinates', 1],
       ['/docs/testing', 'main table', 1],
       ['/docs/architecture-api', '.architecture-layers > li', 5],
@@ -431,6 +432,43 @@ async function runSmoke() {
         .count(),
       1,
       'the Hooks guide must show effect acquisition and cleanup together',
+    );
+
+    await page
+      .locator('main')
+      .getByRole('link', { name: 'Build a task list', exact: true })
+      .click();
+    await page.waitForURL('**/docs/signals-task-list/');
+    for (const picture of await page.locator('main img').all()) {
+      await picture.scrollIntoViewIfNeeded();
+      await picture.evaluate((image) => image.decode());
+      assert.ok(
+        await picture.evaluate((image) => image.naturalWidth > 0),
+        'every walkthrough screenshot must load',
+      );
+    }
+    const finalCheckpoint = page.locator('details').filter({
+      has: page.getByText('Complete code after step 5', { exact: true }),
+    });
+    await finalCheckpoint.locator('summary').click();
+    assert.equal(
+      // Shiki renders otherwise empty lines with a space to preserve height.
+      (await finalCheckpoint.locator('pre').innerText())
+        .replace(/^[ \t]+$/gm, '')
+        .trim(),
+      readFileSync(
+        join(websiteRoot, '../packages/noir_signals/example/task_list.dart'),
+        'utf8',
+      ).trim(),
+      'the copyable final checkpoint must match the runnable task-list example',
+    );
+    assert.equal(
+      await page
+        .locator('main')
+        .getByRole('link', { name: 'example index', exact: true })
+        .getAttribute('href'),
+      'https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example',
+      'example navigation must lead to the example directory',
     );
 
     await page.goto(`${baseUrl}/docs/input-focus`, {

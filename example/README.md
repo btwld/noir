@@ -23,8 +23,10 @@ describe their keybindings and special requirements in the file header.
 
 These examples live in the optional `noir_signals` package and are available
 from a repository checkout. Run `dart pub get` at the repository root first.
+Browse their [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
+for source files and commands from the companion directory.
 Follow the [task-list walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
-for controller ownership, hook order, signals, and computed state.
+for step-by-step code changes, screenshots, and complete runnable checkpoints.
 
 | Source | Run from the repository root | Learn |
 | --- | --- | --- |

@@ -71,11 +71,22 @@ emulator.
 
 ## Documentation ownership
 
+The **Build a task list** page and its six screenshots are generated from
+`packages/noir_signals/doc/getting-started.md` and its `images/` directory.
+Edit those sources, then run `node scripts/sync-signals-guide.mjs` from
+`website/`. Development startup, type-checking, and production builds also run
+the sync. Commit the regenerated `src/content/docs/signals-task-list.mdx` and
+`public/demos/signals-task-list/` images with the source changes. While the dev
+server is already running, rerun the sync after editing the source guide.
+
 Each fact should have one primary home:
 
 - The repository `README.md` owns the package introduction, installation,
   public API tiers, and concise platform status.
 - `example/README.md` owns the runnable example catalog.
+- `packages/noir_signals/example/README.md` owns the companion example index.
+- `packages/noir_signals/doc/getting-started.md` owns the task-list walkthrough
+  shared by the companion archive and the website.
 - `packages/noir_signals/doc/hooks.md` owns the exact hooks contract shipped
   with the companion package.
 - Dartdoc owns API signatures and member-level behavior.

@@ -227,7 +227,8 @@ Signals reactive integration. Hooks use call order as identity.
 
 The companion has its own [hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md),
 [Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md),
-and runnable examples: a [hooks counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart),
+and an [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
+with a [hooks counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart),
 [task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart),
 and [file search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart).
 This package's archive does not carry the companion files.

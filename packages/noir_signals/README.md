@@ -100,7 +100,9 @@ There is no automatic whole-build tracking yet: `SignalWidget` and
 
 ## Examples
 
-Run these from `packages/noir_signals/` after resolving the workspace:
+Open the [example directory](example/README.md) for runnable files and setup
+instructions. Run these from `packages/noir_signals/` after resolving the
+workspace:
 
 | Source | Command | What it shows |
 | --- | --- | --- |

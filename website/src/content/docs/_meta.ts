@@ -16,6 +16,7 @@ const pages = {
   'state-lifecycle': 'State and lifecycle',
   hooks: 'Hooks',
   signals: 'Signals',
+  'signals-task-list': 'Build a task list',
   'input-focus': 'Input and focus',
   testing: 'Testing',
   '---understand': {
