@@ -30,8 +30,9 @@ seam, moves the opt-in hooks library out of `noir`, and introduces the
 optional companion package `noir_signals` with the Signals integration.
 
 `feat/signals` is the top of a stack. It sits on `feat/layout-builder`, which
-sits on `fix/focus-recovery`, `fix/list-view-row-keys`, and
-`feat/mcp-inspector` in that order. Those merge first; this branch is last so
+sits on `fix/focus-recovery` and `fix/list-view-row-keys` in that order.
+`feat/mcp-inspector` merged as PR #42 at `bea8885`. The remaining parents
+merge first; this branch is last so
 its version bump and changelog describe the whole release. The independent
 `fix/hot-reload-stale-timestamps` is not in this tree and still needs its own
 alpha.5 changelog entry when it lands.
@@ -129,7 +130,22 @@ Closed on this tree:
       tooling were corrected, and the CI budget invariant was made true for
       `analyze` rather than narrowed.
 
-Findings on the branches below this one, left with their owners:
+- [x] **Like Reactor initial-frame regression**: Windows runs
+      [`34264680059`](https://github.com/conceptadev/noir/actions/runs/34264680059)
+      and
+      [`34264681796`](https://github.com/conceptadev/noir/actions/runs/34264681796)
+      failed the exact two-cell initial spacing assertion. The test's settle
+      helper admitted wall-clock frame timers before capturing timestamp zero.
+      It now pumps explicit frames and flushes only autofocus microtasks.
+      A queued 300 ms frame reproduces the original `Expected: 2, Actual: 3`
+      failure against the old helper; the fixed test retains the exact spacing
+      and additionally asserts zero particle age. All 10 example tests pass on
+      both this tree and #43; format, fatal-info analysis, 213 architecture
+      tests, and the 2,227-test serial root suite pass here. The fix is also on
+      #43 as `2aef0bc`, so it reaches the remaining stack before merge.
+      Windows CI on the corrected tree remains pending.
+
+Open review follow-ups:
 
 - [ ] **#47**: `force: true` costs about 34x reload latency (30 ms to 1012 ms
       on a Noir-sized app, measured), undisclosed; and the fix misses edits
@@ -145,8 +161,8 @@ Findings on the branches below this one, left with their owners:
 
 Open gates:
 
-- [ ] **Merge the stack first**, bottom-up, with merge commits rather than
-      squash so each child's merge base advances: #42, #43, #44, #45, then
+- [ ] **Merge the remaining stack first**, bottom-up, with merge commits rather
+      than squash so each child's merge base advances: #43, #44, #45, then
       #47, then this branch.
 - [ ] **Independent review and merge** of PR #46.
 - [ ] **Platform CI on the merge commit.**
@@ -364,13 +380,22 @@ evidence is under `.context/terminal-evidence/20260902T005512Z-967820b/`.
 
 ## Verification commands
 
+From the repository root:
+
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
     dart pub publish --dry-run
+    dart run scripts/stage_companion_package.dart --verify
     git diff --check
+
+From `packages/noir_signals/`:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ example/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
 
 Real terminal, PTY/ConPTY, raw-mode, signal/termination, crash, sanitizer, and
 leak checks stay outside ordinary verification and require explicit
@@ -476,5 +501,5 @@ authorization.
   offers a supported way to request the package's native deployment floor.
 - Execute downstream smoke tests on the three shipped OS/architecture
   combinations not exercised by the ordinary host-runner matrix.
-- Add a lower-bound lane that runs analysis plus focused widget-hook and
-  native-asset build-hook tests after `dart pub downgrade` when practical.
+- Add a lower-bound lane that runs analysis plus focused companion-hook
+  and native-asset build-hook tests after `dart pub downgrade` when practical.
