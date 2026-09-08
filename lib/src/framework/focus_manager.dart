@@ -214,15 +214,18 @@ class FocusNode extends ChangeNotifier {
 
   /// Requests primary focus, throwing unless this node is attached to a manager.
   ///
-  /// This is a deliberate focus decision, so it also drops any focus recovery
-  /// the manager has queued for an earlier involuntary loss.
+  /// A request that can claim focus is a deliberate decision, so it also drops
+  /// any focus recovery the manager has queued for an earlier involuntary
+  /// loss. A node that cannot request focus claims nothing, so it leaves that
+  /// recovery alone rather than cancelling on another node's behalf.
   void requestFocus() {
     if (_manager == null) {
       throw StateError('FocusNode is not attached to a FocusManager');
     }
-    _manager!
-      .._cancelFocusRecovery()
-      .._requestFocus(this);
+    if (canRequestFocus) {
+      _manager!._cancelFocusRecovery();
+    }
+    _manager!._requestFocus(this);
   }
 
   /// Unfocuses this node or its currently focused descendant; [descendants]
@@ -234,12 +237,17 @@ class FocusNode extends ChangeNotifier {
   /// recover it, and it drops any recovery queued for an earlier involuntary
   /// loss. Disabling or removing the focused control is the involuntary form,
   /// and the manager does recover that.
+  ///
+  /// Only a call that actually gives up focus cancels that recovery. A node
+  /// holding no focus makes this a no-op, and cancelling there would drop a
+  /// recovery queued for an unrelated node's involuntary loss.
   void unfocus({bool descendants = false}) {
     final manager = _manager;
     if (manager == null) return;
-    manager
-      .._cancelFocusRecovery()
-      .._unfocus(this, descendants: descendants);
+    if (_hasFocus || _descendantsHaveFocus) {
+      manager._cancelFocusRecovery();
+    }
+    manager._unfocus(this, descendants: descendants);
   }
 
   KeyEventResult _handleKeyEvent(KeyEvent event) {

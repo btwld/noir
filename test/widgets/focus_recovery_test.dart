@@ -319,6 +319,110 @@ void main() {
       }
     });
 
+    test('an unrelated unfocus leaves a queued recovery alone', () async {
+      final a = FocusNode(debugLabel: 'a');
+      final b = FocusNode(debugLabel: 'b');
+      final bystander = FocusNode(debugLabel: 'bystander');
+      final step = ValueNotifier<int>(0);
+      final app = runTuiAppForTesting(
+        _Swap(
+          notifier: step,
+          builder: (context, value) => Column(
+            children: [
+              Focus(
+                key: const ValueKey<String>('a'),
+                focusNode: a,
+                autofocus: true,
+                canRequestFocus: value == 0,
+                child: _cell,
+              ),
+              Focus(
+                key: const ValueKey<String>('b'),
+                focusNode: b,
+                child: _cell,
+              ),
+              Focus(
+                key: const ValueKey<String>('bystander'),
+                focusNode: bystander,
+                child: _cell,
+              ),
+            ],
+          ),
+        ),
+        headless: true,
+      );
+      final manager = app.buildOwner.focusManager;
+      try {
+        await _settle(app);
+        expect(manager.primaryFocus, same(a));
+
+        // Disabling `a` queues recovery. A node that holds no focus then
+        // clears its own: that is a no-op, so it must not cancel a recovery
+        // queued for somebody else's involuntary loss.
+        step.value = 1;
+        app.debugFlushFrame();
+        bystander.unfocus();
+        await _settle(app);
+
+        expect(manager.primaryFocus, same(b));
+      } finally {
+        app.dispose();
+        step.dispose();
+      }
+    });
+
+    test('a request that cannot claim focus leaves recovery alone', () async {
+      final a = FocusNode(debugLabel: 'a');
+      final b = FocusNode(debugLabel: 'b');
+      final disabled = FocusNode(debugLabel: 'disabled');
+      final step = ValueNotifier<int>(0);
+      final app = runTuiAppForTesting(
+        _Swap(
+          notifier: step,
+          builder: (context, value) => Column(
+            children: [
+              Focus(
+                key: const ValueKey<String>('a'),
+                focusNode: a,
+                autofocus: true,
+                canRequestFocus: value == 0,
+                child: _cell,
+              ),
+              Focus(
+                key: const ValueKey<String>('b'),
+                focusNode: b,
+                child: _cell,
+              ),
+              Focus(
+                key: const ValueKey<String>('disabled'),
+                focusNode: disabled,
+                canRequestFocus: false,
+                child: _cell,
+              ),
+            ],
+          ),
+        ),
+        headless: true,
+      );
+      final manager = app.buildOwner.focusManager;
+      try {
+        await _settle(app);
+        expect(manager.primaryFocus, same(a));
+
+        // `disabled` cannot take focus, so its request claims nothing. It must
+        // not cancel the recovery queued by disabling `a`.
+        step.value = 1;
+        app.debugFlushFrame();
+        disabled.requestFocus();
+        await _settle(app);
+
+        expect(manager.primaryFocus, same(b));
+      } finally {
+        app.dispose();
+        step.dispose();
+      }
+    });
+
     test('an explicit request in the same batch wins over recovery', () async {
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
