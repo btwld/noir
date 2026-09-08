@@ -120,3 +120,17 @@ claims without a recorded source.
 The visual system is **Ink and Signal**. Its tokens, page compositions,
 accessibility requirements, and visual treatment of captured and expected
 frames are in [DESIGN.md](DESIGN.md).
+
+## Documentation structure
+
+The site uses Nextra Docs Theme 4 on Next.js, with the Noir styles in
+`src/app/globals.css` and tokens documented in `DESIGN.md`. Content stays in
+`src/content/`; the shared catch-all route renders it through Nextra. The
+`src/content/docs/index.mdx` overview owns `/docs`.
+
+The overview and sidebar follow [Diátaxis](https://diataxis.fr/): tutorials
+for learning by building, how-to guides for specific tasks, explanation for
+understanding the framework, and reference for lookup. Keep complete code
+checkpoints and expected output in tutorials; link to lifecycle and ownership
+contracts when the reader needs more detail. Documentation body text uses
+system sans; serif page and section headings retain the Noir identity.

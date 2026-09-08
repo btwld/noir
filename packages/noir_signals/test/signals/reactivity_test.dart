@@ -13,7 +13,7 @@ void main() {
       late Signal<int> count;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             count = useSignal(0);
             rendered.add(count.value);
@@ -37,7 +37,7 @@ void main() {
       late Signal<int> count;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             builds++;
             count = useSignal(0);
@@ -64,7 +64,7 @@ void main() {
       late Signal<int> right;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             builds++;
             left = useSignal(0);
@@ -93,7 +93,7 @@ void main() {
       late Signal<int> count;
       Signal<int>? first;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           count = useSignal(initialValue, keys: <Object?>[key]);
           first ??= count;
@@ -125,7 +125,7 @@ void main() {
 
       expect(
         () => host.mount(
-          HookBuilder(
+          SignalBuilder(
             builder: (context) {
               useSignal(
                 0,
@@ -158,7 +158,7 @@ void main() {
       late Computed<bool> isOdd;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             builds++;
             isOdd = useComputed(
@@ -196,7 +196,7 @@ void main() {
       addTearDown(right.dispose);
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             final selected = useComputed(
               () => preferLeft.value ? left.value : right.value,
@@ -238,7 +238,7 @@ void main() {
       addTearDown(count.dispose);
       late Computed<int> scaled;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           scaled = useComputed(
             () => count.value * factor,
@@ -267,7 +267,7 @@ void main() {
 
       expect(
         () => host.mount(
-          HookBuilder(
+          SignalBuilder(
             builder: (context) {
               useComputed(
                 () => 1,
@@ -291,7 +291,7 @@ void main() {
       final rendered = <int>[];
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             rendered.add(useSignalValue(source));
             return const Container();
@@ -327,7 +327,7 @@ void main() {
       );
       addTearDown(tracked.dispose);
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           useSignalValue(source);
           useSignalValue(tracked);
@@ -356,7 +356,7 @@ void main() {
       var current = first;
       final rendered = <int>[];
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           rendered.add(useSignalValue(current));
           return const Container();
@@ -391,7 +391,7 @@ void main() {
       var siblingBuilds = 0;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             parentBuilds++;
             return Column(
@@ -403,7 +403,7 @@ void main() {
                     return Text('$value');
                   },
                 ),
-                HookBuilder(
+                SignalBuilder(
                   builder: (context) {
                     siblingBuilds++;
                     return const Text('sibling');

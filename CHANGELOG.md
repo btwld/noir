@@ -56,7 +56,9 @@ artifacts are unchanged from alpha.4.
   `noir_signals`, published from `packages/noir_signals/` in this repository.
   Replace `package:noir/hooks.dart` with
   `package:noir_signals/noir_signals.dart` and add `noir_signals` to the
-  application's dependencies. Every hook name, return type, and lifecycle rule
+  application's dependencies. Rename `HookWidget` to `SignalWidget`,
+  `HookBuilder` to `SignalBuilder`, and `HookWidgetBuilder` to
+  `SignalWidgetBuilder`. Every hook name, return type, and lifecycle rule
   is unchanged: `useState` still returns a `ValueNotifier` and
   `useTextEditingController` still returns a `TextEditingController`.
 

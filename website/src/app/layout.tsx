@@ -25,7 +25,7 @@ const navbar = (
     <Link className="site-nav-link" href="/">
       Home
     </Link>
-    <Link className="site-nav-link" href="/docs/getting-started">
+    <Link className="site-nav-link" href="/docs">
       Docs
     </Link>
     <Link className="site-nav-link" href="/api">

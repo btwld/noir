@@ -17,7 +17,7 @@ void main() {
       final rendered = <int>[];
       Signal<int>? first;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key * 10, keys: <Object?>[key]);
           first ??= count;
@@ -53,7 +53,7 @@ void main() {
       var key = 0;
       final log = <String>[];
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key * 10, keys: <Object?>[key]);
           return _CleanupReadsSource(source: count, log: log);
@@ -82,7 +82,7 @@ void main() {
       final rendered = <int>[];
       final created = <Signal<int>>[];
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key, keys: <Object?>[key]);
           if (created.isEmpty || !identical(created.last, count)) {
@@ -120,7 +120,7 @@ void main() {
       var showChild = true;
       Signal<int>? first;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key, keys: <Object?>[key]);
           first ??= count;
@@ -152,7 +152,7 @@ void main() {
       var failBuild = false;
       Signal<int>? first;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key, keys: <Object?>[key]);
           first ??= count;
@@ -193,7 +193,7 @@ void main() {
       var key = 0;
       Signal<int>? first;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final count = useSignal(key, keys: <Object?>[key]);
           first ??= count;
@@ -220,7 +220,7 @@ void main() {
 ///
 /// The log records whether the source was still alive at each point, so a
 /// retired source released too early is visible as `disposed`.
-class _CleanupReadsSource extends HookWidget {
+class _CleanupReadsSource extends SignalWidget {
   const _CleanupReadsSource({required this.source, required this.log});
 
   final Signal<int> source;

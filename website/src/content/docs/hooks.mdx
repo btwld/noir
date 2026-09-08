@@ -6,7 +6,8 @@ description: Keep local state and manage controllers, timers, and cleanup with n
 # Hooks
 
 Hooks let a widget keep local state and manage resources without a separate
-`State` class. Use `useState` for a counter, `useTextEditingController` for an
+`State` class. Extend `SignalWidget`, or use `SignalBuilder` for an inline
+subtree. Both hosts support ordinary lifecycle hooks and signal hooks. Use `useState` for a counter, `useTextEditingController` for an
 editable field, or `useEffect` to start and clean up a timer.
 
 <PrereleaseNotice>
@@ -25,7 +26,7 @@ dart run packages/noir_signals/example/counter.dart
 ```
 
 The [counter source](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)
-uses `HookWidget` and `useState`. Press Enter or Space, or click the button,
+uses `SignalWidget` and `useState`. Press Enter or Space, or click the button,
 to increment the count. Ctrl+C exits.
 
 For a larger app, follow [Build a task list](/docs/signals-task-list). You’ll
@@ -47,6 +48,16 @@ Files that only use Noir widgets need just `package:noir/noir.dart`.
 To use the companion in your own project before publication, follow the
 [local dependency setup](/api#evaluate-repository-source).
 
+After both packages are published, the hosted dependency versions will be:
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals: ^0.0.1-alpha.0
+```
+
+Use the local setup above until then.
+
 ## Tie cleanup to the resource
 
 This widget owns an observed count and a periodic timer. The effect starts the
@@ -59,7 +70,7 @@ import 'dart:async';
 import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 
-class PollingBadge extends HookWidget {
+class PollingBadge extends SignalWidget {
   const PollingBadge({required this.interval, super.key});
 
   final Duration interval;
@@ -136,9 +147,9 @@ Creating it on every build restarts the asynchronous work.
 
 Use a state class when several lifecycle methods, related resources, or a
 longer transition are easier to understand together. Use a hook when one
-concern can be named and composed without hiding who owns it. `HookBuilder` is
+concern can be named and composed without hiding who owns it. `SignalBuilder` is
 available when only a small stable subtree needs hooks; Noir does not expose a
-`StatefulHookWidget`.
+`StatefulSignalWidget`.
 
 Hot reload forwards `reassemble` to retained hook state. An ordinary build
 reports reordered or conditional stateful hooks instead of silently accepting

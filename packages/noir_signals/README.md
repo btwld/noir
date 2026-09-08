@@ -40,7 +40,7 @@ They run on Noir's ordinary retained widget lifecycle and use call order as
 identity.
 
 ```dart
-class Counter extends HookWidget {
+class Counter extends SignalWidget {
   const Counter({super.key});
 
   @override
@@ -82,7 +82,7 @@ directly when a model needs the wider upstream surface.
 | `SignalValueBuilder(signal:, builder:)` | Borrows one source. | Rebuilds only its own subtree. |
 
 ```dart
-class Counter extends HookWidget {
+class Counter extends SignalWidget {
   const Counter({super.key});
 
   @override
@@ -93,8 +93,9 @@ class Counter extends HookWidget {
 }
 ```
 
-There is no automatic whole-build tracking yet: `SignalWidget` and
-`SignalBuilder` remain a separate feature. Observe explicitly with
+Extend `SignalWidget`, or use `SignalBuilder` for an inline subtree. Both
+hosts support lifecycle hooks and signal hooks. There is no automatic
+whole-build tracking: observe borrowed signals explicitly with
 `useSignalValue` or `SignalValueBuilder`. Read
 [`doc/signals.md`](doc/signals.md) for the complete contract.
 
@@ -106,7 +107,7 @@ workspace:
 
 | Source | Command | What it shows |
 | --- | --- | --- |
-| [Counter](example/counter.dart) | `dart run example/counter.dart` | `HookWidget` and `useState` for local state. |
+| [Counter](example/counter.dart) | `dart run example/counter.dart` | `SignalWidget` and `useState` for local state. |
 | [Task list](example/task_list.dart) | `dart run example/task_list.dart` | `useSignal`, `useComputed`, and retained text input; add, complete, filter, and remove tasks. |
 | [File search](example/file_search.dart) | `dart run example/file_search.dart` | A Signals model behind a text field, with explicit observation and a builder subtree. |
 

@@ -4,7 +4,7 @@ import 'package:noir_signals/noir_signals.dart';
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
 /// A task list with hook-owned input and derived Signals state.
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   /// Creates the task-list screen.
   const TaskListApp({super.key});
 

@@ -20,7 +20,7 @@ void main() {
     var builds = 0;
     late int value;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         builds++;
         value = useValueListenable<int>(current);
@@ -61,7 +61,7 @@ void main() {
     late int selected;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           builds++;
           selected = useListenableSelector<_SelectorModel, int>(
@@ -89,7 +89,7 @@ void main() {
     late _DisposableNotifier notifier;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           notifier = useChangeNotifier<_DisposableNotifier>(
             _DisposableNotifier.new,
@@ -111,7 +111,7 @@ void main() {
     late AsyncSnapshot<int> snapshot;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           snapshot = useFuture<int>(completer.future);
           return const Container();
@@ -142,7 +142,7 @@ void main() {
       var preserveState = true;
       late AsyncSnapshot<int> snapshot;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           snapshot = useFuture<int>(
             current,
@@ -201,7 +201,7 @@ void main() {
     var current = first.future;
     late AsyncSnapshot<int> snapshot;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         snapshot = useFuture<int>(current);
         return const Container();
@@ -233,7 +233,7 @@ void main() {
     late AsyncSnapshot<int> snapshot;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           snapshot = useFuture<int>(completer.future);
           return const Container();
@@ -257,7 +257,7 @@ void main() {
     late AsyncSnapshot<int> snapshot;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           snapshot = useStream<int>(controller.stream);
           return const Container();
@@ -304,7 +304,7 @@ void main() {
       var preserveState = true;
       late AsyncSnapshot<int> snapshot;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           snapshot = useStream<int>(
             current,
@@ -373,7 +373,7 @@ void main() {
     late AsyncSnapshot<int> snapshot;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           snapshot = useStream<int>(controller.stream);
           return const Container();
@@ -400,7 +400,7 @@ void main() {
     );
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           useStream<int>(controller.stream);
           return const Container();

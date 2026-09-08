@@ -18,19 +18,19 @@ typography:
     letterSpacing: '-0.03em'
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: 'clamp(2.4rem, 3.6vw, 3.65rem)'
+    fontSize: 'clamp(2rem, 3.2vw, 2.8rem)'
     fontWeight: 500
     lineHeight: 1.08
     letterSpacing: '-0.03em'
   section-heading:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: 'clamp(1.65rem, 2.5vw, 2.3rem)'
+    fontSize: 'clamp(1.5rem, 2.3vw, 1.85rem)'
     fontWeight: 500
     lineHeight: 1.18
     letterSpacing: '-0.02em'
   body:
-    fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: '1.1rem'
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '1rem'
     lineHeight: 1.7
   ui-label:
     fontFamily: 'ui-sans-serif, system-ui, sans-serif'
@@ -70,7 +70,7 @@ components:
 
 ## Creative direction
 
-**Ink and Signal** uses warm paper, serif body text, square near-black terminal
+**Ink and Signal** uses warm paper, serif headings, square near-black terminal
 frames, thin rules, and one blue accent. Terminal material is captured output,
 with its capture boundary stated alongside it.
 
@@ -82,8 +82,9 @@ a substitute for the browser documentation hierarchy.
 
 ## The visual grammar
 
-The paper field is the default. Serif is for explanation, monospace is for
-code and operations, and system sans is for navigation and compact metadata.
+The paper field is the default. Serif headings carry the Noir identity; system
+sans makes instructions, navigation, and reference text easy to scan. Monospace
+is for code and operations.
 The product name and page titles carry the largest type. Article titles remain
 strong, while code and terminal output provide supporting evidence.
 
@@ -102,7 +103,7 @@ blue by default.
 
 - Display and page titles use the configured Georgia stack with moderate
   tracking (`-0.03em`) and enough leading that large type can breathe.
-- Body copy uses the same serif stack at 1.1rem / 1.7 leading and stays near
+- Documentation body copy uses system sans at 1rem / 1.7 leading and stays near
   65–68 characters per line. Paragraphs and headings are separated by more
   space above a heading than below it.
 - Navigation and evidence labels use system sans.
@@ -116,7 +117,10 @@ scannable.
 
 ## Page compositions by reader intent
 
-The four documentation modes share tokens, not a single repeated layout.
+The documentation follows [Diátaxis](https://diataxis.fr/): tutorials, how-to
+guides, explanation, and reference. `/docs` and the sidebar expose those four
+reader needs while existing article URLs remain stable. The modes share tokens
+and navigation; each page keeps one primary purpose.
 
 ### Tutorial
 

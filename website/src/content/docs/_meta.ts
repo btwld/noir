@@ -1,28 +1,26 @@
 const pages = {
-  index: {
-    display: 'hidden',
-  },
-  '---start': {
+  index: 'Overview',
+  '---tutorials': {
     type: 'separator',
-    title: 'Start',
+    title: 'Tutorials',
   },
   'getting-started': 'Getting started',
-  'command-line-arguments': 'Command-line arguments',
-  '---build': {
+  'signals-task-list': 'Build a task list',
+  '---how-to': {
     type: 'separator',
-    title: 'Build',
+    title: 'How-to guides',
+  },
+  'command-line-arguments': 'Command-line arguments',
+  hooks: 'Hooks',
+  signals: 'Signals',
+  'input-focus': 'Input and focus',
+  testing: 'Testing',
+  '---explanation': {
+    type: 'separator',
+    title: 'Explanation',
   },
   'widgets-layout': 'Widgets and layout',
   'state-lifecycle': 'State and lifecycle',
-  hooks: 'Hooks',
-  signals: 'Signals',
-  'signals-task-list': 'Build a task list',
-  'input-focus': 'Input and focus',
-  testing: 'Testing',
-  '---understand': {
-    type: 'separator',
-    title: 'Understand',
-  },
   'architecture-api': 'Architecture',
   '---reference': {
     type: 'separator',

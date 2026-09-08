@@ -21,12 +21,12 @@ typedef SignalValueWidgetBuilder<T> =
 /// ```
 ///
 /// The builder borrows [signal] and never disposes it; its owner does. It is a
-/// [HookWidget], so it follows the same observation and lifecycle rules as
+/// [SignalWidget], so it follows the same observation and lifecycle rules as
 /// [useSignalValue]: the subscription survives rebuilds that pass the same
 /// source, a different source replaces it, and leaving the tree cancels it. A
 /// source created with `autoDispose: true` keeps its upstream behavior when
 /// this builder is its last observer.
-final class SignalValueBuilder<T> extends HookWidget {
+final class SignalValueBuilder<T> extends SignalWidget {
   /// Observes [signal] and rebuilds [builder] after its value changes.
   const SignalValueBuilder({
     required this.signal,

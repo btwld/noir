@@ -273,12 +273,25 @@ async function runSmoke() {
     );
 
     await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
-    await page.waitForURL('**/docs/getting-started/**');
     assert.equal(
       new URL(page.url()).pathname.replace(/\/$/, ''),
-      `${basePath}/docs/getting-started`,
-      'the documentation root must lead to the first tutorial',
+      `${basePath}/docs`,
+      'the documentation root must remain a useful overview',
     );
+
+    assert.deepEqual(
+      await page.locator('main h2').allTextContents(),
+      ['Tutorials', 'How-to guides', 'Explanation', 'Reference'],
+      'the overview must offer a path for each documentation need',
+    );
+    await page
+      .locator('main')
+      .getByRole('link', {
+        name: 'Build a task list',
+        exact: true,
+      })
+      .click();
+    await page.waitForURL('**/docs/signals-task-list/');
 
     await page.goto(`${baseUrl}/docs/getting-started`, {
       waitUntil: 'networkidle',
@@ -329,6 +342,7 @@ async function runSmoke() {
     await page.setViewportSize({ width: 390, height: 844 });
     const expectedLimitationRows = 9;
     const routeContracts = [
+      ['/docs', 'main h2', 4],
       ['/docs/getting-started', '#create-the-project', 1],
       ['/docs/command-line-arguments', '#use-commandrunner-for-subcommands', 1],
       ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
@@ -492,14 +506,21 @@ async function runSmoke() {
       ).trim(),
       'the copyable final checkpoint must match the runnable task-list example',
     );
-    assert.equal(
-      await page
-        .locator('main')
-        .getByRole('link', { name: 'example index', exact: true })
-        .getAttribute('href'),
-      'https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example',
-      'example navigation must lead to the example directory',
+    const exampleLinks = await page
+      .locator('main')
+      .getByRole('link', { name: 'example directory', exact: true })
+      .all();
+    assert.ok(
+      exampleLinks.length > 0,
+      'the tutorial must link to runnable examples',
     );
+    for (const link of exampleLinks) {
+      assert.equal(
+        await link.getAttribute('href'),
+        'https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example',
+        'every example-directory link must lead to the runnable sources',
+      );
+    }
 
     await page.goto(`${baseUrl}/docs/input-focus`, {
       waitUntil: 'networkidle',
@@ -648,7 +669,7 @@ async function runSmoke() {
     assert.equal(
       await page
         .locator('.nextra-sidebar')
-        .getByText('Start', { exact: true })
+        .getByText('Tutorials', { exact: true })
         .count(),
       1,
       'the documentation sidebar must identify the tutorial entry point',
@@ -656,7 +677,7 @@ async function runSmoke() {
     assert.equal(
       await page
         .locator('.nextra-sidebar')
-        .getByText('Build', { exact: true })
+        .getByText('How-to guides', { exact: true })
         .count(),
       1,
       'the documentation sidebar must identify task-oriented guides',
@@ -664,7 +685,7 @@ async function runSmoke() {
     assert.equal(
       await page
         .locator('.nextra-sidebar')
-        .getByText('Understand', { exact: true })
+        .getByText('Explanation', { exact: true })
         .count(),
       1,
       'the documentation sidebar must identify explanatory content',

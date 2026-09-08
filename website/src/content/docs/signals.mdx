@@ -19,27 +19,11 @@ single local value with no derived state, `useState` is usually enough.
   use the [local dependency setup](/api#evaluate-repository-source).
 </PrereleaseNotice>
 
-## Run the task list
-
-From the Noir repository root with Dart 3.10 or later:
-
-```sh
-dart pub get
-dart run packages/noir_signals/example/task_list.dart
-```
-
-The [complete task-list source](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart)
-starts with **2 of 3 remaining**. Type a task and press Enter or click Add.
-Tab moves focus, Space toggles a checkbox, Hide completed filters the view,
-and Clear completed removes finished tasks. Ctrl+C exits. All data is in
-memory; restarting restores the sample tasks.
-
-For hot reload, use
-`dart run noir:run packages/noir_signals/example/task_list.dart`.
-Follow [Build a task list](/docs/signals-task-list) for five steps with exact
-code changes, complete checkpoints, and screenshots. The
+This guide covers owning, deriving, and observing reactive state in an existing
+app. To build an app from scratch, follow [Build a task list](/docs/signals-task-list),
+with five runnable checkpoints and screenshots. The
 [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
-contains the runnable files and their command index.
+contains the complete apps and their run commands.
 
 ## Own local reactive state
 
@@ -54,7 +38,7 @@ The companion also exports the upstream `Signal`, `Computed`, `signal`,
 `computed`, `effect`, `batch`, and `untracked` APIs.
 
 ```dart
-class Counter extends HookWidget {
+class Counter extends SignalWidget {
   const Counter({super.key});
 
   @override
@@ -79,49 +63,22 @@ class Counter extends HookWidget {
 gets its current value; assigning to it asks Noir to rebuild the widget.
 Signals become more useful when you add a value derived from that state.
 
-## Derive a remaining count
+## Derive a value from state
 
-The task list calls these hooks at the top of `HookWidget.build`:
+Call `useComputed` after the signal it depends on. Inside `SignalWidget.build`:
 
 ```dart
-final draft = useTextEditingController();
-final tasks = useSignal(<({int id, String title, bool done})>[
-  (id: 0, title: 'Read the hooks guide', done: false),
-  (id: 1, title: 'Run the counter example', done: true),
-  (id: 2, title: 'Build a Signals app', done: false),
-]);
+final tasks = useSignal(<({String title, bool done})>[]);
 final remaining = useComputed(
   () => tasks.value.where((task) => !task.done).length,
   keys: [tasks],
 );
-final hideCompleted = useState(false);
-final nextId = useRef(3);
 ```
 
-`useTextEditingController` preserves the draft, selection, and caret across
-rebuilds. `useSignal` owns and observes the list. `useComputed` derives the
-count from the signal, so completing or adding a task cannot leave a separate
-count stale. `useState` holds the local visibility filter, while `useRef`
-retains the next row ID without scheduling a rebuild. The hooks release their
-owned resources when the widget unmounts.
-
-The Add button and the field’s `onSubmit` share one input callback:
-
-```dart
-void addTask() {
-  final title = draft.text.trim();
-  if (title.isEmpty) return;
-  tasks.value = [
-    ...tasks.value,
-    (id: nextId.value++, title: title, done: false),
-  ];
-  draft.clear();
-}
-```
-
-The screen reads `remaining.value` when building its summary. It needs no
-effect to synchronize the count. Keep hooks unconditional and ordered; put
-state changes in the callbacks that handle input.
+Read `remaining.value` in the widget’s summary. Signals tracks the reads in
+the computation, so replacing `tasks.value` updates the count. The hook owns,
+observes, and disposes the computed value. An effect is unnecessary here.
+Keep hooks unconditional and ordered; update state in input callbacks.
 
 ## Keep the model out of the widget
 
@@ -231,7 +188,8 @@ Reading a borrowed signal’s `.value` does not subscribe a widget to it. Use
 Reads in event handlers, asynchronous callbacks, and deferred child builders
 also do not create widget subscriptions.
 
-Noir does not automatically track every signal read during a build.
+There is no automatic whole-build tracking. `SignalWidget` and `SignalBuilder`
+retain hooks; the host name does not make a plain `.value` read reactive.
 Subscription callbacks request rebuilds; Noir schedules the frame and combines
 repeated requests. Signals owns reactive dependencies, while Noir owns the
 widget tree, layout, painting, and native resources.
@@ -240,9 +198,3 @@ Read [Hooks](/docs/hooks) for the lifecycle rules the signal hooks share, and
 run the repository’s
 [file search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart)
 for a complete application.
-
-| Example                                                                                                     | Command from the repository root                          | Focus                                      |
-| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------ |
-| [Hooks counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)   | `dart run packages/noir_signals/example/counter.dart`     | Local `useState`.                          |
-| [Task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart)     | `dart run packages/noir_signals/example/task_list.dart`   | Owned signals and computed state.          |
-| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run packages/noir_signals/example/file_search.dart` | Borrowed observation and a separate model. |

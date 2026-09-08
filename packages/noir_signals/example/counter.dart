@@ -5,13 +5,13 @@ final _counterTheme = ThemeData.dark.copyWith(accent: Color.fromHex('#7DD3FC'));
 
 void main() => runTuiApp(const HooksCounterApp(), enableMouse: true);
 
-class HooksCounterApp extends HookWidget {
+class HooksCounterApp extends SignalWidget {
   const HooksCounterApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     // Hook calls stay at the top level and in the same order on every build.
-    // useState owns the notifier and rebuilds this HookWidget when it changes.
+    // useState owns the notifier and rebuilds this SignalWidget when it changes.
     final count = useState<int>(0);
     final theme = _counterTheme;
 

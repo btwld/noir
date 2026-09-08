@@ -84,12 +84,12 @@ void main() {
 
   test('the companion barrel exports the hook families', () {
     // Exact membership, not a substring search: `contains('useSignal')` is
-    // satisfied by `useSignalValue`, and `contains('HookWidget')` by a
+    // satisfied by `useSignalValue`, and `contains('SignalWidget')` by a
     // mention in the library doc comment.
     final exported = _shownSymbols(companionBarrel);
     for (final symbol in <String>[
-      'HookWidget',
-      'HookBuilder',
+      'SignalWidget',
+      'SignalBuilder',
       'HookState',
       'useState',
       'useEffect',
@@ -167,7 +167,8 @@ void main() {
     // may promise it.
     for (final source in <String>[guide, page]) {
       expect(source, contains('no automatic whole-build tracking'));
-      expect(source, isNot(contains('SignalWidget(')));
+      expect(source, contains('SignalWidget'));
+      expect(source, isNot(contains('HookWidget')));
     }
     expect(
       File('$_companionRoot/README.md').readAsStringSync(),
@@ -461,10 +462,10 @@ const Set<String> _companionSurface = <String>{
   'untracked',
   // Hook runtime.
   'Hook',
-  'HookBuilder',
   'HookState',
-  'HookWidget',
-  'HookWidgetBuilder',
+  'SignalBuilder',
+  'SignalWidget',
+  'SignalWidgetBuilder',
   'use',
   'useContext',
   'useTickerProvider',

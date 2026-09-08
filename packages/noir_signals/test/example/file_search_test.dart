@@ -69,7 +69,7 @@ void main() {
     // The same ownership shape the example uses, with the owned objects
     // published so the test can check them after teardown.
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           controller = useTextEditingController();
           model = useMemoized(() => FileSearchModel(const <String>['a.dart']));

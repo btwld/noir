@@ -31,7 +31,7 @@ import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const CounterApp(), enableMouse: true);
 
-class CounterApp extends HookWidget {
+class CounterApp extends SignalWidget {
   const CounterApp({super.key});
 
   @override
@@ -56,10 +56,10 @@ route a button action through `useEffect`; effects synchronize external
 resources and their cleanup. See the polished version in
 [`example/counter.dart`](../example/counter.dart).
 
-Use `HookBuilder` when an inline builder needs hooks:
+Use `SignalBuilder` when an inline builder needs hooks:
 
 ```dart
-final widget = HookBuilder(
+final widget = SignalBuilder(
   builder: (context) {
     final enabled = useState(false);
     return Text(enabled.value ? 'enabled' : 'disabled');
@@ -69,14 +69,13 @@ final widget = HookBuilder(
 
 ## Noir model
 
-`HookWidget` is a normal Noir `StatefulWidget`. Rebuilds use Noir's `State` and
+`SignalWidget` is a normal Noir `StatefulWidget`. Rebuilds use Noir's `State` and
 `BuildOwner`, animations use Noir's ticker scheduler, and effects run
 synchronously during the hook widget build.
 
-A normal `StatefulWidget` can keep a `HookBuilder` at a stable position in its
-`build` method. The library does not provide `StatefulHookWidget` because that
-would require framework-owned Element behavior that Noir does not expose as an
-application API.
+A normal `StatefulWidget` can keep a `SignalBuilder` at a stable position in its
+`build` method. That child owns the hook slots and their resources independently
+of the parent’s `State` object.
 
 Noir hot reload is forwarded to retained class hooks through
 `HookState.reassemble`. The immediately following build may replace a

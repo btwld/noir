@@ -12,7 +12,7 @@ void main() {
     late _StrictNotifier notifier;
     _StrictNotifier? firstNotifier;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         notifier = useDisposable<_StrictNotifier>(
           _StrictNotifier.new,
@@ -41,7 +41,7 @@ void main() {
     late ValueNotifier<int> notifier;
     ValueNotifier<int>? firstNotifier;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         builds++;
         notifier = useValueNotifier<int>(initialValue, <Object?>[key]);
@@ -81,7 +81,7 @@ void main() {
       var version = 1;
       var observedVersion = 0;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final currentVersion = version;
           useOnListenableChange(listenable, () {
@@ -118,7 +118,7 @@ void main() {
     TickerProvider? firstProvider;
     ValueNotifier<int>? firstTail;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         useState<int>(0);
         if (readProvider) {
@@ -149,7 +149,7 @@ void main() {
     var effectCount = 0;
     var cleanupCount = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         useEffect(() {
           effectCount++;
@@ -187,7 +187,7 @@ void main() {
     final log = <String>[];
     var key = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final resource = use(
           _DeferredResourceHook(<Object?>[key], log, 'resource-$key'),
@@ -220,7 +220,7 @@ void main() {
     final log = <String>[];
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           final resource = use(
             _DeferredResourceHook(const <Object?>[], log, 'solo'),
@@ -242,7 +242,7 @@ void main() {
     _StrictNotifier? firstNotifier;
     late _StrictNotifier notifier;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final notifierRef = useRef<_StrictNotifier?>(null);
         useEffect(() {

@@ -16,7 +16,7 @@ const _files = <String>[
 void main() => runTuiApp(const FileSearchApp(), enableMouse: true);
 
 /// Filters a fixed file list from a text field backed by a Signals model.
-class FileSearchApp extends HookWidget {
+class FileSearchApp extends SignalWidget {
   /// Creates the search screen.
   const FileSearchApp({super.key});
 

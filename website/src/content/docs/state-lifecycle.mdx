@@ -142,7 +142,7 @@ before; `deferDispose` is only for a resource that outlives its replacement.
   shared independently of one widget.
 - Use `InheritedWidget` to make stable data available to descendants without
   threading it through every constructor.
-- Use a `HookWidget` when one reusable lifecycle concern is clearer as a hook
+- Use a `SignalWidget` when one reusable lifecycle concern is clearer as a hook
   than as several fields and lifecycle methods.
 
 Hooks use the same retained model; they do not bypass ownership. Read

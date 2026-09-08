@@ -45,7 +45,7 @@ void main() {
     expect(cleanupOnly(), isNull);
   });
 
-  test('SignalValueBuilder is a HookWidget with a typed builder', () {
+  test('SignalValueBuilder is a SignalWidget with a typed builder', () {
     final source = signal(0);
     addTearDown(source.dispose);
     final builder = SignalValueBuilder<int>(
@@ -53,7 +53,7 @@ void main() {
       builder: (context, value) => Text('$value'),
     );
 
-    expect(builder, isA<HookWidget>());
+    expect(builder, isA<SignalWidget>());
     expect(builder.signal, same(source));
     expect(builder.builder, isA<SignalValueWidgetBuilder<int>>());
   });

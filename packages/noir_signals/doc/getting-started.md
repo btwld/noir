@@ -46,7 +46,7 @@ Screenshots below show real 80×24 Noir frames captured in headless mode.
 
 ## Step 1: Create the screen
 
-Start with `HookWidget`, the host that will retain our hooks. The two imports
+Start with `SignalWidget`, the host that will retain our hooks. The two imports
 separate Noir widgets from the optional hooks and Signals integration.
 `runTuiApp` mounts the screen and owns terminal cleanup. `enableMouse: true`
 lets the later buttons and checkboxes receive clicks.
@@ -63,7 +63,7 @@ import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   const TaskListApp({super.key});
 
   @override
@@ -199,7 +199,7 @@ import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   const TaskListApp({super.key});
 
   @override
@@ -342,7 +342,7 @@ import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   const TaskListApp({super.key});
 
   @override
@@ -550,7 +550,7 @@ import 'package:noir_signals/noir_signals.dart';
 
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   const TaskListApp({super.key});
 
   @override
@@ -728,7 +728,7 @@ checkpoint below is the shipped `example/task_list.dart`.
  void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
 +/// A task list with hook-owned input and derived Signals state.
- class TaskListApp extends HookWidget {
+ class TaskListApp extends SignalWidget {
 +  /// Creates the task-list screen.
    const TaskListApp({super.key});
 
@@ -808,7 +808,7 @@ import 'package:noir_signals/noir_signals.dart';
 void main() => runTuiApp(const TaskListApp(), enableMouse: true);
 
 /// A task list with hook-owned input and derived Signals state.
-class TaskListApp extends HookWidget {
+class TaskListApp extends SignalWidget {
   /// Creates the task-list screen.
   const TaskListApp({super.key});
 
@@ -968,45 +968,27 @@ After removal — the visible rows stay the same; the total now reflects the two
 
 </figure>
 
-## How the hooks manage state
+## Continue with your app
 
-| Value | Owner and lifetime |
-| --- | --- |
-| Draft | `useTextEditingController` retains and disposes the text controller. |
-| Task list | `useSignal` creates, observes, and disposes the signal. |
-| Remaining count | `useComputed` creates, observes, and disposes the derived value. |
-| Hide-completed flag | `useState` creates and observes a notifier, then disposes it. |
-| Next ID | `useRef` retains a bookkeeping value without observing changes. |
+You now have a task list with an editable draft, a computed remaining count,
+a visibility filter, and stable row IDs. The hooks release their owned state
+and controller when the screen unmounts.
 
-Do not manually dispose these hook-owned objects or enable `autoDispose` on
-`useSignal` or `useComputed`. Do not put `tasks.value` in the computed's keys:
-Signals already observes the value, and those keys would recreate the computed
-on every list replacement. Ordinary Dart properties captured by a computation
-belong in its keys if they can change.
+To try shared state next, run the
+[file-search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart)
+from `packages/noir_signals/`:
 
-This app needs no effect because input callbacks make its changes and the
-count is derived. Use `useEffect` or `useSignalEffect` for external work with
-cleanup, not for copying the count into another observed value. Installation
-and lifecycle cleanup must not request a hook rebuild. Read the
-[effects contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md#effects) before adding that work.
+```sh
+dart run example/file_search.dart
+```
 
-## Try another example
+Its model lives outside the widget. `useSignalValue` and `SignalValueBuilder`
+observe signals owned by that model. The [Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
+explains that ownership and observation pattern; the
+[hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md)
+covers controllers, effects, and custom hooks.
 
-Open the [example index](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example) to choose the next runnable file:
-
-| Example source | Run from `packages/noir_signals/` | What it adds |
-| --- | --- | --- |
-| [Counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart) | `dart run example/counter.dart` | The smaller `HookWidget` + `useState` starting point. |
-| [Task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) | `dart run example/task_list.dart` | The complete app built in this guide. |
-| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run example/file_search.dart` | A separate model observed with `useSignalValue` and `SignalValueBuilder`. |
-
-In file search, `useMemoized` retains the model and `useOnDispose` registers
-its cleanup. Child observers borrow signals; they never dispose a model a
-parent owns. There is no automatic whole-build tracking: observe each source
-explicitly. A `SignalValueBuilder` observes only its supplied signal; a parent
-rebuild can still update it, and Noir keeps its ordinary layout and paint work.
-
-The [hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md) explains custom hooks and lifecycle rules.
-The [Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md) covers ownership, observation, and
-replacement. The [task-list interaction tests](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/test/example/task_list_test.dart)
-exercise keyboard input, pointer input, filtering, empty states, and resize.
+The [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
+links to every runnable app. The
+[task-list interaction tests](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/test/example/task_list_test.dart)
+show how to check keyboard input, pointer input, filtering, empty states, and resize.

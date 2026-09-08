@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 /// Prevents hook-owned rebuilds during synchronous effect execution.
 ///
-/// Noir resolves `useEffect` while its `HookWidget` is building. Its
+/// Noir resolves `useEffect` while its `SignalWidget` is building. Its
 /// `BuildOwner` also drains rebuilds scheduled during a build before returning.
 /// Without this guard, a keyless effect that updates hook state can schedule
 /// itself repeatedly and keep that drain from completing.

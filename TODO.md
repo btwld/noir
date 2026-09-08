@@ -45,11 +45,12 @@ Closed on this tree:
 - [x] **Hooks extraction**: `package:noir/hooks.dart`, `lib/src/hooks/`,
       `test/hooks/`, the counter example, the hook consumer fixture, and the
       hooks guide moved to `packages/noir_signals/`. Every hook name, return
-      type, and lifecycle rule is unchanged.
+      type, and lifecycle rule is unchanged. The companion hosts are now named
+      `SignalWidget` and `SignalBuilder` (`SignalWidgetBuilder` for the callback).
 - [x] **Signals integration**: `useSignal`, `useComputed`, `useSignalValue`,
-      `useSignalEffect`, and `SignalValueBuilder`. Automatic whole-build
-      tracking through `SignalWidget` and `SignalBuilder` is deliberately not
-      part of this release.
+      `useSignalEffect`, and `SignalValueBuilder`. `SignalWidget` and
+      `SignalBuilder` host hooks; they do not automatically track all signal
+      reads in a build. Observation remains explicit.
 - [x] **Boundary**: the repository is one Pub workspace. Companion production
       code imports only `package:noir/noir.dart` and the public
       `signals_core` surface. Noir's manifest and sources carry no Signals or

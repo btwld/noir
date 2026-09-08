@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../helpers/noir_test_helpers.dart';
 
 void main() {
-  test('hooks reject calls outside a HookWidget build', () {
+  test('hooks reject calls outside a SignalWidget build', () {
     expect(() => useState<int>(0), throwsA(isA<StateError>()));
     expect(useContext, throwsA(isA<StateError>()));
   });
@@ -19,7 +19,7 @@ void main() {
     BuildContext? hookContext;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           builderContext = context;
           hookContext = useContext();
@@ -38,7 +38,7 @@ void main() {
     late ValueNotifier<int> tail;
     ValueNotifier<int>? firstTail;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         useState<int>(0);
         if (readContext) {
@@ -65,7 +65,7 @@ void main() {
     var builds = 0;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           builds++;
           counter = useState<int>(0);
@@ -92,7 +92,7 @@ void main() {
     final keys = <Object?>[1];
     late Object memoized;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         memoized = useMemoized<Object>(Object.new, keys);
         return const Container();
@@ -115,7 +115,7 @@ void main() {
     late Object keyedValue;
     late Object tailValue;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         keyedValue = useMemoized<Object>(Object.new, <Object?>[key]);
         tailValue = useMemoized<Object>(Object.new);
@@ -141,7 +141,7 @@ void main() {
     var value = 1;
     late int Function() callback;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final capturedValue = value;
         callback = useCallback<int Function()>(() => capturedValue, <Object?>[
@@ -171,7 +171,7 @@ void main() {
     var key = double.nan;
     late Object value;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         value = useMemoized<Object>(Object.new, <Object?>[key]);
         return const Container();
@@ -200,7 +200,7 @@ void main() {
     final log = <String>[];
     var key = 'a';
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final effectKey = key;
         useEffect(() {
@@ -231,7 +231,7 @@ void main() {
     final host = TestElementHost();
     final log = <String>[];
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         useEffect(() {
           log.add('effect');
@@ -259,7 +259,7 @@ void main() {
 
     runZonedGuarded(() {
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             counter = useState<int>(0);
             useEffect(() {
@@ -295,7 +295,7 @@ void main() {
     var dispatchFromEffect = false;
     var reducerCalls = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         store = useReducer<int, int>((state, action) {
           reducerCalls++;
@@ -329,7 +329,7 @@ void main() {
 
     await runZonedGuarded(() async {
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             builds++;
             final counter = useState<int>(0);
@@ -360,7 +360,7 @@ void main() {
     late ValueNotifier<int> counter;
     var requestRebuildFromCleanup = true;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         counter = useState<int>(0);
         useEffect(() {
@@ -407,7 +407,7 @@ void main() {
     late ValueNotifier<int> counter;
     var fail = false;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         counter = useState<int>(0);
         useEffect(() {
@@ -445,7 +445,7 @@ void main() {
     final log = <String>[];
     var key = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final counter = useState<int>(0);
         final effectKey = key;
@@ -493,7 +493,7 @@ void main() {
     final log = <String>[];
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           final counter = useState<int>(0);
           useEffect(
@@ -526,7 +526,7 @@ void main() {
     final log = <String>[];
     var useStateFirst = true;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         if (useStateFirst) {
           useState<int>(0);
@@ -564,7 +564,7 @@ void main() {
     final log = <String>[];
     var useStateFirst = true;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         if (useStateFirst) {
           useState<int>(0);
@@ -601,7 +601,7 @@ void main() {
     final log = <String>[];
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           use(_ReassembleProbeHook('first', log, shouldThrow: true));
           use(_ReassembleProbeHook('second', log));
@@ -624,7 +624,7 @@ void main() {
     late ValueNotifier<int> value;
     ValueNotifier<int>? firstValue;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         value = use(_ComposedStateHook(initialValue));
         firstValue ??= value;
@@ -649,7 +649,7 @@ void main() {
     addTearDown(host.dispose);
     var version = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         use(_InvalidUpdateHook(version));
         return const Container();
@@ -667,7 +667,7 @@ void main() {
     addTearDown(host.dispose);
     var version = 0;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         use(_InvalidContextUpdateHook(version));
         return const Container();
@@ -685,7 +685,7 @@ void main() {
     addTearDown(host.dispose);
     var includeHook = true;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         if (includeHook) {
           useOnDispose(() {
@@ -708,7 +708,7 @@ void main() {
     var value = 1;
     late int result;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         result = use(_ProbeHook(value, log));
         return const Container();
@@ -733,7 +733,7 @@ void main() {
     final log = <String>[];
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           useOnDispose(() {
             log.add('first');
@@ -758,7 +758,7 @@ void main() {
     late Store<int, int> store;
     Store<int, int>? firstStore;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         final currentMultiplier = multiplier;
         store = useReducer<int, int>(
@@ -796,7 +796,7 @@ void main() {
       return (oldResult ?? 0) + oldValue;
     }
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         result = useValueChanged<int, int>(value, accumulate);
         return const Container();
@@ -828,7 +828,7 @@ void main() {
     var value = 1;
     late int? previous;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         previous = usePrevious<int>(value);
         return const Container();
@@ -852,7 +852,7 @@ void main() {
     bool Function()? firstCallback;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           isMounted = useIsMounted();
           firstCallback ??= isMounted;
@@ -863,7 +863,7 @@ void main() {
 
     expect(isMounted(), isTrue);
     host.update(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           isMounted = useIsMounted();
           return const Container();

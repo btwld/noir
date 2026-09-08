@@ -47,7 +47,7 @@ same name is not re-exported.
 Local state:
 
 ```dart
-class Counter extends HookWidget {
+class Counter extends SignalWidget {
   const Counter({super.key});
 
   @override
@@ -152,7 +152,7 @@ runs it before the next run and once at teardown.
 The install and the lifecycle cleanup run under the same guard as `useEffect`,
 so neither may request a hook rebuild while it runs. That guard covers every
 hook host in the isolate, not only the one that owns the effect: a cleanup
-that writes a signal another `HookWidget` observes makes that widget's rebuild
+that writes a signal another `SignalWidget` observes makes that widget's rebuild
 request throw, and the failure escapes the frame. Write to shared signals from
 an input callback, a timer, or a future instead — the effect has returned by
 then. Later dependency-driven reruns are not guarded and keep upstream timing.
@@ -167,9 +167,10 @@ Reads inside event handlers, asynchronous callbacks, and deferred child
 builders are outside any observation this package installs. A widget that
 reads `model.value.value` without one of the hooks above is not reactive.
 
-There is no automatic whole-build tracking yet: `SignalWidget` and
-`SignalBuilder` remain a separate feature. Observe explicitly with
-`useSignalValue` or `SignalValueBuilder`.
+There is no automatic whole-build tracking. `SignalWidget` and
+`SignalBuilder` retain lifecycle and signal hooks; reading a borrowed signal
+alone does not subscribe. Observe it with `useSignalValue` or
+`SignalValueBuilder`.
 
 This integration reduces which widget builds Noir is asked to run. Noir still
 accepts full-root layout and paint recording on dirty frames, so it is not a
