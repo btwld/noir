@@ -99,6 +99,10 @@ Closed on this tree:
       the step ceiling was exactly 10. The serial-suite step now allows 15
       minutes on both platform jobs, and each job budget equals the sum of its
       step ceilings so a step timeout always reports before the job timeout.
+      Run
+      [`34250223453`](https://github.com/conceptadev/noir/actions/runs/34250223453)
+      then passed all five jobs on exact commit `ce6d987`, with the Windows
+      serial suite at 9m51s inside its 15-minute allowance.
 
 Open gates:
 
