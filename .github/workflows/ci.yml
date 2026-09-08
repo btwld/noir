@@ -102,7 +102,7 @@ jobs:
     name: Test (Ubuntu)
     needs: analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -134,9 +134,8 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        # The serial suite compiles consumer packages and MCP fixture servers;
-        # give it the same allowance as the desktop jobs.
-        timeout-minutes: 10
+        # The serial suite includes cold consumer builds and MCP fixtures.
+        timeout-minutes: 15
         run: dart test --concurrency=1
 
   desktop-test:
@@ -147,7 +146,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 12
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -179,5 +178,6 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
-        timeout-minutes: 10
+        # The serial suite includes cold consumer builds and MCP fixtures.
+        timeout-minutes: 15
         run: dart test --concurrency=1
