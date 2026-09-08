@@ -107,7 +107,9 @@ Closed on this tree:
       `test/tools/patch_manager_git_test.dart`, on the 30-second default: its
       `setUp` rebuilds a real repository with five `git` spawns before every
       one of 39 tests. That file is now tagged `safe-process-spawning` like
-      every other subprocess test and carries a two-minute budget.
+      every other subprocess test and carries a two-minute budget. Run
+      [`34254540352`](https://github.com/conceptadev/noir/actions/runs/34254540352)
+      passed all five jobs on exact commit `794b051`.
 
 Open gates:
 
