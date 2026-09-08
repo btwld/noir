@@ -10,6 +10,7 @@ const _safeProcessTests = <String>[
   'test/rendering/paragraph_max_lines_test.dart',
   'test/rendering/render_setter_invalidation_release_test.dart',
   'test/source_package_consumer_test.dart',
+  'test/tools/patch_manager_git_test.dart',
   'test/widgets/geometry_validation_test.dart',
   'test/widgets/text_editing_owner_release_test.dart',
   'test/widgets/text_max_lines_release_test.dart',
