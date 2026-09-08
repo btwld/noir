@@ -12,6 +12,10 @@ They are optional, and they run on Noir’s normal retained widget lifecycle.
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`:
 
+The companion and its required Noir alpha.5 are unpublished candidates. Use
+the repository examples below until publication; the intended application
+dependencies are:
+
 ```yaml
 dependencies:
   noir: ^0.0.1-alpha.5
@@ -25,6 +29,24 @@ import 'package:noir_signals/noir_signals.dart';
 
 Files that do not use `HookWidget`, `HookBuilder`, or a `use...` function need
 only `package:noir/noir.dart`.
+
+## Start with a runnable example
+
+From the repository root, run the hooks counter:
+
+```sh
+dart pub get
+dart run packages/noir_signals/example/counter.dart
+```
+
+The [counter source](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)
+uses `HookWidget` and `useState`. Enter, Space, or a click increments the
+count; Ctrl+C exits. No effect is needed for an input-driven update.
+
+Then follow [Signals: run the task list](/docs/signals#run-the-task-list) to
+combine `useTextEditingController`, `useState`, `useSignal`, and `useComputed`.
+The [package walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
+explains which hook owns each value and why drafts survive reactive rebuilds.
 
 ## Tie cleanup to the resource
 

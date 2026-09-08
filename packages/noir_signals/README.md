@@ -7,7 +7,16 @@ for Dart.
 This package is optional. Noir does not depend on it, and an application that
 never writes a hook or a signal never resolves it.
 
+Start with the [task-list walkthrough](doc/getting-started.md). It connects
+hook-owned text input, signals, a computed remaining count, and user actions
+in one runnable app.
+
 ## Install
+
+The versions below are unpublished candidates. In this repository, run
+`dart pub get` at the root to resolve both workspace packages. See the
+[walkthrough](doc/getting-started.md#run-the-examples) for checkout commands.
+After publication, an application can use:
 
 ```yaml
 dependencies:
@@ -91,10 +100,16 @@ There is no automatic whole-build tracking yet: `SignalWidget` and
 
 ## Examples
 
-| Command | What it shows |
-| --- | --- |
-| `dart run example/counter.dart` | `HookWidget` and `useState` in a finished application. |
-| `dart run example/file_search.dart` | A Signals model behind a text field, with a scoped subtree rebuild. |
+Run these from `packages/noir_signals/` after resolving the workspace:
+
+| Source | Command | What it shows |
+| --- | --- | --- |
+| [Counter](example/counter.dart) | `dart run example/counter.dart` | `HookWidget` and `useState` for local state. |
+| [Task list](example/task_list.dart) | `dart run example/task_list.dart` | `useSignal`, `useComputed`, and retained text input; add, complete, filter, and remove tasks. |
+| [File search](example/file_search.dart) | `dart run example/file_search.dart` | A Signals model behind a text field, with explicit observation and a builder subtree. |
+
+The [hooks guide](doc/hooks.md) covers lifecycle and custom hooks. The
+[Signals guide](doc/signals.md) covers owned and borrowed reactive state.
 
 ## Boundaries
 

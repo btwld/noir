@@ -214,7 +214,10 @@ with different arguments.
 ## Widget Lifecycle Hooks
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`.
-Run `dart pub add noir_signals` beside Noir, then import
+The companion and its required Noir alpha.5 are currently unpublished
+candidates. Use the repository checkout commands in the
+[task-list walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md).
+After publication, add `noir_signals` beside Noir, then import
 `package:noir_signals/noir_signals.dart` together with
 `package:noir/noir.dart`.
 
@@ -222,10 +225,12 @@ The companion includes state, effects, memoization, listenables, asynchronous
 snapshots, animation, focus, editing, scroll, and viewport hooks, plus the
 Signals reactive integration. Hooks use call order as identity.
 
-The companion ships its own guide, README, and runnable examples. Read them on
-[pub.dev](https://pub.dev/packages/noir_signals) or in the repository under
-[`packages/noir_signals/`](https://github.com/conceptadev/noir/tree/main/packages/noir_signals);
-this package's archive does not carry them.
+The companion has its own [hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md),
+[Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md),
+and runnable examples: a [hooks counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart),
+[task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart),
+and [file search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart).
+This package's archive does not carry the companion files.
 
 ## Component Catalog
 

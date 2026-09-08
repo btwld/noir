@@ -7,6 +7,11 @@ low-level renderer, or FFI API.
 
 ## Install and import
 
+For the current unpublished candidates, use the checkout commands in
+[Build a task list with hooks and Signals](getting-started.md). That walkthrough
+shows hooks and derived state together; the versions below describe the
+intended consumer dependencies after publication.
+
 ```yaml
 dependencies:
   noir: ^0.0.1-alpha.5

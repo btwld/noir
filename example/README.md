@@ -18,7 +18,19 @@ describe their keybindings and special requirements in the file header.
 | `dart run example/main.dart` | The canonical minimal application entrypoint. |
 | `dart run example/hello.dart` | A small stateless widget tree with shared example chrome. |
 | `dart run example/counter.dart` | Stateful updates through keyboard and pointer activation. |
-| `dart run packages/noir_signals/example/counter.dart` | The same state pattern through `HookWidget` and `useState`, from the companion `noir_signals` package. |
+
+## Hooks and Signals companion
+
+These examples live in the optional `noir_signals` package and are available
+from a repository checkout. Run `dart pub get` at the repository root first.
+Follow the [task-list walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
+for controller ownership, hook order, signals, and computed state.
+
+| Source | Run from the repository root | Learn |
+| --- | --- | --- |
+| [Counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart) | `dart run packages/noir_signals/example/counter.dart` | `HookWidget` and `useState` for local state. |
+| [Task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) | `dart run packages/noir_signals/example/task_list.dart` | `useSignal`, `useComputed`, retained input, and completion/filter actions. |
+| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run packages/noir_signals/example/file_search.dart` | An owned model, `useSignalValue`, and `SignalValueBuilder`. |
 
 ## Core concepts
 

@@ -11,6 +11,11 @@ into one frame.
 
 ## Install and import
 
+Start with [Build a task list with hooks and Signals](getting-started.md) for
+a runnable walkthrough of `useSignal`, `useComputed`, and text input. It
+includes checkout commands for the current unpublished candidates; the versions
+below describe the intended consumer dependencies after publication.
+
 ```yaml
 dependencies:
   noir: ^0.0.1-alpha.5
@@ -83,8 +88,10 @@ class FileModel {
       files.value.where((file) => file.toLowerCase().contains(term)),
     );
   });
+  late final visibleCount = computed(() => visibleFiles.value.length);
 
   void dispose() {
+    visibleCount.dispose();
     visibleFiles.dispose();
     files.dispose();
     query.dispose();
