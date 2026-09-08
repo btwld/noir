@@ -89,12 +89,14 @@ Closed on this tree:
       [`34151176990`](https://github.com/conceptadev/noir/actions/runs/34151176990)
       passed all five jobs: analysis, website build and browser smoke, and the
       Linux, macOS, and Windows suites including the companion steps. The
-      branch was then rebased onto the stack, so that run's commit is no longer
-      an ancestor; the rebased candidate needs its own green run before merge.
+      branch was then rebased onto the stack. The rebased candidate, exact
+      commit `8a77af6`, passed all five jobs again in run
+      [`34247603920`](https://github.com/conceptadev/noir/actions/runs/34247603920).
+      That run is the first to compile this work together with
+      `feat/layout-builder` and the fixes beneath it.
 
 Open gates:
 
-- [ ] **Platform CI on the rebased candidate.**
 - [ ] **Merge the stack first**, bottom-up, with merge commits rather than
       squash so each child's merge base advances: #42, #43, #44, #45, then
       #47, then this branch.
