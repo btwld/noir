@@ -33,9 +33,9 @@ optional companion package `noir_signals` with the Signals integration.
 sits on `fix/focus-recovery` and `fix/list-view-row-keys` in that order.
 `feat/mcp-inspector` merged as PR #42 at `bea8885`. The remaining parents
 merge first; this branch is last so
-its version bump and changelog describe the whole release. The independent
-`fix/hot-reload-stale-timestamps` is not in this tree and still needs its own
-alpha.5 changelog entry when it lands.
+its version bump and changelog describe the whole release. This candidate also
+includes the independent `fix/hot-reload-stale-timestamps` change and its
+alpha.5 changelog entry; PR #47 merges before this branch.
 
 Closed on this tree:
 

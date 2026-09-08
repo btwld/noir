@@ -27,6 +27,9 @@ artifacts are unchanged from alpha.4.
 
 ### Fixed
 
+- The packaged hot-reload runner now recompiles detected edits whose file
+  timestamps predate compilation, including recovery after a rejected reload.
+  This forces recompilation and can take longer than an incremental reload.
 - `FocusManager` now recovers focus after an involuntary loss. Disabling the
   focused control or removing the region that owns focus previously left the
   tree with no primary focus, and `Shortcuts.handleKeyEvent` routes from the
