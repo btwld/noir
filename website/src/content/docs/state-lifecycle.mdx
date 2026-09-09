@@ -13,11 +13,13 @@ This page answers two questions: what does Noir keep, and who releases it.
 
 ## Configuration is replaceable; identity is not
 
-Each widget in the tree has an `Element`. The element owns the position in the
-tree, and that position retains the `State` object. When a rebuild puts the
-same widget type and key at the same position, Noir updates the configuration
-and keeps the state. Change the type, the key, or the position, and Noir
-disposes the old state before mounting a new one.
+Each widget in the tree has an `Element`. For a stateful widget, that element
+retains its `State` object. When a rebuild puts the same widget type and key
+at the same position, Noir updates the configuration and keeps the state.
+Keys also let compatible siblings keep their identity when they reorder;
+without keys, matching depends on position. Removing an element or replacing
+it with an incompatible type or key releases its state when the old element
+unmounts.
 
 That is the whole reason the count in
 [Your first app](/docs/getting-started) survives a label edit. The `Text`

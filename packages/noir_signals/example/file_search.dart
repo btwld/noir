@@ -44,7 +44,7 @@ class FileSearchApp extends SignalWidget {
             placeholder: 'Filter files',
             onChanged: (text) => model.query.value = text,
           ),
-          // Only this subtree rebuilds when the count changes.
+          // This builder subscribes to the count; parent rebuilds also update it.
           SignalValueBuilder<int>(
             signal: model.visibleCount,
             builder: (context, count) => Text('$count files'),

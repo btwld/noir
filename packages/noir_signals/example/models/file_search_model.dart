@@ -13,9 +13,6 @@ class FileSearchModel {
   /// The current search term.
   final Signal<String> query = signal('');
 
-  /// The path the user chose, or null.
-  final Signal<String?> selected = signal<String?>(null);
-
   /// Files whose path contains the current term, ignoring case.
   late final Computed<List<String>> visibleFiles = computed(() {
     final term = query.value.toLowerCase();
@@ -33,7 +30,6 @@ class FileSearchModel {
   void dispose() {
     visibleCount.dispose();
     visibleFiles.dispose();
-    selected.dispose();
     query.dispose();
     _files.dispose();
   }
