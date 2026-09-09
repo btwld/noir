@@ -1,21 +1,19 @@
 ---
-title: Platform support and limitations
-description: Check Noir’s prerelease targets, native floors, terminal protocol dependencies, and known user-visible limits.
+title: Platform support
+description: Supported targets, the terminal capabilities Noir depends on, and the known limits of this prerelease.
 ---
 
 import Link from 'next/link';
 
-# Platform support and limitations
+# Platform support
 
-Noir is an alpha prerelease, not a stable 1.0 release. Check the target OS,
-architecture, terminal features, and current limitations before distributing an
-application.
+Check the target OS, the architecture, and the terminal features an
+application needs before you distribute it.
 
-<PrereleaseNotice>
-  The published package is Noir alpha.4. This site also documents the unreleased
-  alpha.5 and `noir_signals` candidates. Pages that use unreleased features
-  identify the required repository checkout.
-</PrereleaseNotice>
+<Availability of="noir">
+  This site also documents the unreleased next version and the unpublished
+  companion package. Every page that uses one says so.
+</Availability>
 
 ## Supported targets
 
@@ -32,17 +30,17 @@ Run the packaged health check on the machine that will run the application:
 dart run noir:health_check
 ```
 
-The command verifies native-asset resolution and a headless buffer/render
+The command verifies native-asset resolution and a headless buffer and render
 lifecycle. It does not open a real terminal, read raw input, or prove escape
 rendering.
 
 On macOS, Dart 3.10 native-asset hooks can build with a macOS 12 target even
-though Noir’s bundled OpenTUI libraries require macOS 13. A build can therefore
-succeed on macOS 12 and fail later when the native library loads.
+though Noir's bundled OpenTUI libraries require macOS 13. A build can therefore
+succeed on macOS 12 and fail later, when the native library loads.
 
-## Account for terminal capabilities
+## Capabilities the terminal decides
 
-Some output crosses a protocol negotiated with the user’s terminal or
+Some output crosses a protocol negotiated with the reader's terminal or
 multiplexer. Noir can generate or request the behavior; the receiving terminal
 still decides whether it works.
 
@@ -51,22 +49,22 @@ still decides whether it works.
 | Terminal images         | Chooses Kitty, Sixel, or block fallback through `ImageProtocol.auto` | Terminal and multiplexer protocol support       |
 | OSC52 clipboard         | Emits copy requests for explicit document selection                  | Terminal, tmux, or Screen acceptance and policy |
 | Enhanced keyboard input | Can request Kitty keyboard reporting                                 | Terminal support and encoding                   |
-| Mouse input             | Enables reporting when requested by `runTuiApp`                      | Terminal reporting and a real input session     |
+| Mouse input             | Enables reporting when `runTuiApp` requests it                       | Terminal reporting and a real input session     |
 | Color and links         | Records 24-bit color and semantic hyperlinks                         | Terminal rendering support                      |
 
-Headless tests and Noir Driver are useful for layout, paint cells, cursor state,
-and parsed input. They cannot replace a real-terminal check for these protocol
-boundaries.
+Headless tests and Noir Driver are useful for layout, painted cells, cursor
+state, and parsed input. They cannot replace a check in the terminal you
+target.
 
-## Known user-visible limits
+## Known limits, and what to do about them
 
 <dl className="limitation-list">
   <div>
     <dt>Leading zero-width text</dt>
     <dd>
       A text run that begins with a zero-width grapheme can differ between
-      Noir’s source-correct layout and the pinned native paint path. Avoid
-      isolating a leading zero-width grapheme into its own styled run.
+      Noir's source-correct layout and the pinned native paint path. Do not
+      isolate a leading zero-width grapheme into its own styled run.
     </dd>
   </div>
   <div>
@@ -81,7 +79,7 @@ boundaries.
     <dt>macOS terminal teardown</dt>
     <dd>
       On an observed iTerm path, alternate-screen teardown can restore the
-      launch cursor imperfectly. Always dispose <code>TuiApp</code>; skipping
+      launch cursor imperfectly. Always dispose <code>TuiApp</code>. Skipping
       cleanup does not avoid the limitation and leaves terminal modes owned.
     </dd>
   </div>
@@ -89,8 +87,8 @@ boundaries.
     <dt>Linux native-library metadata</dt>
     <dd>
       The official Linux libraries retain absolute build and debug paths from
-      OpenTUI’s release environment. They are upstream artifact metadata, not
-      paths produced on the application’s machine.
+      OpenTUI's release environment. They are upstream artifact metadata, not
+      paths produced on the application's machine. No action is needed.
     </dd>
   </div>
   <div>
@@ -98,38 +96,34 @@ boundaries.
     <dd>
       The pinned native text fast path does not apply opacity values between
       <code>0.0</code> and <code>1.0</code>; ordinary text paints as fully
-      opaque. A value of <code>0.0</code> remains transparent. Alpha blending is
-      available on supported cell and rectangle paint paths, but the native
-      stack alone cannot implement a general <code>Opacity</code> widget.
+      opaque, and <code>0.0</code> stays transparent. Express de-emphasis with a
+      dimmer color instead. Alpha blending is available on supported cell and
+      rectangle paint paths.
     </dd>
   </div>
   <div>
     <dt>Forced Kitty graphics through tmux</dt>
     <dd>
-      This combination is unsupported because initial image placement can
+      This combination is unsupported, because initial image placement can
       overlap existing content until a resize. Use{' '}
-      <code>ImageProtocol.auto</code>
-      under tmux; it selects block rendering.
+      <code>ImageProtocol.auto</code> under tmux; it selects block rendering.
     </dd>
   </div>
   <div>
     <dt>Hot reload</dt>
     <dd>
       Reload does not rerun <code>main()</code> or <code>initState()</code>.
-      Live stack signatures, enum-to-class changes, and native library changes
-      can require a full restart. See{' '}
-      <Link href="/docs/getting-started#change-the-running-app">
-        Getting started
-      </Link>{' '}
-      for the development-runner loop.
+      Live stack signatures, enum-to-class changes, reordered hooks, and native
+      library changes need a full restart. See{' '}
+      <Link href="/api#the-development-runner">the development runner</Link>.
     </dd>
   </div>
   <div>
     <dt>Drive mode</dt>
     <dd>
       <code>NOIR_DRIVE=1</code> is headless. It is not evidence of raw-mode or
-      terminal-protocol behavior. See <Link href="/docs/testing">Testing</Link>{' '}
-      for where Driver fits.
+      terminal-protocol behavior. Treat a captured frame as proof of layout and
+      painted cells only.
     </dd>
   </div>
   <div>
@@ -142,6 +136,9 @@ boundaries.
   </div>
 </dl>
 
-The pinned OpenTUI source and bundled native libraries are framework-owned.
-Applications should not rebuild, replace, or patch those artifacts as part of a
-normal installation.
+The pinned OpenTUI source and the bundled native libraries are
+framework-owned. An application should not rebuild, replace, or patch those
+artifacts.
+
+For dependency problems rather than platform problems, see
+[Installation](/docs/installation).

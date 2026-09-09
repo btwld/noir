@@ -1,12 +1,30 @@
 ---
 title: API
-description: Choose the narrowest supported Noir package surface for your work.
+description: Find a Noir symbol in the generated reference, choose a package surface, and read the shipped commands.
 ---
 
 # API
 
+## Find a symbol
+
+- [Generated Noir reference on pub.dev](https://pub.dev/documentation/noir/latest/)
+  — every published class, member, and signature. Match it to the version in
+  your `pubspec.lock`; this repository can be ahead of the latest prerelease.
+- [`noir_signals` hooks contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md)
+  — hook order, replacement keys, effect timing, and cleanup rules.
+- [`noir_signals` Signals contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
+  — ownership, observation, and disposal for signals and computed values.
+- [Widget catalog](/docs/widget-catalog) — start here when you know the job but
+  not the type name.
+
+The companion package has no generated reference on pub.dev yet, because it is
+not published. Its two Markdown documents are the canonical contract until it
+is.
+
+## Choose a package surface
+
 Most applications need only `package:noir/noir.dart`. Import a lower-level
-surface only when your code owns the corresponding framework or native
+library only when your code accepts the matching framework or native
 responsibility.
 
 <dl className="api-surfaces">
@@ -30,8 +48,7 @@ responsibility.
         SignalWidget, reusable lifecycle hooks, and Signals reactive state.
       </strong>{' '}
       A separate optional package for local state, controllers, cleanup, and
-      reactive values. See [Hooks](/docs/hooks) and [Signals](/docs/signals) for
-      working examples.
+      reactive values. Noir never depends on it.
       <span className="api-surface-status">
         Unpublished companion candidate
       </span>
@@ -61,55 +78,38 @@ responsibility.
   </div>
 </dl>
 
-## Use the commands shipped with Noir
+For the ownership boundaries behind these surfaces, read
+[Architecture](/docs/architecture-api).
+
+## Commands shipped with Noir
 
 | Command                                      | Purpose                                                        | What it does not prove                                       |
 | -------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
 | `dart run noir:run <entrypoint> [arguments]` | Run an app with source watching and hot reload                 | Real-terminal behavior still depends on the current terminal |
 | `dart run noir:health_check`                 | Verify native-asset resolution and a headless render lifecycle | It does not enter raw mode or validate terminal protocols    |
 
-The development runner and its restart boundaries are in
-[Getting started](/docs/getting-started). Noir Driver is repository-only and is
-not a public widget-test harness; see [Testing](/docs/testing).
+### The development runner
 
-## Read the published symbols
+`dart run noir:run <entrypoint>` starts the app and watches Dart files under
+`lib/` and beside the entry point. On a change it asks the Dart VM to swap the
+sources, then tells Noir to rebuild, lay out, and paint the retained tree.
 
-Use the [generated API reference on pub.dev](https://pub.dev/documentation/noir/latest/)
-for published symbols and signatures. The repository can be ahead of the latest
-prerelease, so match the reference to the version in your `pubspec.lock`.
+- Arguments after the entry-point path go to the application unchanged. See
+  [Parse command-line arguments](/docs/command-line-arguments).
+- A source that does not compile leaves the last good app running.
+- Reload does not rerun `main()` or `initState()`. It calls `reassemble` on
+  retained state.
+- Adding, removing, or reordering hooks needs a full restart, and so do live
+  stack signature changes, enum-to-class changes, and native library changes.
+- Runner diagnostics go to `.dart_tool/noir/run.log`, outside the
+  alternate-screen UI.
+
+Noir Driver is repository-only and is not a public widget-test harness. See
+[Test an app](/docs/testing).
 
 ## Evaluate repository source
 
-To try an unreleased API, use a local checkout of the private Noir repository.
-The paths below assume it sits beside your application directory:
-
-```yaml
-dependencies:
-  noir:
-    path: ../noir
-```
-
-For hooks or Signals, also point to the companion in that same checkout:
-
-```yaml
-dependencies:
-  noir: ^0.0.1-alpha.5
-  noir_signals:
-    path: ../noir/packages/noir_signals
-dependency_overrides:
-  noir:
-    path: ../noir
-```
-
-Run `dart pub get` from your application directory. Both packages come from
-one revision; `noir_signals` requires Noir alpha.5, which is not yet published.
-The override also routes the companion’s Noir dependency to your checkout.
-
-Do not copy generated bindings, bundled native artifacts, or framework-owned
-internals into an application to reach a newer feature. Either stay on the
-published surface or pin and evaluate one repository revision as a unit.
-
-For the ownership boundaries behind these surfaces, read
-[Architecture](/docs/architecture-api). Check
-[Platform support and limitations](/docs/platform-limitations) before choosing
-a deployment target.
+Dependency setup now lives on one page:
+[Installation](/docs/installation). It covers the published package, the
+checkout path for `noir_signals`, and the checkout path for an unreleased Noir
+API on its own.

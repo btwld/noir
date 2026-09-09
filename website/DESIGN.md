@@ -10,11 +10,15 @@ colors:
   terminal: '#090a0a'
   terminal-ink: '#f5f5ed'
 typography:
+  root:
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '1rem'
+    lineHeight: 1.7
   display:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
-    fontSize: 'clamp(3rem, 7.2vw, 6rem)'
+    fontSize: 'clamp(2.6rem, 5vw, 4rem)'
     fontWeight: 500
-    lineHeight: 1.04
+    lineHeight: 1.06
     letterSpacing: '-0.03em'
   page-title:
     fontFamily: "Georgia, 'Times New Roman', ui-serif, serif"
@@ -28,12 +32,7 @@ typography:
     fontWeight: 500
     lineHeight: 1.18
     letterSpacing: '-0.02em'
-  body:
-    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
-    fontSize: '1rem'
-    lineHeight: 1.7
   ui-label:
-    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
     fontSize: '0.875rem'
   mono:
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
@@ -46,6 +45,10 @@ spacing:
   section-breath: 'clamp(4rem, 10vw, 8.5rem)'
   heading-gap: '1.4rem'
 components:
+  terminal-frame:
+    backgroundColor: '{colors.terminal}'
+    textColor: '{colors.terminal-ink}'
+    rounded: '{rounded.square}'
   terminal-recording:
     backgroundColor: '{colors.terminal}'
     textColor: '{colors.terminal-ink}'
@@ -55,7 +58,7 @@ components:
     textColor: '{colors.ink}'
     typography: '{typography.mono}'
     rounded: '{rounded.square}'
-  prerelease-notice:
+  availability:
     backgroundColor: '{colors.paper}'
     textColor: '{colors.ink}'
     typography: '{typography.ui-label}'
@@ -70,157 +73,179 @@ components:
 
 ## Creative direction
 
-**Ink and Signal** uses warm paper, serif headings, square near-black terminal
-frames, thin rules, and one blue accent. Terminal material is captured output,
-with its capture boundary stated alongside it.
+**Ink and Signal** uses warm paper, serif display headings, square near-black
+terminal frames, thin rules, and one blue accent. Terminal material is captured
+output, shown with its capture boundary.
 
-This is a browser documentation system. It does not prescribe the appearance
-of applications built with Noir.
-
-Terminal styling is reserved for output. It is not page chrome, decoration, or
-a substitute for the browser documentation hierarchy.
-
-## The visual grammar
-
-The paper field is the default. Serif headings carry the Noir identity; system
-sans makes instructions, navigation, and reference text easy to scan. Monospace
-is for code and operations.
-The product name and page titles carry the largest type. Article titles remain
-strong, while code and terminal output provide supporting evidence.
-
-The terminal surface is black and square. It shows a reproducible headless
-recording beside the code and command that produce it, with playback remaining
-reader-controlled. It is never decorative chrome and never implies a
-real-terminal protocol check. The documentation does not need a separate
-Examples route; complete repository examples can be demonstrated from the
-guide that explains their behavior.
+This is a browser documentation system. It does not prescribe the appearance of
+applications built with Noir. Terminal styling is reserved for output. It is
+never page chrome or decoration.
 
 Blue is a signal, not a theme color. Use it for process numbers or a small
 evidence marker. Links, headings, cards, and whole page regions do not become
 blue by default.
 
-## Typography and measure
+## Typography
 
-- Display and page titles use the configured Georgia stack with moderate
-  tracking (`-0.03em`) and enough leading that large type can breathe.
-- Documentation body copy uses system sans at 1rem / 1.7 leading and stays near
-  65–68 characters per line. Paragraphs and headings are separated by more
-  space above a heading than below it.
-- Navigation and evidence labels use system sans.
-- Commands, source, terminal frames, and compact process numbers use monospace.
-- Heading order carries document structure; size must not substitute for a
-  missing semantic level.
+The application root is sans-serif at 1rem / 1.7. That includes navigation,
+search results, dialogs, tables, captions, and every overlay Nextra renders, so
+the site has one interface typeface everywhere.
 
-Code blocks may exceed the prose measure when the example needs it. Tables and
-reference ledgers use the available article width so comparisons remain
-scannable.
+Serif is opt-in, and only for display type: the wordmark, the homepage
+headings, and article `h1` and `h2`. Nothing else adds a font family. Three
+custom properties carry the whole system: `--display`, `--body`, and `--mono`.
+A rule that writes a literal font stack is a defect.
 
-## Page compositions by reader intent
+Prose stays near 65–80 characters. Code, tables, and captured frames may use
+the full article width; long code lines scroll inside the code block only.
 
-The documentation follows [Diátaxis](https://diataxis.fr/): tutorials, how-to
-guides, explanation, and reference. `/docs` and the sidebar expose those four
-reader needs while existing article URLs remain stable. The modes share tokens
-and navigation; each page keeps one primary purpose.
+## Page templates
+
+Every page states one reader intent and one completion. A page that cannot name
+both belongs inside another page.
 
 ### Tutorial
 
-Lead with the outcome and prerequisites. Give the reader a complete runnable
-file, the exact command, an expected static frame, one observable change, and a
-short explanation of what Noir retained. The Getting started page is the model.
+Lead with the outcome and the requirements. Then repeat one loop: exact file
+and edit location, small changed excerpt, an optional syntax note beside the
+new Dart, the command or interaction, the expected result, and a matching real
+capture. Long tutorials become linked lessons; a lesson keeps its complete
+runnable checkpoint and its exact diff in disclosures.
 
-### How-to guide
+Chapter navigation belongs to the tutorial. Global document ordering never
+becomes a tutorial's Next link, so `Layout` sets `navigation={false}` and
+lessons link forward in their own prose.
 
-How-to examples are widgets with `const` constructors, named callbacks, and a
-block `build` method—not helper functions that return `Widget`. Extract a
-`StatelessWidget` or `StatefulWidget` whenever the snippet owns layout or
-lifecycle. Keep constructor-only fragments on reference pages.
+### Task guide
 
-### Explanation
+A specific goal, a prerequisites link, the smallest complete recipe, the
+expected behavior, one relevant variation, and recovery advice beside the
+recipe that needs it. Guides do not build a second omnibus troubleshooting
+page.
 
-Use one concrete event to reveal the retained architecture. Process rows can
-show the transition from callback to state, element, render object, display
-list, and native compositor. The prose should explain why the boundary exists,
-not reproduce the API catalog.
+Guide examples are widgets with `const` constructors and named callbacks, not
+helper functions that return `Widget`. Extract a `StatelessWidget` or
+`StatefulWidget` whenever a snippet owns layout or lifecycle.
+
+### Concept
+
+One question, one concrete example, a clear mental model, and links that apply
+it. Process rows can show ordered ownership, such as the layout protocol or the
+path from an event to a frame. A concept page explains why a boundary exists;
+it does not reproduce the API catalog.
 
 ### Reference
 
-Favor dense comparison tables and concise boundary notes. A reader should be
-able to choose a widget, platform, package surface, or command without reading
-an essay. Reference pages may link to guides for rationale.
+Purpose-first, dense, and scannable. Every widget name in the catalog is a link
+to a destination that answers the lookup: a curated page, or the generated
+signature for the published version. A curated widget page gives the job, a
+complete minimal usage, the properties a reader reaches for first, keyboard and
+pointer behavior, ownership, one common mistake, and the generated signature.
 
-## Homepage sequence
+## Content ownership
 
-The landing page follows this order:
+One authored explanation has one home. Generated facts may be repeated
+anywhere; independently authored copies of a changing rule may not.
 
-1. State what Noir is and disclose the prerelease boundary.
-2. Offer the install command and first-app path.
-3. Put a syntax-highlighted widget `State` beside the frame it produces.
-4. Index the capabilities that distinguish Noir from raw terminal output.
-5. Compress the retained architecture into one readable path.
-6. Route readers by the job they need to do next.
+| Material                             | Primary home                                              |
+| ------------------------------------ | --------------------------------------------------------- |
+| Dependency instructions and versions | `TODO.md` availability block → `/docs/installation`       |
+| First-app code and its frames        | `example/tutorials/first_app/`                            |
+| Task-list lessons                    | `packages/noir_signals/doc/` and its tutorial checkpoints |
+| Hook and Signals contracts           | `packages/noir_signals/doc/hooks.md` and `signals.md`     |
+| Runnable example catalogs            | `example/README.md` and the companion `example/README.md` |
+| Widget signatures and defaults       | Generated dartdoc for the published version               |
+| Terminal and platform limits         | `/docs/platform-limitations`                              |
+| Framework harnesses and drive mode   | `CONTRIBUTING.md` and `test/helpers/README.md`            |
 
-The code/frame proof is the distinctive center of the page. Homepage Dart uses
-the same Shiki themes as the documentation (`github-light` / `github-dark`) so
-keywords, types, and callbacks are readable without turning the specimen into
-a second terminal. Capability rows are an index, not marketing cards.
+`website/scripts/sync-docs.mjs` owns every derivation. It fails the build on
+stale input rather than publishing a wrong version, an unrunnable snippet, or a
+frame that no longer matches its source.
+
+## Navigation
+
+Top navigation is **Docs · Examples · API · GitHub**. The wordmark returns
+home, so there is no Home item.
+
+The documentation sidebar groups pages by reader intent: Start here, Guides,
+Concepts, and Reference. Installation, Architecture, and curated widget pages
+stay routable and linked in context, without occupying the default sidebar.
+
+**This supersedes the previous rule that the site needs no separate Examples
+route.** A guide that also has to carry an example catalog serves two readers
+at once. `/examples` is a small index of runnable source, with the command, the
+exact file, and what each example demonstrates. It is not a second tutorial
+collection.
+
+The active route uses a narrow ink marker, not a filled block.
 
 ## Components
 
 ### Terminal frame
 
-A figure with a short caption, verbatim cell output, the producing command,
-and an evidence boundary. Keep output selectable. Preserve whitespace. If the
-frame is expected rather than captured, say so. Animation belongs only where
-motion itself is the behavior under discussion and a static sequence would be
-misleading.
+A figure with a short caption, verbatim cell output as selectable text, the
+producing command, and the capture boundary. The text comes from
+`scripts/capture_doc_frames.dart`, which drives the same checkpoint the page
+teaches. A frame the reader cannot trace to a runnable file does not belong on
+the site.
+
+### Terminal recording
+
+The asciicast player, for behavior that motion explains better than a static
+frame. It never autoplays, keeps a real poster frame, and respects
+`prefers-reduced-motion`. It lives where its program lives: the examples index,
+not a tutorial that teaches different code.
+
+### Availability label
+
+One compact row at the point where a reader is about to copy a dependency or a
+command. It renders generated data, names the package, states what is
+available, and links to installation. A command that cannot run today never
+appears as a command to run.
 
 ### Process flow
 
-Numbered ruled rows communicate ordered ownership or event movement. Each row
-contains one action and one consequence. Use the component for layout protocol,
-input routing, and architecture because those are actual sequences—not merely
-because a page has several points.
+Numbered ruled rows for ordered ownership or event movement. One action and one
+consequence per row. Use it for real sequences, not for any list of points.
 
 ### Comparison table
 
-Use tables for exact mappings: need to widget, test goal to harness, package
-surface to responsibility, and platform to boundary. Table text uses compact
-system sans while surrounding explanation remains serif.
+Exact mappings: need to widget, symptom to fix, package surface to
+responsibility, platform to boundary.
 
-### Install command and notices
+### Disclosure
 
-The install command is one bordered copyable row. A prerelease notice is an
-editorial aside between rules, not a tinted alert card. Both reflow without
-horizontal scrolling on compact screens.
-
-### Navigation and next steps
-
-The active route uses a narrow ink marker instead of a filled block. Section
-labels describe reader intent: Start, Build, Understand, and Reference. Final
-links name a concrete next task rather than saying only “Learn more.”
-
-Tutorial checkpoints use native disclosure controls with step-specific labels
-and targets at least 44px tall. Their headings use compact navigation type,
-without article-heading margins. Keep each screenshot and its caption in one
-figure, with a thin rule and small sans-serif caption text.
+Native `<details>` with a step-specific label and a target at least 44px tall.
+A lesson must still teach its step with every disclosure closed.
 
 ## Shape, spacing, and motion
 
-Geometry is square. Separation comes from whitespace, 1px rules, and the
-black evidence surface; the system has no shadow or elevation vocabulary.
-Vertical rhythm is generous on the homepage and in article headings, and tighter
-in tables and process rows. At narrow widths, split compositions stack in
-reading order.
-
-The website uses no ambient motion. Respect `prefers-reduced-motion`, and do
-not use a recording when static code and a captured frame communicate the same
-fact more clearly.
+Geometry is square. Separation comes from whitespace, 1px rules, and the black
+evidence surface; the system has no shadow or elevation vocabulary. Vertical
+rhythm is generous on the homepage and in article headings, and tighter in
+tables and process rows. At narrow widths, split compositions stack in reading
+order. The site uses no ambient motion.
 
 ## Accessibility and dark mode
 
 Keyboard focus uses a 3px current-color outline with offset. Skip navigation,
-semantic headings, figure captions, table headers, and link text must remain
-available without color. Dark mode reassigns semantic paper, ink, quiet, rule,
-and signal tokens while keeping the black terminal evidence surface distinct.
-Dark paper is `#161614` so `#090a0a` terminal frames still interrupt the
-reading surface.
+semantic headings, figure captions, table headers, and link text stay available
+without color. A diff never communicates through color alone: additions and
+removals keep their `+` and `-` characters.
+
+Dark mode reassigns the semantic paper, ink, quiet, rule, and signal tokens and
+keeps the black terminal surface distinct. Dark paper is `#161614`, so `#090a0a`
+frames still interrupt the reading surface.
+
+## Checks
+
+`npm run test:smoke` asserts the reader contracts this document states: the
+homepage proof equals its checkpoint and its capture, the first tutorial shows
+the file it teaches, lessons keep their own screenshots and legacy
+destinations, the examples index links files that exist, the catalog reaches a
+usable reference in two actions, search results use the interface typeface, and
+no route overflows a 390px viewport.
+
+Run `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run
+build`, and `npm run test:smoke` before committing a website change. Validate
+the non-root deployment with `NOIR_WEBSITE_BASE_PATH=/noir` as well.

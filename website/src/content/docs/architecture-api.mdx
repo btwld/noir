@@ -1,6 +1,6 @@
 ---
 title: Architecture
-description: Follow one event through Noir’s retained widget tree, cell layout, display list, compositor, and native boundary.
+description: How one event becomes the next terminal frame, and which layer owns identity, layout, painting, and native resources.
 ---
 
 # Architecture
@@ -13,32 +13,32 @@ change one value without rebuilding a terminal session from scratch.
 > paint. The compositor talks to OpenTUI. The native layer owns FFI, memory,
 > ABI, and binaries.
 
+This page is for readers who extend the framework, host it, or need to know
+which layer owns a problem. To build an application, start with
+[Your first app](/docs/getting-started).
+
 ## Follow one increment through Noir
 
-Start with the Counter’s increment method:
+Start with the counter's increment method:
 
 ```dart
-void _increment() {
-  setState(() {
-    _count++;
-  });
-}
+void _increment() => setState(() => _count++);
 ```
 
-That method crosses the framework in a defined order:
+That call crosses the framework in a defined order:
 
 <ol className="concept-flow architecture-layers">
   <li>
     <strong>The event changes State</strong>
     <span>
-      <code>_increment</code> mutates <code>_count</code> and marks its element
+      <code>_increment</code> changes <code>_count</code> and marks its element
       dirty.
     </span>
   </li>
   <li>
     <strong>The Element preserves identity</strong>
     <span>
-      The existing State remains attached while type, key, and position still
+      The existing State stays attached while type, key, and position still
       match.
     </span>
   </li>
@@ -52,8 +52,8 @@ That method crosses the framework in a defined order:
   <li>
     <strong>RenderObjects resolve the frame</strong>
     <span>
-      Constraints become cell sizes, positions, hit-test geometry, and recorded
-      paint.
+      Layout and paint recording run from the render root; constraints become
+      cell sizes, positions, and hit-test geometry.
     </span>
   </li>
   <li>
@@ -65,26 +65,27 @@ That method crosses the framework in a defined order:
   </li>
 </ol>
 
-The declaration can be short because the retained layers own the work that
-must persist between declarations.
+Rebuilding is scoped to the dirty elements. Layout and paint recording are not:
+a dirty frame walks the render tree from its root. That is a deliberate,
+recorded trade-off, not an optimization the framework promises to make later.
 
-## Separate identity from configuration
+## Identity is separate from configuration
 
-A `StatefulWidget` is replaceable configuration. Its Element owns the stable
+A `StatefulWidget` is replaceable configuration. Its element owns the stable
 place in the tree, and that place retains the `State` object. If a rebuild puts
 the same widget type and key at the same position, Noir updates the
 configuration and keeps the state. Change that identity and Noir disposes the
-old state before mounting a new one.
+old state before it mounts a new one.
 
 Inherited dependencies also belong to the element tree. When an
-`InheritedWidget` reports a meaningful update, dependent elements rebuild
+`InheritedWidget` reports a meaningful update, the dependent elements rebuild
 without application code maintaining a second subscription graph.
 
 Hot reload uses the same boundary. The Dart VM swaps compatible code, Noir
 calls `reassemble` on retained state, then rebuilds, lays out, and paints. It
 does not rerun `main()` or `initState()`.
 
-## Keep FFI and paint below widgets
+## Paint and FFI stay below widgets
 
 A widget never calls FFI directly. A custom render object lays out and hit
 tests in its own layer, then records paint through `PaintingContext`; it does
@@ -95,7 +96,15 @@ Explicit lifecycle methods remain the primary resource owner. Finalizers can
 limit damage after a missed cleanup, but they do not replace deterministic
 `dispose` or native handle release.
 
-Most applications stay entirely in `package:noir/noir.dart`. Use the
-[API surface guide](/api) to choose an import. If your goal is to find a
-control or composition, start with the [Widget catalog](/docs/widget-catalog)
-instead of dropping to a lower layer.
+## Where to go next
+
+- [API](/api) — the four package surfaces and what each one accepts
+  responsibility for.
+- [State, identity, and ownership](/docs/state-lifecycle) — the same boundary,
+  from an application's point of view.
+- [Platform support](/docs/platform-limitations) — what the native layer and
+  the reader's terminal decide.
+- [GOALS.md](https://github.com/conceptadev/noir/blob/main/GOALS.md) — the
+  durable architecture and quality bar this page summarizes.
+- [CONTRIBUTING.md](https://github.com/conceptadev/noir/blob/main/CONTRIBUTING.md)
+  — repository setup, the framework test harnesses, and drive mode.

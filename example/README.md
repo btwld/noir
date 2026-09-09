@@ -19,6 +19,18 @@ describe their keybindings and special requirements in the file header.
 | `dart run example/hello.dart` | A small stateless widget tree with shared example chrome. |
 | `dart run example/counter.dart` | Stateful updates through keyboard and pointer activation. |
 
+## Tutorial checkpoints
+
+`tutorials/first_app/` holds the two checkpoints of the
+[first-app tutorial](https://github.com/conceptadev/noir/blob/main/website/src/content/docs/getting-started.mdx):
+`step_01.dart` prints `Count:`, and `step_02.dart` is the same file after the
+label edit. The published documentation captures its frames from these exact
+files, so the code a reader copies and the output they see always agree.
+
+```sh
+dart run example/tutorials/first_app/step_01.dart
+```
+
 ## Hooks and Signals companion
 
 These examples live in the optional `noir_signals` package and are available

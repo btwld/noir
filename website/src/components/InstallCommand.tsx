@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 
+import { availability } from '../generated/availability';
+
 interface InstallCommandProps {
+  /** Defaults to the command for the published Noir package. */
   command?: string;
 }
 
 export function InstallCommand({
-  command = 'dart pub add noir',
+  command = availability.noir.installCommand,
 }: InstallCommandProps) {
   const [copied, setCopied] = useState(false);
 

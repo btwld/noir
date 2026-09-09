@@ -1,0 +1,57 @@
+---
+title: Examples
+description: Runnable Noir apps in this repository, with the command, the source file, and what each one demonstrates.
+---
+
+# Examples
+
+Every entry below is a file you can run. The catalogs in the repository own the
+complete list; this page is the short way in.
+
+## The counter, running
+
+`example/counter.dart` is the larger counter: a title bar, a border, arrow
+keys, `+`, `-`, and explicit pointer handling. It is not the small app from
+[Your first app](/docs/getting-started); that tutorial shows its own captured
+frames.
+
+<TerminalRecording
+  title="Noir counter · Up, Space, then pointer activation"
+  command="dart run noir:run example/counter.dart"
+  sourceHref="https://github.com/conceptadev/noir/blob/main/example/counter.dart"
+/>
+
+## Core examples
+
+These need only the published `noir` package. Clone the repository and run them
+from its root.
+
+| Source                                                                                             | Command                                 | What it demonstrates                                             |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| [counter.dart](https://github.com/conceptadev/noir/blob/main/example/counter.dart)                 | `dart run example/counter.dart`         | Retained state, keyboard activation, and pointer activation.     |
+| [layout_basics.dart](https://github.com/conceptadev/noir/blob/main/example/layout_basics.dart)     | `dart run example/layout_basics.dart`   | `Container`, `Row`, `Column`, spacing, and flex distribution.    |
+| [focus_form.dart](https://github.com/conceptadev/noir/blob/main/example/focus_form.dart)           | `dart run example/focus_form.dart`      | Focus cues, validated input, submission, and pointer activation. |
+| [components_demo.dart](https://github.com/conceptadev/noir/blob/main/example/components_demo.dart) | `dart run example/components_demo.dart` | Every public control under two palettes.                         |
+
+The [core example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)
+lists the rest, grouped by concept, controls, complete apps, motion, and
+advanced reference.
+
+## Companion examples
+
+These use the optional `noir_signals` package. It is not on pub.dev yet, so run
+them from a repository checkout. Run `dart pub get` at the repository root
+first, then run the commands from `packages/noir_signals/`.
+
+| Source                                                                                                           | Command                             | What it demonstrates                                                     |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------ |
+| [counter.dart](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)         | `dart run example/counter.dart`     | `SignalWidget` and `useState` for one local value.                       |
+| [task_list.dart](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart)     | `dart run example/task_list.dart`   | The finished app from the [task-list tutorial](/docs/signals-task-list). |
+| [file_search.dart](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run example/file_search.dart` | An externally owned model, `useSignalValue`, and `SignalValueBuilder`.   |
+
+The [companion example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
+holds these files and its own index. The tutorial's five checkpoints live in
+[`example/tutorials/task_list/`](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example/tutorials/task_list).
+
+See [Installation](/docs/installation) for the dependency setup these examples
+assume.

@@ -1,13 +1,13 @@
 # Noir documentation website
 
-This directory contains Noir's browser documentation. It is a separate
-Next.js and Nextra application with its own dependencies, lockfile, and build
-commands; nothing here is part of the published Dart package.
+This directory contains Noir's browser documentation. It is a separate Next.js
+and Nextra application with its own dependencies, lockfile, and build commands.
+Nothing here is part of the published Dart package.
 
-The site is written for Dart and Flutter developers evaluating Noir or
-building terminal applications. It should get a new reader to a running
-example quickly, explain the framework's retained architecture, and make the
-four supported package surfaces easy to distinguish.
+The site is written for Dart developers who are evaluating Noir or building a
+terminal application. It should get a new reader to a running app quickly, then
+let them learn reactive state, finish a task, or look something up without
+reading the other three paths first.
 
 ## Work locally
 
@@ -28,6 +28,55 @@ npm run typecheck
 npm run build
 npm run test:smoke
 ```
+
+## Generated content
+
+`npm run sync` (also run by `dev`, `typecheck`, and `build`) regenerates
+everything the site must not maintain twice:
+
+| Output                                | Derived from                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `src/generated/availability.ts`       | The `noir-availability` block in `TODO.md`, checked against both `pubspec.yaml` files |
+| `src/generated/checkpoints.ts`        | `example/tutorials/first_app/step_01.dart` and `step_02.dart`                         |
+| `src/generated/frames.ts`             | `src/generated/terminal-frames.json`                                                  |
+| `src/content/docs/signals-task-list/` | The five lesson Markdown files that ship with `noir_signals`                          |
+| `public/demos/signals-task-list/`     | `packages/noir_signals/doc/images/`                                                   |
+
+The script fails the build instead of publishing stale output. It rejects a
+`TODO.md` version that disagrees with a manifest, a captured frame whose source
+file has changed, a first-app tutorial that no longer shows its checkpoint
+verbatim, and lesson Dart that is not in the lesson's runnable checkpoint.
+
+Commit the regenerated files with the source change. Rerun the sync after
+editing a source while the dev server is already running.
+
+## Captured terminal frames
+
+Static frames come from the checkpoints they document. Regenerate them from the
+repository root after an intentional change:
+
+```sh
+dart run scripts/capture_doc_frames.dart
+```
+
+`--check` recaptures without writing, and fails when the committed artifact is
+out of date. Scenes live in `scripts/recordings/doc_frames.json`. A frame is
+headless drive-mode evidence: it proves layout, painted cells, and parsed
+input, not that a particular terminal emulator agrees.
+
+## Recorded examples
+
+The examples index uses a self-hosted asciicast of the shipped counter.
+Regenerate it from the repository root after an intentional visual or
+interaction change:
+
+```sh
+dart run scripts/record_noir_demo.dart \
+  --recipe scripts/recordings/counter.json --force
+```
+
+The player shows a static poster until the reader presses Play. Normal-motion
+sessions loop after that explicit action; reduced-motion sessions play once.
 
 ## GitHub Pages
 
@@ -52,55 +101,15 @@ into `website/out/_pagefind`. The `out` directory is generated deployment
 output and is not committed. Pushes to `main` deploy automatically; the manual
 workflow trigger exists for an intentional deployment from another ref.
 
-## Recorded examples
+## Ownership
 
-The homepage and getting-started guide use the same self-hosted asciicast from
-the shipped counter example. Regenerate it from the repository root after an
-intentional visual or interaction change:
+[DESIGN.md](DESIGN.md) holds the page templates, the content-ownership table,
+the navigation rules, and the visual system. Read it before adding a page or a
+component.
 
-```sh
-dart run scripts/record_noir_demo.dart \
-  --recipe scripts/recordings/counter.json --force
-```
-
-The player shows a static poster until the reader presses Play. Normal-motion
-sessions loop after that explicit action; reduced-motion sessions play once.
-The recording preserves NoirDriver cells, styles, cursor state, and production-
-parser input. It is not evidence of raw-mode cleanup or a particular terminal
-emulator.
-
-## Documentation ownership
-
-The **Build a task list** page and its six screenshots are generated from
-`packages/noir_signals/doc/getting-started.md` and its `images/` directory.
-Edit those sources, then run `node scripts/sync-signals-guide.mjs` from
-`website/`. Development startup, type-checking, and production builds also run
-the sync. Commit the regenerated `src/content/docs/signals-task-list.mdx` and
-`public/demos/signals-task-list/` images with the source changes. While the dev
-server is already running, rerun the sync after editing the source guide.
-The generated page sets `sourceUrl` to the canonical Markdown. The MDX page
-wrapper uses that URL for **View source on GitHub**; other pages keep Nextra's
-default source path.
-
-Each fact should have one primary home:
-
-- The repository `README.md` owns the package introduction, installation,
-  public API tiers, and concise platform status.
-- `example/README.md` owns the runnable example catalog.
-- `packages/noir_signals/example/README.md` owns the companion example index.
-- `packages/noir_signals/doc/getting-started.md` owns the task-list walkthrough
-  shared by the companion archive and the website.
-- `packages/noir_signals/doc/hooks.md` owns the exact hooks contract shipped
-  with the companion package.
-- Dartdoc owns API signatures and member-level behavior.
-- This website owns tutorials, task guides, concepts, and browser reference
-  pages.
-- `GOALS.md`, `TODO.md`, and `CONTRIBUTING.md` own architecture, release
-  evidence, and contributor process.
-
-Link to the primary source when a second copy would drift. Repeat a fact only
-when the reader needs it in place, such as a platform limitation beside an
-affected feature.
+In short: link to the primary source when a second copy would drift, and repeat
+a fact only where the reader needs it in place, such as a platform limitation
+beside the affected feature.
 
 ## Writing and evidence
 
@@ -109,28 +118,10 @@ intentionally follows Flutter, and describe terminal or OpenTUI behavior in
 Noir's own terms. Code must compile against the current public API. A rendered
 frame must be a real capture or clearly labelled expected output.
 
-Noir is a prerelease. The site must not imply that an unreleased API is stable
-or that a restricted terminal or native release gate passed when `TODO.md`
-says otherwise. The source tree can also be ahead of the latest pub.dev
-package, so version-sensitive claims need an explicit source.
+Noir is a prerelease. The site must not imply that an unreleased API is stable,
+or that a restricted terminal or native release gate passed when `TODO.md` says
+otherwise. The source tree can be ahead of the latest pub.dev package, so
+version-sensitive claims come from the generated availability data.
 
 Do not invent testimonials, adoption numbers, performance benchmarks, or other
 claims without a recorded source.
-
-The visual system is **Ink and Signal**. Its tokens, page compositions,
-accessibility requirements, and visual treatment of captured and expected
-frames are in [DESIGN.md](DESIGN.md).
-
-## Documentation structure
-
-The site uses Nextra Docs Theme 4 on Next.js, with the Noir styles in
-`src/app/globals.css` and tokens documented in `DESIGN.md`. Content stays in
-`src/content/`; the shared catch-all route renders it through Nextra. The
-`src/content/docs/index.mdx` overview owns `/docs`.
-
-The overview and sidebar follow [Diátaxis](https://diataxis.fr/): tutorials
-for learning by building, how-to guides for specific tasks, explanation for
-understanding the framework, and reference for lookup. Keep complete code
-checkpoints and expected output in tutorials; link to lifecycle and ownership
-contracts when the reader needs more detail. Documentation body text uses
-system sans; serif page and section headings retain the Noir identity.

@@ -6,7 +6,8 @@ for Dart.
 
 This package is optional. Installing Noir alone does not pull it in.
 
-Start with the [task-list walkthrough](doc/getting-started.md). It connects
+Start with the task-list tutorial, which begins at
+[Build a task list](doc/getting-started.md). Its five lessons connect
 hook-owned text input, signals, a computed remaining count, and user actions
 in one runnable app.
 
@@ -60,9 +61,11 @@ primitives needed to define a model.
 
 ## Examples and reference
 
-The [example directory](example/README.md) contains the runnable counter, task list,
-and file search, with setup and run commands. Follow
-[Build a task list](doc/getting-started.md) for the step-by-step tutorial.
+The [example directory](example/README.md) contains the runnable counter, task
+list, and file search, with setup and run commands. The tutorial's earlier
+checkpoints are in
+[`example/tutorials/task_list/`](example/tutorials/task_list/); its final
+checkpoint is [`example/task_list.dart`](example/task_list.dart).
 
 - [Hooks reference](doc/hooks.md): hook families, call order, resource ownership,
   and custom hooks.

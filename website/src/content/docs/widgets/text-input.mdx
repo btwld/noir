@@ -1,0 +1,100 @@
+---
+title: TextInput
+description: A one-line editable field with an owned controller, submit callback, and predictable key handling.
+---
+
+# TextInput
+
+`TextInput` edits one line of text. Use it for a search box, a name field, or
+the composer in a list. For several lines, use `TextArea`.
+
+```dart
+import 'package:noir/noir.dart';
+```
+
+## Minimal working field
+
+This complete widget owns the controller, reads the text on submit, and
+releases the controller in `dispose`:
+
+```dart
+class SearchField extends StatefulWidget {
+  const SearchField({required this.onSearch, super.key});
+
+  final ValueChanged<String> onSearch;
+
+  @override
+  State<SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<SearchField> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextInput(
+    controller: _controller,
+    autofocus: true,
+    placeholder: 'package name',
+    onSubmit: () => widget.onSearch(_controller.text.trim()),
+  );
+}
+```
+
+## Properties you will reach for first
+
+| Property                                  | Default             | Behavior                                                                       |
+| ----------------------------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| `controller`                              | `null`              | The `TextEditingController` that owns the text, selection, and caret.          |
+| `value`                                   | `null`              | An uncontrolled starting string. Passing both `controller` and `value` throws. |
+| `placeholder`                             | `null`              | Dimmed hint text shown while the field is empty.                               |
+| `onChanged`                               | `null`              | Called with the raw text after every change.                                   |
+| `onSubmit`                                | `null`              | Called when the reader presses Enter.                                          |
+| `maxLength`                               | `100`               | Maximum accepted characters. Raise it for a long line.                         |
+| `focusNode`                               | `null`              | Supply one when a parent must request or observe focus.                        |
+| `autofocus`                               | `false`             | Requests primary focus when the field first mounts.                            |
+| `obscureText` / `obscuringCharacter`      | `false` / `'*'`     | Paints each grapheme as the obscuring character. The stored text stays raw.    |
+| `cursorStyle`                             | `CursorStyle.block` | Shape drawn for the caret.                                                     |
+| `color`, `backgroundColor`, `cursorColor` | Theme values        | Override only for a deliberate exception to the Theme.                         |
+
+## Keyboard and pointer behavior
+
+- Printable input inserts at the caret while the field has focus.
+- Backspace and Delete remove one grapheme cluster.
+- Left, Right, Home, and End move the caret. Ctrl+Home and Ctrl+End jump to the
+  start and end of the text.
+- Enter calls `onSubmit`. The field never inserts a newline; `TextArea` does.
+- Tab is not consumed, so focus traversal keeps working.
+- A primary click inside the field places the caret and takes focus.
+
+## Who owns what
+
+The code that creates a `TextEditingController` or a `FocusNode` also disposes
+it. `TextInput` creates an internal focus node only when you do not pass one,
+and it disposes what it created. It never disposes a controller or node you
+supplied.
+
+Read `controller.text` inside the callback that needs it. Do not keep a second
+copy of the text in `State` and try to keep the two in sync.
+
+## Common mistake
+
+Passing both `controller` and `value` throws an assertion. Choose one:
+`controller` when code must read or change the text, `value` when the field is
+uncontrolled and `onChanged` is enough.
+
+## Related
+
+- [Handle input and focus](/docs/input-focus) — event order, focus ownership,
+  and shortcuts.
+- [Manage state and resources](/docs/hooks) — `useTextEditingController` keeps
+  the same ownership without a `State` class.
+- [Widget catalog](/docs/widget-catalog#input-and-selection) — the other
+  interactive controls.
+- [Generated signature](https://pub.dev/documentation/noir/latest/noir/TextInput-class.html)
+  — every parameter for the version in your `pubspec.lock`.

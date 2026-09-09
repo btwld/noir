@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -59,18 +60,97 @@ void main() {
     );
   });
 
-  test('homepage uses the real capture without autoplay or mock output', () {
+  test('the recording lives with the program it records', () {
+    final examples = File(
+      'website/src/content/examples.mdx',
+    ).readAsStringSync();
     final homepage = File('website/src/app/page.tsx').readAsStringSync();
+    final tutorial = File(
+      'website/src/content/docs/getting-started.mdx',
+    ).readAsStringSync();
     final player = File(
       'website/src/components/TerminalRecording.tsx',
     ).readAsStringSync();
 
-    expect(homepage, contains('<TerminalRecording'));
-    expect(homepage, isNot(contains('counterFrameAfterIncrement')));
-    expect(homepage, isNot(contains('<TerminalFrame')));
+    expect(examples, contains('<TerminalRecording'));
+    expect(examples, contains('example/counter.dart'));
+    // The larger repository counter is not the program either page teaches.
+    expect(homepage, isNot(contains('<TerminalRecording')));
+    expect(tutorial, isNot(contains('<TerminalRecording')));
     expect(player, contains("poster: 'npt:0:00.1'"));
     expect(player, contains('autoplay: false'));
     expect(player, contains('prefers-reduced-motion'));
     expect(player, contains('AsciinemaPlayer.create'));
+  });
+
+  test('every published frame is a capture of a shipped checkpoint', () {
+    final manifest =
+        jsonDecode(
+              File('scripts/recordings/doc_frames.json').readAsStringSync(),
+            )
+            as Map<String, Object?>;
+    final output = manifest['output']! as String;
+    expect(output, 'website/src/generated/terminal-frames.json');
+
+    final scenes = (manifest['scenes']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    expect(scenes, isNotEmpty);
+
+    final captured =
+        jsonDecode(File(output).readAsStringSync()) as Map<String, Object?>;
+    expect(captured['capturedWith'], contains('NOIR_DRIVE=1'));
+    final frames = captured['frames']! as Map<String, Object?>;
+    expect(frames.keys, unorderedEquals(scenes.map((s) => s['id'])));
+
+    for (final scene in scenes) {
+      final id = scene['id']! as String;
+      final entrypoint = scene['entrypoint']! as String;
+      final source = File(entrypoint);
+      expect(
+        source.existsSync(),
+        isTrue,
+        reason: 'scene $id must capture a file that ships in this repository',
+      );
+
+      final frame = frames[id]! as Map<String, Object?>;
+      expect(frame['entrypoint'], entrypoint);
+      expect(
+        frame['sourceSha256'],
+        sha256.convert(source.readAsBytesSync()).toString(),
+        reason:
+            'scene $id is stale. Run `dart run scripts/capture_doc_frames.dart`.',
+      );
+      expect(frame['lines']! as List<Object?>, isNotEmpty);
+    }
+  });
+
+  test('the first-app tutorial and its homepage proof share one source', () {
+    final checkpoint = File(
+      'example/tutorials/first_app/step_01.dart',
+    ).readAsStringSync();
+    final edited = File(
+      'example/tutorials/first_app/step_02.dart',
+    ).readAsStringSync();
+    final tutorial = File(
+      'website/src/content/docs/getting-started.mdx',
+    ).readAsStringSync();
+    final generated = File(
+      'website/src/generated/checkpoints.ts',
+    ).readAsStringSync();
+
+    expect(checkpoint, contains(r"Text('Count: $_count')"));
+    expect(edited, contains(r"Text('Total: $_count')"));
+    expect(
+      checkpoint.replaceAll('Count: ', 'Total: '),
+      edited,
+      reason: 'the two checkpoints must differ only by the taught edit',
+    );
+    expect(tutorial, contains(checkpoint.trimRight()));
+    expect(generated, contains(jsonEncode(checkpoint.trimRight())));
+    expect(
+      generated,
+      contains('example/tutorials/first_app/step_01.dart'),
+      reason: 'the homepage excerpt must name the file it came from',
+    );
   });
 }

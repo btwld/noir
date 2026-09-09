@@ -22,11 +22,11 @@ const repository = 'https://github.com/conceptadev/noir';
 
 const navbar = (
   <Navbar logo={<span className="wordmark">Noir</span>}>
-    <Link className="site-nav-link" href="/">
-      Home
-    </Link>
     <Link className="site-nav-link" href="/docs">
       Docs
+    </Link>
+    <Link className="site-nav-link" href="/examples">
+      Examples
     </Link>
     <Link className="site-nav-link" href="/api">
       API
@@ -71,6 +71,9 @@ export default async function RootLayout({
           }}
           footer={footer}
           navbar={navbar}
+          // Chapter order belongs to a tutorial, not to the whole document
+          // tree. Lessons link forward in their own prose.
+          navigation={false}
           pageMap={await getPageMap()}
           sidebar={{ defaultMenuCollapseLevel: 1 }}
         >

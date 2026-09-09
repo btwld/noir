@@ -10,22 +10,26 @@ import {
 } from './serve-static-export.mjs';
 
 const websiteRoot = process.cwd();
-const counterExampleSource = readFileSync(
-  join(websiteRoot, 'src/lib/counter-example.ts'),
-  'utf8',
-);
+const repositoryRoot = join(websiteRoot, '..');
 
-function readExportedTemplate(name) {
-  const match = counterExampleSource.match(
-    new RegExp(`export const ${name} = \`([\\s\\S]*?)\`;`),
-  );
-  if (!match) {
-    throw new Error(`Could not find ${name} in counter-example.ts`);
-  }
-  return match[1];
+function readRepositoryFile(path) {
+  return readFileSync(join(repositoryRoot, path), 'utf8');
 }
 
-const counterStateSource = readExportedTemplate('counterStateSource');
+const firstAppSource = readRepositoryFile(
+  'example/tutorials/first_app/step_01.dart',
+);
+const firstAppStateSource = firstAppSource
+  .slice(firstAppSource.indexOf('class _CounterAppState'))
+  .trimEnd();
+const capturedFrames = JSON.parse(
+  readFileSync(join(websiteRoot, 'src/generated/terminal-frames.json'), 'utf8'),
+).frames;
+
+function frameText(id) {
+  return capturedFrames[id].lines.join('\n').replace(/\s+$/, '');
+}
+
 const port = Number(process.env.NOIR_WEBSITE_PORT ?? 3018);
 const suppliedUrl = process.env.NOIR_WEBSITE_URL;
 const basePath = normalizeBasePath(process.env.NOIR_WEBSITE_BASE_PATH);
@@ -98,6 +102,19 @@ async function assertInternalLinksUseBasePath(page, pageName) {
   );
 }
 
+/** Every captured frame on the page must equal its recorded capture. */
+async function assertFramesMatchCaptures(page, route) {
+  const frames = await page.locator('.terminal-frame pre').allInnerTexts();
+  assert.ok(frames.length > 0, `${route} must show a captured frame`);
+  const expected = Object.keys(capturedFrames).map((id) => frameText(id));
+  for (const text of frames) {
+    assert.ok(
+      expected.includes(text.replace(/\s+$/, '')),
+      `${route} shows a frame that no capture produced:\n${text}`,
+    );
+  }
+}
+
 async function runSmoke() {
   const browser = await launchBrowser();
   const context = await browser.newContext();
@@ -110,54 +127,48 @@ async function runSmoke() {
   page.on('pageerror', (error) => browserErrors.push(error.message));
 
   try {
+    // ---- Homepage: one promise, one action, one exact code/output pair ----
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page
-      .getByRole('heading', { name: 'Build reactive terminal UIs in Dart.' })
+      .getByRole('heading', { name: 'Build terminal apps in Dart.' })
       .waitFor();
     await assertInternalLinksUseBasePath(page, 'the homepage');
+
+    const primaryAction = page.locator('.home-primary-action');
     assert.equal(
-      await page.getByRole('link', { name: 'Examples', exact: true }).count(),
-      0,
-      'the removed Examples destination must not remain in navigation',
-    );
-    assert.equal(
-      await page.locator('.framework-path > span:not(.path-arrow)').count(),
-      5,
-      'the homepage must retain the concise framework ownership model',
-    );
-    assert.equal(
-      await page.locator('.home-proof .terminal-recording').count(),
-      1,
-      'the homepage must pair source with one real terminal recording',
+      await primaryAction.getAttribute('href'),
+      `${basePath}/docs/getting-started/`,
+      'the homepage must lead with the first-app action',
     );
     assert.ok(
-      (await page
-        .locator('.home-proof .highlighted-code .shiki span')
-        .count()) > 8,
-      'the homepage counter source must be syntax-highlighted',
+      (await primaryAction.boundingBox()).y < 1000,
+      'the first-app action must be visible without scrolling at 1440x1000',
     );
+    assert.ok(
+      (await page.locator('.home-proof .terminal-frame').boundingBox()).y <
+        1000,
+      'the code and output proof must be visible on the first desktop screen',
+    );
+
     assert.equal(
       await page.locator('.home-proof figure.highlighted-code').count(),
       1,
-      'homepage source must be a captioned figure',
+      'homepage source must be one captioned figure',
     );
     assert.equal(
       await page.locator('.home-proof .highlighted-code pre[tabindex]').count(),
       0,
       'highlighted source must not insert a dead tab stop',
     );
-    assert.ok(
-      (await page
-        .locator('.home-proof .highlighted-code [style*="--shiki-light"]')
-        .count()) > 0,
-      'homepage highlighting must emit light-theme token variables',
-    );
-    assert.ok(
-      (await page
-        .locator('.home-proof .highlighted-code [style*="--shiki-dark"]')
-        .count()) > 0,
-      'homepage highlighting must emit dark-theme token variables',
-    );
+    for (const variable of ['--shiki-light', '--shiki-dark']) {
+      assert.ok(
+        (await page
+          .locator(`.home-proof .highlighted-code [style*="${variable}"]`)
+          .count()) > 0,
+        `homepage highlighting must emit ${variable} token variables`,
+      );
+    }
     assert.equal(
       (
         await page
@@ -166,74 +177,33 @@ async function runSmoke() {
       )
         .join('\n')
         .replace(/\n+$/, ''),
-      counterStateSource.replace(/\n+$/, ''),
-      'homepage highlighted text must equal the Counter State excerpt',
+      firstAppStateSource,
+      'homepage source must equal the runnable first-app checkpoint excerpt',
     );
-    assert.ok(
-      (await page
-        .locator('.home-proof .highlighted-code')
-        .getByText('_increment')
-        .count()) >= 1,
-      'the homepage must show the Counter increment as a named State method',
-    );
-    const homepageRecording = page.locator('.home-proof .terminal-recording');
-    await homepageRecording.locator('.ap-wrapper').waitFor();
-    const terminalText = homepageRecording.locator('.ap-term-text');
-    await terminalText.waitFor();
-    await page.waitForFunction(
-      () =>
-        document
-          .querySelector('.home-proof .terminal-recording .ap-term-text')
-          ?.textContent?.includes('Noir Counter') ?? false,
-    );
-    assert.match(
-      (await terminalText.textContent()) ?? '',
-      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
-      'homepage poster must show the real initial counter frame',
-    );
-    await page.waitForTimeout(900);
-    assert.match(
-      (await terminalText.textContent()) ?? '',
-      /this many times:[\s\S]*0/,
-      'homepage recording must not autoplay',
-    );
-    await homepageRecording.locator('.ap-play-button').click();
-    await page.waitForFunction(
-      () =>
-        document
-          .querySelector('.home-proof .terminal-recording .ap-term-text')
-          ?.textContent?.includes('1') ?? false,
-    );
-    await page.waitForFunction(
-      () =>
-        /this many times:[\s\S]*3/.test(
-          document.querySelector(
-            '.home-proof .terminal-recording .ap-term-text',
-          )?.textContent ?? '',
-        ),
-      undefined,
-      { timeout: 4000 },
-    );
-    await page.waitForTimeout(250);
-    assert.match(
-      (await terminalText.textContent()) ?? '',
-      /this many times:[\s\S]*3/,
-      'the final pointer interaction must remain visible before the loop',
+    assert.equal(
+      (
+        await page.locator('.home-proof .terminal-frame pre').innerText()
+      ).replace(/\s+$/, ''),
+      frameText('first-app-count'),
+      'the homepage output must be the captured frame of that same file',
     );
     assert.equal(
       await page
+        .locator('.terminal-frame')
         .getByText('NoirDriver (NOIR_DRIVE=1)', { exact: false })
         .count(),
       1,
-      'homepage must identify the capture boundary',
+      'a captured frame must state how it was produced',
     );
     assert.equal(
-      await page
-        .locator('.home-proof .terminal-recording')
-        .getByText('Recorded at 64×18', { exact: false })
-        .count(),
-      1,
-      'homepage recording must expose its geometry and driver boundary',
+      await page.locator('.home-proof .terminal-recording').count(),
+      0,
+      'the homepage proof must show the tutorial file, not another recording',
+    );
+    assert.equal(
+      await page.locator('.availability strong').textContent(),
+      'Published prerelease · 0.0.1-alpha.4',
+      'the homepage must carry one generated availability label',
     );
     assert.equal(
       await page.locator('.capability-index article').count(),
@@ -246,6 +216,27 @@ async function runSmoke() {
       'the homepage must offer four task-oriented next steps',
     );
 
+    // ---- Global navigation ----
+    assert.equal(
+      await page
+        .locator('.nextra-navbar')
+        .getByRole('link', { name: 'Home', exact: true })
+        .count(),
+      0,
+      'the wordmark already returns home; a Home item is redundant',
+    );
+    for (const name of ['Docs', 'Examples', 'API']) {
+      assert.equal(
+        await page
+          .locator('.nextra-navbar')
+          .getByRole('link', { name, exact: true })
+          .count(),
+        1,
+        `the top navigation must offer ${name}`,
+      );
+    }
+
+    // ---- Keyboard entry ----
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.keyboard.press('Tab');
     const keyboardFocus = await page.evaluate(() => {
@@ -272,40 +263,54 @@ async function runSmoke() {
       'the homepage skip link must move focus to the main content',
     );
 
+    // ---- Typography: sans-serif root, serif display only ----
+    const rootFont = await page.evaluate(
+      () => getComputedStyle(document.body).fontFamily,
+    );
+    assert.ok(
+      /sans-serif/.test(rootFont) && !/Georgia/.test(rootFont),
+      `the application root must default to sans-serif, not ${rootFont}`,
+    );
+
+    // ---- Documentation router ----
     await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
     assert.equal(
       new URL(page.url()).pathname.replace(/\/$/, ''),
       `${basePath}/docs`,
-      'the documentation root must remain a useful overview',
+      'the documentation root must stay a compact router',
     );
-
     assert.deepEqual(
       await page.locator('main h2').allTextContents(),
-      ['Tutorials', 'How-to guides', 'Explanation', 'Reference'],
-      'the overview must offer a path for each documentation need',
+      [
+        'Start here',
+        'Finish a task',
+        'Understand the model',
+        'Look something up',
+        'Advanced and contributing',
+      ],
+      'the overview must route by reader intent',
     );
-    await page
-      .locator('main')
-      .getByRole('link', {
-        name: 'Build a task list',
-        exact: true,
-      })
-      .click();
-    await page.waitForURL('**/docs/signals-task-list/');
+    assert.equal(
+      await page.locator('main .install-command').count(),
+      0,
+      'the overview must not repeat the installation instructions',
+    );
 
+    // ---- Your first app ----
     await page.goto(`${baseUrl}/docs/getting-started`, {
       waitUntil: 'networkidle',
     });
-    const tutorialHeadings = await page.locator('main h2').allTextContents();
     assert.deepEqual(
-      tutorialHeadings,
+      await page.locator('main h2').allTextContents(),
       [
-        'Create the project',
-        'Build the counter',
-        'Run it with hot reload',
-        'Change the running app',
+        '1. Create the project',
+        '2. Add Noir',
+        '3. Write the screen',
+        '4. Run it and press the button',
+        '5. Change the running app',
+        'Where to go next',
       ],
-      'Getting started must be a complete, action-led tutorial',
+      'the first tutorial must be a numbered, action-led sequence',
     );
     assert.equal(
       await page
@@ -317,11 +322,35 @@ async function runSmoke() {
     );
     assert.equal(
       await page
-        .locator('main')
-        .getByText('dart run noir:run bin/noir_demo.dart', { exact: true })
+        .locator('main pre')
+        .filter({ hasText: 'dart run noir:run bin/noir_demo.dart' })
         .count(),
       1,
-      'the tutorial must show the hot-reload command once',
+      'the tutorial must show the runner command once, as a command',
+    );
+    assert.equal(
+      (
+        await page
+          .locator('main pre')
+          .filter({ hasText: "import 'package:noir/noir.dart';" })
+          .first()
+          .innerText()
+      )
+        .replace(/^[ \t]+$/gm, '')
+        .trim(),
+      firstAppSource.trim(),
+      'the tutorial file must equal the runnable first-app checkpoint',
+    );
+    assert.equal(
+      await page.locator('main .terminal-frame').count(),
+      2,
+      'the tutorial must show the frame before and after its edit',
+    );
+    await assertFramesMatchCaptures(page, '/docs/getting-started');
+    assert.equal(
+      await page.locator('main .terminal-recording').count(),
+      0,
+      'the tutorial must not show a recording of a different program',
     );
     assert.equal(
       await page
@@ -329,37 +358,215 @@ async function runSmoke() {
         .first()
         .evaluate((element) => getComputedStyle(element).borderBottomWidth),
       '0px',
-      'article headings must rely on whitespace instead of a rule after every section title',
-    );
-    const tutorialRecording = page.locator('main .terminal-recording');
-    await tutorialRecording.locator('.ap-wrapper').waitFor();
-    assert.match(
-      (await tutorialRecording.locator('.ap-term-text').textContent()) ?? '',
-      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
-      'Getting started must show the real repository counter poster',
+      'article headings must rely on whitespace instead of a rule',
     );
 
+    // ---- Installation owns every dependency instruction ----
+    await page.goto(`${baseUrl}/docs/installation`, {
+      waitUntil: 'networkidle',
+    });
+    assert.equal(
+      await page.locator('main .install-command code').innerText(),
+      'dart pub add noir',
+      'the installation page must render the generated install command',
+    );
+    assert.equal(
+      await page
+        .locator('main pre')
+        .filter({ hasText: 'dependency_overrides' })
+        .count(),
+      1,
+      'the installation page must own the companion checkout setup',
+    );
+    assert.equal(
+      await page.locator('main .availability').count(),
+      2,
+      'each package must carry its own availability label here',
+    );
+
+    // ---- Examples reach runnable source ----
+    await page.goto(`${baseUrl}/examples`, { waitUntil: 'networkidle' });
+    const exampleRecording = page.locator('main .terminal-recording');
+    await exampleRecording.locator('.ap-wrapper').waitFor();
+    const terminalText = exampleRecording.locator('.ap-term-text');
+    await terminalText.waitFor();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('main .terminal-recording .ap-term-text')
+          ?.textContent?.includes('Noir Counter') ?? false,
+    );
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /Noir Counter[\s\S]*this many times:[\s\S]*0/,
+      'the examples poster must show the real initial counter frame',
+    );
+    await page.waitForTimeout(900);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*0/,
+      'the recording must not autoplay',
+    );
+    await exampleRecording.locator('.ap-play-button').click();
+    await page.waitForFunction(
+      () =>
+        /this many times:[\s\S]*3/.test(
+          document.querySelector('main .terminal-recording .ap-term-text')
+            ?.textContent ?? '',
+        ),
+      undefined,
+      { timeout: 6000 },
+    );
+    const sourceLinks = await page
+      .locator('main table a[href^="https://github.com/"]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+    assert.ok(
+      sourceLinks.length >= 7,
+      'the examples index must link every listed source file',
+    );
+    for (const href of sourceLinks) {
+      assert.ok(
+        href.endsWith('.dart'),
+        `an example entry must point at a file, not a page: ${href}`,
+      );
+      const path = href.replace(
+        'https://github.com/conceptadev/noir/blob/main/',
+        '',
+      );
+      assert.ok(
+        existsSync(join(repositoryRoot, path)),
+        `the examples index links a missing file: ${path}`,
+      );
+    }
+
+    // ---- The task list is five lessons with local navigation ----
+    const lessonRoutes = [
+      '/docs/signals-task-list',
+      '/docs/signals-task-list/store-tasks',
+      '/docs/signals-task-list/complete-a-task',
+      '/docs/signals-task-list/add-a-task',
+      '/docs/signals-task-list/filter-and-clear',
+    ];
+    for (const route of lessonRoutes) {
+      await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+      assert.equal(
+        await page.locator('main h1').count(),
+        1,
+        `${route} must have one document title`,
+      );
+      const images = page.locator('main img');
+      assert.ok(
+        (await images.count()) >= 1,
+        `${route} must show the result of its own step`,
+      );
+      assert.equal(
+        await page.locator('main figure:has(img) figcaption').count(),
+        await images.count(),
+        `${route} must caption every screenshot`,
+      );
+      for (const picture of await images.all()) {
+        await picture.scrollIntoViewIfNeeded();
+        await picture.evaluate((image) => image.decode());
+        assert.ok(
+          await picture.evaluate((image) => image.naturalWidth > 0),
+          `${route} has a screenshot that does not load`,
+        );
+      }
+    }
+
+    await page.goto(`${baseUrl}/docs/signals-task-list`, {
+      waitUntil: 'networkidle',
+    });
+    for (const legacyAnchor of [
+      'step-1-create-the-screen',
+      'step-2-own-the-task-signal-and-derive-the-count',
+      'step-3-complete-tasks-by-replacing-the-list',
+      'step-4-retain-a-draft-and-add-tasks',
+      'step-5-filter-the-view-and-remove-completed-tasks',
+      'run-the-examples',
+      'continue-with-your-app',
+    ]) {
+      assert.equal(
+        await page.locator(`#${legacyAnchor}`).count(),
+        1,
+        `the tutorial entry must keep the ${legacyAnchor} destination`,
+      );
+    }
+    assert.equal(
+      await page
+        .getByRole('link', {
+          name: 'View source on GitHub',
+          includeHidden: true,
+        })
+        .getAttribute('href'),
+      'https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md',
+      'the source link must open the canonical guide, not the generated page',
+    );
+
+    await page.goto(`${baseUrl}/docs/signals-task-list/filter-and-clear`, {
+      waitUntil: 'networkidle',
+    });
+    const finalCheckpoint = page.locator('details').filter({
+      has: page.getByText('Complete code after lesson 5', { exact: true }),
+    });
+    const checkpointControl = finalCheckpoint.locator('summary');
+    await checkpointControl.focus();
+    await checkpointControl.press('Enter');
+    assert.equal(
+      await finalCheckpoint.evaluate((element) => element.hasAttribute('open')),
+      true,
+      'complete code must open with the keyboard',
+    );
+    assert.equal(
+      // Shiki renders otherwise empty lines with a space to preserve height.
+      (await finalCheckpoint.locator('pre').innerText())
+        .replace(/^[ \t]+$/gm, '')
+        .trim(),
+      readRepositoryFile('packages/noir_signals/example/task_list.dart').trim(),
+      'the copyable final checkpoint must match the runnable example',
+    );
+    const controlHeight = await checkpointControl.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    assert.ok(
+      controlHeight >= 44 && controlHeight < 80,
+      'code controls must have a usable target without heading margins',
+    );
+
+    // ---- The document order never becomes tutorial navigation ----
+    assert.equal(
+      await page
+        .locator('.nextra-content nav[aria-label="Pagination"]')
+        .count(),
+      0,
+      'global pagination must not follow a lesson into an unrelated guide',
+    );
+
+    // ---- Route contracts at phone width ----
     await page.setViewportSize({ width: 390, height: 844 });
     const expectedLimitationRows = 9;
     const routeContracts = [
-      ['/docs', 'main h2', 4],
-      ['/docs/getting-started', '#create-the-project', 1],
-      ['/docs/command-line-arguments', '#use-commandrunner-for-subcommands', 1],
-      ['/docs/widgets-layout', '#follow-the-layout-protocol', 1],
-      ['/docs/state-lifecycle', '#let-one-state-own-the-field', 1],
-      ['/docs/hooks', '#preserve-hook-order', 1],
-      ['/docs/signals', '#observe-each-source-explicitly', 1],
-      ['/docs/signals-task-list', 'main img', 6],
+      ['/docs', 'main h2', 5],
+      ['/docs/getting-started', '[id="3-write-the-screen"]', 1],
+      ['/docs/installation', 'main table', 1],
+      ['/docs/command-line-arguments', '#parse-flags-for-one-application', 1],
+      ['/docs/widgets-layout', '#constraints-go-down-sizes-come-up', 1],
+      ['/docs/state-lifecycle', '#let-one-state-own-the-resource', 1],
+      ['/docs/hooks', '#own-a-resource-and-its-cleanup-together', 1],
+      ['/docs/signals', '#observation-is-explicit', 1],
+      ['/docs/signals-task-list', 'main img', 2],
       ['/docs/input-focus', '#use-local-pointer-coordinates', 1],
       ['/docs/testing', 'main table', 1],
       ['/docs/architecture-api', '.architecture-layers > li', 5],
       ['/docs/widget-catalog', 'main table', 6],
+      ['/docs/widgets/text-input', 'main table', 1],
       [
         '/docs/platform-limitations',
         '.limitation-list > div',
         expectedLimitationRows,
       ],
       ['/api', '.api-surface-status', 4],
+      ['/examples', 'main table', 2],
     ];
     for (const [route, selector, count] of routeContracts) {
       await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
@@ -381,11 +588,6 @@ async function runSmoke() {
         ),
         true,
         `${route} must not overflow the mobile viewport`,
-      );
-      assert.equal(
-        await page.locator(`a[href="${basePath}/examples"]`).count(),
-        0,
-        `${route} must not link to the removed Examples route`,
       );
       await assertInternalLinksUseBasePath(page, route);
     }
@@ -426,6 +628,8 @@ async function runSmoke() {
     );
     await page.getByRole('button', { name: 'Menu' }).click();
 
+    // ---- Guides keep the examples their readers need ----
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${baseUrl}/docs/widgets-layout`, {
       waitUntil: 'networkidle',
     });
@@ -446,81 +650,13 @@ async function runSmoke() {
         .getByText('Timer.periodic', { exact: false })
         .count(),
       1,
-      'the Hooks guide must show effect acquisition and cleanup together',
-    );
-
-    await page
-      .locator('main')
-      .getByRole('link', { name: 'Build a task list', exact: true })
-      .click();
-    await page.waitForURL('**/docs/signals-task-list/');
-    assert.equal(
-      await page.locator('main figure:has(img) figcaption').count(),
-      6,
-      'each walkthrough screenshot must retain its caption',
+      'the resource guide must show acquisition and cleanup together',
     );
     assert.equal(
-      await page
-        .getByRole('link', {
-          name: 'View source on GitHub',
-          includeHidden: true,
-        })
-        .getAttribute('href'),
-      'https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md',
-      'the source link must open the canonical guide rather than the generated page',
+      await page.locator('main pre').filter({ hasText: 'alpha.0' }).count(),
+      0,
+      'an ordinary guide must not repeat a dependency block that cannot resolve',
     );
-    for (const picture of await page.locator('main img').all()) {
-      await picture.scrollIntoViewIfNeeded();
-      await picture.evaluate((image) => image.decode());
-      assert.ok(
-        await picture.evaluate((image) => image.naturalWidth > 0),
-        'every walkthrough screenshot must load',
-      );
-    }
-    const finalCheckpoint = page.locator('details').filter({
-      has: page.getByText('Complete code after step 5', { exact: true }),
-    });
-    const checkpointControl = finalCheckpoint.locator('summary');
-    await checkpointControl.focus();
-    await checkpointControl.press('Enter');
-    assert.equal(
-      await finalCheckpoint.evaluate((element) => element.hasAttribute('open')),
-      true,
-      'complete code must open with the keyboard',
-    );
-    const controlHeight = await checkpointControl.evaluate(
-      (element) => element.getBoundingClientRect().height,
-    );
-    assert.ok(
-      controlHeight >= 44 && controlHeight < 80,
-      'mobile code controls must have a usable target without article-heading margins',
-    );
-    assert.equal(
-      // Shiki renders otherwise empty lines with a space to preserve height.
-      (await finalCheckpoint.locator('pre').innerText())
-        .replace(/^[ \t]+$/gm, '')
-        .trim(),
-      readFileSync(
-        join(websiteRoot, '../packages/noir_signals/example/task_list.dart'),
-        'utf8',
-      ).trim(),
-      'the copyable final checkpoint must match the runnable task-list example',
-    );
-    const exampleLinks = await page
-      .locator('main')
-      .getByRole('link', { name: 'example directory', exact: true })
-      .all();
-    assert.ok(
-      exampleLinks.length > 0,
-      'the tutorial must link to runnable examples',
-    );
-    for (const link of exampleLinks) {
-      assert.equal(
-        await link.getAttribute('href'),
-        'https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example',
-        'every example-directory link must lead to the runnable sources',
-      );
-    }
 
     await page.goto(`${baseUrl}/docs/input-focus`, {
       waitUntil: 'networkidle',
@@ -550,38 +686,31 @@ async function runSmoke() {
       'the input guide must show TuiApp.onKey consuming with event.consume',
     );
 
-    await page.goto(`${baseUrl}/docs/widget-catalog`, {
+    await page.goto(`${baseUrl}/docs/command-line-arguments`, {
       waitUntil: 'networkidle',
     });
     assert.equal(
-      await page.locator('main pre').filter({ hasText: 'height: 2' }).count(),
+      await page.locator('main pre').filter({ hasText: 'ArgParser()' }).count(),
       1,
-      'the catalog Select example must set visible height to the option count',
-    );
-    assert.equal(
-      await page
-        .locator('main')
-        .getByText('option.value!', { exact: false })
-        .count(),
-      0,
-      'the catalog must not force-unwrap a nullable SelectOption value',
+      'the CLI guide must start from a complete ArgParser recipe',
     );
 
     await page.goto(`${baseUrl}/docs/testing`, { waitUntil: 'networkidle' });
     assert.equal(
       await page
         .locator('main')
-        .getByText('does not export a public widget-test harness', {
-          exact: false,
-        })
+        .getByText('does not export a widget-test harness', { exact: false })
         .count(),
       1,
-      'the Testing guide must distinguish public application seams from repository-only helpers',
+      'the testing guide must distinguish public seams from repository helpers',
     );
     assert.equal(
-      await page.locator('main pre').filter({ hasText: 'runTuiApp' }).count(),
+      await page
+        .locator('main pre')
+        .filter({ hasText: 'headless: true' })
+        .count(),
       1,
-      'the Testing guide must include a consumer-runnable lifecycle test',
+      'the testing guide must include a consumer-runnable lifecycle test',
     );
     assert.equal(
       await page
@@ -591,114 +720,52 @@ async function runSmoke() {
       0,
       'the consumer guide must not lead with Noir repository test paths',
     );
-    assert.equal(
-      await page.locator('main pre').filter({ hasText: 'dart test' }).count(),
-      1,
-      'the Testing guide must include the command that runs its test',
-    );
 
     await page.goto(`${baseUrl}/docs/architecture-api`, {
       waitUntil: 'networkidle',
     });
     assert.equal(
+      await page.locator('.api-surfaces').count(),
+      0,
+      'the architecture guide must not duplicate the API chooser',
+    );
+    assert.equal(
       await page
-        .getByRole('heading', { level: 1, name: 'Architecture' })
+        .locator('main')
+        .getByText('lays out the changed subtree', { exact: false })
         .count(),
-      1,
-      'the architecture page must remain explanation rather than duplicate the API reference',
-    );
-    assert.equal(
-      await page.locator('.api-surfaces-detailed').count(),
       0,
-      'the architecture guide must not duplicate the top-level API chooser',
-    );
-    assert.equal(
-      await page.locator('main table').count(),
-      0,
-      'the architecture guide must explain layers instead of recopying the API surface table',
+      'the architecture guide must not promise subtree-only layout',
     );
 
-    await page.goto(`${baseUrl}/docs/platform-limitations`, {
+    // ---- Lookup: catalog to a usable reference in two actions ----
+    await page.goto(`${baseUrl}/docs/widget-catalog`, {
       waitUntil: 'networkidle',
     });
+    await page
+      .locator('main')
+      .getByRole('link', { name: 'TextInput', exact: true })
+      .first()
+      .click();
+    await page.waitForURL('**/docs/widgets/text-input/');
     assert.equal(
-      await page.locator('.limitation-list > div').count(),
-      expectedLimitationRows,
-      'known platform boundaries must be presented as scannable impact rows',
+      await page
+        .locator('main pre')
+        .filter({ hasText: 'TextEditingController' })
+        .count(),
+      1,
+      'the widget reference must show one complete working usage',
+    );
+    assert.equal(
+      await page
+        .locator('main')
+        .getByRole('link', { name: 'Generated signature', exact: true })
+        .count(),
+      1,
+      'the widget reference must link its generated signature',
     );
 
-    await page.setViewportSize({ width: 768, height: 900 });
-    await page.goto(`${baseUrl}/api`, { waitUntil: 'networkidle' });
-    assert.equal(
-      await page
-        .locator('.api-surfaces > div')
-        .first()
-        .evaluate((element) => getComputedStyle(element).display),
-      'block',
-      'the API chooser must stack when the documentation sidebar narrows its article',
-    );
-
-    await page.goto(`${baseUrl}/docs/architecture-api`, {
-      waitUntil: 'networkidle',
-    });
-    const architectureLink = page
-      .locator('.nextra-sidebar a')
-      .filter({ hasText: /^Architecture$/ });
-    assert.equal(
-      await page
-        .locator(".nextra-sidebar a[class~='x:bg-primary-100']")
-        .count(),
-      1,
-      'the sidebar must mark only the current route',
-    );
-    assert.equal(
-      await architectureLink.evaluate(
-        (element) => getComputedStyle(element).backgroundColor,
-      ),
-      'rgba(0, 0, 0, 0)',
-      'the active documentation route must use a quiet marker instead of a filled block',
-    );
-    assert.equal(
-      await architectureLink.evaluate(
-        (element) => getComputedStyle(element).borderInlineStartWidth,
-      ),
-      '2px',
-      'the active documentation route must retain one precise ink marker',
-    );
-
-    assert.equal(
-      await page
-        .locator('.nextra-sidebar')
-        .getByText('Tutorials', { exact: true })
-        .count(),
-      1,
-      'the documentation sidebar must identify the tutorial entry point',
-    );
-    assert.equal(
-      await page
-        .locator('.nextra-sidebar')
-        .getByText('How-to guides', { exact: true })
-        .count(),
-      1,
-      'the documentation sidebar must identify task-oriented guides',
-    );
-    assert.equal(
-      await page
-        .locator('.nextra-sidebar')
-        .getByText('Explanation', { exact: true })
-        .count(),
-      1,
-      'the documentation sidebar must identify explanatory content',
-    );
-    assert.equal(
-      await page
-        .locator('.nextra-sidebar')
-        .getByText('Reference', { exact: true })
-        .count(),
-      1,
-      'the documentation sidebar must identify reference content',
-    );
-
+    // ---- Copying the install command ----
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
       origin: siteOrigin,
     });
@@ -710,13 +777,14 @@ async function runSmoke() {
       'dart pub add noir',
     );
 
-    const examplesResponse = await page.goto(`${baseUrl}/examples`, {
+    // ---- Recovery from a missing page ----
+    const removedResponse = await page.goto(`${baseUrl}/docs/signals-guide`, {
       waitUntil: 'networkidle',
     });
     assert.equal(
-      examplesResponse?.status(),
+      removedResponse?.status(),
       404,
-      'the removed Examples route must return 404',
+      'an unknown documentation route must return 404',
     );
     await page
       .getByRole('heading', {
@@ -728,16 +796,11 @@ async function runSmoke() {
       1,
       'the custom not-found route must keep the Nextra skip-link target',
     );
-    assert.equal(
-      await page.getByRole('link', { name: 'Examples', exact: true }).count(),
-      0,
-      'the not-found page must not offer the removed destination',
-    );
     assert.deepEqual(
       (await page.locator('.not-found-links a').allTextContents()).map((text) =>
         text.trim(),
       ),
-      ['Getting started', 'Widgets and layout', 'API'],
+      ['Your first app', 'Documentation', 'Examples', 'API'],
       'the not-found page must recover into current documentation routes',
     );
     assert.deepEqual(
@@ -745,7 +808,7 @@ async function runSmoke() {
       [
         'Failed to load resource: the server responded with a status of 404 (Not Found)',
       ],
-      'the removed route may report only its expected main-resource 404',
+      'the missing route may report only its expected main-resource 404',
     );
     browserErrors.length = 0;
 
@@ -757,36 +820,35 @@ async function runSmoke() {
           document.documentElement.clientWidth,
       ),
       true,
-      'the not-found page must reflow without horizontal scrolling at 320 CSS pixels',
+      'the not-found page must reflow without horizontal scrolling at 320px',
     );
 
+    // ---- Search reaches the reference, in the article typeface ----
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${baseUrl}/docs/hooks`, { waitUntil: 'networkidle' });
     const search = page.getByRole('combobox', {
       name: 'Search documentation…',
     });
     await search.click();
-    await search.fill('state');
+    await search.fill('TextInput');
+    const textInputResult = page
+      .locator('[role="option"]')
+      .filter({ hasText: /TextInput/ })
+      .first();
+    await textInputResult.waitFor();
+    const resultFont = await textInputResult.evaluate(
+      (element) => getComputedStyle(element).fontFamily,
+    );
+    assert.ok(
+      /sans-serif/.test(resultFont) && !/Georgia/.test(resultFont),
+      `search results must use the interface typeface, not ${resultFont}`,
+    );
+    await search.fill('SignalWidget');
     await page
       .locator('[role="option"]')
-      .filter({ hasText: /^State and lifecycle/ })
+      .filter({ hasText: /Show shared state|Build a task list/ })
       .first()
       .waitFor();
-
-    await search.fill('Examples');
-    await page
-      .locator('[role="option"]')
-      .filter({ hasText: /^State and lifecycle/ })
-      .first()
-      .waitFor({ state: 'detached' });
-    assert.equal(
-      await page
-        .locator('[role="option"]')
-        .filter({ hasText: /^Examples$/ })
-        .count(),
-      0,
-      'search must not offer the removed Examples page',
-    );
 
     assert.deepEqual(browserErrors, [], 'browser console must stay error-free');
   } finally {

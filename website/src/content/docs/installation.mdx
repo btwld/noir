@@ -1,0 +1,118 @@
+---
+title: Installation
+description: Add Noir to a Dart project, check the native libraries, and resolve the optional noir_signals companion.
+---
+
+# Installation
+
+This page owns every dependency instruction the documentation uses. Other pages
+show the one command a step needs and link back here.
+
+You need Dart 3.10 or later on macOS 13+, Linux with glibc 2.17+, or Windows.
+Android, iOS, and web are not supported. See
+[Platform support](/docs/platform-limitations) before you choose a target.
+
+## Add Noir
+
+<Availability of="noir">
+  The published prerelease is the default path for an application. This site
+  also documents the unreleased next version, and says so wherever it does.
+</Availability>
+
+From your project directory:
+
+<InstallCommand />
+
+Then check that the bundled native libraries resolve on this machine:
+
+```sh
+dart run noir:health_check
+```
+
+The command verifies native-asset resolution and a headless render lifecycle.
+It does not open a real terminal, read raw input, or prove escape rendering.
+
+Applications import one library:
+
+```dart
+import 'package:noir/noir.dart';
+```
+
+Continue with [Your first app](/docs/getting-started). For the lower-level
+surfaces and the generated symbol reference, see [API](/api).
+
+## Add the noir_signals companion
+
+<Availability of="companion">
+  `noir_signals` requires the unreleased Noir alpha.5, so both packages come
+  from one repository revision today.
+</Availability>
+
+The companion adds `SignalWidget`, reusable lifecycle hooks, and the Signals
+integration. Noir never depends on it, and a Noir-only application resolves
+neither the companion nor `signals_core`.
+
+The Noir repository is private, so this path needs access to
+`conceptadev/noir`. Clone it beside your application directory, pin an exact
+commit or tag rather than a moving branch, then declare both packages:
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals:
+    path: ../noir/packages/noir_signals
+dependency_overrides:
+  noir:
+    path: ../noir
+```
+
+Run `dart pub get` from your application directory. The override routes the
+companion's own `noir` dependency to the same checkout, so one revision
+supplies both packages.
+
+Files that use hooks import both libraries:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+After publication, the same project will declare hosted versions instead. Do
+not copy this block yet: `noir_signals: ^0.0.1-alpha.0` cannot resolve from
+pub.dev today.
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals: ^0.0.1-alpha.0
+```
+
+## Try an unreleased Noir API without the companion
+
+Some documented features, such as `LayoutBuilder` and `State.deferDispose`,
+need Noir alpha.5. Point your application at the same private checkout on its
+own:
+
+```yaml
+dependencies:
+  noir:
+    path: ../noir
+```
+
+Do not copy generated bindings, bundled native artifacts, or framework-owned
+internals into an application to reach a newer feature. Either stay on the
+published surface, or pin and evaluate one repository revision as a unit.
+
+## When something does not resolve
+
+| Symptom                                                     | What to check                                                                                            |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `dart pub get` cannot find `noir_signals`                   | It is not on pub.dev yet. Use the checkout path above.                                                   |
+| `dart pub get` reports a version conflict on `noir`         | The companion needs alpha.5. Keep the `dependency_overrides` block.                                      |
+| The app builds, then fails while loading the native library | Check the OS floor above. A macOS 12 machine can build and still fail to load Noir's macOS 13 libraries. |
+| `dart run noir:health_check` fails                          | Report the output with your OS and architecture. Do not rebuild or replace the bundled artifacts.        |
+| The terminal draws nothing after `runTuiApp`                | Run from a real terminal, not a captured pipe, and confirm the process stays in the foreground.          |
+
+The pinned OpenTUI source and the bundled native libraries are framework-owned.
+An application should not rebuild, replace, or patch them as part of a normal
+installation.

@@ -1,19 +1,52 @@
-# Build a task list
+# Build a task list: create the screen
 
-Use hooks and Signals to add, complete, hide, and remove tasks in a terminal
-app. A computed value keeps the remaining count in sync. Tasks stay in memory;
-restarting restores three sample tasks.
+Build a terminal task list you can add to, complete, filter, and clear. Five
+lessons take you from an empty screen to the shipped example. Each lesson gives
+you one change, the command to run, the result to expect, and a complete
+runnable checkpoint.
 
-Build along in five steps. Each step explains the code and shows the result.
-Expand **Complete code** for a runnable checkpoint, or **Exact changes** to
-compare it with the previous step.
+<figure>
 
-## Run the examples
+![The finished task list: a New task field, an Add button, a summary line, a Hide completed checkbox, two open tasks, and a disabled Clear completed button.](./images/06-clear.jpg)
 
-You need Dart 3.10 or later and a Noir repository checkout.
+<figcaption>
 
-> `noir_signals` and its required Noir alpha.5 are not yet on pub.dev.
-> You need access to the private Noir repository to follow this guide.
+The finished app after lesson 5.
+
+</figcaption>
+
+</figure>
+
+You need Dart 3.10 or later and a checkout of the Noir repository.
+`noir_signals` and its required Noir alpha.5 are not on pub.dev yet, so a
+checkout is the only way to resolve them today. See the
+[companion package overview](../README.md) for the dependency setup in your own
+project.
+
+This tutorial starts from an empty file. It does not require the first-app
+tutorial, the hooks guide, or the Signals guide.
+
+## Lessons in this tutorial
+
+1. <a id="step-1-create-the-screen"></a> **Create the screen** — you are here.
+   `SignalWidget`, cell layout, and `Expanded`.
+2. <a id="step-2-own-the-task-signal-and-derive-the-count"></a>
+   [Store tasks and derive the count](./tutorials/task-list/store-tasks.md) —
+   `useSignal`, `useComputed`, and named records.
+3. <a id="step-3-complete-tasks-by-replacing-the-list"></a>
+   [Complete a task](./tutorials/task-list/complete-a-task.md) — controlled
+   values, stable IDs, and list replacement.
+4. <a id="step-4-retain-a-draft-and-add-tasks"></a>
+   [Add a task](./tutorials/task-list/add-a-task.md) —
+   `useTextEditingController` and `useRef`.
+5. <a id="step-5-filter-the-view-and-remove-completed-tasks"></a>
+   <a id="continue-with-your-app"></a>
+   [Filter and clear completed tasks](./tutorials/task-list/filter-and-clear.md)
+   — `useState`, a derived view, and a disabled action.
+
+## Set up the learner project
+
+<a id="run-the-examples"></a>
 
 From the **repository root**, resolve the packages and open the companion
 directory:
@@ -23,39 +56,35 @@ dart pub get
 cd packages/noir_signals
 ```
 
-Run the finished [task-list example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart):
+Every command in this tutorial runs from `packages/noir_signals/`. Create the
+file you will edit:
 
 ```sh
-dart run example/task_list.dart
+touch example/my_task_list.dart
 ```
 
-All remaining commands run from `packages/noir_signals/`. To build along,
-create `example/my_task_list.dart`, add the code from step 1, and run:
+Restart the app between lessons, because each lesson adds or reorders hooks.
+Once the hook order stops changing, `dart run noir:run example/my_task_list.dart`
+reloads ordinary build edits and keeps the current state.
 
-```sh
-dart run example/my_task_list.dart
-```
+Secondary path: to see the finished program before you build it, run the
+shipped [task-list example](../example/task_list.dart) with
+`dart run example/task_list.dart`.
 
-Restart between steps when you add or reorder hooks. Once their order is
-stable, `dart run noir:run example/my_task_list.dart` reloads ordinary build
-edits while keeping state.
+## Write the first screen
 
-The [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
-contains the counter, task list, and file search, with a command for each.
-Screenshots below show real 80×24 Noir frames captured in headless mode.
-
-## Step 1: Create the screen
-
-Start with `SignalWidget`, the host that will retain our hooks. The two imports
-separate Noir widgets from the optional hooks and Signals integration.
-`runTuiApp` mounts the screen and owns terminal cleanup. `enableMouse: true`
-lets the later buttons and checkboxes receive clicks.
+`SignalWidget` is the host that retains our hooks. The two imports separate
+Noir widgets from the optional hooks and Signals integration. `runTuiApp`
+mounts the screen and owns terminal cleanup. `enableMouse: true` lets the later
+buttons and checkboxes receive clicks.
 
 The screen uses integer cell insets and theme colors. `Column` stacks the
-children; `Expanded` gives the task area the spare rows and keeps the footer
-at the bottom. `const` marks widget configurations that do not change.
+children. `Expanded` gives the task area the spare rows and keeps the footer at
+the bottom. `const` marks widget configurations that never change.
 
-Create `example/my_task_list.dart` with this complete file:
+Put this complete file in `example/my_task_list.dart`:
+
+<!-- noir:file -->
 
 ```dart
 import 'package:noir/noir.dart';
@@ -90,905 +119,30 @@ class TaskListApp extends SignalWidget {
 }
 ```
 
-Run it. You should see the title, a placeholder, and the exit hint. Ctrl+C
-exits through Noir's normal cleanup.
+<!-- /noir:file -->
 
-<figure>
-
-![Step 1: Task list title, placeholder and Ctrl+C hint.](./images/01-screen.jpg)
-
-<figcaption>
-
-Step 1 — the screen is mounted; it has no task state yet.
-
-</figcaption>
-
-</figure>
-
-## Step 2: Own the task signal and derive the count
-
-Inside `build`, before `final theme`, add the task signal and computed value:
-
-```dart
-final tasks = useSignal(<({int id, String title, bool done})>[
-  (id: 0, title: 'Read the hooks guide', done: false),
-  (id: 1, title: 'Run the counter example', done: true),
-  (id: 2, title: 'Build a Signals app', done: false),
-]);
-final remaining = useComputed(
-  () => tasks.value.where((task) => !task.done).length,
-  keys: [tasks],
-);
-```
-
-`({int id, String title, bool done})` is a Dart record with named fields.
-The surrounding `<...>[...]` declares a list of those records. `final tasks`
-keeps the signal reference fixed; assigning `tasks.value` can still change the
-stored list. The hook retains that signal across builds.
-
-The `() => ...` expression is a function passed to `useComputed`. Signals
-tracks its `tasks.value` read and recalculates the count when needed.
-`where` keeps unfinished records; `length` counts them. `keys: [tasks]` names
-the captured signal object, not its current contents.
-
-Replace the placeholder with a summary and a scrollable list of task titles:
-
-```dart
-Text('${remaining.value} of ${tasks.value.length} remaining'),
-Expanded(
-  child: ScrollBox(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final task in tasks.value) Text(task.title),
-      ],
-    ),
-  ),
-),
-```
-
-The collection `for` creates one widget per record. `${...}` interpolates a
-value into the summary text. These rows are still read-only; step 3 adds the
-completion controls.
-
-<details>
-<summary>Exact changes for step 2</summary>
-
-```diff
---- step-1
-+++ step-2
-@@ -9,4 +9,13 @@
-   @override
-   Widget build(BuildContext context) {
-+    final tasks = useSignal(<({int id, String title, bool done})>[
-+      (id: 0, title: 'Read the hooks guide', done: false),
-+      (id: 1, title: 'Run the counter example', done: true),
-+      (id: 2, title: 'Build a Signals app', done: false),
-+    ]);
-+    final remaining = useComputed(
-+      () => tasks.value.where((task) => !task.done).length,
-+      keys: [tasks],
-+    );
-     final theme = Theme.of(context);
-
-@@ -22,5 +31,13 @@
-             style: TextStyle(fontWeight: FontWeight.bold),
-           ),
--          const Expanded(child: Text('Your tasks will appear here.')),
-+          Text('${remaining.value} of ${tasks.value.length} remaining'),
-+          Expanded(
-+            child: ScrollBox(
-+              child: Column(
-+                crossAxisAlignment: CrossAxisAlignment.start,
-+                children: [for (final task in tasks.value) Text(task.title)],
-+              ),
-+            ),
-+          ),
-           Text('Ctrl+C exits', style: TextStyle(color: theme.textMuted)),
-         ],
-```
-
-</details>
-
-<details>
-<summary>Complete code after step 2</summary>
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-
-void main() => runTuiApp(const TaskListApp(), enableMouse: true);
-
-class TaskListApp extends SignalWidget {
-  const TaskListApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tasks = useSignal(<({int id, String title, bool done})>[
-      (id: 0, title: 'Read the hooks guide', done: false),
-      (id: 1, title: 'Run the counter example', done: true),
-      (id: 2, title: 'Build a Signals app', done: false),
-    ]);
-    final remaining = useComputed(
-      () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
-    );
-    final theme = Theme.of(context);
-
-    return Container(
-      color: theme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          const Text(
-            'Task list',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text('${remaining.value} of ${tasks.value.length} remaining'),
-          Expanded(
-            child: ScrollBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [for (final task in tasks.value) Text(task.title)],
-              ),
-            ),
-          ),
-          Text('Ctrl+C exits', style: TextStyle(color: theme.textMuted)),
-        ],
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-<figure>
-
-![Step 2: 2 of 3 remaining above the three task titles.](./images/02-state.jpg)
-
-<figcaption>
-
-Step 2 — one seed task has `done: true`, so the computed summary reads **2 of 3 remaining**.
-
-</figcaption>
-
-</figure>
-
-## Step 3: Complete tasks by replacing the list
-
-In the task-area `Column`, replace each `Text(task.title)` with a `Checkbox`:
-
-```dart
-for (final task in tasks.value)
-  Checkbox(
-    key: ValueKey<String>('task-${task.id}'),
-    label: task.title,
-    value: task.done,
-    onChanged: (done) {
-      tasks.value = [
-        for (final item in tasks.value)
-          if (item.id == task.id)
-            (id: item.id, title: item.title, done: done)
-          else
-            item,
-      ];
-    },
-  ),
-```
-
-`onChanged` receives the requested checked state. The collection `if/else`
-replaces just that record and keeps the others. Assigning a new list to
-`tasks.value` notifies observers; mutating the existing list in place would
-not perform that signal assignment.
-
-The stable `ValueKey` uses the task ID, so a row keeps its identity when
-another row is later hidden or removed. No effect or second count variable is
-needed: the computed summary follows the list.
-
-Update the footer to `Tab moves · Space toggles · Ctrl+C exits`. Restart and
-click **Read the hooks guide**, or Tab past the scroll viewport to its
-checkbox and press Space. The summary changes to **1 of 3 remaining**.
-
-<details>
-<summary>Exact changes for step 3</summary>
-
-```diff
---- step-2
-+++ step-3
-@@ -36,9 +36,28 @@
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
--                children: [for (final task in tasks.value) Text(task.title)],
-+                children: [
-+                  for (final task in tasks.value)
-+                    Checkbox(
-+                      key: ValueKey<String>('task-${task.id}'),
-+                      label: task.title,
-+                      value: task.done,
-+                      onChanged: (done) {
-+                        tasks.value = [
-+                          for (final item in tasks.value)
-+                            if (item.id == task.id)
-+                              (id: item.id, title: item.title, done: done)
-+                            else
-+                              item,
-+                        ];
-+                      },
-+                    ),
-+                ],
-               ),
-             ),
-           ),
--          Text('Ctrl+C exits', style: TextStyle(color: theme.textMuted)),
-+          Text(
-+            'Tab moves · Space toggles · Ctrl+C exits',
-+            style: TextStyle(color: theme.textMuted),
-+          ),
-         ],
-       ),
-```
-
-</details>
-
-<details>
-<summary>Complete code after step 3</summary>
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-
-void main() => runTuiApp(const TaskListApp(), enableMouse: true);
-
-class TaskListApp extends SignalWidget {
-  const TaskListApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tasks = useSignal(<({int id, String title, bool done})>[
-      (id: 0, title: 'Read the hooks guide', done: false),
-      (id: 1, title: 'Run the counter example', done: true),
-      (id: 2, title: 'Build a Signals app', done: false),
-    ]);
-    final remaining = useComputed(
-      () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
-    );
-    final theme = Theme.of(context);
-
-    return Container(
-      color: theme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          const Text(
-            'Task list',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text('${remaining.value} of ${tasks.value.length} remaining'),
-          Expanded(
-            child: ScrollBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final task in tasks.value)
-                    Checkbox(
-                      key: ValueKey<String>('task-${task.id}'),
-                      label: task.title,
-                      value: task.done,
-                      onChanged: (done) {
-                        tasks.value = [
-                          for (final item in tasks.value)
-                            if (item.id == task.id)
-                              (id: item.id, title: item.title, done: done)
-                            else
-                              item,
-                        ];
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Text(
-            'Tab moves · Space toggles · Ctrl+C exits',
-            style: TextStyle(color: theme.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-<figure>
-
-![Step 3: Read the hooks guide is checked; 1 of 3 tasks remain.](./images/03-complete.jpg)
-
-<figcaption>
-
-Step 3 — completing the first task updates the checkbox and the computed count together.
-
-</figcaption>
-
-</figure>
-
-## Step 4: Retain a draft and add tasks
-
-Add `final draft = useTextEditingController();` as the first hook, and add
-`final nextId = useRef(3);` after the computed. The controller owns text,
-selection, and caret. `useRef` retains an ID counter without requesting a
-rebuild when it changes.
-
-After the hooks and theme lookup, add a local function:
-
-```dart
-void addTask() {
-  final title = draft.text.trim();
-  if (title.isEmpty) return;
-  tasks.value = [
-    ...tasks.value,
-    (id: nextId.value++, title: title, done: false),
-  ];
-  draft.clear();
-}
-```
-
-`...tasks.value` spreads the old records into a new list. `nextId.value++`
-uses the current ID, then increments it. Blank input is ignored; a successful
-add clears the controller explicitly.
-
-Insert a composer `Row` after the title. Give its `TextInput` an `Expanded`
-parent, so the field shares the width with the Add button:
-
-```dart
-Row(
-  spacing: 1,
-  children: [
-    Expanded(
-      child: TextInput(
-        key: const ValueKey<String>('task-draft'),
-        controller: draft,
-        autofocus: true,
-        placeholder: 'New task',
-        onSubmit: addTask,
-      ),
-    ),
-    Button(
-      key: const ValueKey<String>('add-task'),
-      label: 'Add',
-      onPressed: addTask,
-    ),
-  ],
-),
-```
-
-Both callbacks receive the function reference `addTask`, with no parentheses:
-Noir calls it when the user submits or presses the button. Calling
-`addTask()` here would mutate state while building.
-
-Update the footer to `Enter adds · Tab moves · Space toggles · Ctrl+C exits`.
-Restart, type **Ship the guide**, then press Enter. The new row appears, the
-field clears, and the summary changes to **3 of 4 remaining**.
-
-<details>
-<summary>Exact changes for step 4</summary>
-
-```diff
---- step-3
-+++ step-4
-@@ -9,4 +9,5 @@
-   @override
-   Widget build(BuildContext context) {
-+    final draft = useTextEditingController();
-     final tasks = useSignal(<({int id, String title, bool done})>[
-       (id: 0, title: 'Read the hooks guide', done: false),
-@@ -18,5 +19,16 @@
-       keys: [tasks],
-     );
-+    final nextId = useRef(3);
-     final theme = Theme.of(context);
-+
-+    void addTask() {
-+      final title = draft.text.trim();
-+      if (title.isEmpty) return;
-+      tasks.value = [
-+        ...tasks.value,
-+        (id: nextId.value++, title: title, done: false),
-+      ];
-+      draft.clear();
-+    }
-
-     return Container(
-@@ -30,4 +42,23 @@
-             'Task list',
-             style: TextStyle(fontWeight: FontWeight.bold),
-+          ),
-+          Row(
-+            spacing: 1,
-+            children: [
-+              Expanded(
-+                child: TextInput(
-+                  key: const ValueKey<String>('task-draft'),
-+                  controller: draft,
-+                  autofocus: true,
-+                  placeholder: 'New task',
-+                  onSubmit: addTask,
-+                ),
-+              ),
-+              Button(
-+                key: const ValueKey<String>('add-task'),
-+                label: 'Add',
-+                onPressed: addTask,
-+              ),
-+            ],
-           ),
-           Text('${remaining.value} of ${tasks.value.length} remaining'),
-@@ -57,5 +88,5 @@
-           ),
-           Text(
--            'Tab moves · Space toggles · Ctrl+C exits',
-+            'Enter adds · Tab moves · Space toggles · Ctrl+C exits',
-             style: TextStyle(color: theme.textMuted),
-           ),
-```
-
-</details>
-
-<details>
-<summary>Complete code after step 4</summary>
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-
-void main() => runTuiApp(const TaskListApp(), enableMouse: true);
-
-class TaskListApp extends SignalWidget {
-  const TaskListApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final draft = useTextEditingController();
-    final tasks = useSignal(<({int id, String title, bool done})>[
-      (id: 0, title: 'Read the hooks guide', done: false),
-      (id: 1, title: 'Run the counter example', done: true),
-      (id: 2, title: 'Build a Signals app', done: false),
-    ]);
-    final remaining = useComputed(
-      () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
-    );
-    final nextId = useRef(3);
-    final theme = Theme.of(context);
-
-    void addTask() {
-      final title = draft.text.trim();
-      if (title.isEmpty) return;
-      tasks.value = [
-        ...tasks.value,
-        (id: nextId.value++, title: title, done: false),
-      ];
-      draft.clear();
-    }
-
-    return Container(
-      color: theme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          const Text(
-            'Task list',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Row(
-            spacing: 1,
-            children: [
-              Expanded(
-                child: TextInput(
-                  key: const ValueKey<String>('task-draft'),
-                  controller: draft,
-                  autofocus: true,
-                  placeholder: 'New task',
-                  onSubmit: addTask,
-                ),
-              ),
-              Button(
-                key: const ValueKey<String>('add-task'),
-                label: 'Add',
-                onPressed: addTask,
-              ),
-            ],
-          ),
-          Text('${remaining.value} of ${tasks.value.length} remaining'),
-          Expanded(
-            child: ScrollBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final task in tasks.value)
-                    Checkbox(
-                      key: ValueKey<String>('task-${task.id}'),
-                      label: task.title,
-                      value: task.done,
-                      onChanged: (done) {
-                        tasks.value = [
-                          for (final item in tasks.value)
-                            if (item.id == task.id)
-                              (id: item.id, title: item.title, done: done)
-                            else
-                              item,
-                        ];
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Text(
-            'Enter adds · Tab moves · Space toggles · Ctrl+C exits',
-            style: TextStyle(color: theme.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-<figure>
-
-![Step 4: Ship the guide is added, the input is cleared, and 3 of 4 remain.](./images/04-add.jpg)
-
-<figcaption>
-
-Step 4 — the controller survives the signal-driven rebuild, and `draft.clear()` empties it after the add.
-
-</figcaption>
-
-</figure>
-
-## Step 5: Filter the view and remove completed tasks
-
-Add `final hideCompleted = useState(false);` after the computed. This local
-presentation flag does not feed another computed, so an observed
-`ValueNotifier` from `useState` is enough. After the theme lookup, select the
-records to display:
-
-```dart
-final visible = tasks.value
-    .where((task) => !hideCompleted.value || !task.done)
-    .toList();
-```
-
-Here `!` means not, and `||` means or: show every task when hiding is off;
-otherwise show only unfinished tasks. Change the row loop to
-`for (final task in visible)`. This filters the view without deleting records.
-
-Place this checkbox between the summary and the task area:
-
-```dart
-Checkbox(
-  key: const ValueKey<String>('hide-completed'),
-  label: 'Hide completed',
-  value: hideCompleted.value,
-  onChanged: (value) => hideCompleted.value = value,
-),
-```
-
-Add **Clear completed** before the footer. Its callback assigns another new
-list, retaining only unfinished tasks. A null `onPressed` disables the button
-when there is nothing to remove:
-
-```dart
-Button(
-  key: const ValueKey<String>('clear-completed'),
-  label: 'Clear completed',
-  onPressed: remaining.value == tasks.value.length
-      ? null
-      : () {
-          tasks.value = [
-            for (final task in tasks.value)
-              if (!task.done) task,
-          ];
-        },
-),
-```
-
-The `condition ? first : second` expression selects a disabled callback or
-the removal function. Inside the task-area `Column`, add the empty-state
-message before the row loop:
-
-```dart
-if (visible.isEmpty)
-  Text(tasks.value.isEmpty ? 'Add your first task.' : 'All done!'),
-```
-
-Keep every hook unconditional and in the same order on each build. A
-conditional widget child is fine after the hooks have run. The complete
-checkpoint below is the shipped `example/task_list.dart`.
-
-<details>
-<summary>Exact changes for step 5</summary>
-
-```diff
---- step-4
-+++ step-5
-@@ -4,9 +4,12 @@
- void main() => runTuiApp(const TaskListApp(), enableMouse: true);
-
-+/// A task list with hook-owned input and derived Signals state.
- class TaskListApp extends SignalWidget {
-+  /// Creates the task-list screen.
-   const TaskListApp({super.key});
-
-   @override
-   Widget build(BuildContext context) {
-+    // Call hooks in the same order on every build. Each owns its lifetime.
-     final draft = useTextEditingController();
-     final tasks = useSignal(<({int id, String title, bool done})>[
-@@ -19,10 +22,15 @@
-       keys: [tasks],
-     );
-+    final hideCompleted = useState(false);
-     final nextId = useRef(3);
-     final theme = Theme.of(context);
-+    final visible = tasks.value
-+        .where((task) => !hideCompleted.value || !task.done)
-+        .toList();
-
-     void addTask() {
-       final title = draft.text.trim();
-       if (title.isEmpty) return;
-+      // Replace the list so Signals observes the change. IDs survive filtering.
-       tasks.value = [
-         ...tasks.value,
-@@ -63,4 +71,10 @@
-           ),
-           Text('${remaining.value} of ${tasks.value.length} remaining'),
-+          Checkbox(
-+            key: const ValueKey<String>('hide-completed'),
-+            label: 'Hide completed',
-+            value: hideCompleted.value,
-+            onChanged: (value) => hideCompleted.value = value,
-+          ),
-           Expanded(
-             child: ScrollBox(
-@@ -68,5 +82,11 @@
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
--                  for (final task in tasks.value)
-+                  if (visible.isEmpty)
-+                    Text(
-+                      tasks.value.isEmpty
-+                          ? 'Add your first task.'
-+                          : 'All done!',
-+                    ),
-+                  for (final task in visible)
-                     Checkbox(
-                       key: ValueKey<String>('task-${task.id}'),
-@@ -87,4 +107,16 @@
-             ),
-           ),
-+          Button(
-+            key: const ValueKey<String>('clear-completed'),
-+            label: 'Clear completed',
-+            onPressed: remaining.value == tasks.value.length
-+                ? null
-+                : () {
-+                    tasks.value = [
-+                      for (final task in tasks.value)
-+                        if (!task.done) task,
-+                    ];
-+                  },
-+          ),
-           Text(
-             'Enter adds · Tab moves · Space toggles · Ctrl+C exits',
-```
-
-</details>
-
-<details>
-<summary>Complete code after step 5</summary>
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-
-void main() => runTuiApp(const TaskListApp(), enableMouse: true);
-
-/// A task list with hook-owned input and derived Signals state.
-class TaskListApp extends SignalWidget {
-  /// Creates the task-list screen.
-  const TaskListApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Call hooks in the same order on every build. Each owns its lifetime.
-    final draft = useTextEditingController();
-    final tasks = useSignal(<({int id, String title, bool done})>[
-      (id: 0, title: 'Read the hooks guide', done: false),
-      (id: 1, title: 'Run the counter example', done: true),
-      (id: 2, title: 'Build a Signals app', done: false),
-    ]);
-    final remaining = useComputed(
-      () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
-    );
-    final hideCompleted = useState(false);
-    final nextId = useRef(3);
-    final theme = Theme.of(context);
-    final visible = tasks.value
-        .where((task) => !hideCompleted.value || !task.done)
-        .toList();
-
-    void addTask() {
-      final title = draft.text.trim();
-      if (title.isEmpty) return;
-      // Replace the list so Signals observes the change. IDs survive filtering.
-      tasks.value = [
-        ...tasks.value,
-        (id: nextId.value++, title: title, done: false),
-      ];
-      draft.clear();
-    }
-
-    return Container(
-      color: theme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          const Text(
-            'Task list',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Row(
-            spacing: 1,
-            children: [
-              Expanded(
-                child: TextInput(
-                  key: const ValueKey<String>('task-draft'),
-                  controller: draft,
-                  autofocus: true,
-                  placeholder: 'New task',
-                  onSubmit: addTask,
-                ),
-              ),
-              Button(
-                key: const ValueKey<String>('add-task'),
-                label: 'Add',
-                onPressed: addTask,
-              ),
-            ],
-          ),
-          Text('${remaining.value} of ${tasks.value.length} remaining'),
-          Checkbox(
-            key: const ValueKey<String>('hide-completed'),
-            label: 'Hide completed',
-            value: hideCompleted.value,
-            onChanged: (value) => hideCompleted.value = value,
-          ),
-          Expanded(
-            child: ScrollBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (visible.isEmpty)
-                    Text(
-                      tasks.value.isEmpty
-                          ? 'Add your first task.'
-                          : 'All done!',
-                    ),
-                  for (final task in visible)
-                    Checkbox(
-                      key: ValueKey<String>('task-${task.id}'),
-                      label: task.title,
-                      value: task.done,
-                      onChanged: (done) {
-                        tasks.value = [
-                          for (final item in tasks.value)
-                            if (item.id == task.id)
-                              (id: item.id, title: item.title, done: done)
-                            else
-                              item,
-                        ];
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Button(
-            key: const ValueKey<String>('clear-completed'),
-            label: 'Clear completed',
-            onPressed: remaining.value == tasks.value.length
-                ? null
-                : () {
-                    tasks.value = [
-                      for (final task in tasks.value)
-                        if (!task.done) task,
-                    ];
-                  },
-          ),
-          Text(
-            'Enter adds · Tab moves · Space toggles · Ctrl+C exits',
-            style: TextStyle(color: theme.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-Restart, add **Ship the guide**, complete **Read the hooks guide**, and turn
-on **Hide completed**. Only the two unfinished tasks remain visible, but the
-summary still counts all four stored tasks.
-
-<figure>
-
-![Step 5: Hide completed is checked; only Build a Signals app and Ship the guide are visible, with 2 of 4 remaining.](./images/05-filter.jpg)
-
-<figcaption>
-
-Step 5 — hiding completed tasks changes visibility while keeping the stored list intact.
-
-</figcaption>
-
-</figure>
-
-Now click **Clear completed**. The two completed records are removed and the
-summary becomes **2 of 2 remaining**. The button is disabled because there
-are no more completed records. A draft typed before filtering or removal
-stays in the same controller.
-
-<figure>
-
-![Step 5 after Clear completed: the same two unfinished rows remain, the summary is 2 of 2, and Clear completed is disabled.](./images/06-clear.jpg)
-
-<figcaption>
-
-After removal — the visible rows stay the same; the total now reflects the two remaining records.
-
-</figcaption>
-
-</figure>
-
-## Continue with your app
-
-You now have a task list with an editable draft, a computed remaining count,
-a visibility filter, and stable row IDs. The hooks release their owned state
-and controller when the screen unmounts.
-
-To try shared state next, run the
-[file-search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart)
-from `packages/noir_signals/`:
+## Run it
 
 ```sh
-dart run example/file_search.dart
+dart run example/my_task_list.dart
 ```
 
-Its model lives outside the widget. `useSignalValue` and `SignalValueBuilder`
-observe signals owned by that model. The [Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
-explains that ownership and observation pattern; the
-[hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md)
-covers controllers, effects, and custom hooks.
+You should see the title, the placeholder, and the exit hint. Ctrl+C exits
+through Noir's normal cleanup.
 
-The [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
-links to every runnable app. The
-[task-list interaction tests](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/test/example/task_list_test.dart)
-show how to check keyboard input, pointer input, filtering, empty states, and resize.
+<figure>
+
+![Lesson 1: the Task list title, a Your tasks will appear here placeholder, and the Ctrl+C exits hint.](./images/01-screen.jpg)
+
+<figcaption>
+
+Lesson 1 — the screen is mounted. It has no task state yet.
+
+</figcaption>
+
+</figure>
+
+The screen has no hooks yet, so nothing changes while it runs. The next lesson
+gives the same widget its own state.
+
+Next: [Store tasks and derive the count](./tutorials/task-list/store-tasks.md).

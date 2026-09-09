@@ -215,9 +215,9 @@ with different arguments.
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`.
 The companion and its required Noir alpha.5 are currently unpublished
-candidates. Use the repository checkout commands in the
-[task-list walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md).
-After publication, add `noir_signals` beside Noir, then import
+candidates, so they resolve from a repository checkout. The
+[companion overview](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/README.md)
+has that setup. After publication, add `noir_signals` beside Noir, then import
 `package:noir_signals/noir_signals.dart` together with
 `package:noir/noir.dart`.
 
@@ -225,8 +225,10 @@ The companion includes state, effects, memoization, listenables, asynchronous
 snapshots, animation, focus, editing, scroll, and viewport hooks, plus the
 Signals reactive integration. Hooks use call order as identity.
 
-The companion has its own [hooks guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md),
-[Signals guide](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md),
+The companion has its own
+[task-list tutorial](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md),
+[hooks reference](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md),
+[Signals reference](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md),
 and an [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
 with a [hooks counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart),
 [task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart),
@@ -338,8 +340,9 @@ only on Noir's high-level API; `noir` never depends on it.
 Start with [Main](example/main.dart), [Counter](example/counter.dart), or
 [Components](example/components_demo.dart). The
 [example catalog](example/README.md) lists every runnable app by the question
-it answers, including focused controls, complete applications, animation, and
-advanced validation.
+it answers, including focused controls, complete applications, animation,
+advanced validation, and the tutorial checkpoints the documentation captures
+its frames from.
 
 ## Supported Keyboard and Mouse Input
 

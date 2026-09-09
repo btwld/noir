@@ -5,12 +5,14 @@ hooks for Noir. They live in the optional companion package `noir_signals`,
 not in `noir`. The companion's production code uses no private Element,
 low-level renderer, or FFI API.
 
+This document is the reference. To learn hooks by building an app, start with
+[Build a task list](getting-started.md).
+
 ## Install and import
 
-For the current unpublished candidates, use the checkout commands in
-[Build a task list](getting-started.md). That walkthrough
-shows hooks and derived state together; the versions below describe the
-intended consumer dependencies after publication.
+Both packages are unpublished candidates. Resolve them from a Noir repository
+checkout; the [package overview](../README.md) has the setup. After
+publication, an application will declare:
 
 ```yaml
 dependencies:
@@ -25,11 +27,9 @@ import 'package:noir_signals/noir_signals.dart';
 
 ## Host hooks
 
-Extend `SignalWidget` and call hooks at the top of `build`. See the runnable
-[counter](../example/counter.dart) for `useState` and the
-[task-list tutorial](getting-started.md) for controllers, signals, and computed
-state in one app. Handle input in callbacks such as `onPressed`; effects own
-external work and its cleanup.
+Extend `SignalWidget` and call hooks at the top of `build`. Handle input in
+callbacks such as `onPressed`; effects own external work and its cleanup. The
+runnable [counter](../example/counter.dart) shows `useState` on its own.
 
 Use `SignalBuilder` when an inline builder needs hooks:
 

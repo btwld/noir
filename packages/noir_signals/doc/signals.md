@@ -9,12 +9,14 @@ A subscription callback never runs a builder, flushes a frame, or paints. It
 only asks Noir to rebuild, and Noir's scheduler coalesces repeated requests
 into one frame.
 
+This document is the reference. To learn `useSignal` and `useComputed` by
+building an app, start with [Build a task list](getting-started.md).
+
 ## Install and import
 
-Start with [Build a task list](getting-started.md) for
-a runnable walkthrough of `useSignal`, `useComputed`, and text input. It
-includes checkout commands for the current unpublished candidates; the versions
-below describe the intended consumer dependencies after publication.
+Both packages are unpublished candidates. Resolve them from a Noir repository
+checkout; the [package overview](../README.md) has the setup. After
+publication, an application will declare:
 
 ```yaml
 dependencies:

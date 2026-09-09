@@ -3,6 +3,16 @@
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
+The documentation website derives every version and availability label from
+this block. `manifest` must equal the version in the matching `pubspec.yaml`,
+and `published` is the latest version on pub.dev or `none`. The website build
+fails when the two disagree.
+
+```noir-availability
+noir: manifest=0.0.1-alpha.5 published=0.0.1-alpha.4
+noir_signals: manifest=0.0.1-alpha.0 published=none
+```
+
 `0.0.1-alpha.4` is **published**. It shipped from exact `main` commit
 `86dc43d6564ccc4723c37d2d24607eadf7dd7c67`, tagged
 `v0.0.1-alpha.4`, through GitHub Actions run

@@ -3,4 +3,4 @@ next-env.d.ts
 node_modules/
 out/
 public/_pagefind/
-src/lib/counter-highlight.ts
+src/generated/terminal-frames.json

@@ -11,12 +11,13 @@ export default function NotFound() {
       <p>404</p>
       <h1>That page isn’t in the Noir documentation.</h1>
       <p className="not-found-summary">
-        Start with your first app, return to the guides, or choose a supported
-        API surface.
+        Start with your first app, return to the guides, run an example, or look
+        up an API.
       </p>
       <nav className="not-found-links" aria-label="Documentation recovery">
-        <Link href="/docs/getting-started">Getting started</Link>
-        <Link href="/docs/widgets-layout">Widgets and layout</Link>
+        <Link href="/docs/getting-started">Your first app</Link>
+        <Link href="/docs">Documentation</Link>
+        <Link href="/examples">Examples</Link>
         <Link href="/api">API</Link>
       </nav>
     </main>

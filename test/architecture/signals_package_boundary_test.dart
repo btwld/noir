@@ -152,7 +152,8 @@ void main() {
       'website/src/content/docs/_meta.ts',
     ).readAsStringSync();
 
-    expect(navigation, contains("signals: 'Signals'"));
+    // The navigation label is editorial; the route and its owner are not.
+    expect(navigation, contains('  signals:'));
     for (final contract in <String>[
       'useSignal',
       'useComputed',
@@ -329,10 +330,13 @@ void main() {
     ).firstMatch(companionPubspec)!.group(1)!.trim();
     final companionConstraint = '^${version.split('+').first}';
 
+    // One website destination owns dependency instructions. Ordinary guides
+    // must not repeat a hosted block that cannot resolve yet.
     for (final path in <String>[
       '$_companionRoot/README.md',
       '$_companionRoot/doc/hooks.md',
-      'website/src/content/docs/hooks.mdx',
+      '$_companionRoot/doc/signals.md',
+      'website/src/content/docs/installation.mdx',
     ]) {
       final source = File(path).readAsStringSync();
       expect(source, contains('noir: $noirConstraint'), reason: path);
@@ -340,6 +344,17 @@ void main() {
         source,
         contains('noir_signals: $companionConstraint'),
         reason: path,
+      );
+    }
+    for (final path in <String>[
+      'website/src/content/docs/hooks.mdx',
+      'website/src/content/docs/signals.mdx',
+      'website/src/content/api.mdx',
+    ]) {
+      expect(
+        File(path).readAsStringSync(),
+        isNot(contains('noir_signals: $companionConstraint')),
+        reason: '$path must link the installation page instead',
       );
     }
 

@@ -10,15 +10,16 @@
     "zod": "4.3.6"
   },
   "scripts": {
-    "build": "node scripts/sync-signals-guide.mjs && node scripts/highlight-homepage.mjs && next build",
-    "dev": "node scripts/sync-signals-guide.mjs && node scripts/highlight-homepage.mjs && next dev",
+    "build": "node scripts/sync-docs.mjs && next build",
+    "dev": "node scripts/sync-docs.mjs && next dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "sync": "node scripts/sync-docs.mjs",
     "postbuild": "pagefind --site out --output-path out/_pagefind",
     "start": "node scripts/serve-static-export.mjs",
     "test:smoke": "node scripts/smoke.mjs",
-    "typecheck": "node scripts/sync-signals-guide.mjs && node scripts/highlight-homepage.mjs && tsc --noEmit"
+    "typecheck": "node scripts/sync-docs.mjs && tsc --noEmit"
   },
   "dependencies": {
     "asciinema-player": "3.17.0",

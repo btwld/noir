@@ -1,61 +1,53 @@
 import Link from 'next/link';
 
+import { Availability } from '../components/Availability';
 import { HighlightedCode } from '../components/HighlightedCode';
 import { InstallCommand } from '../components/InstallCommand';
-import { PrereleaseNotice } from '../components/PrereleaseNotice';
-import { TerminalRecording } from '../components/TerminalRecording';
-import { counterStateHtml } from '../lib/counter-highlight';
+import { TerminalFrame } from '../components/TerminalFrame';
+import { firstAppStateHtml } from '../generated/checkpoints';
 
 export default function HomePage() {
   return (
     <main className="home-page" id="nextra-skip-nav" tabIndex={-1}>
-      <section className="home-intro" aria-labelledby="home-title">
-        <h1 id="home-title">Build reactive terminal UIs in Dart.</h1>
-        <p className="home-summary">
-          Noir gives terminal apps a Flutter-like widget tree, retained state,
-          cell-based layout, focus, input, and animation. OpenTUI handles the
-          native renderer behind the framework.
-        </p>
-        <PrereleaseNotice />
-        <InstallCommand />
-        <p className="home-command-note">
-          Requires Dart 3.10 or later.{' '}
-          <Link href="/docs/getting-started">Build your first Noir app</Link>.
-        </p>
+      <section className="home-hero" aria-labelledby="home-title">
+        <div className="home-hero-copy">
+          <h1 id="home-title">Build terminal apps in Dart.</h1>
+          <p className="home-summary">
+            Noir gives a terminal program a widget tree, retained state, and
+            layout measured in cells.
+          </p>
+          <p className="home-actions">
+            <Link className="home-primary-action" href="/docs/getting-started">
+              Build your first app
+            </Link>
+            <Link href="/examples">Run an example</Link>
+          </p>
+          <InstallCommand />
+          <p className="home-command-note">Requires Dart 3.10 or later.</p>
+        </div>
+
+        <div className="home-proof">
+          <h2 id="proof-title">Press the button to update the count.</h2>
+          <HighlightedCode
+            caption="The retained State of the first-app tutorial"
+            html={firstAppStateHtml}
+          />
+          <TerminalFrame
+            id="first-app-count"
+            title="The same file after one Space press"
+          />
+        </div>
       </section>
 
-      <section className="home-proof" aria-labelledby="proof-title">
-        <div className="home-proof-copy">
-          <h2 id="proof-title">
-            One callback becomes the next terminal frame.
-          </h2>
-          <p>
-            Change retained state from an event. Noir rebuilds the matching
-            widget subtree, lays it out in cells, and records the next frame.
-          </p>
-          <HighlightedCode
-            caption="Counter state after one increment"
-            html={counterStateHtml}
-          />
-          <Link href="/docs/getting-started">
-            Build this counter and hot-reload it
-          </Link>
-        </div>
-        <TerminalRecording
-          command="dart run noir:run example/counter.dart"
-          sourceHref="https://github.com/conceptadev/noir/blob/main/example/counter.dart"
-          title="Real Noir counter · Up, Space, then pointer activation"
-        />
-      </section>
+      <Availability of="noir" />
 
       <section className="capability-index" aria-labelledby="capability-title">
         <h2 id="capability-title">
-          The terminal pieces are already in the tree.
+          Build with text, inputs, lists, and dialogs.
         </h2>
         <p>
-          Compose the app from public widgets instead of rebuilding layout,
-          editing, focus, scrolling, and document behavior around raw escape
-          output.
+          Compose the screen from public widgets instead of writing escape
+          sequences around raw terminal output.
         </p>
         <div>
           <article>
@@ -95,47 +87,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section
-        className="architecture-signal"
-        aria-labelledby="architecture-title"
-      >
-        <h2 id="architecture-title">
-          A familiar model, carried to terminal cells.
-        </h2>
-        <p className="framework-path">
-          <span>Widgets</span>
-          <span className="path-arrow" aria-hidden="true">
-            →
-          </span>
-          <span>Elements</span>
-          <span className="path-arrow" aria-hidden="true">
-            →
-          </span>
-          <span>RenderObjects</span>
-          <span className="path-arrow" aria-hidden="true">
-            →
-          </span>
-          <span>Display lists</span>
-          <span className="path-arrow" aria-hidden="true">
-            →
-          </span>
-          <span>OpenTUI</span>
-        </p>
-        <p>
-          <Link href="/docs/architecture-api">
-            Follow an event through Noir’s retained architecture
-          </Link>
-        </p>
-      </section>
-
       <nav className="next-reads" aria-label="Choose a next reading path">
         <h2>Start with the work in front of you.</h2>
-        <Link href="/docs/getting-started">
-          Build and hot-reload a first app
+        <Link href="/docs/getting-started">Build and edit a first app</Link>
+        <Link href="/docs/signals-task-list">
+          Learn reactive state by building a task list
         </Link>
         <Link href="/docs/widget-catalog">Find the widget for a UI job</Link>
-        <Link href="/docs/testing">Choose an application test boundary</Link>
-        <Link href="/api">Choose a public package surface</Link>
+        <Link href="/docs/architecture-api">
+          Follow an event through the retained architecture
+        </Link>
       </nav>
     </main>
   );

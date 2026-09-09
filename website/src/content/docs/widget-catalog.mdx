@@ -1,49 +1,51 @@
 ---
 title: Widget catalog
-description: Find the public Noir widget that matches a layout, input, data, document, overlay, media, or feedback job.
+description: Find the Noir widget that matches a layout, input, data, document, overlay, media, or feedback job.
 ---
 
 # Widget catalog
 
-Start with the job the interface must do. These are the supported widgets in
-`package:noir/noir.dart`; use the [generated API reference](https://pub.dev/documentation/noir/latest/)
-for constructor parameters and published signatures. `LayoutBuilder` requires
-the unreleased Noir alpha.5; see the
-[local dependency setup](/api#evaluate-repository-source) to try it.
+Start with the job the interface must do. Every name below links to its
+generated signature for the published package. Match that reference to the
+version in your `pubspec.lock`.
+
+One widget has a curated page so far: [`TextInput`](/docs/widgets/text-input).
+Others get a page when a real task stays unanswered by the generated reference
+and the guides.
 
 ## Layout and composition
 
-| Need                                    | Start with                     | Important distinction                                    |
-| --------------------------------------- | ------------------------------ | -------------------------------------------------------- |
-| Horizontal or vertical children         | `Row`, `Column`, `Flex`        | `spacing` inserts whole cells between children           |
-| One child owns leftover space           | `Expanded`, `Flexible`         | Expanded fills its share; Flexible may use less          |
-| Padding, alignment, or exact extent     | `Padding`, `Align`, `SizedBox` | Keep each relationship in the widget that owns it        |
-| Minimum or maximum size                 | `ConstrainedBox`               | A constraint is a range, not a promised size             |
-| Themed titled region                    | `Panel`                        | Shrink-wraps content; width and height set exact extents |
-| Fill, border, and child composition     | `Container`, `DecoratedBox`    | Use Container for composition; DecoratedBox only paints  |
-| Overlapping children                    | `Stack`, `Positioned`          | Positions are integer cell offsets                       |
-| Children that continue onto another run | `Wrap`                         | Use Row when wrapping would be surprising                |
-| A child that must read its own space    | `LayoutBuilder`                | Builds during layout from the offered `BoxConstraints`   |
+| Need                                    | Start with                                                     | Important distinction                                    |
+| --------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
+| Horizontal or vertical children         | [`Row`][row], [`Column`][column], [`Flex`][flex]               | `spacing` inserts whole cells between children           |
+| One child owns leftover space           | [`Expanded`][expanded], [`Flexible`][flexible]                 | Expanded fills its share; Flexible may use less          |
+| Padding, alignment, or exact extent     | [`Padding`][padding], [`Align`][align], [`SizedBox`][sizedbox] | Keep each relationship in the widget that owns it        |
+| Minimum or maximum size                 | [`ConstrainedBox`][constrainedbox]                             | A constraint is a range, not a promised size             |
+| Themed titled region                    | [`Panel`][panel]                                               | Shrink-wraps content; width and height set exact extents |
+| Fill, border, and child composition     | [`Container`][container], [`DecoratedBox`][decoratedbox]       | Use Container for composition; DecoratedBox only paints  |
+| Overlapping children                    | [`Stack`][stack], [`Positioned`][positioned]                   | Positions are integer cell offsets                       |
+| Children that continue onto another run | [`Wrap`][wrap]                                                 | Use Row when wrapping would be surprising                |
+| A child that must read its own space    | `LayoutBuilder`                                                | Builds during layout from the offered `BoxConstraints`   |
 
-Read [Widgets and layout](/docs/widgets-layout) before fixing widths throughout
-a screen. Terminal proportions make one row of spacing visually larger than
-one column.
+`LayoutBuilder` is the only widget that reports the space a parent offers. It
+needs the unreleased Noir alpha.5, so it has no published signature yet; see
+[Installation](/docs/installation).
 
-`LayoutBuilder` is the only widget that reports the space a parent offers.
-Reach for it when a region must size a list, a viewport, or a summary to the
-terminal it lands in; an unbounded axis reports a `null` maximum.
+Read [Layout in terminal cells](/docs/widgets-layout) before you fix widths
+across a screen. Terminal proportions make one row of spacing visually larger
+than one column.
 
 ## Text, status, and feedback
 
-| Need                 | Widget                         | Notes                                                                    |
-| -------------------- | ------------------------------ | ------------------------------------------------------------------------ |
-| Plain or styled text | `Text`, `RichText`, `TextSpan` | Width follows terminal graphemes, not Dart string length                 |
-| Large glyph heading  | `AsciiFont`                    | Uses Noir’s original terminal-safe font families                         |
-| Compact state label  | `Badge`                        | Variants provide semantic defaults through Theme                         |
-| Completion fraction  | `ProgressBar`                  | Width is explicit and resolves to eighth-cell steps                      |
-| Ongoing work         | `Spinner`                      | Remove it when work ends; use `SpinnerFrames.line` for ASCII-only output |
-| Section rule         | `Divider`                      | Prefer one structural divider to borders around every child              |
-| Shared visual values | `Theme`                        | Read values with `Theme.of(context)`                                     |
+| Need                 | Widget                                                         | Notes                                                                    |
+| -------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Plain or styled text | [`Text`][text], [`RichText`][richtext], [`TextSpan`][textspan] | Width follows terminal graphemes, not Dart string length                 |
+| Large glyph heading  | [`AsciiFont`][asciifont]                                       | Uses Noir's own terminal-safe font families                              |
+| Compact state label  | [`Badge`][badge]                                               | Variants provide semantic defaults through Theme                         |
+| Completion fraction  | [`ProgressBar`][progressbar]                                   | Width is explicit and resolves to eighth-cell steps                      |
+| Ongoing work         | [`Spinner`][spinner]                                           | Remove it when work ends; use `SpinnerFrames.line` for ASCII-only output |
+| Section rule         | [`Divider`][divider]                                           | Prefer one structural divider to borders around every child              |
+| Shared visual values | [`Theme`][theme]                                               | Read values with `Theme.of(context)`                                     |
 
 Use a ProgressBar for measurable work and a Spinner when progress is unknown:
 
@@ -62,19 +64,19 @@ Row(
 
 ## Input and selection
 
-| Need                        | Widget                 | Interaction model                                                       |
-| --------------------------- | ---------------------- | ----------------------------------------------------------------------- |
-| Activate one command        | `Button`               | Enter, Space, or primary pointer activation                             |
-| Boolean value               | `Checkbox`, `Switch`   | Use the label that best describes the resulting state                   |
-| Value on a range            | `Slider`               | Arrow-key and pointer adjustment                                        |
-| One-line editing            | `TextInput`            | Enter submits; default `maxLength` is 100                               |
-| Attached suggestions        | `Autocomplete<T>`      | Caller controls options, status, selection, and async work              |
-| Multi-line editing          | `TextArea`             | Fixed by default; opt into wrapping, bounded growth, or Enter-to-submit |
-| Vertical option list        | `Select<T>`            | Arrows or `j`/`k` change highlight; Enter confirms                      |
-| Horizontal section switcher | `TabSelect<T>`         | Fixed-width tabs by default; `tabWidth: null` sizes to labels           |
-| Local raw key ownership     | `Focus`, `FocusScope`  | Return `ignored` for keys the region does not own                       |
-| Semantic key commands       | `Shortcuts`, `Actions` | Map keys to Intents, then Intents to application commands               |
-| Pointer hit region          | `PointerListener`      | Read `MouseEvent.localPosition` after hit testing                       |
+| Need                        | Widget                                         | Interaction model                                                       |
+| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| Activate one command        | [`Button`][button]                             | Enter, Space, or primary pointer activation                             |
+| Boolean value               | [`Checkbox`][checkbox], [`Switch`][switch]     | Use the label that best describes the resulting state                   |
+| Value on a range            | [`Slider`][slider]                             | Arrow-key and pointer adjustment                                        |
+| One-line editing            | [`TextInput`](/docs/widgets/text-input)        | Enter submits; default `maxLength` is 100                               |
+| Attached suggestions        | [`Autocomplete<T>`][autocomplete]              | Caller controls options, status, selection, and async work              |
+| Multi-line editing          | [`TextArea`][textarea]                         | Fixed by default; opt into wrapping, bounded growth, or Enter-to-submit |
+| Vertical option list        | [`Select`][select]                             | Arrows or `j`/`k` change highlight; Enter confirms                      |
+| Horizontal section switcher | [`TabSelect`][tabselect]                       | Fixed-width tabs by default; `tabWidth: null` sizes to labels           |
+| Local raw key ownership     | [`Focus`][focus], [`FocusScope`][focusscope]   | Return `ignored` for keys the region does not own                       |
+| Semantic key commands       | [`Shortcuts`][shortcuts], [`Actions`][actions] | Map keys to Intents, then Intents to application commands               |
+| Pointer hit region          | [`PointerListener`][pointerlistener]           | Read `MouseEvent.localPosition` after hit testing                       |
 
 `Select` and `TabSelect` share typed options but express different spatial
 models:
@@ -95,48 +97,48 @@ Select<String>(
 ```
 
 `Select.height` is visible rows and defaults to `8`. Set it to the option count
-for a short list. `SelectOption.value` is nullable.
+for a short list. [`SelectOption`][selectoption]`.value` is nullable.
 
-`Autocomplete` keeps request policy outside the widget. Supply an explicit
-`AutocompleteStatus` and options from the application; Tab enters a ready
-list, Enter or a primary click selects, and Escape dismisses the attached
-surface while leaving idle Escape available to an ancestor.
+`Autocomplete<T>` keeps request policy outside the widget. Supply an explicit
+`AutocompleteStatus` and options from the application. Tab enters a ready list,
+Enter or a primary click selects, and Escape dismisses the attached surface
+while idle Escape stays available to an ancestor.
 
-See [Input and focus](/docs/input-focus) for event order, controller ownership,
-and focus traversal.
+See [Handle input and focus](/docs/input-focus) for event order, controller
+ownership, and focus traversal.
 
 ## Scrolling and data
 
-| Need                  | Widget      | Choose it when…                                                         |
-| --------------------- | ----------- | ----------------------------------------------------------------------- |
-| One oversized child   | `ScrollBox` | The content already exists as one widget subtree; tail follow is opt-in |
-| Repeated visible rows | `ListView`  | Rows should be built only for the visible window                        |
-| Hierarchical rows     | `TreeView`  | Stable caller IDs need expansion and keyboard navigation                |
-| Interactive dataset   | `DataTable` | Rows need aligned columns, selection, and caller-owned sorting          |
-| Finite rich-text grid | `TextTable` | Cells need wrapping, borders, and row-major text selection              |
+| Need                  | Widget                   | Choose it when…                                                         |
+| --------------------- | ------------------------ | ----------------------------------------------------------------------- |
+| One oversized child   | [`ScrollBox`][scrollbox] | The content already exists as one widget subtree; tail follow is opt-in |
+| Repeated visible rows | [`ListView`][listview]   | Rows should be built only for the visible window                        |
+| Hierarchical rows     | [`TreeView`][treeview]   | Stable caller IDs need expansion and keyboard navigation                |
+| Interactive dataset   | [`DataTable`][datatable] | Rows need aligned columns, selection, and caller-owned sorting          |
+| Finite rich-text grid | [`TextTable`][texttable] | Cells need wrapping, borders, and row-major text selection              |
 
-`DataTable` virtualizes its body and reports sort requests; your data owner does
-the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells and
-supports document-style selection. They solve different table problems.
+`DataTable` virtualizes its body and reports sort requests; your data owner
+does the reordering. `TextTable` lays out a finite matrix of `InlineSpan` cells
+and supports document-style selection. They solve different table problems.
 
-`TreeViewController` owns generic roots, expansion, and selection; path,
+[`TreeViewController`][treeviewcontroller] owns generic roots, expansion, and selection; path,
 filesystem, or other domain behavior stays in the application. TreeView uses
-Up/Down for visible selection, Right/Left for hierarchy navigation, and one
-Enter/primary-click activation route.
+Up and Down for visible selection, Right and Left for hierarchy navigation, and
+one Enter or primary-click activation route.
 
 ## Overlays and menus
 
-| Need                            | Widget          | Boundary                                                        |
-| ------------------------------- | --------------- | --------------------------------------------------------------- |
-| Custom transient content        | `OverlayPortal` | Caller owns placement, input, focus, and dismissal              |
-| Centered blocking interaction   | `Modal`         | Closed focus loop and pointer barrier; caller supplies chrome   |
-| Commands anchored to a launcher | `MenuAnchor`    | Follows launcher geometry and owns outside-click menu dismissal |
+| Need                            | Widget                           | Boundary                                                      |
+| ------------------------------- | -------------------------------- | ------------------------------------------------------------- |
+| Custom transient content        | [`OverlayPortal`][overlayportal] | Caller owns placement, input, focus, and dismissal            |
+| Centered blocking interaction   | [`Modal`][modal]                 | Closed focus loop and pointer barrier; caller supplies chrome |
+| Commands anchored to a launcher | [`MenuAnchor`][menuanchor]       | Follows launcher geometry and owns outside-click dismissal    |
 
 `Modal` keeps its ordinary child mounted, centers a fresh `modalBuilder`
 subtree while open, loops Tab and Shift+Tab over live modal controls, restores
 the captured focus node on close, and blocks every outside pointer event.
 Escape dismisses by default; outside primary-button dismissal is opt-in.
-Compose a `Panel` inside the builder because Modal deliberately has no visual
+Compose a `Panel` inside the builder, because Modal deliberately has no visual
 style of its own.
 
 ```dart
@@ -169,34 +171,33 @@ Modal(
 )
 ```
 
-One `ModalController` attaches to one live Modal. `open()` throws while
+One [`ModalController`][modalcontroller] attaches to one live Modal. `open()` throws while
 detached, `close()` is a detached no-op, and replacing the controller preserves
 an open subtree without transition callbacks. Calling `open()` again promotes
-that modal and reestablishes focus inside it. When a top modal closes, the modal
-revealed below preserves a valid restored focus or repairs to an available
-descendant.
+that modal and reestablishes focus inside it. When a top modal closes, the
+modal revealed below preserves a valid restored focus or repairs to an
+available descendant.
 
-Noir currently has one framework-owned root overlay. It does not expose public
+Noir has one framework-owned root overlay. It does not expose public
 `OverlayEntry`, nested overlays, transforms, linked layers, menu cascades, or
 overlay animation APIs.
 
 ## Documents and media
 
-| Need                        | Widget or type                        | Boundary                                                                              |
-| --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------- |
-| Selectable source           | `CodeView`                            | Plain text by default; supply a `CodeHighlighter` for syntax ranges                   |
-| Unified or split patch      | `DiffView`, `UnifiedDiffParser`       | Caller chooses view mode and owns any source action                                   |
-| GitHub-flavoured Markdown   | `MarkdownView`                        | Standalone mode scrolls; embedded mode delegates scrolling to a parent                |
-| Terminal image              | `Image`, `TerminalImage`              | File, network, encoded bytes, or RGBA; protocol support still depends on the terminal |
-| Semantic terminal link      | linked `TextSpan`                     | The terminal decides whether and how the link is presented                            |
-| Explicit selected-text copy | `SelectedText` and document callbacks | OSC52 acceptance depends on terminal policy                                           |
+| Need                        | Widget or type                                                   | Boundary                                                                        |
+| --------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Selectable source           | [`CodeView`][codeview]                                           | Plain text by default; supply a `CodeHighlighter` for syntax ranges             |
+| Unified or split patch      | [`DiffView`][diffview], [`UnifiedDiffParser`][unifieddiffparser] | Caller chooses view mode and owns any source action                             |
+| GitHub-flavoured Markdown   | [`MarkdownView`][markdownview]                                   | Standalone mode scrolls; embedded mode delegates scrolling to a parent          |
+| Terminal image              | [`Image`][image], [`TerminalImage`][terminalimage]               | File, network, encoded bytes, or RGBA; protocol support depends on the terminal |
+| Semantic terminal link      | linked [`TextSpan`][textspan]                                    | The terminal decides whether and how the link is presented                      |
+| Explicit selected-text copy | [`SelectedText`][selectedtext] and document callbacks            | OSC52 acceptance depends on terminal policy                                     |
 
 For a read-only `DiffView` embedded in a decision surface, set
-`canRequestFocus: false` so the enclosing modal keeps ownership of keyboard
-traversal.
+`canRequestFocus: false` so the enclosing modal keeps keyboard traversal.
 
-For example, a standalone Markdown document owns focus, selection, and its
-scrolling viewport:
+A standalone Markdown document owns focus, selection, and its scrolling
+viewport:
 
 ```dart
 MarkdownView(
@@ -205,17 +206,81 @@ MarkdownView(
 )
 ```
 
-Check [Platform support and limitations](/docs/platform-limitations) before
-depending on terminal images, semantic links, or OSC52 clipboard behavior.
+Check [Platform support](/docs/platform-limitations) before you depend on
+terminal images, semantic links, or OSC52 clipboard behavior.
 
 ## State and motion
 
-`StatefulWidget` and `State` are the normal retained state boundary.
-`ValueNotifier` and `ChangeNotifier` separate testable state from one widget.
-`AnimationController`, `TickerProviderStateMixin`, and
-`SingleTickerProviderStateMixin` drive time-based values. The optional companion
-package `noir_signals` offers the same ownership model through composable
-hooks.
+[`StatefulWidget`][statefulwidget] and its `State` are the normal retained state boundary.
+[`ValueNotifier`][valuenotifier] and [`ChangeNotifier`][changenotifier] separate testable state from one widget.
+[`AnimationController`][animationcontroller] with `TickerProviderStateMixin` or
+`SingleTickerProviderStateMixin` drives time-based values. [`ThemeData`][themedata] carries
+the shared visual values.
 
-Read [State and lifecycle](/docs/state-lifecycle) for deterministic cleanup or
-[Hooks](/docs/hooks) when one lifecycle concern should be reusable.
+The optional companion package `noir_signals` offers the same ownership model
+through composable hooks. Read
+[State, identity, and ownership](/docs/state-lifecycle) to choose, and
+[Manage state and resources](/docs/hooks) when one lifecycle concern should be
+reusable.
+
+[row]: https://pub.dev/documentation/noir/latest/noir/Row-class.html
+[column]: https://pub.dev/documentation/noir/latest/noir/Column-class.html
+[flex]: https://pub.dev/documentation/noir/latest/noir/Flex-class.html
+[expanded]: https://pub.dev/documentation/noir/latest/noir/Expanded-class.html
+[flexible]: https://pub.dev/documentation/noir/latest/noir/Flexible-class.html
+[padding]: https://pub.dev/documentation/noir/latest/noir/Padding-class.html
+[align]: https://pub.dev/documentation/noir/latest/noir/Align-class.html
+[sizedbox]: https://pub.dev/documentation/noir/latest/noir/SizedBox-class.html
+[constrainedbox]: https://pub.dev/documentation/noir/latest/noir/ConstrainedBox-class.html
+[panel]: https://pub.dev/documentation/noir/latest/noir/Panel-class.html
+[container]: https://pub.dev/documentation/noir/latest/noir/Container-class.html
+[decoratedbox]: https://pub.dev/documentation/noir/latest/noir/DecoratedBox-class.html
+[stack]: https://pub.dev/documentation/noir/latest/noir/Stack-class.html
+[positioned]: https://pub.dev/documentation/noir/latest/noir/Positioned-class.html
+[wrap]: https://pub.dev/documentation/noir/latest/noir/Wrap-class.html
+[text]: https://pub.dev/documentation/noir/latest/noir/Text-class.html
+[richtext]: https://pub.dev/documentation/noir/latest/noir/RichText-class.html
+[textspan]: https://pub.dev/documentation/noir/latest/noir/TextSpan-class.html
+[asciifont]: https://pub.dev/documentation/noir/latest/noir/AsciiFont-class.html
+[badge]: https://pub.dev/documentation/noir/latest/noir/Badge-class.html
+[progressbar]: https://pub.dev/documentation/noir/latest/noir/ProgressBar-class.html
+[spinner]: https://pub.dev/documentation/noir/latest/noir/Spinner-class.html
+[divider]: https://pub.dev/documentation/noir/latest/noir/Divider-class.html
+[theme]: https://pub.dev/documentation/noir/latest/noir/Theme-class.html
+[button]: https://pub.dev/documentation/noir/latest/noir/Button-class.html
+[checkbox]: https://pub.dev/documentation/noir/latest/noir/Checkbox-class.html
+[switch]: https://pub.dev/documentation/noir/latest/noir/Switch-class.html
+[slider]: https://pub.dev/documentation/noir/latest/noir/Slider-class.html
+[textinput]: https://pub.dev/documentation/noir/latest/noir/TextInput-class.html
+[autocomplete]: https://pub.dev/documentation/noir/latest/noir/Autocomplete-class.html
+[textarea]: https://pub.dev/documentation/noir/latest/noir/TextArea-class.html
+[select]: https://pub.dev/documentation/noir/latest/noir/Select-class.html
+[tabselect]: https://pub.dev/documentation/noir/latest/noir/TabSelect-class.html
+[focus]: https://pub.dev/documentation/noir/latest/noir/Focus-class.html
+[focusscope]: https://pub.dev/documentation/noir/latest/noir/FocusScope-class.html
+[shortcuts]: https://pub.dev/documentation/noir/latest/noir/Shortcuts-class.html
+[actions]: https://pub.dev/documentation/noir/latest/noir/Actions-class.html
+[pointerlistener]: https://pub.dev/documentation/noir/latest/noir/PointerListener-class.html
+[scrollbox]: https://pub.dev/documentation/noir/latest/noir/ScrollBox-class.html
+[listview]: https://pub.dev/documentation/noir/latest/noir/ListView-class.html
+[treeview]: https://pub.dev/documentation/noir/latest/noir/TreeView-class.html
+[datatable]: https://pub.dev/documentation/noir/latest/noir/DataTable-class.html
+[texttable]: https://pub.dev/documentation/noir/latest/noir/TextTable-class.html
+[overlayportal]: https://pub.dev/documentation/noir/latest/noir/OverlayPortal-class.html
+[modal]: https://pub.dev/documentation/noir/latest/noir/Modal-class.html
+[menuanchor]: https://pub.dev/documentation/noir/latest/noir/MenuAnchor-class.html
+[codeview]: https://pub.dev/documentation/noir/latest/noir/CodeView-class.html
+[diffview]: https://pub.dev/documentation/noir/latest/noir/DiffView-class.html
+[unifieddiffparser]: https://pub.dev/documentation/noir/latest/noir/UnifiedDiffParser-class.html
+[markdownview]: https://pub.dev/documentation/noir/latest/noir/MarkdownView-class.html
+[image]: https://pub.dev/documentation/noir/latest/noir/Image-class.html
+[terminalimage]: https://pub.dev/documentation/noir/latest/noir/TerminalImage-class.html
+[selectedtext]: https://pub.dev/documentation/noir/latest/noir/SelectedText-class.html
+[modalcontroller]: https://pub.dev/documentation/noir/latest/noir/ModalController-class.html
+[treeviewcontroller]: https://pub.dev/documentation/noir/latest/noir/TreeViewController-class.html
+[selectoption]: https://pub.dev/documentation/noir/latest/noir/SelectOption-class.html
+[themedata]: https://pub.dev/documentation/noir/latest/noir/ThemeData-class.html
+[animationcontroller]: https://pub.dev/documentation/noir/latest/noir/AnimationController-class.html
+[valuenotifier]: https://pub.dev/documentation/noir/latest/noir/ValueNotifier-class.html
+[changenotifier]: https://pub.dev/documentation/noir/latest/noir/ChangeNotifier-class.html
+[statefulwidget]: https://pub.dev/documentation/noir/latest/noir/StatefulWidget-class.html
