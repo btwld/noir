@@ -124,6 +124,51 @@ void main() {
     }
   });
 
+  test('every published screenshot names the checkpoint it came from', () {
+    // A JPEG is a browser replay of a captured frame, so nothing in the
+    // website build can tell that its checkpoint moved. The scene beside it
+    // carries the source hash that does.
+    const imageRoot = 'packages/noir_signals/doc/images';
+    final published = Directory(imageRoot)
+        .listSync()
+        .whereType<File>()
+        .map((file) => file.uri.pathSegments.last)
+        .where((name) => name.endsWith('.jpg'))
+        .toSet();
+    expect(published, isNotEmpty);
+
+    final manifest =
+        jsonDecode(
+              File('scripts/recordings/doc_frames.json').readAsStringSync(),
+            )
+            as Map<String, Object?>;
+    final backed = <String>{
+      for (final scene
+          in (manifest['scenes']! as List<Object?>)
+              .cast<Map<String, Object?>>())
+        if (scene['image'] case final String image) image,
+    };
+
+    expect(
+      published.difference(backed),
+      isEmpty,
+      reason:
+          'add a scene to scripts/recordings/doc_frames.json so a checkpoint '
+          'change fails before the screenshot goes stale',
+    );
+    expect(
+      backed.difference(published),
+      isEmpty,
+      reason: 'a scene names a screenshot that $imageRoot does not publish',
+    );
+
+    // The walkthrough index has to keep describing exactly those files.
+    final index = File('$imageRoot/README.md').readAsStringSync();
+    for (final image in published) {
+      expect(index, contains('`$image`'), reason: image);
+    }
+  });
+
   test('the first-app tutorial and its homepage proof share one source', () {
     final checkpoint = File(
       'example/tutorials/first_app/step_01.dart',

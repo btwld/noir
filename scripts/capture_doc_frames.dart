@@ -161,6 +161,15 @@ Future<Map<String, Object?>> _captureScene(_Scene scene) async {
   if (lines.isEmpty) {
     throw StateError('Scene ${scene.id} painted an empty frame.');
   }
+  final text = lines.join('\n');
+  for (final expected in scene.expected) {
+    if (!text.contains(expected)) {
+      throw StateError(
+        'Scene ${scene.id} does not show "$expected". The documented result '
+        'and the checkpoint disagree.\n$text',
+      );
+    }
+  }
 
   return <String, Object?>{
     'title': scene.title,
@@ -169,6 +178,7 @@ Future<Map<String, Object?>> _captureScene(_Scene scene) async {
     'width': scene.width,
     'height': scene.height,
     'interaction': scene.interaction,
+    if (scene.image != null) 'image': ?scene.image,
     'sourceSha256': sha256.convert(utf8.encode(source)).toString(),
     'lines': lines,
   };
@@ -239,6 +249,8 @@ class _Scene {
     required this.width,
     required this.height,
     required this.actions,
+    required this.expected,
+    this.image,
   });
 
   factory _Scene.fromJson(Object? value) {
@@ -260,6 +272,14 @@ class _Scene {
     if (rawActions is! List<Object?>) {
       throw const FormatException('actions must be a JSON array.');
     }
+    final rawExpected = value['expect'] ?? const <Object?>[];
+    if (rawExpected is! List<Object?>) {
+      throw const FormatException('expect must be a JSON array.');
+    }
+    final image = value['image'];
+    if (image != null && (image is! String || !image.endsWith('.jpg'))) {
+      throw const FormatException('image must name a .jpg file.');
+    }
     return _Scene(
       id: _requiredString(value, 'id'),
       entrypoint: entrypoint,
@@ -269,6 +289,14 @@ class _Scene {
       width: width,
       height: height,
       actions: <_Action>[for (final action in rawActions) _Action.from(action)],
+      expected: <String>[
+        for (final text in rawExpected)
+          if (text is String && text.isNotEmpty)
+            text
+          else
+            throw const FormatException('expect entries must be strings.'),
+      ],
+      image: image as String?,
     );
   }
 
@@ -280,6 +308,12 @@ class _Scene {
   final int width;
   final int height;
   final List<_Action> actions;
+
+  /// Text the documented result promises this frame contains.
+  final List<String> expected;
+
+  /// The screenshot in `packages/noir_signals/doc/images/` this scene backs.
+  final String? image;
 }
 
 enum _ActionKind { key, type, clickKey }

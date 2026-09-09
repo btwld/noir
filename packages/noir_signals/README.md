@@ -13,10 +13,38 @@ in one runnable app.
 
 ## Install
 
-The versions below are unpublished candidates. In this repository, run
-`dart pub get` at the root to resolve both workspace packages. See the
-[walkthrough](doc/getting-started.md#run-the-examples) for checkout commands.
-After publication, an application can use:
+`noir_signals` and its required Noir alpha.5 are unpublished candidates, so
+both packages come from one Noir repository checkout today. That repository is
+private; this path needs access to `conceptadev/noir`.
+
+### In your own application
+
+Clone Noir beside your application directory, then declare both packages:
+
+```yaml
+dependencies:
+  noir: ^0.0.1-alpha.5
+  noir_signals:
+    path: ../noir/packages/noir_signals
+dependency_overrides:
+  noir:
+    path: ../noir
+```
+
+Run `dart pub get` from your application directory. The override routes the
+companion's own `noir` dependency to the same checkout, so one revision
+supplies both packages.
+
+### Inside the Noir repository
+
+The repository is one Pub workspace, so `dart pub get` at its root resolves
+both packages. The task-list tutorial builds its app there, in
+`packages/noir_signals/example/`.
+
+### After publication
+
+An application will declare hosted versions instead. This block cannot resolve
+from pub.dev yet:
 
 ```yaml
 dependencies:

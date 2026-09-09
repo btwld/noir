@@ -21,9 +21,16 @@ the recording. Each JPEG is 745×472 pixels.
 | `05-filter.jpg` | `task_list.dart`; add `Ship the guide`, click `task-0`, then `hide-completed`. | Two visible rows; `2 of 4 remaining`. |
 | `06-clear.jpg` | Repeat the previous sequence, then click `clear-completed`. | Two stored rows; `2 of 2 remaining`, removal disabled. |
 
-To refresh a screenshot, record its checkpoint with the repository's
-[`record_noir_demo.dart`](https://github.com/conceptadev/noir/blob/main/scripts/record_noir_demo.dart),
-using the same geometry, and inspect the rendered poster before replacing the
+Every image above has a scene in
+[`scripts/recordings/doc_frames.json`](https://github.com/conceptadev/noir/blob/main/scripts/recordings/doc_frames.json)
+that names its checkpoint, its input, and the text the lesson promises.
+`dart run scripts/capture_doc_frames.dart --check` recaptures those frames and
+fails when a checkpoint has changed, so an edited lesson cannot keep an old
+screenshot.
+
+To refresh a screenshot, recapture the frames, then record the same scene with
+[`record_noir_demo.dart`](https://github.com/conceptadev/noir/blob/main/scripts/record_noir_demo.dart)
+at the geometry above and inspect the rendered poster before you replace the
 JPEG. Each scene starts from a fresh app; it does not inherit an earlier
 lesson's interactive state.
 

@@ -219,6 +219,76 @@ export const availability: {
   return availability;
 }
 
+/**
+ * Holds authored release claims to the availability data.
+ *
+ * The label beside a dependency is generated, but the sentences around it are
+ * written by hand. Publishing a package would otherwise leave a page saying
+ * the version it just installed cannot be installed.
+ */
+async function checkReleaseClaims(availability) {
+  const contentRoot = join(websiteRoot, 'src/content');
+  const pages = [];
+  async function collect(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) await collect(path);
+      else if (entry.name.endsWith('.mdx')) pages.push(path);
+    }
+  }
+  await collect(contentRoot);
+
+  const unpublishedCompanion = [
+    'not on pub.dev yet',
+    'cannot resolve from pub.dev',
+    'is not published',
+    'unpublished companion',
+  ];
+  const unreleasedNoir = [
+    `unreleased Noir ${availability.noir.manifest.replace(/^\d+\.\d+\.\d+-/, '')}`,
+    'the unreleased next version',
+  ];
+  const noirManifestIsPublished =
+    availability.noir.published === availability.noir.manifest;
+
+  const contradictions = [];
+  let statesCompanionIsUnpublished = false;
+  for (const page of pages) {
+    const source = await readFile(page, 'utf8');
+    const name = relative(repositoryRoot, page).split('\\').join('/');
+    for (const claim of unpublishedCompanion) {
+      if (!source.includes(claim)) continue;
+      statesCompanionIsUnpublished = true;
+      if (availability.companion.isPublished) {
+        contradictions.push(
+          `${name} says "${claim}", but TODO.md records noir_signals ` +
+            `${availability.companion.published} on pub.dev.`,
+        );
+      }
+    }
+    if (!noirManifestIsPublished) continue;
+    for (const claim of unreleasedNoir) {
+      if (!source.includes(claim)) continue;
+      contradictions.push(
+        `${name} says "${claim}", but TODO.md records noir ` +
+          `${availability.noir.published} on pub.dev.`,
+      );
+    }
+  }
+
+  if (!availability.companion.isPublished && !statesCompanionIsUnpublished) {
+    contradictions.push(
+      'noir_signals is unpublished, but no page says so. A reader would ' +
+        'follow a dependency block that cannot resolve.',
+    );
+  }
+  if (contradictions.length > 0) {
+    fail(
+      `Release claims disagree with TODO.md:\n- ${contradictions.join('\n- ')}`,
+    );
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * 2. Canonical code and 3. captured frames
  * ------------------------------------------------------------------ */
@@ -263,6 +333,8 @@ export interface TerminalFrameData {
   readonly width: number;
   readonly height: number;
   readonly interaction: string;
+  /** The walkthrough screenshot this scene backs, when it has one. */
+  readonly image?: string;
   readonly sourceSha256: string;
   readonly lines: readonly string[];
 }
@@ -555,8 +627,17 @@ async function resolveLink(target, lesson, routes) {
     fail(`${lesson.source} links outside the repository: ${target}`);
   }
   const route = routes.get(repositoryPath);
+  if (route) {
+    if (fragment) {
+      fail(
+        `${lesson.source} links to ${target}. The website owns that file as ` +
+          `${route}, whose headings differ, so the anchor cannot be carried ` +
+          'over. Link the page without a fragment.',
+      );
+    }
+    return route;
+  }
   const suffix = fragment ? `#${fragment}` : '';
-  if (route) return `${route}${suffix}`;
 
   const stats = await stat(absolute).catch(() => null);
   if (!stats) fail(`${lesson.source} links to a missing file: ${target}`);
@@ -714,6 +795,7 @@ export default pages;
 await mkdir(generatedRoot, { recursive: true });
 const availability = await writeAvailability(await readAvailability());
 const frames = await readFrames();
+await checkReleaseClaims(availability);
 await writeFrames(frames);
 await writeCheckpoints(frames);
 const taskList = await syncTaskList();

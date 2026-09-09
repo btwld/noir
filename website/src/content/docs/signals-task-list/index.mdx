@@ -27,9 +27,9 @@ The finished app after lesson 5.
 
 You need Dart 3.10 or later and a checkout of the Noir repository.
 `noir_signals` and its required Noir alpha.5 are not on pub.dev yet, so a
-checkout is the only way to resolve them today. See the
-[companion package overview](/docs/installation) for the dependency setup in your own
-project.
+checkout is the only way to resolve them today. You will build inside that
+checkout. To add the same packages to an application of your own instead, use
+the [install instructions](/docs/installation).
 
 This tutorial starts from an empty file. It does not require the first-app
 tutorial, the hooks guide, or the Signals guide.
@@ -64,19 +64,16 @@ dart pub get
 cd packages/noir_signals
 ```
 
-Every command in this tutorial runs from `packages/noir_signals/`. Create the
-file you will edit:
-
-```sh
-touch example/my_task_list.dart
-```
+Every command in this tutorial runs from `packages/noir_signals/`. Create an
+empty `example/my_task_list.dart` in your editor. That is the file you will
+edit in every lesson.
 
 Restart the app between lessons, because each lesson adds or reorders hooks.
 Once the hook order stops changing, `dart run noir:run example/my_task_list.dart`
 reloads ordinary build edits and keeps the current state.
 
-Secondary path: to see the finished program before you build it, run the
-shipped [task-list example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) with
+To see the finished program before you build it, run the shipped
+[task-list example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) with
 `dart run example/task_list.dart`.
 
 ## Write the first screen

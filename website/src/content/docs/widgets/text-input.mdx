@@ -48,19 +48,19 @@ class _SearchFieldState extends State<SearchField> {
 
 ## Properties you will reach for first
 
-| Property                                  | Default             | Behavior                                                                       |
-| ----------------------------------------- | ------------------- | ------------------------------------------------------------------------------ |
-| `controller`                              | `null`              | The `TextEditingController` that owns the text, selection, and caret.          |
-| `value`                                   | `null`              | An uncontrolled starting string. Passing both `controller` and `value` throws. |
-| `placeholder`                             | `null`              | Dimmed hint text shown while the field is empty.                               |
-| `onChanged`                               | `null`              | Called with the raw text after every change.                                   |
-| `onSubmit`                                | `null`              | Called when the reader presses Enter.                                          |
-| `maxLength`                               | `100`               | Maximum accepted characters. Raise it for a long line.                         |
-| `focusNode`                               | `null`              | Supply one when a parent must request or observe focus.                        |
-| `autofocus`                               | `false`             | Requests primary focus when the field first mounts.                            |
-| `obscureText` / `obscuringCharacter`      | `false` / `'*'`     | Paints each grapheme as the obscuring character. The stored text stays raw.    |
-| `cursorStyle`                             | `CursorStyle.block` | Shape drawn for the caret.                                                     |
-| `color`, `backgroundColor`, `cursorColor` | Theme values        | Override only for a deliberate exception to the Theme.                         |
+| Property                                  | Default             | Behavior                                                                                                                                                |
+| ----------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controller`                              | `null`              | The `TextEditingController` that owns the text, selection, and caret.                                                                                   |
+| `value`                                   | `null`              | Text the field owns for you. It sets the starting text, and a new value from a rebuild replaces the text. Passing both `controller` and `value` throws. |
+| `placeholder`                             | `null`              | Dimmed hint text shown while the field is empty.                                                                                                        |
+| `onChanged`                               | `null`              | Called with the raw text after the reader edits it. Programmatic controller changes do not call it.                                                     |
+| `onSubmit`                                | `null`              | Called when the reader presses Enter.                                                                                                                   |
+| `maxLength`                               | `100`               | Maximum accepted characters. Raise it for a long line.                                                                                                  |
+| `focusNode`                               | `null`              | Supply one when a parent must request or observe focus.                                                                                                 |
+| `autofocus`                               | `false`             | Requests primary focus when the field first mounts.                                                                                                     |
+| `obscureText` / `obscuringCharacter`      | `false` / `'*'`     | Paints each grapheme as the obscuring character. The stored text stays raw.                                                                             |
+| `cursorStyle`                             | `CursorStyle.block` | Shape drawn for the caret.                                                                                                                              |
+| `color`, `backgroundColor`, `cursorColor` | Theme values        | Override only for a deliberate exception to the Theme.                                                                                                  |
 
 ## Keyboard and pointer behavior
 
@@ -84,11 +84,24 @@ supplied.
 Read `controller.text` inside the callback that needs it. Do not keep a second
 copy of the text in `State` and try to keep the two in sync.
 
+`onChanged` reports the reader's edits: typing, deleting, and pasting. Changing
+`controller.text` from your own code updates the field and repaints it, but it
+does not call `onChanged`. When a filter or a search must also react to a
+programmatic change, listen to the controller instead:
+
+```dart
+_controller.addListener(() => _applyFilter(_controller.text));
+```
+
+Remove that listener, or dispose the controller, in the same `State` that added
+it. This is why clearing a search field in code does not rerun a filter that is
+attached only to `onChanged`.
+
 ## Common mistake
 
 Passing both `controller` and `value` throws an assertion. Choose one:
-`controller` when code must read or change the text, `value` when the field is
-uncontrolled and `onChanged` is enough.
+`controller` when your code must read or change the text and selection, `value`
+when the parent supplies the text and `onChanged` is enough.
 
 ## Related
 
