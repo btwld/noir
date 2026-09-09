@@ -1,16 +1,19 @@
 ---
-title: Getting started
-description: Build, run, interact with, and hot-reload a small stateful Noir app.
+title: Your first app
+description: Create a Dart project, add Noir, run a counter, press a button, and change the running screen.
 ---
 
-# Getting started
+# Your first app
 
-You’ll build a counter, run it in a terminal, then change its label without
-losing the count. You need Dart 3.10 or later on macOS, Linux, or Windows.
+Build a counter you can change while it runs. You will create a project, add
+Noir, run the app, press a button, and edit the label without losing the count.
 
-<PrereleaseNotice />
+<Availability of="noir">
+  This lesson uses the published package only. Nothing here needs a repository
+  checkout.
+</Availability>
 
-## Create the project
+## 1. Create the project
 
 Create a Dart console application and move into it:
 
@@ -19,15 +22,17 @@ dart create -t console noir_demo
 cd noir_demo
 ```
 
-Add Noir from pub.dev:
+The template writes `bin/noir_demo.dart`. That is the one file you will edit.
+
+## 2. Add Noir
 
 <InstallCommand />
 
-## Build the counter
+## 3. Write the screen
 
-Replace `bin/noir_demo.dart` with this complete app:
+Replace everything in `bin/noir_demo.dart` with this complete file:
 
-```dart
+```dart filename="bin/noir_demo.dart"
 import 'package:noir/noir.dart';
 
 void main() => runTuiApp(const CounterApp(), enableMouse: true);
@@ -42,58 +47,44 @@ class CounterApp extends StatefulWidget {
 class _CounterAppState extends State<CounterApp> {
   int _count = 0;
 
-  void _increment() {
-    setState(() {
-      _count++;
-    });
-  }
+  void _increment() => setState(() => _count++);
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          Text('Count: $_count'),
-          Button(
-            autofocus: true,
-            label: '+ Add one',
-            onPressed: _increment,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(1),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 1,
+      children: [
+        Text('Count: $_count'),
+        Button(autofocus: true, label: '+ Add one', onPressed: _increment),
+      ],
+    ),
+  );
 }
 ```
 
-`runTuiApp` mounts the widget tree and owns the terminal session. Mouse input is
-opt-in; the `enableMouse` argument lets the Button receive a left click.
+Three parts matter here:
 
-## Run it with hot reload
+- `runTuiApp` mounts the widget tree and owns the terminal session.
+  `enableMouse: true` lets the Button receive a click.
+- `CounterApp` is immutable configuration. Noir can rebuild it as often as it
+  needs to.
+- `_CounterAppState` owns `_count`. `setState` changes that value and asks Noir
+  to rebuild this widget.
 
-Start the entry point through Noir’s development runner:
+## 4. Run it and press the button
+
+Start the entry point through Noir's development runner:
 
 ```sh
 dart run noir:run bin/noir_demo.dart
 ```
 
-You should see the count above a focused button. Press Enter or Space, or click
-the button. Each activation changes the count by one.
+The count appears above a focused button. Press Enter or Space, or click the
+button. Each activation adds one.
 
-<TerminalRecording
-  title="The complete repository counter running in Noir"
-  command="dart run noir:run example/counter.dart"
-  sourceHref="https://github.com/conceptadev/noir/blob/main/example/counter.dart"
-/>
-
-This recording uses the repository’s complete counter, which adds application
-chrome, arrow keys, `+`, `-`, and explicit pointer handling to the smaller app
-above. The capture runs Noir’s production ANSI parser and retained render
-pipeline against OpenTUI’s non-terminal testing renderer. It is a reproducible
-framework capture, not a hand-written mock or evidence from a real terminal.
+<TerminalFrame id="first-app-count" />
 
 If the keyboard does nothing, focus the terminal window. The Button has
 `autofocus: true`, so Noir gives it primary focus when the tree mounts. Press
@@ -102,27 +93,43 @@ Ctrl+C to exit; Noir restores the terminal modes it owns.
 For a normal launch without the source watcher, run
 `dart run bin/noir_demo.dart` instead.
 
-## Change the running app
+## 5. Change the running app
 
-Leave the development runner open. Change `Count:` to `Total:` in the `Text`
-widget and save the file. The running frame should update to `Total: 1`; the
-current value and focus stay in place.
+Leave the runner open. Change one word in the `Text` widget and save the file:
+
+```diff filename="bin/noir_demo.dart"
+-        Text('Count: $_count'),
++        Text('Total: $_count'),
+```
+
+The label changes while the current count and the focus stay in place.
+
+<TerminalFrame id="first-app-total" />
+
+The widget declaration changed. The `State` object that owns the count did not,
+so the count survived. That boundary is the whole idea:
+[State, identity, and ownership](/docs/state-lifecycle) explains it in full.
 
 The runner watches Dart files under `lib/` and beside the entry point. It asks
 the Dart VM to swap the changed sources, then tells Noir to rebuild, lay out,
 and paint the retained tree. If an edit does not compile, the last good app
-keeps running. Fix the source and save again.
+keeps running: fix the source and save again. Reload does not rerun `main()` or
+`initState()`, and some structural changes need a restart. See
+[the development runner](/api#the-development-runner) for its options and
+restart boundaries.
 
-Hot reload does not rerun `main()` or `initState()`, and some structural Dart
-changes need a full restart. Runner diagnostics go to
-`.dart_tool/noir/run.log`, outside the alternate-screen UI.
+## What you built
 
-`_increment` changes `_count` inside `setState`. Noir keeps the matching `State`
-object, calls `build` again, and paints the next frame. The widget declaration
-changes; the state that owns the count does not.
+You built a terminal counter that responds to Enter, Space, and mouse clicks.
+The widget declares the screen; its `State` owns the count, and `setState`
+requests a rebuild after each increment. Changing the label through hot reload
+keeps that same state and the current count.
 
-Next, use [Widgets and layout](/docs/widgets-layout) to compose a larger screen,
-or read [State and lifecycle](/docs/state-lifecycle) before adding controllers,
-subscriptions, or animation. The repository’s
-[complete Counter](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
-adds arrow keys, `+`, `-`, and explicit pointer handling.
+## Where to go next
+
+- [Layout in terminal cells](/docs/widgets-layout) — compose a larger screen.
+- [Build a task list](/docs/signals-task-list) — learn hooks and reactive state
+  through a five-lesson exercise. It needs the `noir_signals` companion, which
+  currently requires a repository checkout.
+- [Examples](/examples) — runnable apps, including a larger counter with arrow
+  keys and explicit pointer handling.

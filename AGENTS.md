@@ -80,7 +80,12 @@ Run these from the repository root, for the `noir` package:
     dart test <focused test paths> --concurrency=1
     dart test --concurrency=1
     dart run scripts/fetch_opentui_binaries.dart --verify-only
+    dart run scripts/capture_doc_frames.dart --check
     dart pub publish --dry-run
+
+`capture_doc_frames.dart` drives the documented tutorial checkpoints in
+headless drive mode and compares the result with the committed frames the
+website publishes. `--check` never writes; omit it to refresh them.
 
 Run these from `packages/noir_signals/`, for the companion package:
 
@@ -103,6 +108,19 @@ stages a copy outside the checkout and runs the dry-run there.
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.
+
+For a website change, run these from `website/`:
+
+    npm run format:check
+    npm run lint
+    npm run typecheck
+    npm run build
+    npm run test:smoke
+
+`npm run sync` regenerates the derived documentation content; `build`, `dev`,
+and `typecheck` run it first. Commit its output with the source change.
+[`website/DESIGN.md`](website/DESIGN.md) owns the page templates, content
+ownership, and navigation rules.
 
 Automatic GitHub Actions runs for `push` and `pull_request` are ordinary
 verification. Do not manually dispatch or rerun a workflow unless the user

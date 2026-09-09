@@ -49,6 +49,22 @@ artifacts are unchanged from alpha.4.
   changes, so a resized list keeps the selected row on screen while the
   controller keeps a valid scroll position.
 
+### Changed
+
+- The task-list walkthrough is now a five-lesson tutorial. Lesson 1 stays in
+  `doc/getting-started.md`; lessons 2 to 5 live in `doc/tutorials/task-list/`.
+  Each lesson keeps its exact changes, complete runnable checkpoint, and
+  screenshot, and its earlier checkpoints ship as runnable files under
+  `example/tutorials/task_list/`. The shipped `example/task_list.dart` is the
+  final checkpoint, so the tutorial and the example cannot drift apart. The old
+  step anchors still resolve from the tutorial's first page.
+- `doc/hooks.md` and `doc/signals.md` are reference documents. Their
+  introductions no longer restate the tutorial, and dependency setup points at
+  the package overview.
+- The core `example/` directory now carries the two first-app tutorial
+  checkpoints under `example/tutorials/first_app/`. The published documentation
+  captures its terminal frames from those exact files.
+
 ### Removed
 
 - Removed `package:noir/hooks.dart`. The hook runtime, the built-in resource
@@ -56,7 +72,9 @@ artifacts are unchanged from alpha.4.
   `noir_signals`, published from `packages/noir_signals/` in this repository.
   Replace `package:noir/hooks.dart` with
   `package:noir_signals/noir_signals.dart` and add `noir_signals` to the
-  application's dependencies. Every hook name, return type, and lifecycle rule
+  application's dependencies. Rename `HookWidget` to `SignalWidget`,
+  `HookBuilder` to `SignalBuilder`, and `HookWidgetBuilder` to
+  `SignalWidgetBuilder`. Every hook function, return type, and lifecycle rule
   is unchanged: `useState` still returns a `ValueNotifier` and
   `useTextEditingController` still returns a `TextEditingController`.
 

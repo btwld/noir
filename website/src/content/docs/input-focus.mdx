@@ -1,71 +1,50 @@
 ---
-title: Input and focus
-description: Route shortcuts, editable text, focus, pointer, and scroll input through Noir’s ordered input pipeline.
+title: Handle input and focus
+description: Recipes for editable text, keyboard shortcuts, focus ownership, and pointer coordinates in a Noir app.
 ---
 
-# Input and focus
+# Handle input and focus
 
-Noir gives each input event one ordered route. The first handler that consumes
-the event wins. Most input bugs come from putting a handler earlier in that
-route than the control that was meant to receive it.
+Noir gives each input event one ordered route, and the first handler that
+consumes the event wins. Most input problems come from putting a handler
+earlier in that route than the control that was meant to receive it.
 
-## Follow a key through the tree
+Each recipe below solves one task and names the failure it prevents.
 
-<ol className="concept-flow input-pipeline">
-  <li>
-    <strong>App handlers</strong>
-    <span>
-      Callbacks registered with <code>TuiApp.onKey</code>
-    </span>
-  </li>
-  <li>
-    <strong>Shortcuts and Actions</strong>
-    <span>A key combination becomes a semantic Intent</span>
-  </li>
-  <li>
-    <strong>Text insertion</strong>
-    <span>Printable input reaches a focused TextInput or TextArea</span>
-  </li>
-  <li>
-    <strong>Focus handlers</strong>
-    <span>
-      The focused node runs first, then the event bubbles through ancestors
-    </span>
-  </li>
-  <li>
-    <strong>Focus traversal</strong>
-    <span>Unconsumed Tab or Shift+Tab moves through the active scope</span>
-  </li>
-  <li>
-    <strong>Terminal fallback</strong>
-    <span>
-      Unconsumed Ctrl+C disposes the app and exits with interrupt status
-    </span>
-  </li>
-</ol>
+## Give editable text an owner
 
-An app-level binding runs before the focused control. Do not bind a bare `q`
-there when a user might be typing into a field; the TextInput will never see
-that character. Prefer a modified shortcut such as Ctrl+Q, or scope the command
-to a subtree with `Shortcuts` and `Actions`.
+Use a `TextEditingController` when code must read or change the text or the
+selection. The state that creates it disposes it. Pass either `controller` or
+`value` to a `TextInput` or `TextArea`, never both.
 
 ```dart
-final app = runTuiApp(const EditorApp(), enableMouse: true);
-app.onKey((event) {
-  if (!event.isPress ||
-      event.logicalKey != LogicalKeyboardKey.keyQ ||
-      !event.isControlPressed) {
-    return;
-  }
-  event.consume();
-  app.dispose();
-});
+TextInput(
+  controller: _controller,
+  autofocus: true,
+  placeholder: 'package name',
+  onSubmit: _apply,
+)
 ```
 
-`TuiApp.onKey` is a void handler. Call `event.consume()` to stop the rest of the
-pipeline; returning from the callback without consuming lets later stages run.
+`TextInput.onSubmit` runs on Enter, and `TextInput.maxLength` defaults to
+`100`; raise it when a field must accept a longer line. `TextArea.maxLength` is
+unbounded unless you set it. By default `TextArea` uses Enter for a newline and
+reports Ctrl+Enter when the terminal distinguishes it. With
+`submitOnEnter: true`, Enter submits and a distinguishable Ctrl+J inserts a
+newline. `softWrap: true` wraps by grapheme and terminal-cell width; pair it
+with `maxHeight` to grow from `height` to a bounded maximum before scrolling.
 
-## Map keys to commands
+Focus-aware controls create an internal node when you do not supply one. Pass
+your own `FocusNode` when a parent must request focus, observe it, or
+coordinate several fields. See
+[State, identity, and ownership](/docs/state-lifecycle) for controller and node
+ownership together, and [TextInput](/docs/widgets/text-input) for the full
+field reference.
+
+**If typing does nothing:** an ancestor `Focus` with `autofocus: true` took
+primary focus from the field. Give the field the autofocus instead.
+
+## Map a key combination to a command
 
 `Shortcuts` turns a key combination into an Intent. `Actions` decides what that
 intent does at the nearest matching point in the focused subtree:
@@ -101,13 +80,18 @@ class SaveShortcut extends StatelessWidget {
 }
 ```
 
-This keeps the key combination separate from the application command. A Button,
-menu item, and shortcut can call the same `onSave` callback without duplicating
-the behavior.
+This keeps the key combination separate from the command. A Button, a menu
+item, and a shortcut can all call the same `onSave` callback.
 
-Use `Focus` or `FocusScope` for raw keys a focused region itself owns. Check
-press state and return `ignored` for everything else. `DismissOnEscape` wraps
-that rule so a parent can pass the dismissal callback and the child tree:
+**If a field stops receiving a character:** an app-level or ancestor binding
+consumed it first. Do not bind a bare `q` when the reader might be typing.
+Prefer a modified combination such as Ctrl+Q, or scope the command to a subtree
+with `Shortcuts` and `Actions`.
+
+## Own a raw key inside one region
+
+Use `Focus` or `FocusScope` for keys a focused region owns itself. Check the
+press state and return `ignored` for everything else:
 
 ```dart
 class DismissOnEscape extends StatelessWidget {
@@ -137,36 +121,35 @@ class DismissOnEscape extends StatelessWidget {
 }
 ```
 
-This wrapper intercepts Escape as it bubbles. Give the child or region focus
-itself; an ancestor `Focus` with `autofocus: true` would steal primary focus
-from a nested `TextInput`.
-
 Tab traversal already works. Intercept Tab only when the normal traversal
 policy is not the behavior you want.
 
-## Give editable text an owner
+## Quit from an application-level key
 
-Use a `TextEditingController` when code must read or change text or selection.
-The state that creates it disposes it. Pass either `controller` or `value` to a
-TextInput or TextArea, never both.
+`TuiApp.onKey` runs before the focused control. It is a void handler: call
+`event.consume()` to stop the rest of the pipeline, or return without consuming
+to let later stages run.
 
-`TextInput.onSubmit` runs on Enter. `TextInput.maxLength` defaults to `100`;
-raise it when a field must accept a longer line. `TextArea.maxLength` is
-unbounded unless you set it. By default, TextArea uses Enter for a newline and
-reports Ctrl+Enter when the terminal distinguishes it. With
-`submitOnEnter: true`, Enter submits and a distinguishable Ctrl+J inserts a
-newline. `softWrap: true` wraps by grapheme and terminal-cell width; pair it
-with `maxHeight` to grow from `height` to a bounded maximum before scrolling.
+```dart
+final app = runTuiApp(const EditorApp(), enableMouse: true);
+app.onKey((event) {
+  if (!event.isPress ||
+      event.logicalKey != LogicalKeyboardKey.keyQ ||
+      !event.isControlPressed) {
+    return;
+  }
+  event.consume();
+  app.dispose();
+});
+```
 
-Focus-aware controls can create an internal node, but pass your own `FocusNode`
-when a parent needs to request focus, observe it, or coordinate several fields.
-The [State and lifecycle](/docs/state-lifecycle) guide shows controller and node
-ownership together.
+Once the tree is mounted, prefer `TuiApp.exit(context)` from a widget so Noir
+restores the terminal resources it owns.
 
 ## Use local pointer coordinates
 
 `PointerListener` receives an event after render-tree hit testing chooses its
-subtree. `event.localPosition` is already measured from that widget’s top-left
+subtree. `event.localPosition` is already measured from that widget's top-left
 cell:
 
 ```dart
@@ -180,27 +163,65 @@ PointerListener(
 )
 ```
 
-Do not reconstruct the widget’s absolute origin. The local coordinate remains
-correct when the widget moves inside a scrollable region or overlay. Enable
-mouse reporting once with `runTuiApp(app, enableMouse: true)`; request movement
-events separately only when the app needs hover or drag.
+Do not reconstruct the widget's absolute origin. The local coordinate stays
+correct when the widget moves inside a scrollable region or an overlay.
 
-## Let scrolling own its viewport
+**If no pointer event arrives:** mouse reporting is opt-in. Enable it once with
+`runTuiApp(app, enableMouse: true)`, and request movement events separately
+only when the app needs hover or drag. A terminal that does not report mouse
+input cannot be made to; see
+[Platform support](/docs/platform-limitations).
+
+## Keep a scrollable region's keys to itself
 
 `ScrollBox` wraps one overflowing child. `ListView` builds only visible rows,
-and `DataTable` uses a ListView body under its aligned header. Give a scrollable
-region focus when its arrows, PageUp, PageDown, Home, and End keys should not
-move another region.
-Set `canRequestFocus: false` for a read-only embedded viewport that must remain
-outside an enclosing modal or form's focus traversal.
+and `DataTable` uses a ListView body under its aligned header. Give a
+scrollable region focus when its arrow, PageUp, PageDown, Home, and End keys
+should not move another region. Set `canRequestFocus: false` for a read-only
+embedded viewport that must stay outside an enclosing modal or form traversal.
 
-For chronological output, construct its controller with `followTail: true`.
-It follows layout extent changes while at the end, detaches when scrolled above
+For chronological output, construct its controller with `followTail: true`. It
+follows layout extent changes while at the end, detaches when scrolled above
 the end, and reattaches when returned to the maximum extent.
 
-Stable `ValueKey`s belong in repository drive scripts, not in ordinary app
-input code. See [Testing](/docs/testing) for Driver inspection, the
-[Widget catalog](/docs/widget-catalog#input-and-selection) for the built-in
-interactive controls, and the repository’s
-[Focus Form](https://github.com/conceptadev/noir/blob/main/example/focus_form.dart)
-for a complete two-field flow.
+Use stable `ValueKey`s to keep row identity when items move or disappear.
+
+## The route an event takes
+
+<ol className="concept-flow input-pipeline">
+  <li>
+    <strong>App handlers</strong>
+    <span>
+      Callbacks registered with <code>TuiApp.onKey</code>
+    </span>
+  </li>
+  <li>
+    <strong>Shortcuts and Actions</strong>
+    <span>A key combination becomes a semantic Intent</span>
+  </li>
+  <li>
+    <strong>Text insertion</strong>
+    <span>Printable input reaches a focused TextInput or TextArea</span>
+  </li>
+  <li>
+    <strong>Focus handlers</strong>
+    <span>
+      The focused node runs first, then the event bubbles through ancestors
+    </span>
+  </li>
+  <li>
+    <strong>Focus traversal</strong>
+    <span>Unconsumed Tab or Shift+Tab moves through the active scope</span>
+  </li>
+  <li>
+    <strong>Terminal fallback</strong>
+    <span>
+      Unconsumed Ctrl+C disposes the app and exits with interrupt status
+    </span>
+  </li>
+</ol>
+
+The [Widget catalog](/docs/widget-catalog#input-and-selection) lists the
+built-in interactive controls, and the repository's
+[focus form example](https://github.com/conceptadev/noir/blob/main/example/focus_form.dart)
+is a complete two-field flow.

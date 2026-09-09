@@ -12,7 +12,7 @@ void main() {
     late AnimationController controller;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           controller = useAnimationController(
             duration: const Duration(seconds: 1),

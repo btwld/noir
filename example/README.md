@@ -18,7 +18,33 @@ describe their keybindings and special requirements in the file header.
 | `dart run example/main.dart` | The canonical minimal application entrypoint. |
 | `dart run example/hello.dart` | A small stateless widget tree with shared example chrome. |
 | `dart run example/counter.dart` | Stateful updates through keyboard and pointer activation. |
-| `dart run packages/noir_signals/example/counter.dart` | The same state pattern through `HookWidget` and `useState`, from the companion `noir_signals` package. |
+
+## Tutorial checkpoints
+
+`tutorials/first_app/` holds the two checkpoints of the
+[first-app tutorial](https://github.com/conceptadev/noir/blob/main/website/src/content/docs/getting-started.mdx):
+`step_01.dart` prints `Count:`, and `step_02.dart` is the same file after the
+label edit. The published documentation captures its frames from these exact
+files, so the code a reader copies and the output they see always agree.
+
+```sh
+dart run example/tutorials/first_app/step_01.dart
+```
+
+## Hooks and Signals companion
+
+These examples live in the optional `noir_signals` package and are available
+from a repository checkout. Run `dart pub get` at the repository root first.
+Browse their [example directory](https://github.com/conceptadev/noir/tree/main/packages/noir_signals/example)
+for source files and commands from the companion directory.
+Follow the [task-list walkthrough](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
+for step-by-step code changes, screenshots, and complete runnable checkpoints.
+
+| Source | Run from the repository root | Learn |
+| --- | --- | --- |
+| [Counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart) | `dart run packages/noir_signals/example/counter.dart` | `SignalWidget` and `useState` for local state. |
+| [Task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) | `dart run packages/noir_signals/example/task_list.dart` | `useSignal`, `useComputed`, retained input, and completion/filter actions. |
+| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run packages/noir_signals/example/file_search.dart` | An owned model, `useSignalValue`, and `SignalValueBuilder`. |
 
 ## Core concepts
 

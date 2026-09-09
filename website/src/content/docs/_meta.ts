@@ -4,31 +4,45 @@ const pages = {
   },
   '---start': {
     type: 'separator',
-    title: 'Start',
+    title: 'Start here',
   },
-  'getting-started': 'Getting started',
-  'command-line-arguments': 'Command-line arguments',
-  '---build': {
+  'getting-started': 'Your first app',
+  '---guides': {
     type: 'separator',
-    title: 'Build',
+    title: 'Guides',
   },
-  'widgets-layout': 'Widgets and layout',
-  'state-lifecycle': 'State and lifecycle',
-  hooks: 'Hooks',
-  signals: 'Signals',
-  'input-focus': 'Input and focus',
-  testing: 'Testing',
-  '---understand': {
+  'input-focus': 'Handle input and focus',
+  'command-line-arguments': 'Parse command-line arguments',
+  testing: 'Test an app',
+  '---signals': {
     type: 'separator',
-    title: 'Understand',
+    title: 'noir_signals',
   },
-  'architecture-api': 'Architecture',
+  'noir-signals': 'Overview and setup',
+  hooks: 'Manage state and resources',
+  signals: 'Show shared state',
+  'signals-task-list': 'Build a task list',
+  '---concepts': {
+    type: 'separator',
+    title: 'Concepts',
+  },
+  'widgets-layout': 'Layout in terminal cells',
+  'state-lifecycle': 'State, identity, and ownership',
   '---reference': {
     type: 'separator',
     title: 'Reference',
   },
   'widget-catalog': 'Widget catalog',
-  'platform-limitations': 'Platform support and limitations',
+  'platform-limitations': 'Platform support',
+  installation: {
+    display: 'hidden',
+  },
+  'architecture-api': {
+    display: 'hidden',
+  },
+  widgets: {
+    display: 'hidden',
+  },
 };
 
 export default pages;

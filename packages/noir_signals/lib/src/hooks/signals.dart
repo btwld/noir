@@ -62,7 +62,7 @@ T useSignalValue<T>(ReadonlySignal<T> source) =>
 /// The install and the lifecycle cleanup run under the same guard as
 /// `useEffect`, so neither may request a hook rebuild while it runs. That
 /// guard covers every hook host in the isolate, not only this one: a cleanup
-/// that writes a signal another `HookWidget` observes makes that widget's
+/// that writes a signal another `SignalWidget` observes makes that widget's
 /// rebuild request throw. Write to shared signals from an input callback, a
 /// timer, or a future instead.
 ///

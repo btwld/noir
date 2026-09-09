@@ -1,52 +1,111 @@
 ---
-title: Command-line arguments and subcommands
-description: Parse flags and subcommands before mounting a typed Noir application.
+title: Parse command-line arguments
+description: Read flags and positional values before the widget tree mounts, and pass typed values into the root widget.
 ---
 
-# Command-line arguments and subcommands
+# Parse command-line arguments
 
-A Noir entry point is still an ordinary Dart console program. Receive startup
-arguments in `main(List<String> arguments)`, parse them before mounting the
-widget tree, and pass typed values into the root widget. Noir's development
-runner forwards everything after the entry-point path without interpreting it.
+A Noir entry point is an ordinary Dart console program. Receive the startup
+arguments in `main(List<String> arguments)`, parse them before you mount the
+widget tree, and pass typed values into the root widget.
 
-Each layer has one job:
+Noir's development runner forwards everything after the entry-point path
+without interpreting it, so both of these deliver the same arguments:
 
-| Layer            | Responsibility                                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| Dart `main`      | Receive the process argument list and decide whether to mount an app.                                           |
-| `package:args`   | Define flags, options, help, validation, and subcommand dispatch.                                               |
-| Your application | Convert parser results into immutable domain types and choose the root widget.                                  |
-| Noir             | Mount, render, and clean up the selected widget tree. Its development runner only transports startup arguments. |
+```sh
+dart run bin/logview.dart build.log --follow
+dart run noir:run bin/logview.dart build.log --follow
+```
 
-Use Dart's [`package:args`](https://pub.dev/packages/args) when an application
-needs flags, options, generated usage, or subcommands:
+Add Dart's argument parser:
 
 ```sh
 dart pub add args
 ```
 
-Noir does not re-export that package or add another command model around it.
-The parser, commands, and typed launch values below belong to the consuming
-application; they are not new Noir framework classes.
+## Parse flags for one application
 
-## Choose the smallest parser
+Use `ArgParser` when one root widget takes its initial configuration from flags
+or positional values. Parse once in `main`, convert the result into a type your
+application owns, and pass that value to the root widget:
 
-For one application root whose initial configuration changes through flags or
-positional values, use `ArgParser` directly. Parse once in `main`, convert the
-result into an application-owned type, and pass that value to the root widget.
+```dart filename="bin/logview.dart"
+import 'dart:io' as io;
 
-Use `CommandRunner` only when a command name selects a genuinely distinct
-shell operation or startup workflow, such as `patcher review` versus
-`patcher search`. A subcommand is not in-app navigation: after Noir mounts,
-ordinary widget state owns tabs, pages, dialogs, and command palettes.
+import 'package:args/args.dart';
+import 'package:noir/noir.dart';
 
-## Use CommandRunner for subcommands
+final class LogOptions {
+  const LogOptions({required this.path, required this.follow});
 
-When `review` is a real shell subcommand, this complete entry point gives it an
-optional patch path, an enum-valued option, and a boolean flag:
+  final String path;
+  final bool follow;
+}
 
-```dart
+void main(List<String> arguments) {
+  final parser = ArgParser()
+    ..addFlag('follow', abbr: 'f', negatable: false, help: 'Stay at the end.')
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
+
+  final LogOptions options;
+  try {
+    final results = parser.parse(arguments);
+    if (results.flag('help')) {
+      io.stdout.writeln('Usage: logview <file> [options]\n${parser.usage}');
+      return;
+    }
+    if (results.rest.length != 1) {
+      throw const FormatException('Expected exactly one log file.');
+    }
+    options = LogOptions(
+      path: results.rest.single,
+      follow: results.flag('follow'),
+    );
+  } on FormatException catch (error) {
+    io.stderr.writeln('${error.message}\n\n${parser.usage}');
+    io.exitCode = 64;
+    return;
+  }
+
+  runTuiApp(LogViewApp(options: options));
+}
+
+class LogViewApp extends StatelessWidget {
+  const LogViewApp({required this.options, super.key});
+
+  final LogOptions options;
+
+  @override
+  Widget build(BuildContext context) => Panel(
+    title: options.path,
+    child: Text(options.follow ? 'Following new lines' : 'Showing the file'),
+  );
+}
+```
+
+Three boundaries keep this readable:
+
+- `main` is the process boundary. It parses, reports usage errors, and calls
+  `runTuiApp` exactly once.
+- `LogOptions` is the application type. `LogViewApp` never reads `ArgResults`
+  or a string-keyed option map.
+- Invalid arguments fail before `runTuiApp`, so the program never enters
+  terminal mode only to print usage.
+
+`ArgParserException` extends `FormatException`, so one catch covers both an
+unknown flag and your own validation.
+
+Print usage on `--help` and exit `0`. Report an invalid argument on stderr and
+exit `64`.
+
+## Optional: dispatch several subcommands
+
+Use `CommandRunner` only when a command name selects a separate shell
+operation, such as `patcher review` against `patcher search`. A subcommand is
+not in-app navigation: after Noir mounts, ordinary widget state owns tabs,
+pages, dialogs, and command palettes.
+
+```dart filename="bin/patcher.dart"
 import 'dart:io' as io;
 
 import 'package:args/command_runner.dart';
@@ -117,95 +176,59 @@ final class ReviewCommand extends Command<ReviewOptions> {
   }
 }
 
-final class ReviewApp extends StatelessWidget {
+class ReviewApp extends StatelessWidget {
   const ReviewApp({required this.options, super.key});
 
   final ReviewOptions options;
 
   @override
-  Widget build(BuildContext context) {
-    final path = options.initialPath ?? 'Choose a patch in the TUI';
-    final source = options.staged ? 'staged changes' : 'working tree';
-
-    return Panel(
-      title: 'Review',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 1,
-        children: [
-          Text(path),
-          Text('Mode: ${options.mode.name}'),
-          Text('Source: $source'),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Panel(
+    title: 'Review',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 1,
+      children: [
+        Text(options.initialPath ?? 'Choose a patch in the TUI'),
+        Text('Mode: ${options.mode.name}'),
+        Text(options.staged ? 'Source: staged changes' : 'Source: working tree'),
+      ],
+    ),
+  );
 }
 ```
 
 The leaf command is the boundary between CLI strings and application types. It
-returns `ReviewOptions` without mounting a terminal. `main` is the process and
-application boundary: after parsing succeeds, it calls `runTuiApp` exactly
-once. `ReviewApp` never reads `ArgResults` or a string-keyed option map.
-`CommandRunner.run` returns `null` after printing help or top-level usage, so
-that branch intentionally returns without mounting anything.
+returns `ReviewOptions` without mounting a terminal. `CommandRunner.run`
+returns `null` after it prints help or top-level usage, so that branch returns
+without mounting anything.
 
-## Keep one application-owned root
+If several subcommands select different workflows, give `CommandRunner` a
+sealed result type your application owns. Each leaf returns one subtype, and
+`main` passes the selected value to one root widget. That root may own shared
+themes, services, overlays, and in-app navigation. It should not receive
+`arguments`, `ArgResults`, or the `CommandRunner`: startup parsing is already
+complete.
 
-For one workflow, `ReviewApp` can be the root directly. If several subcommands
-select different TUI workflows, give `CommandRunner` an application-owned
-sealed result type such as `PatcherLaunch`. Each leaf returns one subtype, and
-`main` passes the selected value to `PatcherApp(initialLaunch: launch)`.
+## Decide how a missing value behaves
 
-That product root may own shared themes, services, overlays, and subsequent
-in-app navigation. It should not receive `arguments`, `ArgResults`, or a
-`CommandRunner`: startup parsing is already complete. A generic Noir
-`CommandApp` would add CLI policy without adding a new application-lifecycle
-invariant, so Noir deliberately leaves this composition to the application.
+The `review` command above allows the patch path to be omitted, so `ReviewApp`
+receives a `null` `initialPath` and can collect the path with a `TextInput`, an
+`Autocomplete`, or a file-picker flow. That is an application decision, not
+parser behavior. For a command that must stay non-interactive, reject the
+missing value in `run()` with `usageException` instead.
 
-Run it normally:
+## Startup parsing happens once
 
-```sh
-dart run bin/patcher.dart review patch.diff --mode split --staged
-```
+`runTuiApp` returns as soon as the tree is mounted. Dart's input and signal
+subscriptions keep the process alive after `main` finishes. Quit from the
+widget tree with `TuiApp.exit(context)` so Noir restores the terminal resources
+it owns; calling `dart:io`'s `exit` from a running TUI can skip that cleanup.
 
-Or run the same entry point with Noir's source watcher:
-
-```sh
-dart run noir:run bin/patcher.dart review patch.diff --mode split --staged
-```
-
-Both forms deliver `review`, `patch.diff`, `--mode split`, and `--staged` to
-the application's `main` in that order.
-
-## Decide how missing values behave
-
-The example permits the patch path to be omitted. `ReviewApp` receives options
-whose `initialPath` is `null` and can collect the path with a `TextInput`,
-`Autocomplete`, or file-picker flow. That is an application decision, not
-parser behavior.
-
-For a command that must remain non-interactive, reject a missing value in
-`run()` with `usageException` instead. Invalid explicit arguments should always
-fail before `runTuiApp`; doing so avoids entering terminal mode only to display
-CLI usage.
-
-## Keep the lifecycle boundary intact
-
-`runTuiApp` returns synchronously. After `main` mounts the selected root widget,
-Dart's input and signal subscriptions keep the process alive when `main`
-finishes. Once mounted, quit from the widget tree with `TuiApp.exit(context)`
-so Noir restores the terminal resources it owns. Calling `dart:io.exit` from
-the running TUI can skip that cleanup.
-
-Startup parsing happens only during a process launch. Noir hot reload rebuilds
-the retained widget tree but does not rerun `main()`, so restart the process to
-change a command, flag, or startup value.
-
-For nested commands, aliases, multi-value options, and the complete parser
-contract, continue with the [`package:args`
-documentation](https://pub.dev/documentation/args/latest/).
+Hot reload rebuilds the retained widget tree but does not rerun `main()`.
+Restart the process to change a command, a flag, or a startup value.
 
 This startup boundary is separate from Noir's `Shortcuts`, `Intent`, and
-`Actions` APIs. Those route semantic input inside an already-mounted widget
-tree; they do not parse process arguments or define an in-app command palette.
+`Actions` APIs. Those route semantic input inside a mounted widget tree; see
+[Handle input and focus](/docs/input-focus). For nested commands, aliases,
+multi-value options, and the complete parser contract, continue with the
+[`package:args` documentation](https://pub.dev/documentation/args/latest/).

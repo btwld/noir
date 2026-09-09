@@ -9,6 +9,39 @@ class _CancelFailure implements Exception {
 }
 
 void main() {
+  test('SignalBuilder observes hooks but not plain borrowed signal reads', () {
+    final host = TestElementHost();
+    addTearDown(host.dispose);
+    final borrowed = signal(1);
+    addTearDown(borrowed.dispose);
+    late Signal<int> owned;
+    var builds = 0;
+    var seen = 0;
+
+    host.mount(
+      SignalBuilder(
+        builder: (context) {
+          builds++;
+          owned = useSignal(0);
+          seen = borrowed.value;
+          return Text('${owned.value}:$seen');
+        },
+      ),
+    );
+    expect(builds, 1);
+    expect(seen, 1);
+
+    borrowed.value = 2;
+    host.pumpBuild();
+    expect(builds, 1, reason: 'a plain read must not subscribe the host');
+    expect(seen, 1);
+
+    owned.value++;
+    host.pumpBuild();
+    expect(builds, 2, reason: 'an observed hook still schedules its host');
+    expect(seen, 2, reason: 'the next build reads the current borrowed value');
+  });
+
   group('a subscription that outlives its cancellation', () {
     test('stops rebuilding after the source is replaced', () {
       final host = TestElementHost();
@@ -23,7 +56,7 @@ void main() {
       ReadonlySignal<int> current = leaky;
       var builds = 0;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           builds++;
           useSignalValue(current);
@@ -57,7 +90,7 @@ void main() {
       var builds = 0;
       var show = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) => Column(
           children: <Widget>[
             if (show)

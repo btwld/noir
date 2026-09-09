@@ -18,7 +18,7 @@ void main() {
       late Computed<int> derived;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             owned = useSignal(1);
             derived = useComputed(
@@ -47,7 +47,7 @@ void main() {
       var key = 0;
       late Signal<int> created;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           useEffect(() {
             log.add('effect');
@@ -88,7 +88,7 @@ void main() {
       var builds = 0;
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             builds++;
             useSignalValue(borrowed);
@@ -112,7 +112,7 @@ void main() {
       var childBuilds = 0;
       var showChild = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) => Column(
           children: <Widget>[
             if (showChild)
@@ -149,7 +149,7 @@ void main() {
       final runs = <int>[];
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             useSignalEffect(() {
               runs.add(source.value);
@@ -173,7 +173,7 @@ void main() {
       final log = <String>[];
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             useSignalEffect(() {
               final value = source.value;
@@ -201,7 +201,7 @@ void main() {
       final runs = <int>[];
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             useSignalEffect(() {
               runs.add(source.value);
@@ -227,7 +227,7 @@ void main() {
       var key = 0;
       final log = <String>[];
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           final current = label;
           useSignalEffect(() {
@@ -255,7 +255,7 @@ void main() {
       final log = <String>[];
 
       host.mount(
-        HookBuilder(
+        SignalBuilder(
           builder: (context) {
             useSignalEffect(
               () =>
@@ -281,7 +281,7 @@ void main() {
 
       expect(
         () => host.mount(
-          HookBuilder(
+          SignalBuilder(
             builder: (context) {
               final count = useSignal(0);
               useSignalEffect(() {
@@ -315,7 +315,7 @@ void main() {
 
       expect(
         () => host.mount(
-          HookBuilder(
+          SignalBuilder(
             builder: (context) {
               useSignalEffect(() => throw const _InstallFailure());
               return const Container();
@@ -333,7 +333,7 @@ void main() {
       addTearDown(host.dispose);
       var show = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) =>
             Column(children: <Widget>[if (show) const _GuardedCleanupWidget()]),
       );
@@ -368,7 +368,7 @@ void main() {
       var unwatched = 0;
       var show = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) => Column(
           children: <Widget>[
             if (show) _OwnedWatchProbe(onUnwatched: () => unwatched++),
@@ -401,7 +401,7 @@ void main() {
       addTearDown(source.dispose);
       var show = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) => Column(
           children: <Widget>[
             if (show)
@@ -432,7 +432,7 @@ void main() {
       addTearDown(source.dispose);
       var show = true;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) => Column(
           children: <Widget>[
             if (show)
@@ -467,7 +467,7 @@ class _InstallFailure implements Exception {
 }
 
 /// Writes its own observed signal from the cleanup Noir runs at teardown.
-class _GuardedCleanupWidget extends HookWidget {
+class _GuardedCleanupWidget extends SignalWidget {
   const _GuardedCleanupWidget();
 
   @override
@@ -482,7 +482,7 @@ class _GuardedCleanupWidget extends HookWidget {
 }
 
 /// Reports when its hook-owned signal loses its last observer.
-class _OwnedWatchProbe extends HookWidget {
+class _OwnedWatchProbe extends SignalWidget {
   const _OwnedWatchProbe({required this.onUnwatched});
 
   final VoidCallback onUnwatched;

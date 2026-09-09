@@ -3,6 +3,16 @@
 The single record of Noir's publication and remaining release operations.
 Update it only with evidence from the exact reviewed tree.
 
+The documentation website derives every version and availability label from
+this block. `manifest` must equal the version in the matching `pubspec.yaml`,
+and `published` is the latest version on pub.dev or `none`. The website build
+fails when the two disagree.
+
+```noir-availability
+noir: manifest=0.0.1-alpha.5 published=0.0.1-alpha.4
+noir_signals: manifest=0.0.1-alpha.0 published=none
+```
+
 `0.0.1-alpha.4` is **published**. It shipped from exact `main` commit
 `86dc43d6564ccc4723c37d2d24607eadf7dd7c67`, tagged
 `v0.0.1-alpha.4`, through GitHub Actions run
@@ -29,11 +39,14 @@ Neither package is published. This candidate adds one framework lifecycle
 seam, moves the opt-in hooks library out of `noir`, and introduces the
 optional companion package `noir_signals` with the Signals integration.
 
-This candidate combines the MCP inspector, keyed-row and focus fixes,
-`LayoutBuilder`, hot reload, and the Signals companion. The integration order
-is #42 → #43 → #44 → #45 → #47 → #46, using merge commits for the stack.
-The alpha.5 changelog covers the complete candidate, including hot reload's
-forced-recompilation cost.
+The framework stack, including the MCP inspector, focus fixes, `LayoutBuilder`,
+hot reload, and the Signals companion, merged through
+[#46](https://github.com/conceptadev/noir/pull/46) at `3bc516c`. That merge commit
+passed platform CI in run
+[`34274996205`](https://github.com/conceptadev/noir/actions/runs/34274996205).
+The host rename and documentation follow-up are in draft
+[#49](https://github.com/conceptadev/noir/pull/49). The alpha.5 changelog includes
+hot reload's forced-recompilation cost.
 
 Closed on this tree:
 
@@ -44,17 +57,18 @@ Closed on this tree:
       ordering, failure containment, nesting, and idle scheduling.
 - [x] **Hooks extraction**: `package:noir/hooks.dart`, `lib/src/hooks/`,
       `test/hooks/`, the counter example, the hook consumer fixture, and the
-      hooks guide moved to `packages/noir_signals/`. Every hook name, return
-      type, and lifecycle rule is unchanged.
+      hooks guide moved to `packages/noir_signals/`. Every hook function, return
+      type, and lifecycle rule is unchanged. The companion hosts are now named
+      `SignalWidget` and `SignalBuilder` (`SignalWidgetBuilder` for the callback).
 - [x] **Signals integration**: `useSignal`, `useComputed`, `useSignalValue`,
-      `useSignalEffect`, and `SignalValueBuilder`. Automatic whole-build
-      tracking through `SignalWidget` and `SignalBuilder` is deliberately not
-      part of this release.
+      `useSignalEffect`, and `SignalValueBuilder`. `SignalWidget` and
+      `SignalBuilder` host hooks; they do not automatically track all signal
+      reads in a build. Observation remains explicit.
 - [x] **Boundary**: the repository is one Pub workspace. Companion production
       code imports only `package:noir/noir.dart` and the public
       `signals_core` surface. Noir's manifest and sources carry no Signals or
       companion dependency, and a Noir-only consumer resolves neither.
-- [x] **Checks**: format and fatal-info analysis passed for both packages;
+- [x] **Pre-merge checks**: format and fatal-info analysis passed for both packages;
       213 architecture tests and the 2,232-test serial root suite passed on the
       combined candidate tree; the companion's 113 tests passed from both its own
       directory and the repository root; the website formatted, linted,
@@ -62,7 +76,7 @@ Closed on this tree:
       warnings; the staged companion reported zero warnings and one expected
       hint, because staging overrides `noir` to this checkout until alpha.5
       is published.
-- [x] **Independent behavior and diff review**: two reviews, one on the
+- [x] **Framework-stack review**: two independent reviews, one on the
       framework seam and one on the companion package. No blocker. Resolved:
       the deferred-disposal drain is now ordered by host depth rather than
       retire order, so a descendant releases before an ancestor even when the
@@ -146,15 +160,18 @@ Open review follow-ups:
 
 Release gates:
 
-Before publication, the candidate must be merged and its merge commit must
-pass platform CI. Merge completion is tracked by the PR records for
-[#43](https://github.com/conceptadev/noir/pull/43),
-[#44](https://github.com/conceptadev/noir/pull/44),
-[#45](https://github.com/conceptadev/noir/pull/45),
-[#47](https://github.com/conceptadev/noir/pull/47), and the final candidate
-[#46](https://github.com/conceptadev/noir/pull/46). Use the checks on that exact
-head and the [main CI runs](https://github.com/conceptadev/noir/actions/workflows/ci.yml?query=branch%3Amain)
-for current status; a historical green run does not replace either gate.
+The framework stack is merged and its merge-commit checks passed. The remaining
+candidate changes are tracked in [#49](https://github.com/conceptadev/noir/pull/49).
+
+- [ ] **Host rename and documentation**: review and merge #49, then require
+      passing platform CI on its merge commit. At `b951182`, local formatting,
+      fatal-info analysis, 213 architecture tests, 2,232 root tests, and 118
+      companion tests passed. All five tutorial checkpoints analyzed in a fresh
+      consumer; the staged companion archive had zero warnings. Website format,
+      lint, typecheck, build, and browser smoke passed. Independent review and
+      the current PR checks remain open; use the PR and
+      [main CI runs](https://github.com/conceptadev/noir/actions/workflows/ci.yml?query=branch%3Amain)
+      for the latest status.
 
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted

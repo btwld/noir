@@ -6,7 +6,7 @@ description: >-
   surface.
   Use for Noir widgets, layout, styling, state, animation, focus, input,
   scrolling, forms, lifecycle, hot reload, drive mode, application tests,
-  HookWidget, HookBuilder, custom hooks, hook ordering, effects, or hook-owned
+  SignalWidget, SignalBuilder, custom hooks, hook ordering, effects, or hook-owned
   resources. Do not use for Noir framework internals or the
   TypeScript/React/Solid OpenTUI APIs.
 ---
@@ -28,7 +28,7 @@ import 'package:noir/noir.dart';
 Widget lifecycle hooks and Signals reactive state are opt-in through the
 companion `package:noir_signals` package. Add it as a separate dependency and
 import `package:noir_signals/noir_signals.dart` together with
-`package:noir/noir.dart` when using `HookWidget` or `use...` functions.
+`package:noir/noir.dart` when using `SignalWidget` or `use...` functions.
 
 `package:noir/noir_low_level.dart` is for advanced hosting, renderer/buffer
 access, and supported custom render-object protocols. Concrete Element
@@ -211,7 +211,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Mouse / pointer | `PointerListener` | `references/inputs-and-focus.md` |
 | Keybindings → semantic intents | `Shortcuts`, `Actions`, `Intent` | `references/inputs-and-focus.md` |
 | Local mutable state | `StatefulWidget` + `setState` | `references/state-and-animation.md` |
-| Reusable lifecycle state | `HookWidget` and `use...` from `package:noir_signals/noir_signals.dart` | `references/hooks.md` |
+| Reusable lifecycle state | `SignalWidget` and `use...` from `package:noir_signals/noir_signals.dart` | `references/hooks.md` |
 | Observable values | `ChangeNotifier`, `ValueNotifier` | `references/state-and-animation.md` |
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |

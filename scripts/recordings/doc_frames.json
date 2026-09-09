@@ -1,0 +1,111 @@
+{
+  "output": "website/src/generated/terminal-frames.json",
+  "scenes": [
+    {
+      "id": "first-app-count",
+      "entrypoint": "example/tutorials/first_app/step_01.dart",
+      "title": "The first app after one activation",
+      "command": "dart run noir:run bin/noir_demo.dart",
+      "interaction": "Press Space once on the focused button.",
+      "width": 40,
+      "height": 6,
+      "actions": [{ "key": "space" }],
+      "expect": ["Count: 1", "+ Add one"]
+    },
+    {
+      "id": "first-app-total",
+      "entrypoint": "example/tutorials/first_app/step_02.dart",
+      "title": "The same app after the label edit",
+      "command": "dart run noir:run bin/noir_demo.dart",
+      "interaction": "Press Space once, then change Count: to Total:.",
+      "width": 40,
+      "height": 6,
+      "actions": [{ "key": "space" }],
+      "expect": ["Total: 1", "+ Add one"]
+    },
+
+    {
+      "id": "task-list-screen",
+      "entrypoint": "packages/noir_signals/example/tutorials/task_list/step_01.dart",
+      "title": "Task list lesson 1",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "No input.",
+      "image": "01-screen.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [],
+      "expect": ["Task list", "Your tasks will appear here.", "Ctrl+C exits"]
+    },
+    {
+      "id": "task-list-state",
+      "entrypoint": "packages/noir_signals/example/tutorials/task_list/step_02.dart",
+      "title": "Task list lesson 2",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "No input.",
+      "image": "02-state.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [],
+      "expect": ["2 of 3 remaining", "Read the hooks guide", "Build a Signals app"]
+    },
+    {
+      "id": "task-list-complete",
+      "entrypoint": "packages/noir_signals/example/tutorials/task_list/step_03.dart",
+      "title": "Task list lesson 3",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "Complete the first task.",
+      "image": "03-complete.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [{ "clickKey": "task-0" }],
+      "expect": ["1 of 3 remaining", "Space toggles"]
+    },
+    {
+      "id": "task-list-add",
+      "entrypoint": "packages/noir_signals/example/tutorials/task_list/step_04.dart",
+      "title": "Task list lesson 4",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "Type Ship the guide, then press Enter.",
+      "image": "04-add.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [{ "type": "Ship the guide" }, { "key": "enter" }],
+      "expect": ["3 of 4 remaining", "Ship the guide", "Enter adds"]
+    },
+    {
+      "id": "task-list-filter",
+      "entrypoint": "packages/noir_signals/example/task_list.dart",
+      "title": "Task list lesson 5, filtered",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "Add a task, complete the first one, then hide completed.",
+      "image": "05-filter.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [
+        { "type": "Ship the guide" },
+        { "key": "enter" },
+        { "clickKey": "task-0" },
+        { "clickKey": "hide-completed" }
+      ],
+      "expect": ["2 of 4 remaining", "Hide completed", "Clear completed"]
+    },
+    {
+      "id": "task-list-clear",
+      "entrypoint": "packages/noir_signals/example/task_list.dart",
+      "title": "Task list lesson 5, after removal",
+      "command": "dart run example/my_task_list.dart",
+      "interaction": "Repeat the filter sequence, then clear completed tasks.",
+      "image": "06-clear.jpg",
+      "width": 80,
+      "height": 24,
+      "actions": [
+        { "type": "Ship the guide" },
+        { "key": "enter" },
+        { "clickKey": "task-0" },
+        { "clickKey": "hide-completed" },
+        { "clickKey": "clear-completed" }
+      ],
+      "expect": ["2 of 2 remaining", "Build a Signals app", "Ship the guide"]
+    }
+  ]
+}

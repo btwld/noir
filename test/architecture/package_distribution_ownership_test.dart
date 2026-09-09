@@ -866,14 +866,58 @@ void main() {
     final catalog = _read('website/src/content/docs/widget-catalog.mdx');
     final layout = _read('website/src/content/docs/widgets-layout.mdx');
 
-    expect(catalog, contains('`Panel`'));
-    expect(catalog, contains('`Modal`'));
-    expect(catalog, contains('`Autocomplete<T>`'));
-    expect(catalog, contains('`TreeView`'));
-    expect(catalog, contains('`TreeViewController`'));
+    for (final widget in <String>[
+      'Panel',
+      'Modal',
+      'Autocomplete<T>',
+      'TreeView',
+      'TreeViewController',
+    ]) {
+      expect(catalog, contains('`$widget`'), reason: widget);
+    }
+    // Modal instructions belong to the reference; the layout guide keeps the
+    // regions and constraints a screen is composed from.
+    expect(catalog, contains('Modal('));
     expect(layout, contains('Panel('));
-    expect(layout, contains('Modal('));
+    expect(layout, isNot(contains('Modal(')));
     expect(layout, isNot(contains('class LogPanel')));
+  });
+
+  test('every catalog widget name reaches a usable destination', () {
+    final catalog = _read('website/src/content/docs/widget-catalog.mdx');
+    final definitions = RegExp(
+      r'^\[([a-z0-9]+)\]: (\S+)$',
+      multiLine: true,
+    ).allMatches(catalog);
+    expect(definitions, isNotEmpty);
+
+    final destinations = <String, String>{
+      for (final match in definitions) match.group(1)!: match.group(2)!,
+    };
+    for (final destination in destinations.values) {
+      expect(
+        destination,
+        startsWith('https://pub.dev/documentation/noir/'),
+        reason: 'a catalog name must resolve to the generated reference',
+      );
+    }
+
+    // Reference-style labels only work when every use has a definition.
+    final uses = RegExp(r'\]\[([a-z0-9]+)\]').allMatches(catalog);
+    expect(uses, isNotEmpty);
+    for (final use in uses) {
+      expect(
+        destinations,
+        contains(use.group(1)),
+        reason: 'undefined catalog link label: ${use.group(1)}',
+      );
+    }
+    // One curated page exists; the catalog must point at it.
+    expect(catalog, contains('](/docs/widgets/text-input)'));
+    expect(
+      File('website/src/content/docs/widgets/text-input.mdx').existsSync(),
+      isTrue,
+    );
   });
 
   test('data-selection examples retain application-owned behavior', () {

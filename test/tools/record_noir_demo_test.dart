@@ -87,12 +87,25 @@ void main() {
         'pub-search.json',
         'pulse-animation.json',
       };
+      // `doc_frames.json` is the static-frame manifest for
+      // `scripts/capture_doc_frames.dart`, not an asciicast recipe. Its own
+      // architecture test covers it.
+      const frameManifest = 'doc_frames.json';
       final files = Directory('scripts/recordings')
           .listSync()
           .whereType<File>()
-          .where((file) => file.path.endsWith('.json'))
+          .where(
+            (file) =>
+                file.path.endsWith('.json') &&
+                file.uri.pathSegments.last != frameManifest,
+          )
           .toList(growable: false);
 
+      expect(
+        File('scripts/recordings/$frameManifest').existsSync(),
+        isTrue,
+        reason: 'the frame manifest must stay beside the recording recipes',
+      );
       expect(files.map((file) => file.uri.pathSegments.last), expected);
       for (final file in files) {
         final recipe = RecordingRecipe.fromJson(

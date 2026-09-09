@@ -57,10 +57,10 @@ export 'src/hooks/controllers.dart'
 export 'src/hooks/framework.dart'
     show
         Hook,
-        HookBuilder,
         HookState,
-        HookWidget,
-        HookWidgetBuilder,
+        SignalBuilder,
+        SignalWidget,
+        SignalWidgetBuilder,
         use,
         useContext,
         useTickerProvider;

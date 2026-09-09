@@ -1,19 +1,47 @@
 ---
-title: Widgets and layout
-description: Compose Noir interfaces with whole-cell geometry, constraints, and bounded terminal regions.
+title: Layout in terminal cells
+description: How constraints, whole-cell geometry, flex, and bounded regions decide the size and position of a Noir screen.
 ---
 
-# Widgets and layout
+# Layout in terminal cells
 
-Noir follows Flutter’s declarative layout model, but every size and gap is a
-whole terminal cell. Start by describing relationships between widgets. Add an
+Noir follows Flutter's declarative layout model, and every size and gap is a
+whole terminal cell. Describe the relationships between widgets first. Add an
 explicit size only where the interface has a real boundary.
 
-## Compose a status region
+## Constraints go down, sizes come up
+
+<ol className="concept-flow layout-protocol">
+  <li>
+    <strong>Constraints go down.</strong>
+    <span>
+      A parent tells each child the smallest and largest size it may use.
+    </span>
+  </li>
+  <li>
+    <strong>Sizes come up.</strong>
+    <span>
+      The child chooses an integer-cell size inside those constraints.
+    </span>
+  </li>
+  <li>
+    <strong>Parents set positions.</strong>
+    <span>
+      The parent places each child and establishes its hit-test geometry.
+    </span>
+  </li>
+</ol>
+
+A widget never reads its own position. `Flexible` lets a child use less than
+its flex share. `Expanded` requires it to fill that share. `SizedBox` sets an
+exact extent, and `ConstrainedBox` adds a minimum or a maximum without
+promising an exact result.
+
+## Compose a region
 
 `StatusRegion` is a small `StatelessWidget`: a natural-width Badge, a message
-that owns the remaining row, a trailing percentage, and a fixed-width progress
-bar.
+that owns the rest of the row, a trailing percentage, and a fixed-width
+progress bar.
 
 ```dart
 class StatusRegion extends StatelessWidget {
@@ -50,52 +78,23 @@ class StatusRegion extends StatelessWidget {
 ```
 
 `spacing: 1` inserts one cell only between adjacent children. `Expanded` takes
-the row left after the Badge, gap cells, and percentage. The ProgressBar is
-deliberately 32 cells wide, so its extent stays predictable as the viewport
-changes.
+the row left after the Badge, the gap cells, and the percentage. The
+ProgressBar is deliberately 32 cells wide, so its extent stays predictable as
+the viewport changes.
 
-## Think in terminal cells
+## Think in cells, not pixels
 
 Widths, heights, padding, offsets, and flex spacing are integers. A row is
-usually about twice as tall as a column is wide, so one blank row already
-creates substantial vertical separation. CJK characters and many emoji occupy
-two columns even though they are one grapheme.
-
-Use the grid as the design constraint:
+roughly twice as tall as a column is wide, so one blank row already creates
+substantial vertical separation. CJK characters and many emoji occupy two
+columns even though each is one grapheme.
 
 - Use `spacing: 1` for a normal gap. Two rows is already generous at 80×24.
-- Keep controls one row tall unless the control is a viewport or editor.
+- Keep controls one row tall unless the control is a viewport or an editor.
 - Let unused width trail at the end of a region. Do not stretch every child to
   make an 80-column screen look full.
 - Clamp one-line table and status text with `maxLines: 1`, `softWrap: false`,
   and an explicit overflow behavior.
-
-## Follow the layout protocol
-
-<ol className="concept-flow layout-protocol">
-  <li>
-    <strong>Constraints go down.</strong>
-    <span>
-      A parent tells each child the smallest and largest size it may use.
-    </span>
-  </li>
-  <li>
-    <strong>Sizes come up.</strong>
-    <span>
-      The child chooses an integer-cell size inside those constraints.
-    </span>
-  </li>
-  <li>
-    <strong>Parents set positions.</strong>
-    <span>
-      The parent places each child and establishes its hit-test geometry.
-    </span>
-  </li>
-</ol>
-
-`Flexible` lets a child use less than its flex share. `Expanded` requires it to
-fill that share. `SizedBox` sets an exact extent; `ConstrainedBox` adds a
-minimum or maximum without promising an exact result.
 
 | When the relationship is…             | Start with               |
 | ------------------------------------- | ------------------------ |
@@ -104,13 +103,53 @@ minimum or maximum without promising an exact result.
 | Children continue onto another run    | `Wrap`                   |
 | Children overlap at cell offsets      | `Stack` and `Positioned` |
 | One child is larger than its viewport | `ScrollBox`              |
-| Custom content appears above the root | `OverlayPortal`          |
-| A centered flow blocks the background | `Modal`                  |
-| A command list follows its launcher   | `MenuAnchor`             |
+| Many rows, built as they scroll       | `ListView`               |
 | A child must read the space it gets   | `LayoutBuilder`          |
 
-The [Widget catalog](/docs/widget-catalog) covers the rest of the public
-composition surface.
+The [Widget catalog](/docs/widget-catalog) covers the rest of the composition
+surface, including overlays, modals, and menus.
+
+## Give scrolling a bounded viewport
+
+A scrollable region needs a bounded main axis. Put `ScrollBox` or `ListView`
+inside an `Expanded`, a `SizedBox`, or a `Panel` that already has a size. In an
+unbounded column the viewport has no extent to scroll inside.
+
+```dart
+Column(
+  children: [
+    const StatusRegion(progress: 0.4),
+    Expanded(
+      child: ScrollBox(child: log),
+    ),
+  ],
+)
+```
+
+`ScrollBox` wraps one oversized child. `ListView` builds only the visible rows
+and suits long or unbounded lists. Give the scrollable region focus when its
+arrow, PageUp, PageDown, Home, and End keys should not move another region.
+
+## Put borders around regions, not every widget
+
+A border occupies the outside cells of its box. `Panel` provides the normal
+themed region with an optional title and focused state, so a second Text
+heading inside the same box creates duplicate chrome.
+
+```dart
+Panel(
+  title: 'Build log',
+  width: 24,
+  child: log,
+)
+```
+
+Omit `width` and `height` when the region should shrink-wrap its child. When a
+viewport or a label needs a fixed extent, remember that a Panel's dimensions
+include its border and horizontal inset. Its colors come from Theme; pass
+`color` or `borderColor` only for a deliberate override. Reach for `Container`
+and `BoxDecoration` when a region needs custom geometry instead of Panel's
+standard shape.
 
 ## Read the offered space with LayoutBuilder
 
@@ -128,68 +167,30 @@ LayoutBuilder(
 )
 ```
 
-The builder runs during layout and its result is laid out in the same frame,
-so the constraints it reads are the constraints its child receives. It runs on
-the first layout, on a constraint change, on a widget update, on an inherited
-dependency change, and on reassembly; laying the same subtree out again at
+The builder runs during layout and its result is laid out in the same frame, so
+the constraints it reads are the constraints its child receives. It runs on the
+first layout, on a constraint change, on a widget update, on an inherited
+dependency change, and on reassembly. Laying the same subtree out again at
 unchanged constraints does not run it.
 
 An unbounded axis reports a `null` maximum, so supply a fallback as the example
-does. Put `LayoutBuilder` inside a region whose size is already bounded — a
-`Panel`, an `Expanded`, or a `SizedBox` — rather than at the root of an
-unbounded column.
+does. Put `LayoutBuilder` inside a region whose size is already bounded, rather
+than at the root of an unbounded column.
 
-## Put modal behavior around a Panel
+`LayoutBuilder` needs the unreleased Noir alpha.5. See
+[Installation](/docs/installation) to try it from a checkout.
 
-`Modal` owns centered root-overlay placement, a closed Tab loop, focus
-restoration, Escape dismissal, and the background pointer barrier. It does not
-own colors, borders, or a title. Keep those responsibilities visible by
-composing a shrink-wrapped Panel:
+## When the screen is wrong
 
-```dart
-Modal(
-  controller: modalController,
-  modalBuilder: (context) => Panel(
-    title: 'Confirm deployment',
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('Deploy the reviewed revision?'),
-        Button(label: 'Cancel', onPressed: modalController.close),
-      ],
-    ),
-  ),
-  child: Button(label: 'Review', onPressed: modalController.open),
-)
-```
-
-Omitting a fixed Panel height lets the modal fit its content and remain
-centered as the terminal resizes.
-
-## Put borders around regions, not every widget
-
-A border occupies the outside cells of its box. `Panel` provides the normal
-themed region with an optional title and focused state, so a second Text heading
-inside the same box creates duplicate chrome.
-
-```dart
-Panel(
-  title: 'Build log',
-  width: 24,
-  child: log,
-)
-```
-
-Omit `width` and `height` when the region should shrink-wrap its child. When a
-viewport or label needs a fixed extent, remember that a Panel's dimensions
-include its border and horizontal inset. Its colors come from Theme; pass
-`color` or `borderColor` only for a deliberate override. Reach for Container
-and BoxDecoration when the region needs custom geometry instead of Panel's
-standard shape.
-
-## Leave paint and FFI below widgets
+| Symptom                                    | Cause and fix                                                                                  |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| A child fills the whole row unexpectedly   | An `Expanded` requires its full flex share. Use `Flexible` when less is allowed.               |
+| Long text pushes other children off screen | Wrap it in `Expanded` and clamp it with `maxLines: 1` and an overflow behavior.                |
+| A scrollable region shows nothing          | Its main axis is unbounded. Put it inside `Expanded` or a sized box.                           |
+| A border is clipped at a viewport edge     | Keep bordered regions inside the viewport. See [Platform support](/docs/platform-limitations). |
+| Emoji or CJK text overlaps the next column | Those graphemes are two cells wide. Measure in cells, not in string length.                    |
 
 Widgets declare configuration. Paint recordings and FFI stay in the layers
-described in [Architecture](/docs/architecture-api). The repository’s
-[Layout Basics](https://github.com/conceptadev/noir/blob/main/example/layout_basics.dart)
+described in [Architecture](/docs/architecture-api). The repository's
+[layout basics example](https://github.com/conceptadev/noir/blob/main/example/layout_basics.dart)
 is a runnable comparison of main-axis alignment and flex distribution.

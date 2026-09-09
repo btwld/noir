@@ -1,36 +1,32 @@
 ---
-title: Hooks
-description: Use the noir_signals HookWidget surface without hiding state identity, external resources, or cleanup.
+title: Manage state and resources
+description: Own a value, a controller, or a timer inside a SignalWidget, and release it when the widget leaves the tree.
 ---
 
-# Hooks
+# Manage state and resources
 
-Hooks package one local state or lifecycle concern into a reusable function.
-They are optional, and they run on Noir’s normal retained widget lifecycle.
+Use this guide when a widget needs its own value, controller, or external
+resource, and you want that concern named and reusable instead of spread over
+several `State` fields and lifecycle methods.
 
-## Add the companion package
+The optional `noir_signals` package adds `SignalWidget`, a host that retains
+hooks. Each hook owns what it creates and releases it when the widget unmounts.
 
-Hooks live in the optional companion package `noir_signals`, not in `noir`:
-
-```yaml
-dependencies:
-  noir: ^0.0.1-alpha.5
-  noir_signals: ^0.0.1-alpha.0
-```
+<Availability of="companion">
+  Hooks are part of the optional companion package. It needs the unreleased Noir
+  alpha.5, so these examples resolve from a repository checkout today.
+</Availability>
 
 ```dart
 import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 ```
 
-Files that do not use `HookWidget`, `HookBuilder`, or a `use...` function need
-only `package:noir/noir.dart`.
-
-## Tie cleanup to the resource
+## Own a resource and its cleanup together
 
 This widget owns an observed count and a periodic timer. The effect starts the
-timer, and the returned callback cancels it when the interval changes or the
-widget leaves the tree:
+timer and returns the callback that cancels it. Noir runs that callback when
+the interval changes or the widget leaves the tree:
 
 ```dart
 import 'dart:async';
@@ -38,7 +34,7 @@ import 'dart:async';
 import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 
-class PollingBadge extends HookWidget {
+class PollingBadge extends SignalWidget {
   const PollingBadge({required this.interval, super.key});
 
   final Duration interval;
@@ -66,35 +62,25 @@ class PollingBadge extends HookWidget {
 ```
 
 `useState` owns and observes a `ValueNotifier`. Changing `ticks.value` requests
-a rebuild. The Timer callback runs after the effect has returned, so the state
-change is valid.
+a rebuild. The timer callback runs later, after the effect has returned, so it
+can update that value safely.
 
-Effects run synchronously during build. Use them to acquire, synchronize, and
-release external resources—not to handle a Button press. An effect or cleanup
-must not synchronously update an observed hook value.
+Three rules keep this example correct:
 
-## Preserve hook order
+- Call hooks unconditionally, at the top of `build`, in the same order on every
+  build. Hooks use call order as identity.
+- The key list decides when a hook replaces its resource. `[interval]` installs
+  a new timer and cancels the old one when the interval changes. An empty list
+  keeps one resource for the life of the mounted slot. No key list at all runs
+  the cleanup and the effect on every build.
+- An effect runs synchronously during build. It must not change an observed
+  hook value before it returns. Start external work, return its cleanup, and
+  handle input in `onPressed`.
 
-Stateful hooks use call order as identity. Call them unconditionally at the top
-level of `build`, in the same order on every build. Do not call a hook from a
-branch, loop, event callback, effect, or cleanup function.
-
-Keys identify an individual hook slot. When the keys for `useEffect` change,
-Noir installs the new effect and releases the previous resource. Without keys,
-the cleanup and effect run on every build. An empty key list keeps the resource
-for the life of that mounted hook slot.
-
-Top-level custom hooks should begin with `use`. Keep owned notifiers private
-when callers need only a value and callback:
-
-```dart
-typedef CounterState = ({int value, VoidCallback increment});
-
-CounterState useCounter([int initialValue = 0]) {
-  final counter = useState(initialValue);
-  return (value: counter.value, increment: () => counter.value++);
-}
-```
+The
+[hooks contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md)
+is the canonical reference for replacement order, cleanup failures, and the
+runtime guard behind that third rule.
 
 ## Match the hook to the job
 
@@ -108,21 +94,41 @@ CounterState useCounter([int initialValue = 0]) {
 | Time-based values                           | `useAnimationController` and `useAnimation`                          |
 | Mutable bookkeeping that must not rebuild   | `useRef`                                                             |
 
-Create a Future or Stream outside `build`, or retain it with `useMemoized`.
-Creating it on every build restarts the asynchronous work.
+Create a Future or a Stream outside `build`, or retain it with `useMemoized`.
+Creating one on every build restarts the asynchronous work.
+
+## Reuse one concern as a custom hook
+
+A custom hook is a top-level function whose name starts with `use`. Keep the
+owned notifier private when callers need only a value and a callback:
+
+```dart
+typedef CounterState = ({int value, VoidCallback increment});
+
+CounterState useCounter([int initialValue = 0]) {
+  final counter = useState(initialValue);
+  return (value: counter.value, increment: () => counter.value++);
+}
+```
+
+Use `SignalBuilder` when a small, stable subtree inside an ordinary
+`StatefulWidget` needs hooks.
 
 ## When a State class is clearer
 
-Use a state class when several lifecycle methods, related resources, or a
-longer transition are easier to understand together. Use a hook when one
-concern can be named and composed without hiding who owns it. `HookBuilder` is
-available when only a small stable subtree needs hooks; Noir does not expose a
-`StatefulHookWidget`.
+Use a `State` class when several lifecycle methods, related resources, or a
+longer transition are easier to read together. Use a hook when one concern can
+be named and composed without hiding who owns it. Both use the same retained
+model; see [State, identity, and ownership](/docs/state-lifecycle).
 
-Hot reload forwards `reassemble` to retained hook state. An ordinary build
-reports reordered or conditional stateful hooks instead of silently accepting
-the new identity. Read [State and lifecycle](/docs/state-lifecycle) for the
-underlying ownership model, [Signals](/docs/signals) for the reactive state
-the same package adds, and run the repository’s
-[counter example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart)
-for a complete input-driven app.
+Adding, removing, or reordering hooks needs a process restart. An ordinary
+build reports a reordered or conditional hook instead of silently accepting the
+new identity.
+
+## Next
+
+- [Build a task list](/docs/signals-task-list) — controllers, signals, and a
+  computed value in one app, one lesson at a time.
+- [Show shared state](/docs/signals) — observe a model that lives outside the
+  widget.
+- [Examples](/examples) — the runnable companion apps.

@@ -11,7 +11,7 @@ void main() {
     TextEditingController? firstController;
     var initialText = 'first';
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         controller = useTextEditingController(text: initialText);
         firstController ??= controller;
@@ -46,7 +46,7 @@ void main() {
     var key = 0;
     late FocusNode node;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         node = useFocusNode(
           debugLabel: debugLabel,
@@ -87,7 +87,7 @@ void main() {
     final keys = <Object?>[0];
     late ScrollController controller;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         controller = useScrollController(
           initialOffset: initialOffset,
@@ -119,7 +119,7 @@ void main() {
     var key = 0;
     late ViewportController controller;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         controller = useViewportController(
           initialContentExtent: 100,
@@ -156,7 +156,7 @@ void main() {
       late double animatedValue;
       var builds = 0;
 
-      Widget buildRoot() => HookBuilder(
+      Widget buildRoot() => SignalBuilder(
         builder: (context) {
           builds++;
           controller = useAnimationController(
@@ -213,7 +213,7 @@ void main() {
     late AnimationStatus status;
 
     host.mount(
-      HookBuilder(
+      SignalBuilder(
         builder: (context) {
           controller = useAnimationController(duration: Duration.zero);
           status = useAnimationStatus<double>(controller);
@@ -234,7 +234,7 @@ void main() {
     late TickerProvider provider;
     TickerProvider? firstProvider;
 
-    Widget buildRoot() => HookBuilder(
+    Widget buildRoot() => SignalBuilder(
       builder: (context) {
         provider = useTickerProvider();
         firstProvider ??= provider;

@@ -1,7 +1,7 @@
 import 'package:noir/noir.dart';
 import 'package:noir_signals/noir_signals.dart';
 
-final class SignalsConsumer extends HookWidget {
+final class SignalsConsumer extends SignalWidget {
   const SignalsConsumer({super.key});
 
   @override

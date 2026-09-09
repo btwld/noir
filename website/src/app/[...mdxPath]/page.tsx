@@ -25,9 +25,17 @@ export default async function Page({ params }: PageProps) {
     sourceCode,
     toc,
   } = await importPage(mdxPath);
+  const filePath =
+    'sourceUrl' in metadata && typeof metadata.sourceUrl === 'string'
+      ? metadata.sourceUrl
+      : metadata.filePath;
 
   return (
-    <Wrapper metadata={metadata} sourceCode={sourceCode} toc={toc}>
+    <Wrapper
+      metadata={{ ...metadata, filePath }}
+      sourceCode={sourceCode}
+      toc={toc}
+    >
       <MDXContent params={{ mdxPath }} />
     </Wrapper>
   );

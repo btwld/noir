@@ -5,7 +5,7 @@ import 'effect_guard.dart';
 import 'first_error.dart';
 
 /// Builds a widget from a [BuildContext] while hooks are active.
-typedef HookWidgetBuilder = Widget Function(BuildContext context);
+typedef SignalWidgetBuilder = Widget Function(BuildContext context);
 
 /// Immutable configuration for one reusable lifecycle hook.
 ///
@@ -37,7 +37,7 @@ abstract class Hook<R> {
 /// remaining independent from Noir's private element implementations.
 abstract class HookState<R, H extends Hook<R>> {
   H? _hook;
-  _HookWidgetState? _owner;
+  _SignalWidgetState? _owner;
   bool _mounted = false;
   bool _disposing = false;
   List<Object?>? _keySnapshot;
@@ -49,7 +49,7 @@ abstract class HookState<R, H extends Hook<R>> {
     return _hook!;
   }
 
-  /// The build context of the hosting [HookWidget].
+  /// The build context of the hosting [SignalWidget].
   ///
   /// The context remains readable during [dispose], matching Noir's [State]
   /// lifecycle, and becomes unavailable after disposal completes.
@@ -59,7 +59,7 @@ abstract class HookState<R, H extends Hook<R>> {
     return _owner!.context;
   }
 
-  /// Whether this hook state is attached to a live [HookWidget].
+  /// Whether this hook state is attached to a live [SignalWidget].
   bool get mounted => _mounted;
 
   /// A ticker provider shared by all hooks in the hosting widget.
@@ -146,7 +146,7 @@ abstract class HookState<R, H extends Hook<R>> {
     if (owner == null) {
       throw StateError(
         'HookState.deferDispose() called after dispose(): $runtimeType is no '
-        'longer attached to a HookWidget. Release the resource directly at '
+        'longer attached to a SignalWidget. Release the resource directly at '
         'the call site instead.',
       );
     }
@@ -160,7 +160,7 @@ abstract class HookState<R, H extends Hook<R>> {
   dynamic _buildValue(BuildContext context) => build(context);
 
   void _attach(
-    _HookWidgetState owner,
+    _SignalWidgetState owner,
     Hook<dynamic> hook,
     List<Object?>? keySnapshot,
   ) {
@@ -214,35 +214,39 @@ abstract class HookState<R, H extends Hook<R>> {
   }
 }
 
-/// A Noir widget whose [build] method can call hooks.
+/// A Noir widget that retains lifecycle hooks and signal hooks across builds.
 ///
 /// Hook calls must be unconditional and must occur in the same order on every
 /// build. Custom hook functions should start with `use`.
-abstract class HookWidget extends StatefulWidget {
+///
+/// This host does not automatically observe signal reads in [build]. Use
+/// `useSignal` or `useComputed` for owned state, and `useSignalValue` or
+/// `SignalValueBuilder` to observe a borrowed signal.
+abstract class SignalWidget extends StatefulWidget {
   /// Creates a hook-enabled widget with an optional [key].
-  const HookWidget({super.key});
+  const SignalWidget({super.key});
 
   /// Describes this widget and may call [use] and built-in hooks.
   Widget build(BuildContext context);
 
   @override
   @nonVirtual
-  State<HookWidget> createState() => _HookWidgetState();
+  State<SignalWidget> createState() => _SignalWidgetState();
 }
 
 /// A hook-enabled widget defined by a callback.
-final class HookBuilder extends HookWidget {
+final class SignalBuilder extends SignalWidget {
   /// Creates a hook widget that invokes [builder] for each build.
-  const HookBuilder({required this.builder, super.key});
+  const SignalBuilder({required this.builder, super.key});
 
   /// Callback that describes the widget subtree.
-  final HookWidgetBuilder builder;
+  final SignalWidgetBuilder builder;
 
   @override
   Widget build(BuildContext context) => builder(context);
 }
 
-/// Uses [hook] in the current [HookWidget] build and returns its value.
+/// Uses [hook] in the current [SignalWidget] build and returns its value.
 ///
 /// This throws when called outside a hook-enabled build or from a lifecycle
 /// callback other than [HookState.build]. Class-based hook builds may compose
@@ -251,29 +255,29 @@ R use<R>(Hook<R> hook) {
   final owner = _currentHookState;
   if (owner == null || !owner.isBuilding) {
     throw StateError(
-      'Hooks can only be used while a HookWidget or HookBuilder is building.',
+      'Hooks can only be used while a SignalWidget or SignalBuilder is building.',
     );
   }
   return owner.useHook(hook);
 }
 
-/// Returns the [BuildContext] of the current [HookWidget] build.
+/// Returns the [BuildContext] of the current [SignalWidget] build.
 ///
 /// Unlike stateful hooks, this lookup does not consume a hook slot. It is
 /// valid only in the widget build body or [HookState.build].
 BuildContext useContext() => _requireHookBuild('useContext').context;
 
-/// Returns the shared [TickerProvider] for the current [HookWidget].
+/// Returns the shared [TickerProvider] for the current [SignalWidget].
 ///
 /// This lookup does not consume a hook slot. Class-based lifecycle callbacks
 /// can use [HookState.tickerProvider] instead.
 TickerProvider useTickerProvider() => _requireHookBuild('useTickerProvider');
 
-_HookWidgetState _requireHookBuild(String functionName) {
+_SignalWidgetState _requireHookBuild(String functionName) {
   final owner = _currentHookState;
   if (owner == null || !owner.isBuilding) {
     throw StateError(
-      '$functionName() can only be called while a HookWidget or HookBuilder '
+      '$functionName() can only be called while a SignalWidget or SignalBuilder '
       'is building.',
     );
   }
@@ -286,10 +290,10 @@ _HookWidgetState _requireHookBuild(String functionName) {
   return owner;
 }
 
-_HookWidgetState? _currentHookState;
+_SignalWidgetState? _currentHookState;
 
-final class _HookWidgetState extends State<HookWidget>
-    with TickerProviderStateMixin<HookWidget> {
+final class _SignalWidgetState extends State<SignalWidget>
+    with TickerProviderStateMixin<SignalWidget> {
   final List<HookState<dynamic, dynamic>> _hooks =
       <HookState<dynamic, dynamic>>[];
   final List<HookState<dynamic, dynamic>> _pendingDisposals =
@@ -360,7 +364,7 @@ final class _HookWidgetState extends State<HookWidget>
   @override
   Widget build(BuildContext context) {
     if (_isBuilding) {
-      throw StateError('HookWidget build cannot be re-entered.');
+      throw StateError('SignalWidget build cannot be re-entered.');
     }
 
     final previous = _currentHookState;

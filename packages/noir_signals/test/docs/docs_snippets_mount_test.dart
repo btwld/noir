@@ -10,7 +10,7 @@ import '../helpers/noir_test_helpers.dart';
 // block-bodied build methods.
 // ignore_for_file: prefer_expression_function_bodies
 
-class PollingBadge extends HookWidget {
+class PollingBadge extends SignalWidget {
   const PollingBadge({required this.interval, super.key});
 
   final Duration interval;

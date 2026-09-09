@@ -61,7 +61,7 @@ Do not import `package:noir/src/**`, `package:noir/noir_low_level.dart`, or
 For a local interaction, prefer this complete state boundary:
 
 ```dart
-class Counter extends HookWidget {
+class Counter extends SignalWidget {
   const Counter({super.key});
 
   @override

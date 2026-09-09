@@ -84,12 +84,12 @@ void main() {
 
   test('the companion barrel exports the hook families', () {
     // Exact membership, not a substring search: `contains('useSignal')` is
-    // satisfied by `useSignalValue`, and `contains('HookWidget')` by a
+    // satisfied by `useSignalValue`, and `contains('SignalWidget')` by a
     // mention in the library doc comment.
     final exported = _shownSymbols(companionBarrel);
     for (final symbol in <String>[
-      'HookWidget',
-      'HookBuilder',
+      'SignalWidget',
+      'SignalBuilder',
       'HookState',
       'useState',
       'useEffect',
@@ -152,7 +152,8 @@ void main() {
       'website/src/content/docs/_meta.ts',
     ).readAsStringSync();
 
-    expect(navigation, contains("signals: 'Signals'"));
+    // The navigation label is editorial; the route and its owner are not.
+    expect(navigation, contains('  signals:'));
     for (final contract in <String>[
       'useSignal',
       'useComputed',
@@ -167,7 +168,8 @@ void main() {
     // may promise it.
     for (final source in <String>[guide, page]) {
       expect(source, contains('no automatic whole-build tracking'));
-      expect(source, isNot(contains('SignalWidget(')));
+      expect(source, contains('SignalWidget'));
+      expect(source, isNot(contains('HookWidget')));
     }
     expect(
       File('$_companionRoot/README.md').readAsStringSync(),
@@ -328,10 +330,13 @@ void main() {
     ).firstMatch(companionPubspec)!.group(1)!.trim();
     final companionConstraint = '^${version.split('+').first}';
 
+    // One website destination owns dependency instructions. Ordinary guides
+    // must not repeat a hosted block that cannot resolve yet.
     for (final path in <String>[
       '$_companionRoot/README.md',
       '$_companionRoot/doc/hooks.md',
-      'website/src/content/docs/hooks.mdx',
+      '$_companionRoot/doc/signals.md',
+      'website/src/content/docs/installation.mdx',
     ]) {
       final source = File(path).readAsStringSync();
       expect(source, contains('noir: $noirConstraint'), reason: path);
@@ -339,6 +344,17 @@ void main() {
         source,
         contains('noir_signals: $companionConstraint'),
         reason: path,
+      );
+    }
+    for (final path in <String>[
+      'website/src/content/docs/hooks.mdx',
+      'website/src/content/docs/signals.mdx',
+      'website/src/content/api.mdx',
+    ]) {
+      expect(
+        File(path).readAsStringSync(),
+        isNot(contains('noir_signals: $companionConstraint')),
+        reason: '$path must link the installation page instead',
       );
     }
 
@@ -461,10 +477,10 @@ const Set<String> _companionSurface = <String>{
   'untracked',
   // Hook runtime.
   'Hook',
-  'HookBuilder',
   'HookState',
-  'HookWidget',
-  'HookWidgetBuilder',
+  'SignalBuilder',
+  'SignalWidget',
+  'SignalWidgetBuilder',
   'use',
   'useContext',
   'useTickerProvider',

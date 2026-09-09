@@ -16,7 +16,7 @@ const _files = <String>[
 void main() => runTuiApp(const FileSearchApp(), enableMouse: true);
 
 /// Filters a fixed file list from a text field backed by a Signals model.
-class FileSearchApp extends HookWidget {
+class FileSearchApp extends SignalWidget {
   /// Creates the search screen.
   const FileSearchApp({super.key});
 
@@ -44,7 +44,7 @@ class FileSearchApp extends HookWidget {
             placeholder: 'Filter files',
             onChanged: (text) => model.query.value = text,
           ),
-          // Only this subtree rebuilds when the count changes.
+          // This builder subscribes to the count; parent rebuilds also update it.
           SignalValueBuilder<int>(
             signal: model.visibleCount,
             builder: (context, count) => Text('$count files'),

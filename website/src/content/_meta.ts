@@ -3,7 +3,14 @@ const pages = {
     display: 'hidden',
   },
   docs: 'Docs',
-  api: 'API',
+  // Both stay in the top navigation. A second permanent sidebar entry only
+  // repeats it.
+  examples: {
+    display: 'hidden',
+  },
+  api: {
+    display: 'hidden',
+  },
 };
 
 export default pages;
