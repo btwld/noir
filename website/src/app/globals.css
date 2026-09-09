@@ -193,12 +193,12 @@ pre {
   padding-inline-start: 0.4rem !important;
 }
 
-/* A collapsible group is a destination, not a disabled row. Nextra tints
-   folder buttons with an off-palette gray, which reads as unavailable beside
-   its own children. Groups and leaves share the link color; the chevron
-   carries the only difference. */
+/* Groups and leaves share the palette in both themes. Explicit ink also
+   prevents links from inheriting Nextra's fixed sidebar gray in dark mode. */
+.nextra-sidebar a,
 .nextra-sidebar button,
 .nextra-sidebar-footer button,
+.nextra-mobile-nav a,
 .nextra-mobile-nav button {
   color: var(--ink);
 }
@@ -931,7 +931,7 @@ main[data-pagefind-body='true'] th {
   }
 }
 
-@media (max-width: 700px) {
+@media (width < 768px) {
   /* Chrome a thumb has to hit: the menu button, the navbar links, the
      wordmark, and the controls inside a figure or a code block. The 44px
      floor the disclosure contract states applies to all of them. */
@@ -957,6 +957,24 @@ main[data-pagefind-body='true'] th {
     min-inline-size: 44px;
   }
 
+  .nextra-mobile-nav li > a,
+  .nextra-mobile-nav li > button {
+    align-items: center;
+    min-block-size: 44px;
+  }
+
+  main[data-pagefind-body='true'] .subheading-anchor {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    opacity: 1;
+    vertical-align: middle;
+  }
+}
+
+@media (max-width: 700px) {
   .availability {
     align-items: flex-start;
     flex-direction: column;

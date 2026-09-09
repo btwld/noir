@@ -118,6 +118,13 @@ keeps running: fix the source and save again. Reload does not rerun `main()` or
 [the development runner](/api#the-development-runner) for its options and
 restart boundaries.
 
+## What you built
+
+You built a terminal counter that responds to Enter, Space, and mouse clicks.
+The widget declares the screen; its `State` owns the count, and `setState`
+requests a rebuild after each increment. Changing the label through hot reload
+keeps that same state and the current count.
+
 ## Where to go next
 
 - [Layout in terminal cells](/docs/widgets-layout) — compose a larger screen.

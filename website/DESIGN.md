@@ -115,7 +115,9 @@ carry every step, from `--text-meta` for captions and provenance rows to
 `--text-display-xl` for the homepage headline. A rule that writes a literal
 `rem` size is a defect. Two literals are not scale steps and stay: the inline
 code `em` that tracks its parent, and the narrow-viewport headline caps. Mono
-sits one step below the interface step so the two read level.
+sits one step below the interface step so the two read level. Consolidating
+fluid homepage headings also changes their size ranges; the ramp does not
+promise to preserve every previous endpoint.
 
 Prose stays near 65–80 characters. Code, tables, and captured frames may use
 the full article width; long code lines scroll inside the code block only.
@@ -135,7 +137,8 @@ runnable checkpoint and its exact diff in disclosures.
 
 Chapter navigation belongs to the tutorial. Global document ordering never
 becomes a tutorial's Next link, so `Layout` sets `navigation={false}` and
-lessons link forward in their own prose.
+lessons link forward in their own prose. End the tutorial with a short recap of
+what the reader built and the ownership rules it demonstrates.
 
 ### Task guide
 
@@ -194,7 +197,8 @@ hiding the navbar links on phones stranded two of the four top-level
 destinations.
 
 The documentation sidebar groups pages by reader intent: Start here, Guides,
-noir_signals, Concepts, and Reference. The noir_signals group keeps its package
+noir_signals, Concepts, and Reference. The package name identifies the extra
+dependency required by this group. The noir_signals group keeps its package
 overview, hook and Signals guides, and task-list lessons together on this site.
 Existing guide URLs stay stable. Installation, Architecture, and curated widget pages
 stay routable and linked in context, without occupying the default sidebar.
@@ -203,7 +207,8 @@ stay routable and linked in context, without occupying the default sidebar.
 route.** A guide that also has to carry an example catalog serves two readers
 at once. `/examples` is a small index of runnable source, with the command, the
 exact file, and what each example demonstrates. It is not a second tutorial
-collection.
+collection. Links to source contracts identify GitHub Markdown as their
+destination and state when repository access is required.
 
 The active route uses a narrow ink marker, not a filled block.
 
@@ -260,9 +265,11 @@ Keyboard focus uses a 3px current-color outline with offset, and nothing else:
 the theme's own box-shadow ring is suppressed, because this system has no
 shadow vocabulary to hang a second indicator on. A collapsible sidebar group
 keeps the link color of its children; only the chevron marks it as a group.
-At viewport widths up to 700px, interactive chrome — the menu button, navbar
+At viewport widths below 768px, interactive chrome — the menu button, navbar
 links, the wordmark, and the controls inside a figure or code block — keeps
-the same 44px target floor the disclosure contract states. Skip navigation,
+the same 44px target floor the disclosure contract states. Mobile drawer rows
+are at least 44px tall, and section permalinks have a visible 44px square target
+without requiring hover. Skip navigation,
 semantic headings, figure captions, table headers, and link text stay available
 without color. A diff never communicates through color alone: additions and
 removals keep their `+` and `-` characters.

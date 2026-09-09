@@ -362,15 +362,15 @@ class TaskListApp extends SignalWidget {
 ## What you built
 
 The screen owns an editable draft, a computed remaining count, a visibility
-flag, and stable row IDs. Every hook releases what it created when the screen
-unmounts.
+flag, and stable row IDs. The controller, local-state notifier, signal, and
+computed value are released when the screen unmounts.
 
 `SignalWidget` hosts hooks. It does not track every signal read in `build`.
 `useSignal` and `useComputed` observe the values they own. A model that
 somebody else owns is observed with `useSignalValue` or `SignalValueBuilder`,
 and stays that owner's responsibility to dispose.
 
-To use a model that lives outside the widget, run the
+To separate application logic into a model, run the
 [file-search example](../../../example/file_search.dart):
 
 ```sh

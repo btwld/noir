@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 
 import {
   normalizeBasePath,
@@ -127,6 +127,86 @@ async function runSmoke() {
   page.on('pageerror', (error) => browserErrors.push(error.message));
 
   try {
+    // Mobile navigation and section links must remain usable without hover.
+    for (const width of [320, 390, 767]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${baseUrl}/docs/getting-started`, {
+        waitUntil: 'networkidle',
+      });
+      const permalink = page
+        .getByRole('link', {
+          name: 'Permalink for this section',
+        })
+        .first();
+      const target = await permalink.boundingBox();
+      assert.ok(
+        target.width >= 44 && target.height >= 44,
+        `section permalinks need a 44px target at ${width}px`,
+      );
+      assert.equal(
+        await permalink.evaluate((el) => getComputedStyle(el).opacity),
+        '1',
+        'mobile permalinks must be discoverable without hover',
+      );
+      await permalink.click();
+      assert.ok(
+        new URL(page.url()).hash,
+        'a permalink must navigate to its section',
+      );
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
+      const rows = page.locator(
+        '.nextra-mobile-nav li > a, .nextra-mobile-nav li > button',
+      );
+      for (const row of await rows.all()) {
+        if (!(await row.isVisible())) continue;
+        assert.ok(
+          (await row.boundingBox()).height >= 44,
+          `mobile row "${await row.innerText()}" needs a 44px target at ${width}px`,
+        );
+      }
+      const destination = page.locator('.nextra-mobile-nav').getByRole('link', {
+        name: 'Platform support',
+        exact: true,
+      });
+      await destination.click();
+      await page
+        .getByRole('heading', { level: 1, name: 'Platform support' })
+        .waitFor();
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        `mobile navigation must not overflow at ${width}px`,
+      );
+    }
+
+    // Sidebar destinations use the same readable palette in both themes.
+    for (const colorScheme of ['dark', 'light']) {
+      await page.emulateMedia({ colorScheme });
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.goto(`${baseUrl}/docs/getting-started`, {
+        waitUntil: 'networkidle',
+      });
+      const ink = await page
+        .locator('body')
+        .evaluate((el) => getComputedStyle(el).color);
+      await expect(
+        page.locator('.nextra-sidebar').getByRole('link', {
+          name: 'Handle input and focus',
+          exact: true,
+        }),
+      ).toHaveCSS('color', ink);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
+      await expect(
+        page.locator('.nextra-mobile-nav').getByRole('link', {
+          name: 'Handle input and focus',
+          exact: true,
+        }),
+      ).toHaveCSS('color', ink);
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    }
+
     // ---- Homepage: one promise, one action, one exact code/output pair ----
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
@@ -331,6 +411,7 @@ async function runSmoke() {
         '3. Write the screen',
         '4. Run it and press the button',
         '5. Change the running app',
+        'What you built',
         'Where to go next',
       ],
       'the first tutorial must be a numbered, action-led sequence',
