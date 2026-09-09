@@ -62,52 +62,43 @@ void main() {
     expect(broken, isEmpty);
   });
 
-  test('website routes named in documentation exist as content', () {
-    final routes = <String, String>{
-      '/docs': 'website/src/content/docs/index.mdx',
-      '/docs/getting-started': 'website/src/content/docs/getting-started.mdx',
-      '/docs/installation': 'website/src/content/docs/installation.mdx',
-      '/docs/signals-task-list':
-          'website/src/content/docs/signals-task-list/index.mdx',
-      '/docs/hooks': 'website/src/content/docs/hooks.mdx',
-      '/docs/signals': 'website/src/content/docs/signals.mdx',
-      '/docs/input-focus': 'website/src/content/docs/input-focus.mdx',
-      '/docs/command-line-arguments':
-          'website/src/content/docs/command-line-arguments.mdx',
-      '/docs/testing': 'website/src/content/docs/testing.mdx',
-      '/docs/widgets-layout': 'website/src/content/docs/widgets-layout.mdx',
-      '/docs/state-lifecycle': 'website/src/content/docs/state-lifecycle.mdx',
-      '/docs/architecture-api': 'website/src/content/docs/architecture-api.mdx',
-      '/docs/widget-catalog': 'website/src/content/docs/widget-catalog.mdx',
-      '/docs/widgets/text-input':
-          'website/src/content/docs/widgets/text-input.mdx',
-      '/docs/platform-limitations':
-          'website/src/content/docs/platform-limitations.mdx',
-      '/examples': 'website/src/content/examples.mdx',
-      '/api': 'website/src/content/api.mdx',
-    };
-    for (final entry in routes.entries) {
-      expect(
-        File(entry.value).existsSync(),
-        isTrue,
-        reason: '${entry.key} has no content file',
-      );
+  test('every internal website link reaches a page or an asset', () {
+    // Derive the routes from the content tree instead of listing them. A
+    // generated lesson page must not be able to escape this check.
+    const contentRoot = 'website/src/content';
+    final routes = <String>{'/'};
+    for (final file
+        in Directory(contentRoot)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((file) => file.path.endsWith('.mdx'))) {
+      final relative = file.path
+          .substring(contentRoot.length + 1)
+          .replaceAll(r'\', '/')
+          .replaceAll(RegExp(r'\.mdx$'), '');
+      routes.add('/${relative.replaceAll(RegExp(r'(^|/)index$'), '')}');
     }
+    expect(routes, contains('/docs/signals-task-list'));
+    expect(routes, contains('/docs/signals-task-list/filter-and-clear'));
+    expect(routes, contains('/docs/widgets/text-input'));
 
-    // Every internal link the website publishes must be one of those routes,
-    // the homepage, or a route with a fragment.
     final unknown = <String>{};
     for (final document in documents.where(
       (file) => file.path.startsWith('website/src'),
     )) {
       for (final match in RegExp(
-        r'''(?:\]\(|href=")(/[a-z0-9/-]*)''',
+        r'''(?:\]\(|href=")(/[a-zA-Z0-9/._-]*)''',
       ).allMatches(document.readAsStringSync())) {
-        final route = match.group(1)!.replaceAll(RegExp(r'/$'), '');
-        if (route.isEmpty || route.startsWith('/demos')) continue;
-        if (routes.containsKey(route)) continue;
-        if (route.startsWith('/docs/signals-task-list/')) continue;
-        unknown.add('${document.path} -> $route');
+        final target = match.group(1)!.replaceAll(RegExp(r'(?<=.)/$'), '');
+        if (target.startsWith('/demos/')) {
+          // A generated asset path must name a file the site publishes.
+          if (!File('website/public$target').existsSync()) {
+            unknown.add('${document.path} -> $target (missing asset)');
+          }
+          continue;
+        }
+        if (routes.contains(target)) continue;
+        unknown.add('${document.path} -> $target');
       }
     }
     expect(unknown, isEmpty);

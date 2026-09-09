@@ -280,8 +280,15 @@ async function writeCheckpoints(frames) {
   const step01 = await readRepositoryFile(firstAppCheckpoints.step01);
   const step02 = await readRepositoryFile(firstAppCheckpoints.step02);
   const excerpt = stateExcerpt(step01, firstAppCheckpoints.step01);
-  if (!step01.includes(excerpt)) {
-    fail('The homepage excerpt must stay part of the first-app checkpoint.');
+  // The homepage promises that one callback changes retained state. The
+  // excerpt has to contain both halves of that claim.
+  for (const required of ['_count', 'setState(']) {
+    if (!excerpt.includes(required)) {
+      fail(
+        `The homepage excerpt must show ${required}. It comes from ` +
+          `${firstAppCheckpoints.step01}, which no longer contains it.`,
+      );
+    }
   }
   const proofFrame = frames.frames['first-app-count'];
   if (!proofFrame || proofFrame.entrypoint !== firstAppCheckpoints.step01) {

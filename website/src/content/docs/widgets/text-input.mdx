@@ -70,7 +70,9 @@ class _SearchFieldState extends State<SearchField> {
   start and end of the text.
 - Enter calls `onSubmit`. The field never inserts a newline; `TextArea` does.
 - Tab is not consumed, so focus traversal keeps working.
-- A primary click inside the field places the caret and takes focus.
+- A primary click takes focus. It does not move the caret to the clicked
+  column. A field that gains focus with no usable selection puts the caret
+  at the end of its text.
 
 ## Who owns what
 
