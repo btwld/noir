@@ -14,8 +14,9 @@ interface AvailabilityProps {
 
 const defaults = {
   noir: 'Noir is an alpha prerelease. Its APIs and platform guarantees can change before 1.0.',
-  companion:
-    'The optional companion package is not on pub.dev yet. Resolve it from a Noir repository checkout.',
+  companion: availability.companion.isPublished
+    ? 'The optional companion package adds lifecycle hooks and Signals integration.'
+    : 'The optional companion package is not on pub.dev yet. Resolve it from a Noir repository checkout.',
 } as const;
 
 /**

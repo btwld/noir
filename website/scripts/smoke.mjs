@@ -439,6 +439,12 @@ async function runSmoke() {
       undefined,
       { timeout: 6000 },
     );
+    await page.waitForTimeout(250);
+    assert.match(
+      (await terminalText.textContent()) ?? '',
+      /this many times:[\s\S]*3/,
+      'the final pointer interaction must remain visible before the loop',
+    );
     const sourceLinks = await page
       .locator('main table a[href^="https://github.com/"]')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
@@ -742,6 +748,23 @@ async function runSmoke() {
       0,
       'the consumer guide must not lead with Noir repository test paths',
     );
+    assert.equal(
+      await page.locator('main pre').filter({ hasText: 'dart test' }).count(),
+      1,
+      'the testing guide must include the command that runs its test',
+    );
+
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto(`${baseUrl}/api`, { waitUntil: 'networkidle' });
+    assert.equal(
+      await page
+        .locator('.api-surfaces > div')
+        .first()
+        .evaluate((element) => getComputedStyle(element).display),
+      'block',
+      'the API chooser must stack when the sidebar narrows its article',
+    );
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     await page.goto(`${baseUrl}/docs/architecture-api`, {
       waitUntil: 'networkidle',

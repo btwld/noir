@@ -125,9 +125,8 @@ void main() {
   });
 
   test('every published screenshot names the checkpoint it came from', () {
-    // A JPEG is a browser replay of a captured frame, so nothing in the
-    // website build can tell that its checkpoint moved. The scene beside it
-    // carries the source hash that does.
+    // Recapturing text must not silently approve an old JPEG. Its reviewed
+    // source, visual capture and image bytes live in a separate manifest.
     const imageRoot = 'packages/noir_signals/doc/images';
     final published = Directory(imageRoot)
         .listSync()
@@ -136,6 +135,32 @@ void main() {
         .where((name) => name.endsWith('.jpg'))
         .toSet();
     expect(published, isNotEmpty);
+
+    final provenance =
+        jsonDecode(File('$imageRoot/provenance.json').readAsStringSync())
+            as Map<String, dynamic>;
+    final frames =
+        (jsonDecode(
+                  File(
+                    'website/src/generated/terminal-frames.json',
+                  ).readAsStringSync(),
+                )
+                as Map<String, dynamic>)['frames']
+            as Map<String, dynamic>;
+    expect(provenance.keys, unorderedEquals(published));
+    for (final frame in frames.values.cast<Map<String, dynamic>>()) {
+      final image = frame['image'] as String?;
+      if (image == null) continue;
+      final reviewed = provenance[image] as Map<String, dynamic>;
+      expect(frame['visualSha256'], matches(RegExp(r'^[a-f0-9]{64}$')));
+      expect(reviewed['sourceSha256'], frame['sourceSha256'], reason: image);
+      expect(reviewed['visualSha256'], frame['visualSha256'], reason: image);
+      expect(
+        reviewed['imageSha256'],
+        sha256.convert(File('$imageRoot/$image').readAsBytesSync()).toString(),
+        reason: image,
+      );
+    }
 
     final manifest =
         jsonDecode(

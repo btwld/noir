@@ -1,0 +1,168 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { test } from 'node:test';
+
+const repositoryRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
+const imageRoot = 'packages/noir_signals/doc/images';
+const framesPath = 'website/src/generated/terminal-frames.json';
+const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+
+async function fixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'noir-sync-docs-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const path of [
+    'TODO.md',
+    'pubspec.yaml',
+    'example/tutorials',
+    'packages/noir_signals/README.md',
+    'packages/noir_signals/pubspec.yaml',
+    'packages/noir_signals/doc',
+    'packages/noir_signals/example',
+    'website/.prettierrc.json',
+    'website/scripts/sync-docs.mjs',
+    'website/src',
+  ]) {
+    await mkdir(dirname(join(root, path)), { recursive: true });
+    await cp(join(repositoryRoot, path), join(root, path), { recursive: true });
+  }
+  await symlink(
+    join(repositoryRoot, 'website/node_modules'),
+    join(root, 'website/node_modules'),
+    'junction',
+  );
+  return {
+    read: (path) => readFile(join(root, path), 'utf8'),
+    write: (path, value) => writeFile(join(root, path), value),
+    sync: () =>
+      execFileSync(process.execPath, ['scripts/sync-docs.mjs'], {
+        cwd: join(root, 'website'),
+        stdio: 'pipe',
+        encoding: 'utf8',
+      }),
+  };
+}
+
+function rejectsSync(f, message) {
+  assert.throws(f.sync, (error) => {
+    assert.match(error.stderr, message);
+    return true;
+  });
+}
+
+test('the current documentation synchronizes', async (t) => {
+  const f = await fixture(t);
+  assert.match(f.sync(), /6 screenshots/);
+});
+
+test('recapturing changed padding cannot approve an unchanged JPEG', async (t) => {
+  const f = await fixture(t);
+  const sourcePath =
+    'packages/noir_signals/example/tutorials/task_list/step_01.dart';
+  const source = (await f.read(sourcePath)).replace(
+    'horizontal: 2',
+    'horizontal: 3',
+  );
+  await f.write(sourcePath, source);
+  // Model the capture command's output without launching a Dart VM in a Node test.
+  const frames = JSON.parse(await f.read(framesPath));
+  const frame = frames.frames['task-list-screen'];
+  frame.sourceSha256 = sha256(source);
+  frame.lines = frame.lines.map((line) => (line ? ` ${line}` : line));
+  frame.visualSha256 = sha256('the recaptured frame at padding 3');
+  await f.write(framesPath, JSON.stringify(frames));
+  rejectsSync(f, /01-screen\.jpg.*(?:stale|review)/i);
+});
+
+test('a style or cursor change requires screenshot review even with unchanged source and text', async (t) => {
+  const f = await fixture(t);
+  const frames = JSON.parse(await f.read(framesPath));
+  frames.frames['task-list-screen'].visualSha256 = sha256(
+    'changed cell styles or cursor',
+  );
+  await f.write(framesPath, JSON.stringify(frames));
+  rejectsSync(f, /01-screen\.jpg.*(?:stale|review)/i);
+});
+
+test('replacing a JPEG requires updated review provenance', async (t) => {
+  const f = await fixture(t);
+  await f.write(`${imageRoot}/01-screen.jpg`, 'wrong image bytes');
+  rejectsSync(f, /01-screen\.jpg.*(?:stale|review)/i);
+});
+
+test('a canonical lesson replaces stale generated release prose before validation', async (t) => {
+  const f = await fixture(t);
+  // Only Noir is published in this transition. Clear the existing authored
+  // pages to isolate the generated lesson's before/after contract.
+  await f.write(
+    'TODO.md',
+    (await f.read('TODO.md')).replace(
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    ),
+  );
+  for (const path of [
+    'docs/installation',
+    'docs/hooks',
+    'docs/platform-limitations',
+    'docs/state-lifecycle',
+    'docs/widget-catalog',
+    'docs/widgets-layout',
+  ]) {
+    await f.write(`website/src/content/${path}.mdx`, '# Current release\n');
+  }
+  const path = 'website/src/content/docs/signals-task-list/index.mdx';
+  await f.write(
+    path,
+    `${await f.read(path)}\nUses the unreleased next version.\n`,
+  );
+  assert.match(f.sync(), /5 task-list lessons/);
+  assert.doesNotMatch(await f.read(path), /the unreleased next version/);
+});
+
+test('newly generated wrapped release contradictions fail in the same sync', async (t) => {
+  const f = await fixture(t);
+  await f.write(
+    'TODO.md',
+    (await f.read('TODO.md')).replace(
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    ),
+  );
+  const source = 'packages/noir_signals/doc/getting-started.md';
+  await f.write(
+    source,
+    `${await f.read(source)}\nRequires the unreleased Noir\n  alpha.5.\n`,
+  );
+  rejectsSync(
+    f,
+    /signals-task-list[/\\]index\.mdx says "unreleased Noir alpha\.5"/,
+  );
+});
+
+test('wrapped authored release claims are rejected', async (t) => {
+  const f = await fixture(t);
+  await f.write(
+    'TODO.md',
+    (await f.read('TODO.md')).replace(
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
+      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    ),
+  );
+  rejectsSync(f, /hooks\.mdx says "unreleased Noir alpha\.5"/);
+});

@@ -11,6 +11,7 @@ export interface TerminalFrameData {
   /** The walkthrough screenshot this scene backs, when it has one. */
   readonly image?: string;
   readonly sourceSha256: string;
+  readonly visualSha256: string;
   readonly lines: readonly string[];
 }
 
@@ -27,6 +28,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Press Space once on the focused button.',
     sourceSha256:
       'bec12b6cf192b3c0cecbca24f5ee7594bf3c0727330f20adb8b555a9eb0e826b',
+    visualSha256:
+      'd4196b2fd4318733f6925953e6146111648bb1d90d7d65d997c1bb2e3750efd7',
     lines: ['', ' Count: 1', '', '  + Add one'],
   },
   'first-app-total': {
@@ -38,6 +41,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Press Space once, then change Count: to Total:.',
     sourceSha256:
       '421aa68f0d5f41a8266f838a2f58b094ef8a698771f29760a8f53466c3361742',
+    visualSha256:
+      '3894b2cb377aa22d9954a2cd87b79ffd00abc5cac040870385a0f60a2124fcdf',
     lines: ['', ' Total: 1', '', '  + Add one'],
   },
   'task-list-screen': {
@@ -51,6 +56,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '01-screen.jpg',
     sourceSha256:
       '2e3218a0af8b6d0b9836e40f6a0863cd877ea315c216392370f145a4f28da379',
+    visualSha256:
+      '030b6a07b5d4e70122a87d2fbcf399301f1f7eb5fd6a3add261672a64672cd35',
     lines: [
       '',
       '  Task list',
@@ -88,6 +95,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '02-state.jpg',
     sourceSha256:
       '289d62d7e0f4f61b4d39c773a824062502261883f4c35187c46183527a44f6e2',
+    visualSha256:
+      '79a5c4dc9305f488f1ac97b61d14e963ae5c97b63a11596f774eeb53dfb73bae',
     lines: [
       '',
       '  Task list',
@@ -125,6 +134,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '03-complete.jpg',
     sourceSha256:
       'f9d3fa2825869ec2df1fa55762849d7af69aa7ada56fed8a1a0461f94f97f51e',
+    visualSha256:
+      '2a794d47df6cea8152ab4ef287df96cba34b521ae8f420f4be610bca16f44952',
     lines: [
       '',
       '  Task list',
@@ -162,6 +173,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '04-add.jpg',
     sourceSha256:
       '55d4278274685dcf2b1df15bed30e3fe38de27411f3ed1894502ed3fcdc1e2e1',
+    visualSha256:
+      'dc66df8e5eef7f337b4715aab62fb6610ebdb056a35f8a3f73e092dd131f842b',
     lines: [
       '',
       '  Task list',
@@ -198,6 +211,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '05-filter.jpg',
     sourceSha256:
       'df9cb317b60411f624d429aa8860fc1e0041d9023eeb45eccd6454447339e4b5',
+    visualSha256:
+      'fa65bf3d317f2462202f9465d1f2eca3f0a39beab9fcc471222a8c4a38abbb55',
     lines: [
       '',
       '  Task list',
@@ -234,6 +249,8 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     image: '06-clear.jpg',
     sourceSha256:
       'df9cb317b60411f624d429aa8860fc1e0041d9023eeb45eccd6454447339e4b5',
+    visualSha256:
+      '8b23af158e75619d71fea39fc0d989e1f460d3326a697fa60495635d9fa43472',
     lines: [
       '',
       '  Task list',

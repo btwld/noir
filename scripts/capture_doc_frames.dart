@@ -135,7 +135,7 @@ Future<Map<String, Object?>> _captureScene(_Scene scene) async {
     for (final action in scene.actions) {
       await _perform(driver, action);
     }
-    frame = await driver.capture();
+    frame = await driver.captureCells();
   } finally {
     appExitCode = await driver.quit();
   }
@@ -180,6 +180,36 @@ Future<Map<String, Object?>> _captureScene(_Scene scene) async {
     'interaction': scene.interaction,
     if (scene.image != null) 'image': ?scene.image,
     'sourceSha256': sha256.convert(utf8.encode(source)).toString(),
+    // JPEG provenance includes styling and cursor state, not just text. Keep
+    // the bulky cell data out of the website bundle; only its digest is needed.
+    'visualSha256': sha256
+        .convert(
+          utf8.encode(
+            jsonEncode([
+              frame.width,
+              frame.height,
+              for (final row in frame.rows)
+                [
+                  for (final cell in row)
+                    [
+                      cell.char,
+                      cell.foreground.toAnsiHex(),
+                      cell.background.toAnsiHex(),
+                      cell.attributes,
+                    ],
+                ],
+              [
+                frame.cursor.visible,
+                frame.cursor.x,
+                frame.cursor.y,
+                frame.cursor.style,
+                frame.cursor.color.toAnsiHex(),
+                frame.cursor.blinking,
+              ],
+            ]),
+          ),
+        )
+        .toString(),
     'lines': lines,
   };
 }

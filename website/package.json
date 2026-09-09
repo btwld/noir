@@ -18,7 +18,8 @@
     "sync": "node scripts/sync-docs.mjs",
     "postbuild": "pagefind --site out --output-path out/_pagefind",
     "start": "node scripts/serve-static-export.mjs",
-    "test:smoke": "node scripts/smoke.mjs",
+    "test:sync": "node --test scripts/sync-docs.test.mjs",
+    "test:smoke": "npm run test:sync && node scripts/smoke.mjs",
     "typecheck": "node scripts/sync-docs.mjs && tsc --noEmit"
   },
   "dependencies": {

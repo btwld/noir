@@ -254,10 +254,12 @@ async function checkReleaseClaims(availability) {
   const contradictions = [];
   let statesCompanionIsUnpublished = false;
   for (const page of pages) {
-    const source = await readFile(page, 'utf8');
+    const source = (await readFile(page, 'utf8'))
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
     const name = relative(repositoryRoot, page).split('\\').join('/');
     for (const claim of unpublishedCompanion) {
-      if (!source.includes(claim)) continue;
+      if (!source.includes(claim.toLowerCase())) continue;
       statesCompanionIsUnpublished = true;
       if (availability.companion.isPublished) {
         contradictions.push(
@@ -268,7 +270,7 @@ async function checkReleaseClaims(availability) {
     }
     if (!noirManifestIsPublished) continue;
     for (const claim of unreleasedNoir) {
-      if (!source.includes(claim)) continue;
+      if (!source.includes(claim.toLowerCase())) continue;
       contradictions.push(
         `${name} says "${claim}", but TODO.md records noir ` +
           `${availability.noir.published} on pub.dev.`,
@@ -303,6 +305,10 @@ async function readFrames() {
     'utf8',
   );
   const document = JSON.parse(raw);
+  const imageRoot = join(repositoryRoot, companionRoot, 'doc/images');
+  const provenance = JSON.parse(
+    await readFile(join(imageRoot, 'provenance.json'), 'utf8'),
+  );
   for (const [id, frame] of Object.entries(document.frames)) {
     const source = await readRepositoryFile(frame.entrypoint);
     if (sha256(source) !== frame.sourceSha256) {
@@ -310,6 +316,22 @@ async function readFrames() {
         `Captured frame "${id}" no longer matches ${frame.entrypoint}. Run ` +
           '`dart run scripts/capture_doc_frames.dart` and commit the result.',
       );
+    }
+    if (frame.image) {
+      const reviewed = provenance[frame.image];
+      const imageHash = sha256(await readFile(join(imageRoot, frame.image)));
+      if (
+        !/^[a-f0-9]{64}$/.test(frame.visualSha256 ?? '') ||
+        reviewed?.sourceSha256 !== frame.sourceSha256 ||
+        reviewed?.visualSha256 !== frame.visualSha256 ||
+        reviewed?.imageSha256 !== imageHash
+      ) {
+        fail(
+          `Screenshot ${frame.image} is stale or needs review. Recapture and ` +
+            'review the JPEG, then update doc/images/provenance.json as described ' +
+            'in packages/noir_signals/doc/images/README.md. Text recapture does not approve images.',
+        );
+      }
     }
   }
   return document;
@@ -336,6 +358,7 @@ export interface TerminalFrameData {
   /** The walkthrough screenshot this scene backs, when it has one. */
   readonly image?: string;
   readonly sourceSha256: string;
+  readonly visualSha256: string;
   readonly lines: readonly string[];
 }
 
@@ -795,10 +818,10 @@ export default pages;
 await mkdir(generatedRoot, { recursive: true });
 const availability = await writeAvailability(await readAvailability());
 const frames = await readFrames();
-await checkReleaseClaims(availability);
 await writeFrames(frames);
 await writeCheckpoints(frames);
 const taskList = await syncTaskList();
+await checkReleaseClaims(availability);
 
 console.log(
   `Synced availability (noir ${availability.noir.published}, ` +

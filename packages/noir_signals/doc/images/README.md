@@ -24,15 +24,25 @@ the recording. Each JPEG is 745×472 pixels.
 Every image above has a scene in
 [`scripts/recordings/doc_frames.json`](https://github.com/conceptadev/noir/blob/main/scripts/recordings/doc_frames.json)
 that names its checkpoint, its input, and the text the lesson promises.
-`dart run scripts/capture_doc_frames.dart --check` recaptures those frames and
-fails when a checkpoint has changed, so an edited lesson cannot keep an old
-screenshot.
+`dart run scripts/capture_doc_frames.dart --check` checks the captured frames,
+including cell colors, attributes, and cursor state. It does not update or
+approve JPEGs.
+
+`provenance.json` separately records each reviewed JPEG's `imageSha256` and
+the matching frame's `sourceSha256` and `visualSha256`. The website generator
+and architecture tests reject a mismatch. Recapturing a changed checkpoint
+cannot silently approve its old screenshot.
 
 To refresh a screenshot, recapture the frames, then record the same scene with
 [`record_noir_demo.dart`](https://github.com/conceptadev/noir/blob/main/scripts/record_noir_demo.dart)
 at the geometry above and inspect the rendered poster before you replace the
 JPEG. Each scene starts from a fresh app; it does not inherit an earlier
-lesson's interactive state.
+lesson's interactive state. After checking the JPEG against the scene, copy
+that scene's `sourceSha256` and `visualSha256` from
+`website/src/generated/terminal-frames.json` into `provenance.json`, and set
+`imageSha256` to the SHA-256 of the reviewed JPEG bytes. Commit the image and
+its provenance together. Do not update provenance merely to clear a failed
+check: it records a visual review, not automatic pixel equivalence.
 
 The website's `sync-docs.mjs` copies these images into its public assets when
 it generates the lesson pages. Edit the source images here.
