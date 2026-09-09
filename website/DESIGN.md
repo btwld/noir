@@ -38,6 +38,20 @@ typography:
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
     fontSize: '0.86rem'
     lineHeight: 1.7
+  scale:
+    meta: '0.76rem'
+    label: '0.82rem'
+    code: '0.86rem'
+    ui: '0.875rem'
+    small: '0.92rem'
+    body: '1rem'
+    lead: '1.06rem'
+    sub: '1.14rem'
+    intro: 'clamp(1.15rem, 2vw, 1.4rem)'
+    display-sm: '1.35rem'
+    display-md: 'clamp(1.5rem, 2.3vw, 1.85rem)'
+    display-lg: 'clamp(2rem, 3.2vw, 2.8rem)'
+    display-xl: 'clamp(2.6rem, 5vw, 4rem)'
 rounded:
   square: '0'
 spacing:
@@ -95,6 +109,13 @@ Serif is opt-in, and only for display type: the wordmark, the homepage
 headings, and article `h1` and `h2`. Nothing else adds a font family. Three
 custom properties carry the whole system: `--display`, `--body`, and `--mono`.
 A rule that writes a literal font stack is a defect.
+
+Size is a closed ramp on the same terms. Thirteen `--text-*` custom properties
+carry every step, from `--text-meta` for captions and provenance rows to
+`--text-display-xl` for the homepage headline. A rule that writes a literal
+`rem` size is a defect. Two literals are not scale steps and stay: the inline
+code `em` that tracks its parent, and the narrow-viewport headline caps. Mono
+sits one step below the interface step so the two read level.
 
 Prose stays near 65–80 characters. Code, tables, and captured frames may use
 the full article width; long code lines scroll inside the code block only.
@@ -167,6 +188,11 @@ frame that no longer matches its source.
 Top navigation is **Docs · Examples · API · GitHub**. The wordmark returns
 home, so there is no Home item.
 
+All four stay in the navbar at every width, down to 320px. Examples and API
+have no second route: the mobile drawer carries the documentation tree only, so
+hiding the navbar links on phones stranded two of the four top-level
+destinations.
+
 The documentation sidebar groups pages by reader intent: Start here, Guides,
 noir_signals, Concepts, and Reference. The noir_signals group keeps its package
 overview, hook and Signals guides, and task-list lessons together on this site.
@@ -230,7 +256,13 @@ order. The site uses no ambient motion.
 
 ## Accessibility and dark mode
 
-Keyboard focus uses a 3px current-color outline with offset. Skip navigation,
+Keyboard focus uses a 3px current-color outline with offset, and nothing else:
+the theme's own box-shadow ring is suppressed, because this system has no
+shadow vocabulary to hang a second indicator on. A collapsible sidebar group
+keeps the link color of its children; only the chevron marks it as a group.
+At viewport widths up to 700px, interactive chrome — the menu button, navbar
+links, the wordmark, and the controls inside a figure or code block — keeps
+the same 44px target floor the disclosure contract states. Skip navigation,
 semantic headings, figure captions, table headers, and link text stay available
 without color. A diff never communicates through color alone: additions and
 removals keep their `+` and `-` characters.

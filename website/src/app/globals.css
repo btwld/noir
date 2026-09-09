@@ -2,6 +2,24 @@
   --display: Georgia, 'Times New Roman', ui-serif, serif;
   --body: ui-sans-serif, system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Type ramp. Every rule reads a step from here; a literal `rem` font size is
+     a defect, exactly as a literal font stack is. Two exceptions stay literal
+     because they are not scale steps: the inline-code `em` that tracks its
+     parent, and the narrow-viewport caps at the bottom of this file. Mono sits
+     at 0.86rem so it reads level with the 0.875rem interface step. */
+  --text-meta: 0.76rem;
+  --text-label: 0.82rem;
+  --text-code: 0.86rem;
+  --text-ui: 0.875rem;
+  --text-small: 0.92rem;
+  --text-body: 1rem;
+  --text-lead: 1.06rem;
+  --text-sub: 1.14rem;
+  --text-intro: clamp(1.15rem, 2vw, 1.4rem);
+  --text-display-sm: 1.35rem;
+  --text-display-md: clamp(1.5rem, 2.3vw, 1.85rem);
+  --text-display-lg: clamp(2rem, 3.2vw, 2.8rem);
+  --text-display-xl: clamp(2.6rem, 5vw, 4rem);
   --ink: #11110f;
   --paper: #fbfbf8;
   --quiet: #5f5f58;
@@ -37,7 +55,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--body);
-  font-size: 1rem;
+  font-size: var(--text-body);
   line-height: 1.7;
   text-rendering: optimizeLegibility;
 }
@@ -91,7 +109,7 @@ button {
   border: 1px solid var(--ink);
   color: var(--paper);
   font-family: var(--mono);
-  font-size: 0.82rem;
+  font-size: var(--text-label);
   letter-spacing: 0.01em;
   padding: 0.58rem 0.72rem;
 }
@@ -126,7 +144,7 @@ pre {
 
 .wordmark {
   font-family: var(--display);
-  font-size: 1.35rem;
+  font-size: var(--text-display-sm);
   font-weight: 700;
   letter-spacing: -0.035em;
 }
@@ -134,7 +152,7 @@ pre {
 .site-nav-link {
   color: var(--quiet);
   font-family: var(--body);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   text-decoration: none;
 }
 
@@ -175,11 +193,28 @@ pre {
   padding-inline-start: 0.4rem !important;
 }
 
+/* A collapsible group is a destination, not a disabled row. Nextra tints
+   folder buttons with an off-palette gray, which reads as unavailable beside
+   its own children. Groups and leaves share the link color; the chevron
+   carries the only difference. */
+.nextra-sidebar button,
+.nextra-sidebar-footer button,
+.nextra-mobile-nav button {
+  color: var(--ink);
+}
+
+/* One focus indicator. The 3px current-color outline above is the contract;
+   Nextra ships a second gray ring as a box-shadow, and this system has no
+   shadow vocabulary to hang it on. */
+:focus-visible {
+  box-shadow: none !important;
+}
+
 .nextra-footer {
   background: var(--paper) !important;
   border-top: 1px solid var(--rule);
   color: var(--quiet);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .home-page,
@@ -202,7 +237,7 @@ pre {
 
 .home-hero h1,
 .not-found h1 {
-  font-size: clamp(2.6rem, 5vw, 4rem);
+  font-size: var(--text-display-xl);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 1.06;
@@ -211,7 +246,7 @@ pre {
 }
 
 .home-summary {
-  font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+  font-size: var(--text-intro);
   line-height: 1.55;
   margin: 1.5rem 0 1.9rem;
   max-width: 34rem;
@@ -225,7 +260,7 @@ pre {
 }
 
 .home-actions a {
-  font-size: 1.05rem;
+  font-size: var(--text-lead);
   text-decoration: none;
 }
 
@@ -243,7 +278,7 @@ pre {
   border-bottom: 1px solid var(--rule);
   border-top: 1px solid var(--rule);
   display: flex;
-  font-size: 0.91rem;
+  font-size: var(--text-small);
   gap: 0.8rem;
   line-height: 1.5;
   margin: 2.6rem 0;
@@ -251,10 +286,15 @@ pre {
   padding: 1.05rem 0;
 }
 
+/* Opening its section rather than floating between two. */
+:is(h1, h2, h3) + .availability {
+  margin-top: 1.5rem;
+}
+
 .availability strong {
   flex: 0 0 auto;
   font-family: var(--mono);
-  font-size: 0.77rem;
+  font-size: var(--text-meta);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -279,7 +319,7 @@ pre {
 
 .home-command-note {
   color: var(--quiet);
-  font-size: 0.94rem;
+  font-size: var(--text-small);
   margin-top: 1rem;
 }
 
@@ -288,7 +328,7 @@ pre {
 }
 
 .home-proof h2 {
-  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  font-size: var(--text-display-md);
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -297,7 +337,7 @@ pre {
 }
 
 .capability-index h2 {
-  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  font-size: var(--text-display-lg);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 1.12;
@@ -308,7 +348,7 @@ pre {
 
 .capability-index > p {
   color: var(--quiet);
-  font-size: 1.12rem;
+  font-size: var(--text-sub);
   line-height: 1.65;
   max-width: 45rem;
 }
@@ -321,7 +361,7 @@ pre {
   background: transparent !important;
   border: 1px solid var(--rule);
   border-radius: 0;
-  font-size: 0.86rem;
+  font-size: var(--text-code);
   line-height: 1.7;
   margin: 0;
   overflow-x: auto;
@@ -348,7 +388,7 @@ html.dark .highlighted-code span {
 
 .capability-index article > a {
   font-family: var(--body);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -369,7 +409,7 @@ html.dark .highlighted-code span {
   align-items: baseline;
   border-bottom: 1px solid var(--terminal-rule);
   display: flex;
-  font-size: 0.78rem;
+  font-size: var(--text-meta);
   gap: 1rem;
   justify-content: space-between;
   line-height: 1.4;
@@ -389,7 +429,7 @@ html.dark .highlighted-code span {
   background: transparent;
   border: 0;
   color: var(--terminal-ink);
-  font-size: 0.86rem;
+  font-size: var(--text-code);
   line-height: 1.45;
   margin: 0;
   overflow-x: auto;
@@ -406,7 +446,7 @@ html.dark .highlighted-code span {
   color: var(--terminal-quiet);
   display: flex;
   flex-wrap: wrap;
-  font-size: 0.75rem;
+  font-size: var(--text-meta);
   gap: 0.4rem 0.9rem;
   line-height: 1.5;
   padding: 0.65rem 0.85rem;
@@ -433,7 +473,7 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
   border-bottom: 1px solid var(--terminal-rule);
   display: flex;
   font-family: var(--body);
-  font-size: 0.78rem;
+  font-size: var(--text-meta);
   gap: 1rem;
   justify-content: space-between;
   line-height: 1.4;
@@ -466,7 +506,7 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
 .terminal-recording-error {
   color: var(--terminal-ink);
   font-family: var(--body);
-  font-size: 0.86rem;
+  font-size: var(--text-ui);
   margin: 0;
   padding: 1rem;
 }
@@ -475,7 +515,7 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
   border-top: 1px solid var(--terminal-rule);
   display: grid;
   font-family: var(--body);
-  font-size: 0.76rem;
+  font-size: var(--text-meta);
   gap: 0.35rem;
   line-height: 1.45;
   padding: 0.7rem 0.85rem;
@@ -520,7 +560,7 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
 }
 
 .capability-index article h3 {
-  font-size: 1.35rem;
+  font-size: var(--text-display-sm);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.25;
@@ -545,7 +585,7 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
 
 .next-reads a {
   border-top: 1px solid var(--rule);
-  font-size: clamp(1.15rem, 2vw, 1.42rem);
+  font-size: var(--text-intro);
   padding: 1rem 0;
   text-decoration: none;
 }
@@ -564,13 +604,13 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
 
 .not-found p {
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: var(--text-label);
   margin: 0 0 1rem;
 }
 
 .not-found .not-found-summary {
   color: var(--quiet);
-  font-size: 1.18rem;
+  font-size: var(--text-sub);
   line-height: 1.55;
   margin: 2rem 0 0;
   max-width: 38rem;
@@ -597,7 +637,7 @@ main[data-pagefind-body='true'] {
 }
 
 main[data-pagefind-body='true'] h1 {
-  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  font-size: var(--text-display-lg);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 1.08;
@@ -607,7 +647,7 @@ main[data-pagefind-body='true'] h1 {
 
 main[data-pagefind-body='true'] h2 {
   border-bottom: 0 !important;
-  font-size: clamp(1.5rem, 2.3vw, 1.85rem);
+  font-size: var(--text-display-md);
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.18;
@@ -617,7 +657,7 @@ main[data-pagefind-body='true'] h2 {
 }
 
 main[data-pagefind-body='true'] h3 {
-  font-size: 1.12rem;
+  font-size: var(--text-sub);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.3;
@@ -626,7 +666,7 @@ main[data-pagefind-body='true'] h3 {
 
 main[data-pagefind-body='true'] > p:first-of-type {
   color: var(--quiet);
-  font-size: 1.08rem;
+  font-size: var(--text-lead);
   line-height: 1.65;
   max-width: 66ch;
 }
@@ -650,7 +690,7 @@ main[data-pagefind-body='true'] pre:has(> code.nextra-code) {
 }
 
 main[data-pagefind-body='true'] pre:has(> code.nextra-code) code {
-  font-size: 0.86rem;
+  font-size: var(--text-code);
   line-height: 1.7;
 }
 
@@ -669,7 +709,7 @@ main[data-pagefind-body='true'] details {
 main[data-pagefind-body='true'] summary {
   cursor: pointer;
   font-family: var(--body);
-  font-size: 0.91rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   min-height: 44px;
   padding: 0.75rem 0.25rem;
@@ -712,7 +752,7 @@ main[data-pagefind-body='true'] figure:has(img) figcaption {
   border-top: 1px solid var(--rule);
   color: var(--quiet);
   font-family: var(--body);
-  font-size: 0.86rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
   padding: 0.8rem 1rem;
 }
@@ -733,13 +773,15 @@ main[data-pagefind-body='true'] :not(pre) > code {
 
 main[data-pagefind-body='true'] table {
   font-family: var(--body);
-  font-size: 0.91rem;
+  font-size: var(--text-small);
   line-height: 1.5;
 }
 
 main[data-pagefind-body='true'] th {
   color: var(--ink);
   font-weight: 650;
+  /* A header sits over its column, not centred above it. */
+  text-align: start;
 }
 
 main[data-pagefind-body='true'] td,
@@ -772,7 +814,7 @@ main[data-pagefind-body='true'] th {
   color: var(--signal);
   content: counter(concept-step, decimal-leading-zero);
   font-family: var(--mono);
-  font-size: 0.74rem;
+  font-size: var(--text-meta);
   letter-spacing: 0.05em;
 }
 
@@ -840,7 +882,7 @@ main[data-pagefind-body='true'] th {
   color: var(--quiet);
   display: block;
   font-family: var(--body);
-  font-size: 0.8rem;
+  font-size: var(--text-label);
   margin-top: 0.5rem;
 }
 
@@ -890,8 +932,29 @@ main[data-pagefind-body='true'] th {
 }
 
 @media (max-width: 700px) {
-  .site-nav-link:not(.site-nav-github) {
-    display: none;
+  /* Chrome a thumb has to hit: the menu button, the navbar links, the
+     wordmark, and the controls inside a figure or a code block. The 44px
+     floor the disclosure contract states applies to all of them. */
+  .nextra-hamburger,
+  .nextra-navbar a:has(.wordmark) {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-block-size: 44px;
+    min-inline-size: 44px;
+  }
+
+  .site-nav-link {
+    align-items: center;
+    display: inline-flex;
+    font-size: var(--text-label);
+    min-block-size: 44px;
+  }
+
+  main[data-pagefind-body='true'] figure button,
+  main[data-pagefind-body='true'] .nextra-code button {
+    min-block-size: 44px;
+    min-inline-size: 44px;
   }
 
   .availability {
