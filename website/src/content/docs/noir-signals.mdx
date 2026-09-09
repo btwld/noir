@@ -1,0 +1,54 @@
+---
+title: noir_signals
+description: Add lifecycle hooks and explicit Signals observation to Noir applications.
+---
+
+# noir_signals
+
+`noir_signals` is Noir's optional companion package for lifecycle hooks and
+Signals integration. Its guides, tutorial, and examples are part of this
+documentation site. Noir supplies the widgets and rendering; the companion
+adds ways to own state and resources and observe reactive models.
+
+Use it when you want hooks in a `SignalWidget` or `SignalBuilder`, or when
+your app already uses a Signals model. Core `StatefulWidget` and `setState`
+remain available without the companion.
+
+<Availability of="companion" />
+
+## Set up your app
+
+Follow [Installation](/docs/installation) for the companion dependency setup.
+Then import the application widgets and the companion surface:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+Start with [Build a task list](/docs/signals-task-list) for a complete app in
+five runnable lessons, from an empty screen to adding and filtering tasks.
+
+## Choose a guide
+
+| Goal                                                       | Guide                                                   |
+| ---------------------------------------------------------- | ------------------------------------------------------- |
+| Retain local state, controllers, and effects across builds | [Manage state and resources](/docs/hooks)               |
+| Observe a model owned outside the widget                   | [Show shared state](/docs/signals)                      |
+| Understand identity and resource disposal                  | [State, identity, and ownership](/docs/state-lifecycle) |
+| Run the counter, task list, or file search                 | [Companion examples](/examples#companion-examples)      |
+
+Observation is explicit: reading a signal's `.value` in a build does not
+subscribe the widget by itself. The Signals guide explains which hook or
+builder to use and who owns disposal.
+
+## Reference contracts
+
+The package maintains the detailed contracts alongside its source:
+
+- [Hooks contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/hooks.md)
+  — hook ordering, keys, effects, and resource lifetimes.
+- [Signals contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
+  — observation, ownership, replacement, and deferred disposal.
+
+See [API](/api) for the package surfaces and available generated reference.

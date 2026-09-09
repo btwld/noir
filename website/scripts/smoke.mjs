@@ -306,6 +306,7 @@ async function runSmoke() {
       [
         'Start here',
         'Finish a task',
+        'Add hooks and Signals with noir_signals',
         'Understand the model',
         'Look something up',
         'Advanced and contributing',
@@ -574,12 +575,13 @@ async function runSmoke() {
     await page.setViewportSize({ width: 390, height: 844 });
     const expectedLimitationRows = 9;
     const routeContracts = [
-      ['/docs', 'main h2', 5],
+      ['/docs', 'main h2', 6],
       ['/docs/getting-started', '[id="3-write-the-screen"]', 1],
       ['/docs/installation', 'main table', 1],
       ['/docs/command-line-arguments', '#parse-flags-for-one-application', 1],
       ['/docs/widgets-layout', '#constraints-go-down-sizes-come-up', 1],
       ['/docs/state-lifecycle', '#let-one-state-own-the-resource', 1],
+      ['/docs/noir-signals', '#choose-a-guide', 1],
       ['/docs/hooks', '#own-a-resource-and-its-cleanup-together', 1],
       ['/docs/signals', '#observation-is-explicit', 1],
       ['/docs/signals-task-list', 'main img', 2],

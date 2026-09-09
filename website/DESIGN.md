@@ -168,7 +168,9 @@ Top navigation is **Docs · Examples · API · GitHub**. The wordmark returns
 home, so there is no Home item.
 
 The documentation sidebar groups pages by reader intent: Start here, Guides,
-Concepts, and Reference. Installation, Architecture, and curated widget pages
+noir_signals, Concepts, and Reference. The noir_signals group keeps its package
+overview, hook and Signals guides, and task-list lessons together on this site.
+Existing guide URLs stay stable. Installation, Architecture, and curated widget pages
 stay routable and linked in context, without occupying the default sidebar.
 
 **This supersedes the previous rule that the site needs no separate Examples
