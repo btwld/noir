@@ -10,7 +10,11 @@ import '../helpers/tui_test_app.dart';
 /// lesson promises, at the geometry the published frames use.
 void main() {
   test('the first checkpoint counts up from the focused button', () async {
-    final app = createTuiTestApp(const step1.CounterApp(), width: 40, height: 6);
+    final app = createTuiTestApp(
+      const step1.CounterApp(),
+      width: 40,
+      height: 6,
+    );
     try {
       await _settle(app);
       expect(app.captureFrame(), BufferMatchers.containsText('Count: 0'));
@@ -25,7 +29,11 @@ void main() {
   });
 
   test('the edited checkpoint changes only the label', () async {
-    final app = createTuiTestApp(const step2.CounterApp(), width: 40, height: 6);
+    final app = createTuiTestApp(
+      const step2.CounterApp(),
+      width: 40,
+      height: 6,
+    );
     try {
       await _settle(app);
       app.mockInput.typeText(' ');

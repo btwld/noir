@@ -576,6 +576,17 @@ async function toMdxBody(markdown, lesson, imageNames) {
     const destination = await resolveLink(target, lesson, routes);
     body = body.split(`](${target})`).join(`](${destination})`);
   }
+  // Every link must have become a website route or a canonical GitHub URL.
+  const unresolved = [...body.matchAll(/\]\(([^)\s]+)\)/g)]
+    .map((match) => match[1])
+    .filter((target) => !target.startsWith('/') && !target.startsWith('http'));
+  if (unresolved.length > 0) {
+    fail(
+      `${lesson.source} leaves a repository path in the generated page: ` +
+        `${unresolved.join(', ')}. Write it as a relative link so the ` +
+        'generator can resolve it.',
+    );
+  }
   return body.replace(/\n{3,}/g, '\n\n').trim();
 }
 

@@ -25,6 +25,21 @@ stable 1.0.
 - Drop to supported renderer, buffer, or raw FFI APIs when an application
   needs more control.
 
+## Documentation
+
+Tutorials, task guides, concepts, and reference live in Noir's browser
+documentation, which is built from `website/`. These canonical sources ship
+with the repository:
+
+- [Runnable example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)
+  — every shipped app, listed by the question it answers.
+- [Build a task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
+  — a five-lesson tutorial on lifecycle hooks and reactive state.
+- [Generated API reference](https://pub.dev/documentation/noir/latest/) — every
+  published class, member, and signature.
+- [CONTRIBUTING.md](https://github.com/conceptadev/noir/blob/main/CONTRIBUTING.md)
+  — repository setup, the framework test harnesses, and drive mode.
+
 ## Install
 
 Install the latest prerelease from pub.dev:

@@ -8,6 +8,8 @@ interface AvailabilityProps {
   of: 'noir' | 'companion';
   /** Replaces the default consequence sentence when a page needs its own. */
   children?: ReactNode;
+  /** Set false on the installation page itself, which owns the detail. */
+  setup?: boolean;
 }
 
 const defaults = {
@@ -22,14 +24,23 @@ const defaults = {
  * Put it where a reader is about to copy a dependency or a command. The
  * installation page owns the detail; this component never repeats it.
  */
-export function Availability({ of, children }: AvailabilityProps) {
+export function Availability({
+  of,
+  children,
+  setup = true,
+}: AvailabilityProps) {
   const target = availability[of];
   return (
     <aside className="availability" aria-label={`${target.name} availability`}>
       <strong>{target.label}</strong>
       <div>
-        {children ?? defaults[of]}{' '}
-        <Link href="/docs/installation">Set up your project</Link>.
+        {children ?? defaults[of]}
+        {setup ? (
+          <>
+            {' '}
+            <Link href="/docs/installation">Set up your project</Link>.
+          </>
+        ) : null}
       </div>
     </aside>
   );

@@ -166,7 +166,9 @@ pre {
 }
 
 .nextra-sidebar a[class~='x:bg-primary-100'],
-.nextra-mobile-nav a[class~='x:bg-primary-100'] {
+.nextra-sidebar button[class~='x:bg-primary-100'],
+.nextra-mobile-nav a[class~='x:bg-primary-100'],
+.nextra-mobile-nav button[class~='x:bg-primary-100'] {
   background: transparent !important;
   border-inline-start: 2px solid var(--ink) !important;
   color: var(--ink) !important;

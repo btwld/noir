@@ -274,6 +274,28 @@ async function runSmoke() {
 
     // ---- Documentation router ----
     await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
+    const activeSection = page.locator(
+      ".nextra-sidebar button[class~='x:bg-primary-100']",
+    );
+    assert.equal(
+      await activeSection.count(),
+      1,
+      'the sidebar must mark the current section once',
+    );
+    assert.equal(
+      await activeSection.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+      'rgba(0, 0, 0, 0)',
+      'an active sidebar section must use the quiet marker, not a filled block',
+    );
+    assert.equal(
+      await activeSection.evaluate(
+        (element) => getComputedStyle(element).borderInlineStartWidth,
+      ),
+      '2px',
+      'an active sidebar section must retain the ink marker',
+    );
     assert.equal(
       new URL(page.url()).pathname.replace(/\/$/, ''),
       `${basePath}/docs`,
