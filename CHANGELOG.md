@@ -28,8 +28,12 @@ artifacts are unchanged from alpha.4.
 ### Fixed
 
 - The packaged hot-reload runner now recompiles detected edits whose file
-  timestamps predate compilation, including recovery after a rejected reload.
-  This forces recompilation and can take longer than an incremental reload.
+  timestamps are not newer than the last successful reload, including
+  recovery after a rejected reload. The VM's own timestamp filter skipped such
+  an edit while reporting success, so the app reassembled stale code. Only
+  that reload is forced, which recompiles every source and takes longer;
+  an ordinary save is newer than the last reload and still takes the
+  incremental path. The runner log names the path taken.
 - `FocusManager` now recovers focus after an involuntary loss. Disabling the
   focused control or removing the region that owns focus previously left the
   tree with no primary focus, and `Shortcuts.handleKeyEvent` routes from the

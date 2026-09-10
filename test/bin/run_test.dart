@@ -174,7 +174,7 @@ class Probe extends StatelessWidget {
         runner.frames,
         containsAllInOrder(['FRAME:before', 'FRAME:after']),
       );
-      expect(log.readAsStringSync(), contains('reloaded'));
+      expect(log.readAsStringSync(), contains('reloaded (incremental)'));
     },
     timeout: const Timeout(Duration(seconds: 90)),
   );
@@ -228,7 +228,65 @@ class Probe extends StatelessWidget {
 
       expect(await runner.exitCode, 17, reason: runner.output.toString());
       expect(runner.frames, ['FRAME:before', 'FRAME:after']);
-      expect(log.readAsStringSync(), contains('reloaded'));
+      expect(
+        log.readAsStringSync(),
+        contains('reloaded (forced: 1 stale timestamp)'),
+      );
+    },
+    timeout: const Timeout(Duration(seconds: 90)),
+  );
+
+  test(
+    'a rejected reload retains stale edits when another file triggers recovery',
+    () async {
+      final label = File('${consumer.path}/lib/label.dart');
+      final suffix = File('${consumer.path}/lib/suffix.dart');
+      await suffix.writeAsString("String suffix() => 'fore';\n");
+      await label.writeAsString(
+        "import 'suffix.dart';\nString frameLabel() => 'be' + suffix();\n",
+      );
+      final runner = await _RunningProbe.start(consumer);
+      addTearDown(runner.stop);
+      final log = File('${consumer.path}/.dart_tool/noir/run.log');
+      await _waitUntil(
+        () =>
+            runner.frames.contains('FRAME:before') &&
+            log.existsSync() &&
+            log.readAsStringSync().contains('watching '),
+        what: 'the initial frame and watcher',
+        timeout: const Duration(seconds: 30),
+        diagnostics: runner.output,
+      );
+      await _replaceWithTimestamp(
+        label,
+        "import 'suffix.dart';\nString frameLabel() => 'af' + missing();\n",
+        DateTime.utc(2000),
+      );
+      await _waitUntil(
+        () => log.readAsStringSync().contains('reload rejected'),
+        what: 'rejection of a stale edit referring to a missing function',
+        diagnostics: runner.output,
+      );
+      await suffix.writeAsString(
+        "String suffix() => 'fore';\nString missing() => 'ter';\n",
+      );
+      await _waitUntil(
+        () => log.readAsStringSync().contains('reloaded ('),
+        what: 'retry after adding the missing function in another file',
+        diagnostics: runner.output,
+      );
+      await _waitUntil(
+        () => runner.frames.length >= 2,
+        what: 'the reassembled frame after retry',
+        diagnostics: runner.output,
+      );
+      expect(runner.frames, ['FRAME:before', 'FRAME:after']);
+      expect(
+        log.readAsStringSync(),
+        contains('reloaded (forced: 1 stale timestamp)'),
+      );
+      expect(await runner.exitCode, 17, reason: runner.output.toString());
+      expect(runner.frames, ['FRAME:before', 'FRAME:after']);
     },
     timeout: const Timeout(Duration(seconds: 90)),
   );

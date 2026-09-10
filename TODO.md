@@ -147,11 +147,20 @@ Closed on this tree:
 
 Open review follow-ups:
 
-- [ ] **#47**: `force: true` costs about 34x reload latency (30 ms to 1012 ms
-      on a Noir-sized app in the prior review). The changelog now discloses the
-      recompilation cost. Edits preserving both mtime and size remain invisible,
-      and `NoirDriver.reload` in `scripts/driver/noir_driver.dart` still uses
-      the original VM timestamp filtering.
+- [x] **#47**: the runner now forces recompilation only for an edit whose
+      timestamp is not strictly newer than its last successful reload, and
+      takes the incremental path otherwise. Measured on a minimal consumer
+      importing Noir (223 libraries, Dart 3.11, macOS arm64): incremental
+      18–19 ms, forced 480–640 ms; an old-timestamp edit under the incremental
+      path reported success and rendered stale code, which is the case the
+      forced path keeps. The baseline rule mirrors the VM's own filter (a
+      source is recompiled when its mtime is newer than the start of the last
+      successful reload; a rejected reload does not advance it), and the
+      runner's baseline is always taken later than the VM's. The two packaged
+      run tests assert which path the log recorded, and
+      `scripts/driver/noir_driver.dart` now forces on demand. Edits preserving
+      both mtime and size remain invisible to the stamp watcher; that is a
+      documented limitation, not a reload defect.
 - [x] **#44**: recovery now focuses the first control inside the nearest
       surviving scope, descending through nested scopes, and takes the scope
       node itself only when it holds no control. Three focused cases pin it,

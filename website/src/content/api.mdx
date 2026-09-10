@@ -97,6 +97,10 @@ sources, then tells Noir to rebuild, lay out, and paint the retained tree.
 - Arguments after the entry-point path go to the application unchanged. See
   [Parse command-line arguments](/docs/command-line-arguments).
 - A source that does not compile leaves the last good app running.
+- Edits are compiled incrementally. An edit whose file timestamp is not newer
+  than the last successful reload, for example a file restored with its
+  original timestamp, is recompiled in full and takes longer. The runner log
+  names the path taken.
 - Reload does not rerun `main()` or `initState()`. It calls `reassemble` on
   retained state.
 - Adding, removing, or reordering hooks needs a full restart, and so do live
