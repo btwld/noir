@@ -157,9 +157,15 @@ Open review follow-ups:
       node itself only when it holds no control. Three focused cases pin it,
       including a `Shortcuts` binding inside the scope that answers a key
       after recovery; each failed against the previous code.
-- [ ] **#45**: building elements during layout is a new ownership seam with no
-      fitness test, though the repository freezes comparable seams elsewhere.
-      A layout-time `markNeedsLayout` is dropped and never retried.
+- [x] **#45**: `PipelineOwner.flushLayout` now retries a layout request
+      raised during a pass, up to three passes, and then throws naming the
+      render objects that never settled, including active ancestors and
+      self-invalidations. A child request answered later in the pass needs no
+      retry; adoption also invalidates its active parent and retries it. Two architecture tests freeze the seam: only
+      `BuildOwner`, `TuiBinding`, and `LayoutBuilder` may finalize the element
+      tree, and `lib/src/rendering/` imports nothing from the element layer.
+      The three pipeline cases and both scans failed against the previous
+      tree for their intended reasons.
 - [x] **#42**: `tools/mcp_fixtures` and `tools/mcp_inspector` pin
       `mcp_dart` to exactly `2.4.2`, so the shared suite's fixture servers
       resolve the same SDK on every run. Lockfiles stay ignored by policy.

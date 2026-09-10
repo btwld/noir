@@ -42,6 +42,18 @@ artifacts are unchanged from alpha.4.
   incoming `autofocus` both claim focus first, and an intentional `unfocus()`
   is not recovered.
 - `autofocus` is now honored when it is enabled after mount.
+- A layout request raised during layout is now answered in the same frame.
+  `PipelineOwner.flushLayout` used to run one pass and then discard any
+  render object marked while that pass ran, for example by a `LayoutBuilder`
+  whose build touched a render object already laid out or still performing
+  layout, and nothing retried it. The flush now runs another full pass while
+  such requests remain, up to three passes, and then throws a `StateError` naming
+  the render objects that kept requesting layout from inside layout. A
+  request followed by that object's layout in the same pass does not cost a
+  second pass. Adopting a child during layout also invalidates its active
+  parent and conservatively retries that parent. Architecture tests now
+  freeze the layout-time build seam to `LayoutBuilder` and keep the
+  rendering layer free of element-layer imports.
 - A keyed `ListView` row now names exactly one element. The row's `LocalKey`
   was copied onto the `SizedBox` wrapping it, so the key named two elements and
   a strict driver locator reported an ambiguous match. A keyed row that stays
