@@ -157,20 +157,23 @@ Open review follow-ups:
 - [ ] **#45**: building elements during layout is a new ownership seam with no
       fitness test, though the repository freezes comparable seams elsewhere.
       A layout-time `markNeedsLayout` is dropped and never retried.
-- [ ] **#42**: fixture servers resolve an unpinned `mcp_dart` from pub.dev
-      inside the shared suite.
+- [x] **#42**: `tools/mcp_fixtures` and `tools/mcp_inspector` pin
+      `mcp_dart` to exactly `2.4.2`, so the shared suite's fixture servers
+      resolve the same SDK on every run. Lockfiles stay ignored by policy.
 
 Release gates:
 
-The framework stack and host rename are merged, and their merge-commit checks
-passed. Cleanup is tracked in [#50](https://github.com/conceptadev/noir/pull/50).
+The framework stack, host rename, and cleanup are merged, and their
+merge-commit checks passed.
 
 - [x] **Host rename and documentation**: #49 merged at
       `29b058bd2020da20fac773801b23aa235330cc3a`. Its merge-commit CI passed
       analysis, website validation, and Linux, macOS, and Windows tests in
       [run 34417535761](https://github.com/conceptadev/noir/actions/runs/34417535761).
-- [ ] **Cleanup candidate**: review and merge #50, then require passing
-      platform CI on its merge commit before publication.
+- [x] **Cleanup candidate**: #50 squash-merged at
+      `06d2bc38ca9db6295693cf838ff5e4e6049deca3`. Its merge-commit CI passed
+      analysis, website validation, and Linux, macOS, and Windows tests in
+      [run 34534871642](https://github.com/conceptadev/noir/actions/runs/34534871642).
 
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted
