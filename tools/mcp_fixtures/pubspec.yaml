@@ -12,7 +12,7 @@ environment:
 # would inherit its native-assets build hook, and `dart run` writes hook
 # progress to stdout — the MCP protocol channel. See `FINDINGS.md`, entry 16.
 dependencies:
-  mcp_dart: ^2.4.2
+  mcp_dart: 2.4.2
 
 dev_dependencies:
   lints: ^6.0.0
