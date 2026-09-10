@@ -264,13 +264,11 @@ final class _PreviousHook<T> extends Hook<T?> {
 
 final class _PreviousHookState<T> extends HookState<T?, _PreviousHook<T>> {
   T? _previous;
-  bool _hasPrevious = false;
 
   @override
   T? build(BuildContext context) {
-    final result = _hasPrevious ? _previous : null;
+    final result = _previous;
     _previous = hook.value;
-    _hasPrevious = true;
     return result;
   }
 }

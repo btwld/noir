@@ -2,7 +2,6 @@
 // These tests pin what triggers a rebuild, because an extra rebuild during
 // layout is as wrong as a missing one: the builder runs inside the layout
 // pass, not before it.
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 import 'package:noir/src/framework/element.dart';
 import 'package:test/test.dart';

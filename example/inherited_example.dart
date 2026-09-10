@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 
 class DemoThemeData extends InheritedWidget {

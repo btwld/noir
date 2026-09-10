@@ -49,7 +49,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
   /// Whether the text is empty.
   bool get isEmpty => text.isEmpty;
 
-  /// Clears the current value.
+  /// Clears the text and collapses the selection at offset zero.
   void clear() {
     value = const TextEditingValue(
       selection: TextSelection.collapsed(offset: 0),
@@ -93,7 +93,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
       _replaceRange(range.start, range.end, '');
       return true;
     }
-    if (range.start >= _endOffset(text)) return false;
+    if (range.start >= text.length) return false;
     final end = _nextGraphemeBoundary(text, range.start);
     _replaceRange(range.start, end, '');
     return true;
@@ -143,7 +143,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   /// Moves the collapsed cursor to the end of the document.
   void moveDocumentEnd() {
-    selection = TextSelection.collapsed(offset: _endOffset(text));
+    selection = TextSelection.collapsed(offset: text.length);
   }
 
   TextRange get _normalizedSelection =>
@@ -156,7 +156,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   void _replaceRange(int start, int end, String replacement) {
     final newText = text.replaceRange(start, end, replacement);
-    final offset = start + _endOffset(replacement);
+    final offset = start + replacement.length;
     value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: offset),
@@ -165,12 +165,12 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 }
 
 ({int line, int column}) _positionForOffset(String text, int offset) {
-  final clamped = offset.clamp(0, _endOffset(text));
+  final clamped = offset.clamp(0, text.length);
   final lines = text.split('\n');
   var line = 0;
   var lineStart = 0;
   for (final lineText in lines) {
-    final lineEnd = lineStart + _endOffset(lineText);
+    final lineEnd = lineStart + lineText.length;
     if (clamped <= lineEnd) {
       return (
         line: line,
@@ -188,7 +188,7 @@ int _offsetForPosition(String text, int line, int column) {
   final clampedLine = line.clamp(0, lines.length - 1);
   var offset = 0;
   for (var i = 0; i < clampedLine; i++) {
-    offset += _endOffset(lines[i]) + 1;
+    offset += lines[i].length + 1;
   }
   final lineText = lines[clampedLine];
   final map = TextIndexMap(lineText);
@@ -217,7 +217,7 @@ int _nextGraphemeBoundary(String text, int offset) {
 }
 
 void _validateSelection(TextSelection selection, String text) {
-  final end = _endOffset(text);
+  final end = text.length;
   final base = selection.baseOffset;
   final extent = selection.extentOffset;
   final clearsSelection = base == -1 && extent == -1;
@@ -233,9 +233,4 @@ void _validateSelection(TextSelection selection, String text) {
     'selection',
     'selection offsets must be in the current text',
   );
-}
-
-int _endOffset(String text) {
-  final map = TextIndexMap(text);
-  return map.graphemeToUtf16(map.graphemeCount);
 }

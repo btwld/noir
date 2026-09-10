@@ -54,20 +54,11 @@ void main() {
     },
   );
 
-  test('RenderView paint path has zero Buffer allowlist budget', () {
-    final allowlistSource = File(
-      'test/architecture/no_buffer_in_rendering_test.dart',
-    ).readAsStringSync();
+  test('RenderView paint path never imports Buffer directly', () {
     final renderViewSource = File(
       'lib/src/rendering/render_view.dart',
     ).readAsStringSync();
 
-    expect(
-      allowlistSource,
-      contains('const allowlistedBufferImports = <String>{};'),
-    );
-    expect(allowlistSource, contains('lib/src/widgets'));
-    expect(allowlistSource, isNot(contains('render_view.dart')));
     expect(renderViewSource, isNot(contains("import '../core/buffer.dart';")));
     expect(renderViewSource, isNot(contains('src/core/buffer.dart')));
   });

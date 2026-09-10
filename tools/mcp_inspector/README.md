@@ -108,7 +108,7 @@ lib/src/session/            the boundary: McpSession, LiveMcpSession,
                             TracingTransport, ProtocolLog
 lib/src/model/              FormModel and InspectorController
 lib/src/ui/                 the screen; imports package:noir only
-../mcp_fixtures/            six MCP servers written with package:mcp_dart
+../mcp_fixtures/            MCP fixture servers written with package:mcp_dart
 ```
 
 `McpSession` plays the role `PubCatalog` plays in

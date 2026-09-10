@@ -1,5 +1,4 @@
 #!/usr/bin/env dart
-// ignore_for_file: cascade_invocations
 
 import 'dart:io';
 import 'dart:math' as math;

@@ -42,12 +42,8 @@ enum MainAxisSize {
 
 /// How the children should be placed along the cross axis in a flex layout.
 ///
-/// **Terminal-Only Cross Axis Alignment**: Unlike Flutter which supports baseline
-/// alignment for mixed font sizes, terminals use monospaced fonts with uniform
-/// character heights making baseline alignment meaningless.
-///
-/// Flutter compatibility note: baseline removed because terminal text has no
-/// font metrics - all characters occupy identical rectangular cells.
+/// Baseline alignment is not supported; layout uses terminal-cell extents
+/// rather than font metrics.
 enum CrossAxisAlignment {
   /// Place the children with their start edge aligned with the start side of
   /// the cross axis.
@@ -65,9 +61,6 @@ enum CrossAxisAlignment {
 }
 
 /// Base class for widgets that arrange children in a one-dimensional array.
-///
-/// This widget uses [RenderFlex] for proper flex layout with all flex
-/// properties supported.
 ///
 /// See also:
 ///  * [Row], for a horizontal layout.
@@ -132,8 +125,6 @@ abstract class Flex extends MultiChildRenderObjectWidget {
 }
 
 /// A widget that displays its children in a horizontal array.
-///
-/// This widget uses RenderFlex for proper flex layout with all flex properties supported.
 class Row extends Flex {
   /// Creates a horizontal array of children.
   const Row({
@@ -147,8 +138,6 @@ class Row extends Flex {
 }
 
 /// A widget that displays its children in a vertical array.
-///
-/// This widget uses RenderFlex for proper flex layout with all flex properties supported.
 class Column extends Flex {
   /// Creates a vertical array of children.
   const Column({

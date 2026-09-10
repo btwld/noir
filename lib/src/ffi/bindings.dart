@@ -27,12 +27,6 @@ void _checkSigned32Abi(int value, String name) {
   }
 }
 
-/// Requires [value] to fit the unsigned 32-bit OpenTUI ABI domain.
-@internal
-void validateUnsigned32Abi(int value, String name) {
-  _checkUnsignedAbi(value, 0xFFFFFFFF, name);
-}
-
 /// Requires renderer dimensions between 1 and the unsigned 32-bit maximum.
 @internal
 void validateRendererDimensions(int width, int height) {
@@ -524,8 +518,8 @@ class OpenTuiBindings {
 
   /// Pushes a clip rectangle onto [buffer]'s native scissor stack.
   ///
-  /// Every native write funnel tests the scissor before writing, so the push
-  /// affects all subsequent draws until the matching [bufferPopScissorRect].
+  /// Clips subsequent draws until the matching [bufferPopScissorRect], except
+  /// transparent-background `drawBox` borders, which bypass the scissor.
   ///
   /// Four properties surprise callers, all of them upstream behaviour:
   ///

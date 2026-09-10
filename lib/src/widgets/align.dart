@@ -7,12 +7,8 @@ import '../rendering/positioned_box.dart';
 
 /// A widget that aligns its child within itself.
 ///
-/// **Terminal-Only Alignment**: Unlike Flutter's Align which supports fractional
-/// sizing factors, terminals use fixed character cells making fractional sizing
-/// impossible. This widget focuses purely on alignment positioning.
-///
-/// Flutter compatibility note: widthFactor and heightFactor removed because
-/// terminal character cells have fixed dimensions with no sub-cell positioning.
+/// Positions the child in whole terminal cells. Flutter's `widthFactor` and
+/// `heightFactor` sizing options are not supported.
 ///
 /// This widget uses RenderPositionedBox to handle alignment positioning
 /// without relying on Container widgets to avoid circular dependencies.

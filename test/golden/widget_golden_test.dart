@@ -1,4 +1,3 @@
-// ignore_for_file: unreachable_from_main
 import 'dart:io';
 
 import 'package:noir/noir.dart';
@@ -226,39 +225,4 @@ void main() {
       );
     });
   });
-}
-
-// Helper function to update all golden files
-// Run this when widget rendering changes require golden file updates
-Future<void> updateAllGoldens() async {
-  final testCases = {
-    'simple_text': const Text('Hello Golden Test!'),
-    'styled_container': const Container(
-      padding: EdgeInsets.all(2),
-      decoration: BoxDecoration(color: Color.blue),
-      child: Text('Styled Container'),
-    ),
-    'row_layout': const Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [Text('Left'), Text('Center'), Text('Right')],
-    ),
-    'nested_structure': const Container(
-      padding: EdgeInsets.all(1),
-      child: Column(
-        children: [
-          Text('Title'),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 2),
-            child: Row(children: [Text('Item 1'), Text('Item 2')]),
-          ),
-          Text('Footer'),
-        ],
-      ),
-    ),
-  };
-
-  await GoldenTestUtils.runGoldenTests(
-    testCases,
-    updateGoldens: _updateGoldens,
-  );
 }

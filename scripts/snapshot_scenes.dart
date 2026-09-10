@@ -1,4 +1,4 @@
-// ignore_for_file: cascade_invocations, prefer_constructors_over_static_methods
+// ignore_for_file: prefer_constructors_over_static_methods
 // Minimal snapshot scenes for Dart side parity checks.
 // Usage:
 //   dart run scripts/snapshot_scenes.dart --scene S1 --width 20 --height 5

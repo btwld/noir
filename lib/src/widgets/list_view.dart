@@ -62,8 +62,9 @@ typedef ListViewItemBuilder =
 /// clips the overflow rather than shrinking the window, so give the list a
 /// height its parent can honor.
 ///
-/// Rows are rebuilt as the window moves, so give each row a stable
-/// `key: ValueKey(id)` when it owns `State` that must survive scrolling.
+/// Give each row a stable `key: ValueKey(id)` to preserve its `State` while it
+/// remains in the visible window as the list scrolls or reorders. Rows outside
+/// the window are unmounted; state that must survive that belongs above the row.
 class ListView extends StatefulWidget {
   /// Configures a windowed list of [itemCount] rows, selectable when
   /// [selectedIndex] is non-null.

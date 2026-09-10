@@ -1,11 +1,11 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
 import 'git_path.dart';
-import 'iterable_extensions.dart';
 
 enum DiffChangeKind { modified, added, deleted, renamed, copied, typeChanged }
 

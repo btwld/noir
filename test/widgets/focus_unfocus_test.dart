@@ -4,7 +4,6 @@
 // `UnfocusDisposition.scope`: focus moves to the nearest enclosing scope
 // that can hold it, or clears to `null` when only the synthetic root scope
 // remains.
-// ignore_for_file: cascade_invocations
 import 'dart:async';
 
 import 'package:noir/noir.dart';

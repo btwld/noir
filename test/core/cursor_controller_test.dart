@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
 

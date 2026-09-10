@@ -8,9 +8,7 @@ import '../core/terminal_style.dart';
 /// This class follows Flutter's TextStyle API but only exposes properties
 /// that are supported by OpenTUI for terminal text rendering.
 class TextStyle {
-  /// Creates a text style.
-  ///
-  /// All parameters are optional and will use sensible defaults.
+  /// Creates a style with white text and no additional terminal attributes.
   const TextStyle({
     this.color = Color.white,
     this.backgroundColor,
@@ -53,7 +51,6 @@ class TextStyle {
   int get computedAttributes {
     var attrs = attributes;
 
-    // Handle font weight mapping to OpenTUI attributes
     switch (fontWeight) {
       case FontWeight.bold:
         attrs |= Attr.bold;
@@ -61,7 +58,6 @@ class TextStyle {
         attrs |= Attr.dim;
       case FontWeight.normal:
       case null:
-        // No additional attributes for normal weight
         break;
     }
 
@@ -71,7 +67,6 @@ class TextStyle {
 
     attrs |= decoration?._attributes ?? 0;
 
-    // Handle terminal-specific effects
     switch (effect) {
       case TextEffect.blink:
         attrs |= Attr.blink;
@@ -79,14 +74,13 @@ class TextStyle {
         attrs |= Attr.reverse;
       case TextEffect.none:
       case null:
-        // No additional effects
         break;
     }
 
     return attrs;
   }
 
-  /// Copy with different properties
+  /// Copies this style, replacing each property whose argument is non-null.
   TextStyle copyWith({
     Color? color,
     Color? backgroundColor,
@@ -199,12 +193,8 @@ class TextStyles {
 
 /// The thickness of the glyphs used to draw text.
 ///
-/// **Terminal-Only Font Weights**: Unlike Flutter which supports 9 numeric weights
-/// (w100-w900), terminals can only render 3 distinct text weights. This enum
-/// only exposes what OpenTUI can actually render.
-///
-/// Flutter compatibility note: w100-w900 removed because terminal emulators
-/// lack font weight granularity. They typically support only normal/bold/dim.
+/// Supports OpenTUI's normal, bold, and dim attributes rather than Flutter's
+/// numeric font weights.
 enum FontWeight {
   /// Normal text weight - no special attributes applied.
   /// Maps to: No OpenTUI attributes (0)
@@ -214,15 +204,11 @@ enum FontWeight {
   /// Maps to: OpenTUI Attr.bold (1 << 0)
   bold,
 
-  /// Dimmed text weight - lighter than normal, terminal-specific feature.
-  /// Maps to: OpenTUI Attr.dim (1 << 1)
-  /// Note: This is a terminal enhancement not available in Flutter
+  /// Dimmed text using [Attr.dim], a terminal effect not available in Flutter.
   dim,
 }
 
 /// Whether to slant the glyphs in the font.
-///
-/// Flutter-compatible font style enumeration for terminal text rendering.
 enum FontStyle {
   /// Use the upright glyphs
   normal,
@@ -233,12 +219,8 @@ enum FontStyle {
 
 /// A linear decoration to draw near the text.
 ///
-/// **Terminal-Only Text Decorations**: Unlike Flutter which supports overline,
-/// terminals cannot render text decorations above the text line due to fixed
-/// character cell positioning.
-///
-/// Flutter compatibility note: overline removed because terminal character cells
-/// have fixed height with no space above text for overline rendering.
+/// Supports underline and strikethrough. Overline is not exposed by Noir's
+/// OpenTUI attribute mapping.
 @immutable
 final class TextDecoration {
   const TextDecoration._(this._attributes);
@@ -272,18 +254,14 @@ final class TextDecoration {
 }
 
 /// Terminal-specific text effects not available in Flutter.
-///
-/// These effects leverage terminal-specific capabilities that are not part
-/// of standard GUI text rendering. Use these for terminal-specific UI elements
-/// like highlighting, alerts, or drawing attention.
 enum TextEffect {
   /// No special effect applied
   /// Maps to: No OpenTUI attributes (0)
   none,
 
-  /// Text blinks/flashes periodically (if terminal supports it)
-  /// Maps to: OpenTUI Attr.blink (1 << 4)
-  /// Note: Some modern terminals disable blinking for accessibility
+  /// Blinks text using [Attr.blink] when supported by the terminal.
+  ///
+  /// Some terminals disable blinking for accessibility.
   blink,
 
   /// Swap foreground and background colors (reverse video)

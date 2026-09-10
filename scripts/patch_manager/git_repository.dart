@@ -256,8 +256,6 @@ class _UntrackedPreviewLoader {
     final _RegularBytes bytes;
     try {
       bytes = await _readRegularBytes(fullPath, retainedLimit);
-    } on FileSystemException {
-      return _untrackedFile(path, kind, UntrackedPreviewState.unavailable);
     } on IOException {
       return _untrackedFile(path, kind, UntrackedPreviewState.unavailable);
     }
@@ -404,8 +402,6 @@ class _UntrackedPreviewLoader {
     final String target;
     try {
       target = await linkTargetReader(fullPath);
-    } on FileSystemException {
-      return _untrackedFile(path, kind, UntrackedPreviewState.unavailable);
     } on IOException {
       return _untrackedFile(path, kind, UntrackedPreviewState.unavailable);
     }
@@ -454,8 +450,6 @@ class _UntrackedPreviewLoader {
   FileSystemEntityType _entityType(String path) {
     try {
       return FileSystemEntity.typeSync(path, followLinks: false);
-    } on FileSystemException {
-      return FileSystemEntityType.notFound;
     } on IOException {
       return FileSystemEntityType.notFound;
     }

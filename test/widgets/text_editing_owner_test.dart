@@ -262,7 +262,7 @@ void main() {
       }
     });
 
-    test('owned value updates respect focus for selection repair', () {
+    test('owned value updates preserve the current focus state', () {
       for (final widgetKind in _EditorKind.values) {
         final focusNode = FocusNode();
         final host = TestElementHost()
@@ -272,14 +272,10 @@ void main() {
           widgetKind.owned(value: 'next', focusNode: focusNode),
         );
         host.owner.buildScope();
-        // Unfocused owned value assignment leaves selection cleared.
         expect(focusNode.hasFocus, isFalse);
 
         focusNode.requestFocus();
         host.owner.buildScope();
-        // Focus gain repairs to document end of current text.
-        // Selection is only observable via rebuild leaf; cursor path validates
-        // below for focused parent updates with autofocus path.
 
         host.root!.update(
           widgetKind.owned(value: 'focused-update', focusNode: focusNode),

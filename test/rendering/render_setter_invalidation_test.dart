@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/core/cursor.dart';
 import 'package:noir/src/core/input.dart';

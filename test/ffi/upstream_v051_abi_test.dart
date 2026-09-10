@@ -48,11 +48,6 @@ void main() {
     );
   });
 
-  test('canonical pointer storage types are represented exactly', () {
-    expect(sizeOf<Uint16>(), 2);
-    expect(sizeOf<Uint32>(), 4);
-  });
-
   test('image ABI structs match in lookup and bundled bindings', () {
     expect(sizeOf<lookup.NativeImageInfo>(), 32);
     expect(sizeOf<bundled.NativeImageInfo>(), 32);

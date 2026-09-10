@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart' show BoxConstraints, BuildContext, Size;
 import 'package:noir/src/framework/element.dart';
 import 'package:noir/src/framework/owner.dart';

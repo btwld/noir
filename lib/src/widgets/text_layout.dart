@@ -138,7 +138,7 @@ final class TextLayoutEngine {
       if (value != null && value.isNotEmpty) {
         final start = textBuffer.length;
         textBuffer.write(value);
-        runs.add(_SourceRun(value, style, uri, start, textBuffer.length));
+        runs.add(_SourceRun(value, style, uri, start));
       }
       for (final child in span.children) {
         _flatten(child, style, uri, textBuffer, runs);
@@ -154,9 +154,7 @@ final class TextLayoutEngine {
     }
     final start = textBuffer.length;
     textBuffer.write(value);
-    runs.add(
-      _SourceRun(value, inheritedStyle, inheritedUri, start, textBuffer.length),
-    );
+    runs.add(_SourceRun(value, inheritedStyle, inheritedUri, start));
   }
 
   _LayoutResult _layoutRuns(List<_SourceRun> sourceRuns, int? maxWidth) {
@@ -271,19 +269,12 @@ final class TextLayoutEngine {
 }
 
 final class _SourceRun {
-  const _SourceRun(
-    this.text,
-    this.style,
-    this.uri,
-    this.sourceStart,
-    this.sourceEnd,
-  );
+  const _SourceRun(this.text, this.style, this.uri, this.sourceStart);
 
   final String text;
   final TextStyle style;
   final Uri? uri;
   final int sourceStart;
-  final int sourceEnd;
 }
 
 final class _ClusterToken {

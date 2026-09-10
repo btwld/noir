@@ -3,7 +3,6 @@ import 'tui_canvas.dart';
 
 /// A description of a box decoration (a decoration applied to a [Rect]).
 ///
-/// This class presents the abstract interface for all decorations.
 /// See [BoxDecoration] for the supported solid background and border
 /// implementation.
 ///
@@ -21,10 +20,7 @@ abstract class Decoration {
   /// for the border.
   EdgeInsets? get padding => null;
 
-  /// Actually paint the decoration to the given location on the given canvas.
-  ///
-  /// The [rect] argument gives the location on the buffer where to paint the
-  /// decoration.
+  /// Paints the decoration on [canvas] within the terminal-cell [rect].
   void paint(TuiCanvas canvas, Rect rect);
 
   @override

@@ -78,6 +78,7 @@ void main() {
       // The only focusable node in the tree is the explicit wrapper, so the
       // badge contributed none of its own.
       expect(focusNode.hasFocus, isTrue);
+      expect(driver.app.buildOwner.focusManager.traversalOrder(), [focusNode]);
       driver.dispose();
       focusNode.dispose();
     });

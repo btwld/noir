@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 // Run with: dart run example/widgets_tour.dart
 //
 // Combined tour of Select, ScrollBox, and TextArea.

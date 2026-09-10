@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 // Run with: dart run example/select_demo.dart
 //
 // Use ↑/↓ (or j/k) to move the highlight, Enter to confirm. Press q to quit.

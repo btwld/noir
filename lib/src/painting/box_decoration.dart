@@ -8,10 +8,6 @@ import 'tui_canvas.dart';
 
 /// An immutable description of how to paint a box.
 ///
-/// The [BoxDecoration] class provides a variety of ways to draw a box.
-///
-/// The box has a [border] and a body.
-///
 /// Rectangular fill and borders are supported. [BoxShape.circle] is an
 /// experimental compatibility value: it suppresses the body fill, while the
 /// border and hit-testing geometry remain rectangular.

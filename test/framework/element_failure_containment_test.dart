@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/tui_binding.dart' show runTuiAppForTesting;

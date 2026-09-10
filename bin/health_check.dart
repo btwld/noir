@@ -3,8 +3,6 @@
 /// Health check diagnostic tool for Noir bindings.
 library;
 
-// ignore_for_file: cascade_invocations
-
 import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
