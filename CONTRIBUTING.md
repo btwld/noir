@@ -2,7 +2,7 @@
 
 Noir welcomes focused bug fixes, tests, documentation, and framework
 improvements. Start with [`AGENTS.md`](AGENTS.md) for architecture and safety
-rules and [`TODO.md`](TODO.md) for the open release items and workflow.
+rules. Open work lives in GitHub issues and pull requests.
 
 ## Setup
 
@@ -184,3 +184,25 @@ Do not mention tools or assistants in commits, pull requests, changelog
 entries, or product documentation. Do not mix native artifact changes with
 ordinary Dart changes. A native dependency refresh requires its own explicit
 decision and review.
+
+## Releasing
+
+`pubspec.yaml` carries the candidate version and the top section of
+`CHANGELOG.md` describes it. `publication.json` records the latest version of
+each package on pub.dev, or `null`; the website derives every availability
+label from it and both manifests, so update it in the same change as a
+publication.
+
+Publish in this order:
+
+1. `noir`, from the exact reviewed commit, after its merge-commit CI passed.
+2. `noir_signals`, from a staged copy: run
+   `dart run scripts/stage_companion_package.dart --verify` from the root,
+   because pub applies every ancestor `.pubignore` and the root rule that
+   keeps `packages/` out of Noir's archive would otherwise hide the
+   companion's own files.
+3. A consumer that depends on both published versions with no local
+   override, to confirm the hosted packages resolve together.
+
+Tags, GitHub releases, repository visibility, and native artifact refreshes
+are separate explicit decisions and are never part of an ordinary change.

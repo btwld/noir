@@ -171,16 +171,16 @@ pointer behavior, ownership, one common mistake, and the generated signature.
 One authored explanation has one home. Generated facts may be repeated
 anywhere; independently authored copies of a changing rule may not.
 
-| Material                             | Primary home                                              |
-| ------------------------------------ | --------------------------------------------------------- |
-| Dependency instructions and versions | `TODO.md` availability block → `/docs/installation`       |
-| First-app code and its frames        | `example/tutorials/first_app/`                            |
-| Task-list lessons                    | `packages/noir_signals/doc/` and its tutorial checkpoints |
-| Hook and Signals contracts           | `packages/noir_signals/doc/hooks.md` and `signals.md`     |
-| Runnable example catalogs            | `example/README.md` and the companion `example/README.md` |
-| Widget signatures and defaults       | Generated dartdoc for the published version               |
-| Terminal and platform limits         | `/docs/platform-limitations`                              |
-| Framework harnesses and drive mode   | `CONTRIBUTING.md` and `test/helpers/README.md`            |
+| Material                             | Primary home                                                |
+| ------------------------------------ | ----------------------------------------------------------- |
+| Dependency instructions and versions | `publication.json` and the manifests → `/docs/installation` |
+| First-app code and its frames        | `example/tutorials/first_app/`                              |
+| Task-list lessons                    | `packages/noir_signals/doc/` and its tutorial checkpoints   |
+| Hook and Signals contracts           | `packages/noir_signals/doc/hooks.md` and `signals.md`       |
+| Runnable example catalogs            | `example/README.md` and the companion `example/README.md`   |
+| Widget signatures and defaults       | Generated dartdoc for the published version                 |
+| Terminal and platform limits         | `/docs/platform-limitations`                                |
+| Framework harnesses and drive mode   | `CONTRIBUTING.md` and `test/helpers/README.md`              |
 
 `website/scripts/sync-docs.mjs` owns every derivation. It fails the build on
 stale input rather than publishing a wrong version, an unrunnable snippet, or a

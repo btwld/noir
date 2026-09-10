@@ -101,6 +101,8 @@ sources, then tells Noir to rebuild, lay out, and paint the retained tree.
   than the last successful reload, for example a file restored with its
   original timestamp, is recompiled in full and takes longer. The runner log
   names the path taken.
+- The watcher compares file timestamps and sizes. An edit preserving both is
+  invisible to it; save the file with an updated timestamp to trigger reload.
 - Reload does not rerun `main()` or `initState()`. It calls `reassemble` on
   retained state.
 - Adding, removing, or reordering hooks needs a full restart, and so do live

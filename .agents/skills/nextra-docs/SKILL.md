@@ -13,7 +13,7 @@ and Next.js conventions as version-sensitive; verify them before changing a site
 1. Read the repository instructions and inspect the existing package manager,
    lockfiles, Next.js version, Nextra version, routing tree, `next.config.*`,
    `mdx-components.*`, content directories, and deployment configuration.
-2. For Noir, read `TODO.md` and `GOALS.md` before presenting release status or
+2. For Noir, read `CHANGELOG.md`, `publication.json`, and `GOALS.md` before presenting release status or
    API promises. Keep the web app isolated from the Dart package and confirm its
    files do not unintentionally enter the pub archive.
 3. Check the installed package source or current official Nextra documentation

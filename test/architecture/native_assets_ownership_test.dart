@@ -188,7 +188,7 @@ void main() {
       '/scripts/',
       '/tools/',
       '/external/',
-      'TODO.md',
+      'publication.json',
       'test/',
       'FFIGEN.md',
       'ffigen_dynamic.yaml',
@@ -211,7 +211,6 @@ void main() {
       _read('AGENTS.md'),
       _read('GOALS.md'),
       _read('README.md'),
-      _read('TODO.md'),
     ].join('\n');
 
     for (final clause in <String>[

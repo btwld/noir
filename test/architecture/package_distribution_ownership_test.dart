@@ -15,7 +15,6 @@ void main() {
   final exampleGuide = _read('example/README.md');
   final pubspec = _read('pubspec.yaml');
   final packageVersion = _packageVersion(pubspec);
-  final releaseTodo = _read('TODO.md');
   final contributorGuide = _read('AGENTS.md');
   final appSource = _read('lib/src/app/app.dart');
   final highLevelBarrel = _read('lib/noir.dart');
@@ -234,7 +233,16 @@ void main() {
   });
 
   test('live release records derive the package version in one place', () {
-    expect(releaseTodo, startsWith('# Release TODO — `$packageVersion`'));
+    final changelog = _read('CHANGELOG.md');
+    final publication = _read('publication.json');
+    expect(changelog, contains('\n## $packageVersion\n'));
+    expect(
+      changelog.indexOf('\n## $packageVersion\n'),
+      changelog.indexOf('\n## '),
+      reason: 'the manifest version heads the changelog',
+    );
+    expect(publication, contains('"noir": '));
+    expect(publication, contains('"noir_signals": '));
     expect(
       contributorGuide,
       contains('The target is the current core-framework prerelease candidate'),
@@ -257,11 +265,6 @@ void main() {
     ]) {
       expect(_read(path), isNot(contains('alpha.3')), reason: path);
     }
-
-    expect(
-      releaseTodo,
-      isNot(contains('For alpha.3, forced Kitty graphics through tmux')),
-    );
 
     final historicalRecording = _read(
       'scripts/recordings/pub_search_demo.dart',
@@ -318,7 +321,6 @@ void main() {
         _read('CHANGELOG.md'),
         contains('published `0.0.1-alpha.3` archive omitted'),
       );
-      expect(releaseTodo, contains('Published alpha.3 notice correction'));
     },
     skip: File('external/opentui/LICENSE').existsSync()
         ? false
@@ -358,7 +360,6 @@ void main() {
         'AGENTS.md',
         'README.md',
         'GOALS.md',
-        'TODO.md',
         'CHANGELOG.md',
         'THIRD_PARTY_NOTICES.md',
         'pubspec.yaml',
@@ -426,12 +427,11 @@ void main() {
 
   test('packaged hot reload has one public command and current guidance', () {
     final changelog = _read('CHANGELOG.md');
-    final guidance = '$readme\n$skill\n$releaseTodo\n$changelog';
+    final guidance = '$readme\n$skill\n$changelog';
 
     expect(File('bin/run.dart').existsSync(), isTrue);
     expect(readme, contains('dart run noir:run example/counter.dart'));
     expect(skill, contains('dart run noir:run example/counter.dart'));
-    expect(releaseTodo, contains('dart run noir:run example/counter.dart'));
     expect(changelog, contains('`dart run noir:run`'));
     expect(guidance, contains('.dart_tool/noir/run.log'));
     expect(guidance, isNot(contains('scripts/hot_reload_driver.dart')));
@@ -471,7 +471,6 @@ void main() {
         'CONTRIBUTING.md',
         'GOALS.md',
         'README.md',
-        'TODO.md',
         'pubspec.yaml',
       ])
         File(path),

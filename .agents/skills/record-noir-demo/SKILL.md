@@ -12,7 +12,7 @@ TTY or raw mode.
 
 ## Workflow
 
-1. Read `TODO.md`, `GOALS.md`, the target file under `example/`, and its nearest
+1. Read `GOALS.md`, `CHANGELOG.md`, the target file under `example/`, and its nearest
    focused test before choosing the visible sequence.
 2. Define one message and one proof. Prefer a 3–8 second recording with one
    interaction or one complete animation cycle.
