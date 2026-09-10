@@ -1,8 +1,9 @@
 # Noir contributor and agent guide
 
-Start with [`TODO.md`](TODO.md). It records the open release items, the
-authorized checks, and the known limitations. [`GOALS.md`](GOALS.md) defines
-the durable architecture and quality bar.
+Start with [`GOALS.md`](GOALS.md), which defines the durable architecture
+and quality bar. The top section of [`CHANGELOG.md`](CHANGELOG.md) describes
+the current candidate, `publication.json` records what is on pub.dev, and
+open work lives in GitHub issues and pull requests.
 
 ## Purpose and architecture
 
@@ -167,5 +168,8 @@ published archive.
 ## Current release boundary
 
 The target is the current core-framework prerelease candidate, not a stable
-1.0 claim. Its exact version, live gates, and known native limitations are in
-[`TODO.md`](TODO.md).
+1.0 claim. Its exact version is the one in `pubspec.yaml`, its changes are
+the top section of [`CHANGELOG.md`](CHANGELOG.md), the versions on pub.dev
+are in `publication.json`, and known native limitations are on the
+website's platform limitations page. The release procedure is in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).

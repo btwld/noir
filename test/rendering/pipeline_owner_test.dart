@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/render/geometry.dart';
 import 'package:noir/src/rendering/box.dart';
+import 'package:noir/src/rendering/flex.dart';
 import 'package:noir/src/rendering/object.dart';
+import 'package:noir/src/widgets/row_column.dart';
 import 'package:noir/src/widgets/scroll_box.dart';
 import 'package:test/test.dart';
 
@@ -87,6 +89,132 @@ void main() {
     expect(painted, isTrue);
     expect(paintCount, 2);
     expect(root.debugNeedsPaint, isFalse);
+  });
+
+  test(
+    'a layout request raised during layout is honoured in the same flush',
+    () {
+      final owner = PipelineOwner();
+      final parent = _SequenceParentProbe();
+      final a = _ProbeRenderBox();
+      var marked = false;
+      // `a` is laid out before `b`, so a mark raised from `b` targets a node the
+      // pass has already finished with.
+      final b = _HookedProbe(
+        onLayout: () {
+          if (marked) return;
+          marked = true;
+          a.markNeedsLayout();
+        },
+      );
+      parent
+        ..adoptChild(a)
+        ..adoptChild(b)
+        ..attach(owner);
+      const constraints = BoxConstraints.tight(width: 10, height: 4);
+
+      owner.flushLayout(parent, constraints);
+
+      expect(a.layoutCount, 2, reason: 'the mid-pass request must be retried');
+      expect(a.debugNeedsLayout, isFalse);
+      expect(owner.debugNeedsLayout, isFalse);
+    },
+  );
+
+  test(
+    'an active ancestor invalidated by child layout recomputes its size',
+    () {
+      final owner = PipelineOwner();
+      late final RenderFlex root;
+      final child = _HookedProbe(onLayout: () => root.spacing = 5);
+      root = RenderFlex(
+        direction: Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
+        children: [child, _ProbeRenderBox()],
+      )..attach(owner);
+
+      owner.flushLayout(root, const BoxConstraints(maxWidth: 20, maxHeight: 1));
+
+      expect(root.size.width, 5, reason: 'the new spacing contributes to size');
+      expect(child.layoutCount, 2);
+      expect(owner.debugNeedsLayout, isFalse);
+    },
+  );
+
+  test('a self-invalidating layout fails after exactly the pass cap', () {
+    final owner = PipelineOwner();
+    late final _HookedProbe root;
+    root = _HookedProbe(onLayout: () => root.markNeedsLayout())..attach(owner);
+
+    expect(
+      () => owner.flushLayout(
+        root,
+        const BoxConstraints.tight(width: 1, height: 1),
+      ),
+      throwsStateError,
+    );
+    expect(root.layoutCount, PipelineOwner.maxLayoutPasses);
+  });
+
+  test('adopting a child during layout retries the invalidated parent', () {
+    final owner = PipelineOwner();
+    late final _HookedProbe root;
+    _ProbeRenderBox? adopted;
+    root = _HookedProbe(
+      onLayout: () {
+        if (adopted != null) return;
+        // Adoption also invalidates the parent while its layout is active.
+        final child = _ProbeRenderBox();
+        adopted = child;
+        root.adoptChild(child);
+        child.layout(const BoxConstraints.tight(width: 1, height: 1));
+      },
+    )..attach(owner);
+
+    owner.flushLayout(root, const BoxConstraints.tight(width: 10, height: 4));
+
+    expect(root.layoutCount, 2);
+    expect(adopted!.layoutCount, 1);
+    expect(owner.debugNeedsLayout, isFalse);
+  });
+
+  test('a child request satisfied later in the pass needs no retry', () {
+    final owner = PipelineOwner();
+    final child = _ProbeRenderBox();
+    final root = _SequenceParentProbe()
+      ..adoptChild(_HookedProbe(onLayout: child.markNeedsLayout))
+      ..adoptChild(child)
+      ..attach(owner);
+
+    owner.flushLayout(root, const BoxConstraints.tight(width: 10, height: 4));
+
+    expect(root.layoutCount, 1);
+    expect(child.layoutCount, 1);
+    expect(owner.debugNeedsLayout, isFalse);
+  });
+
+  test('a layout request that never settles fails after the pass cap', () {
+    final owner = PipelineOwner();
+    final parent = _SequenceParentProbe();
+    final a = _ProbeRenderBox();
+    final b = _HookedProbe(onLayout: a.markNeedsLayout);
+    parent
+      ..adoptChild(a)
+      ..adoptChild(b)
+      ..attach(owner);
+    const constraints = BoxConstraints.tight(width: 10, height: 4);
+
+    expect(
+      () => owner.flushLayout(parent, constraints),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('did not settle'), contains('_ProbeRenderBox')),
+        ),
+      ),
+    );
+    expect(owner.debugNeedsLayout, isFalse, reason: 'the queue is drained');
   });
 
   test('detaching the only queued subtree clears both former-owner queues', () {
@@ -489,6 +617,30 @@ class _ProbeRenderBox extends RenderBox {
       constraints.maxWidth ?? constraints.minWidth,
       constraints.maxHeight ?? constraints.minHeight,
     );
+  }
+}
+
+/// Runs [onLayout] on every layout, after the probe has recorded it.
+class _HookedProbe extends _ProbeRenderBox {
+  _HookedProbe({required this.onLayout});
+
+  final void Function() onLayout;
+
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    super.performBoxLayout(constraints);
+    onLayout();
+  }
+}
+
+/// Lays its children out in adoption order with its own constraints.
+class _SequenceParentProbe extends _ProbeRenderBox {
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    super.performBoxLayout(constraints);
+    for (final child in children) {
+      child.layout(constraints);
+    }
   }
 }
 

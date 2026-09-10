@@ -1,7 +1,8 @@
 # Noir quality standard
 
-This document is the durable standard for Noir. Current release work and
-evidence live in [`TODO.md`](TODO.md).
+This document is the durable standard for Noir. The current candidate is
+described at the top of [`CHANGELOG.md`](CHANGELOG.md); open work lives in
+GitHub issues and pull requests.
 
 ## Architectural invariant
 

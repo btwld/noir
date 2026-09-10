@@ -282,7 +282,7 @@ void main() {
   });
 
   test('public docs retain the pinned leading-zero-width limitation', () {
-    for (final path in <String>['README.md', 'TODO.md']) {
+    for (final path in <String>['README.md']) {
       final source = File(path).readAsStringSync();
       expect(source, contains('bufferDrawText'), reason: path);
       expect(source, contains('zero-width'), reason: path);

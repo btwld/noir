@@ -133,6 +133,13 @@ final class PipelineOwner {
 
   final PipelineVisualUpdateCallback? _onNeedVisualUpdate;
   final Set<RenderObject> _nodesNeedingLayout = Set<RenderObject>.identity();
+
+  /// Nodes that requested layout while [flushLayout] was running a pass and
+  /// that no later layout in that pass satisfied. Every pass lays the whole
+  /// tree out and starts this empty, so what remains when a pass ends is what
+  /// that pass raised and did not answer, and the flush owes another pass.
+  final Set<RenderObject> _relayoutRequests = Set<RenderObject>.identity();
+  bool _flushingLayout = false;
   final Set<RenderObject> _nodesNeedingPaint = Set<RenderObject>.identity();
   Constraints? _lastRootConstraints;
   bool _disposed = false;
@@ -157,6 +164,9 @@ final class PipelineOwner {
     node
       .._needsLayout = true
       .._needsPaint = true;
+    if (_flushingLayout) {
+      _relayoutRequests.add(node);
+    }
     final changed =
         _nodesNeedingLayout.add(node) | _nodesNeedingPaint.add(node);
     if (changed) {
@@ -181,7 +191,15 @@ final class PipelineOwner {
     }
   }
 
-  /// Flush the layout queue by laying out [root] with [constraints].
+  /// Flush the layout queue, laying [root] out under [constraints] until no
+  /// layout request is outstanding.
+  ///
+  /// A request raised during a pass, for example by a `LayoutBuilder` whose
+  /// build touches a render object already laid out or still performing
+  /// layout, is answered by another full pass in the same flush. A request
+  /// followed by that object's layout in the same pass needs no retry.
+  /// A request still outstanding after [maxLayoutPasses] throws, rather than
+  /// looping or dropping it silently.
   void flushLayout(RenderObject root, Constraints constraints) {
     if (_disposed) {
       return;
@@ -191,15 +209,42 @@ final class PipelineOwner {
       return;
     }
 
-    root
-      ..layout(constraints)
-      .._clearLayoutDirtySubtree();
+    var passes = 0;
+    _flushingLayout = true;
+    try {
+      do {
+        _relayoutRequests.clear();
+        root.layout(constraints);
+        passes += 1;
+      } while (_relayoutRequests.isNotEmpty && passes < maxLayoutPasses);
+    } finally {
+      _flushingLayout = false;
+    }
+    root._clearLayoutDirtySubtree();
     _nodesNeedingLayout.clear();
     _lastRootConstraints = constraints;
 
     root._needsPaint = true;
     _nodesNeedingPaint.add(root);
+
+    if (_relayoutRequests.isNotEmpty) {
+      final offenders = _relayoutRequests
+          .map((node) => node.runtimeType.toString())
+          .join(', ');
+      _relayoutRequests.clear();
+      throw StateError(
+        'Layout did not settle after $maxLayoutPasses passes. These render '
+        'objects kept requesting layout during layout: $offenders.',
+      );
+    }
   }
+
+  /// Passes one [flushLayout] may run before it reports a layout that never
+  /// settles.
+  ///
+  /// A tree still dirty after this many is being invalidated from inside its
+  /// own layout on every pass.
+  static const int maxLayoutPasses = 3;
 
   /// Flush the paint queue by delegating root painting to [paintRoot].
   bool flushPaint(
@@ -220,12 +265,14 @@ final class PipelineOwner {
   void dispose() {
     _disposed = true;
     _nodesNeedingLayout.clear();
+    _relayoutRequests.clear();
     _nodesNeedingPaint.clear();
     _lastRootConstraints = null;
   }
 
   void _forget(RenderObject node) {
     _nodesNeedingLayout.remove(node);
+    _relayoutRequests.remove(node);
     _nodesNeedingPaint.remove(node);
   }
 }
@@ -279,7 +326,11 @@ abstract class RenderObject {
   void performLayout(Constraints constraints);
 
   /// Entry point for layout.
+  ///
+  /// Settling the owner's mid-pass request here is what lets
+  /// [PipelineOwner.flushLayout] tell a satisfied request from one to retry.
   void layout(Constraints constraints) {
+    _pipelineOwner?._relayoutRequests.remove(this);
     performLayout(constraints);
     _needsLayout = false;
   }

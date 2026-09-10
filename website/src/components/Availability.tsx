@@ -20,7 +20,7 @@ const defaults = {
 } as const;
 
 /**
- * One compact availability label, derived from `TODO.md` and the manifests.
+ * One compact availability label, derived from `publication.json` and the manifests.
  *
  * Put it where a reader is about to copy a dependency or a command. The
  * installation page owns the detail; this component never repeats it.

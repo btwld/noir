@@ -303,10 +303,13 @@ class NoirDriver {
   ///
   /// A rejected swap leaves the app running on its last good sources, so the
   /// recovery path is to fix the file and reload again.
+  ///
+  /// With no watcher to judge timestamps, the driver forces recompilation so
+  /// the VM cannot skip a stale-timestamped edit and report success anyway.
   Future<({bool reloaded, bool reassembled, String? message})> reload() async {
     final ReloadReport report;
     try {
-      report = await _service.reloadSources(_isolateId);
+      report = await _service.reloadSources(_isolateId, force: true);
     } on RPCError catch (error) {
       return (
         reloaded: false,

@@ -28,18 +28,36 @@ artifacts are unchanged from alpha.4.
 ### Fixed
 
 - The packaged hot-reload runner now recompiles detected edits whose file
-  timestamps predate compilation, including recovery after a rejected reload.
-  This forces recompilation and can take longer than an incremental reload.
+  timestamps are not newer than the last successful reload, including
+  recovery after a rejected reload. The VM's own timestamp filter skipped such
+  an edit while reporting success, so the app reassembled stale code. Only
+  that reload is forced, which recompiles every source and takes longer;
+  an ordinary save is newer than the last reload and still takes the
+  incremental path. The runner log names the path taken.
 - `FocusManager` now recovers focus after an involuntary loss. Disabling the
   focused control or removing the region that owns focus previously left the
   tree with no primary focus, and `Shortcuts.handleKeyEvent` routes from the
   focused element, so the tree stopped answering every binding. Recovery runs
-  after the synchronous tree updates finish and prefers the nearest surviving
-  focusable explicit scope, then the first node in traversal order, and leaves
+  after the synchronous tree updates finish and focuses the first control
+  inside the nearest surviving explicit scope, so bindings mounted inside
+  that scope answer again; the scope itself takes focus only when it holds no
+  control. It then falls back to the first node in traversal order, and leaves
   focus empty when nothing is eligible. An explicit `requestFocus()` and an
   incoming `autofocus` both claim focus first, and an intentional `unfocus()`
   is not recovered.
 - `autofocus` is now honored when it is enabled after mount.
+- A layout request raised during layout is now answered in the same frame.
+  `PipelineOwner.flushLayout` used to run one pass and then discard any
+  render object marked while that pass ran, for example by a `LayoutBuilder`
+  whose build touched a render object already laid out or still performing
+  layout, and nothing retried it. The flush now runs another full pass while
+  such requests remain, up to three passes, and then throws a `StateError` naming
+  the render objects that kept requesting layout from inside layout. A
+  request followed by that object's layout in the same pass does not cost a
+  second pass. Adopting a child during layout also invalidates its active
+  parent and conservatively retries that parent. Architecture tests now
+  freeze the layout-time build seam to `LayoutBuilder` and keep the
+  rendering layer free of element-layer imports.
 - A keyed `ListView` row now names exactly one element. The row's `LocalKey`
   was copied onto the `SizedBox` wrapping it, so the key named two elements and
   a strict driver locator reported an ambiguous match. A keyed row that stays

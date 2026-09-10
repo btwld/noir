@@ -9,7 +9,7 @@ layer that owns it, and a classification:
   predict.
 - **Noir works as documented** — the documented behavior held under a real
   workload.
-- **Noir known limitation** — already recorded in `TODO.md`.
+- **Noir known limitation** — already documented on the platform limitations page.
 - **mcp_dart observation** — about the SDK or the Dart tooling around it, not
   about Noir.
 
@@ -267,7 +267,7 @@ The original authorized iTerm2 run at 100x40, 80x24, and 60x18 confirmed the
 layout, the generated form, the paired protocol log, the console, and the elicitation
 modal. Before the form-scroll fix, the result region lost every row at
 60x18. Every session closed cleanly on Ctrl+C with no cursor or mode
-damage, so the iTerm cursor restoration limitation in `TODO.md` did not
+damage, so the documented iTerm cursor restoration limitation did not
 appear. Evidence and the side-by-side comparison with the official MCP
 Inspector TUI live in an untracked run folder under
 `.context/terminal-evidence/`.

@@ -27,7 +27,7 @@ async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'noir-sync-docs-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const path of [
-    'TODO.md',
+    'publication.json',
     'pubspec.yaml',
     'example/tutorials',
     'packages/noir_signals/README.md',
@@ -110,10 +110,10 @@ test('a canonical lesson replaces stale generated release prose before validatio
   // Only Noir is published in this transition. Clear the existing authored
   // pages to isolate the generated lesson's before/after contract.
   await f.write(
-    'TODO.md',
-    (await f.read('TODO.md')).replace(
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    'publication.json',
+    (await f.read('publication.json')).replace(
+      '"noir": "0.0.1-alpha.4"',
+      '"noir": "0.0.1-alpha.5"',
     ),
   );
   for (const path of [
@@ -138,10 +138,10 @@ test('a canonical lesson replaces stale generated release prose before validatio
 test('newly generated wrapped release contradictions fail in the same sync', async (t) => {
   const f = await fixture(t);
   await f.write(
-    'TODO.md',
-    (await f.read('TODO.md')).replace(
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    'publication.json',
+    (await f.read('publication.json')).replace(
+      '"noir": "0.0.1-alpha.4"',
+      '"noir": "0.0.1-alpha.5"',
     ),
   );
   const source = 'packages/noir_signals/doc/getting-started.md';
@@ -158,11 +158,34 @@ test('newly generated wrapped release contradictions fail in the same sync', asy
 test('wrapped authored release claims are rejected', async (t) => {
   const f = await fixture(t);
   await f.write(
-    'TODO.md',
-    (await f.read('TODO.md')).replace(
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.4',
-      'manifest=0.0.1-alpha.5 published=0.0.1-alpha.5',
+    'publication.json',
+    (await f.read('publication.json')).replace(
+      '"noir": "0.0.1-alpha.4"',
+      '"noir": "0.0.1-alpha.5"',
     ),
   );
   rejectsSync(f, /hooks\.mdx says "unreleased Noir alpha\.5"/);
+});
+
+for (const version of [['0.0.1-alpha.4'], { version: '0.0.1-alpha.4' }]) {
+  test(`publication rejects a non-string version: ${JSON.stringify(version)}`, async (t) => {
+    const f = await fixture(t);
+    await f.write(
+      'publication.json',
+      JSON.stringify({ noir: version, noir_signals: null }),
+    );
+    rejectsSync(f, /unusable noir version/);
+  });
+}
+
+test('an invalid manifest version cannot generate availability', async (t) => {
+  const f = await fixture(t);
+  await f.write(
+    'pubspec.yaml',
+    (await f.read('pubspec.yaml')).replace(
+      /^version: .+$/m,
+      'version: invalid',
+    ),
+  );
+  rejectsSync(f, /unusable.*version/);
 });

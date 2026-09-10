@@ -11,6 +11,8 @@ import 'package:noir/src/app/tui_binding.dart'
     show TuiBinding, runTuiAppForTesting;
 import 'package:test/test.dart';
 
+import '../helpers/tui_test_app.dart';
+
 void main() {
   group('focus recovery after involuntary loss', () {
     test(
@@ -207,13 +209,186 @@ void main() {
 
           // The inner scope leaves with the control it held, so recovery has to
           // reach the outer scope rather than fall back to traversal order.
+          // The outer scope still holds a control, and that control, not the
+          // scope node, is what takes focus.
           step.value = 1;
           await _settle(app);
 
-          expect(manager.primaryFocus, same(outer));
+          expect(manager.primaryFocus, same(b));
         } finally {
           app.dispose();
           step.dispose();
+        }
+      },
+    );
+
+    test(
+      'recovery inside a scope lets bindings in that scope answer',
+      () async {
+        final scope = FocusScopeNode(debugLabel: 'scope');
+        final a = FocusNode(debugLabel: 'a');
+        final b = FocusNode(debugLabel: 'b');
+        final step = ValueNotifier<int>(0);
+        final invoked = <String>[];
+        final app = createTuiTestApp(
+          _Swap(
+            notifier: step,
+            // The binding lives inside the scope. `Shortcuts.handleKeyEvent`
+            // walks up from the focused element, so a scope node holding
+            // focus would sit above this binding and never reach it.
+            builder: (context, value) => FocusScope(
+              node: scope,
+              child: Shortcuts(
+                shortcuts: {
+                  const SingleActivator(LogicalKeyboardKey.arrowDown):
+                      const MoveSelectionDownIntent(),
+                },
+                child: Actions(
+                  actions: {
+                    MoveSelectionDownIntent:
+                        CallbackAction<MoveSelectionDownIntent>((
+                          intent,
+                          context,
+                        ) {
+                          invoked.add('down');
+                          return KeyEventResult.handled;
+                        }),
+                  },
+                  child: Column(
+                    children: [
+                      if (value == 0)
+                        Focus(
+                          key: const ValueKey<String>('a'),
+                          focusNode: a,
+                          autofocus: true,
+                          child: _cell,
+                        ),
+                      Focus(
+                        key: const ValueKey<String>('b'),
+                        focusNode: b,
+                        child: _cell,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        final manager = app.binding.buildOwner.focusManager;
+        try {
+          await _settle(app.binding);
+          expect(manager.primaryFocus, same(a));
+
+          step.value = 1;
+          await _settle(app.binding);
+          expect(manager.primaryFocus, same(b));
+
+          app.mockInput.pressArrow(ArrowDirection.down);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(invoked, ['down']);
+        } finally {
+          app.dispose();
+          step.dispose();
+        }
+      },
+    );
+
+    test('recovery descends through a nested focusable scope', () async {
+      final outer = FocusScopeNode(debugLabel: 'outer');
+      final inner = FocusScopeNode(debugLabel: 'inner');
+      final a = FocusNode(debugLabel: 'a');
+      final c = FocusNode(debugLabel: 'c');
+      final step = ValueNotifier<int>(0);
+      final app = runTuiAppForTesting(
+        _Swap(
+          notifier: step,
+          builder: (context, value) => FocusScope(
+            node: outer,
+            child: Column(
+              children: [
+                if (value == 0)
+                  Focus(
+                    key: const ValueKey<String>('a'),
+                    focusNode: a,
+                    autofocus: true,
+                    child: _cell,
+                  ),
+                FocusScope(
+                  key: const ValueKey<String>('inner'),
+                  node: inner,
+                  child: Focus(focusNode: c, child: _cell),
+                ),
+              ],
+            ),
+          ),
+        ),
+        headless: true,
+      );
+      final manager = app.buildOwner.focusManager;
+      try {
+        await _settle(app);
+        expect(manager.primaryFocus, same(a));
+
+        // The first focusable node under `outer` is the inner scope itself.
+        // Recovery keeps descending until it reaches a control.
+        step.value = 1;
+        await _settle(app);
+
+        expect(manager.primaryFocus, same(c));
+      } finally {
+        app.dispose();
+        step.dispose();
+      }
+    });
+
+    test(
+      'recovery skips empty nested scopes before a surviving control',
+      () async {
+        final outer = FocusScopeNode(debugLabel: 'outer');
+        final empty = FocusScopeNode(debugLabel: 'empty');
+        final a = FocusNode(debugLabel: 'a');
+        final b = FocusNode(debugLabel: 'b');
+        final step = ValueNotifier<int>(0);
+        final app = runTuiAppForTesting(
+          _Swap(
+            notifier: step,
+            builder: (context, value) => FocusScope(
+              node: outer,
+              child: Column(
+                children: [
+                  if (value == 0)
+                    Focus(
+                      key: const ValueKey<String>('a'),
+                      focusNode: a,
+                      autofocus: true,
+                      child: _cell,
+                    ),
+                  FocusScope(
+                    key: const ValueKey<String>('empty'),
+                    node: empty,
+                    child: _cell,
+                  ),
+                  Focus(focusNode: b, child: _cell),
+                ],
+              ),
+            ),
+          ),
+          headless: true,
+        );
+        try {
+          await _settle(app);
+          expect(app.buildOwner.focusManager.primaryFocus, same(a));
+          step.value = 1;
+          await _settle(app);
+          expect(app.buildOwner.focusManager.primaryFocus, same(b));
+        } finally {
+          app.dispose();
+          step.dispose();
+          for (final node in [a, b, empty, outer]) {
+            node.dispose();
+          }
         }
       },
     );

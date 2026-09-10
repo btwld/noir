@@ -164,4 +164,4 @@ Next.js app:
 - Verify the official example before introducing route-group-specific layouts.
 
 For Noir, derive product claims and API examples from the current source,
-tests, `TODO.md`, and `GOALS.md`. Do not describe the prerelease as stable.
+tests, `CHANGELOG.md`, `publication.json`, and `GOALS.md`. Do not describe the prerelease as stable.

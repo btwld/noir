@@ -34,16 +34,16 @@ npm run test:smoke
 `npm run sync` (also run by `dev`, `typecheck`, and `build`) regenerates
 everything the site must not maintain twice:
 
-| Output                                | Derived from                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------- |
-| `src/generated/availability.ts`       | The `noir-availability` block in `TODO.md`, checked against both `pubspec.yaml` files |
-| `src/generated/checkpoints.ts`        | `example/tutorials/first_app/step_01.dart` and `step_02.dart`                         |
-| `src/generated/frames.ts`             | `src/generated/terminal-frames.json`                                                  |
-| `src/content/docs/signals-task-list/` | The five lesson Markdown files that ship with `noir_signals`                          |
-| `public/demos/signals-task-list/`     | `packages/noir_signals/doc/images/`                                                   |
+| Output                                | Derived from                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/generated/availability.ts`       | `publication.json` (published versions) and both `pubspec.yaml` files (manifest versions) |
+| `src/generated/checkpoints.ts`        | `example/tutorials/first_app/step_01.dart` and `step_02.dart`                             |
+| `src/generated/frames.ts`             | `src/generated/terminal-frames.json`                                                      |
+| `src/content/docs/signals-task-list/` | The five lesson Markdown files that ship with `noir_signals`                              |
+| `public/demos/signals-task-list/`     | `packages/noir_signals/doc/images/`                                                       |
 
 The script fails the build instead of publishing stale output. It rejects a
-`TODO.md` version that disagrees with a manifest, a captured frame whose source
+`publication.json` entry that is not a version, a captured frame whose source
 file has changed, a first-app tutorial that no longer shows its checkpoint
 verbatim, and lesson Dart that is not in the lesson's runnable checkpoint.
 
@@ -119,7 +119,7 @@ Noir's own terms. Code must compile against the current public API. A rendered
 frame must be a real capture or clearly labelled expected output.
 
 Noir is a prerelease. The site must not imply that an unreleased API is stable,
-or that a restricted terminal or native release gate passed when `TODO.md` says
+or that a restricted terminal or native release gate passed when the changelog says
 otherwise. The source tree can be ahead of the latest pub.dev package, so
 version-sensitive claims come from the generated availability data.
 

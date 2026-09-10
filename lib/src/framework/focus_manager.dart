@@ -794,10 +794,12 @@ class FocusManager {
   /// Gives focus back to the settled tree when involuntary loss left none.
   ///
   /// Takes the nearest scope, of those recorded at the loss, that is still
-  /// attached and can hold focus. That keeps a modal, or any other focus
-  /// region, in charge of its own repair. Falls back to the first node in
-  /// traversal order, and leaves focus empty when the tree has no eligible
-  /// node at all.
+  /// attached, and focuses the first control inside it. That keeps a modal,
+  /// or any other focus region, in charge of its own repair, and keeps the
+  /// bindings under it reachable: [Shortcuts] routes up from the focused
+  /// element. The scope takes focus only when it holds no control. Falls back
+  /// to the first node in traversal order, and leaves focus empty when the
+  /// tree has no eligible node at all.
   void _recoverFocus() {
     _recoveryScheduled = false;
     final pending = _recoveryPending;
@@ -808,14 +810,32 @@ class FocusManager {
     // autofocus of the subtree that replaced the lost one.
     if (!pending || _disposed || _primaryFocus != null) return;
     for (final scope in scopes ?? const <FocusScopeNode>[]) {
-      if (scope.isAttachedTo(this) && scope.canRequestFocus) {
-        _requestFocus(scope);
+      if (!scope.isAttachedTo(this)) continue;
+      final target = _recoveryTargetWithin(scope);
+      if (target != null) {
+        _requestFocus(target);
         return;
       }
     }
     final order = _ensureTraversalOrder();
     if (order.isEmpty) return;
     _requestFocus(order.first);
+  }
+
+  /// The node recovery should focus for a surviving [scope]: the first
+  /// focusable control under it, descending through nested scopes, or the
+  /// scope itself when it holds none.
+  FocusNode? _recoveryTargetWithin(FocusScopeNode scope) =>
+      _findFirstFocusableControl(scope) ??
+      (scope.canRequestFocus ? scope : null);
+
+  FocusNode? _findFirstFocusableControl(FocusNode node) {
+    for (final child in node._children) {
+      if (child is! FocusScopeNode && child.canRequestFocus) return child;
+      final descendant = _findFirstFocusableControl(child);
+      if (descendant != null) return descendant;
+    }
+    return null;
   }
 
   FocusScopeNode _findEnclosingScope(FocusNode node) {

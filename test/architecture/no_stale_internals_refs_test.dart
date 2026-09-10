@@ -37,7 +37,6 @@ Iterable<File> _scannedFiles() sync* {
     yield* _filesUnder(root).where((file) => file.path.endsWith('.dart'));
   }
   yield File('GOALS.md');
-  yield File('TODO.md');
 }
 
 Iterable<File> _filesUnder(String path) sync* {

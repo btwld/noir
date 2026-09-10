@@ -129,6 +129,13 @@ Future<void> _watchSources(
 ) async {
   final isolateId = (await service.getVM()).isolates!.first.id!;
   var stamps = _sourceStamps(roots);
+  // Rejected edits remain pending even when another file triggers the retry.
+  var acceptedStamps = stamps;
+  // The VM recompiles a source only when its mtime is newer than the start of
+  // its last successful reload, a baseline it first took when the isolate
+  // group was created. This one is later, so anything not newer than it is
+  // forced rather than trusted to that filter.
+  var baseline = DateTime.now();
   _log(logFile, 'watching ${roots.map((root) => root.path).join(', ')}');
 
   while (!stopping()) {
@@ -140,47 +147,88 @@ Future<void> _watchSources(
     if (_sameStamps(stamps, next)) {
       continue;
     }
+    final stale = _stalePaths(acceptedStamps, next, baseline);
     stamps = next;
-    await _reloadAndReassemble(service, isolateId, logFile);
+    final completed = await _reloadAndReassemble(
+      service,
+      isolateId,
+      logFile,
+      staleCount: stale.length,
+    );
+    if (completed != null) {
+      acceptedStamps = next;
+      baseline = completed;
+    }
   }
 }
 
-Future<void> _reloadAndReassemble(
+/// Reloads and reassembles, returning when the VM accepted the sources, or
+/// null when it rejected them and therefore kept its previous baseline.
+Future<DateTime?> _reloadAndReassemble(
   VmService service,
   String isolateId,
-  File logFile,
-) async {
+  File logFile, {
+  required int staleCount,
+}) async {
+  final force = staleCount > 0;
   final ReloadReport report;
   try {
-    // The watcher already detected an edit, possibly by size alone. Do not let
-    // the VM skip it because its modification time predates compilation.
-    report = await service.reloadSources(isolateId, force: true);
+    // Without `force`, a stale timestamp makes the VM skip the edit and still
+    // report success, so the app would reassemble old code.
+    report = await service.reloadSources(isolateId, force: force);
   } on RPCError catch (error) {
     _log(logFile, 'reload rejected: ${error.details ?? error.message}');
-    return;
+    return null;
   }
+  final completed = DateTime.now();
   if (report.success != true) {
     _log(logFile, 'reload rejected: $report');
-    return;
+    return null;
   }
 
+  final mode = force
+      ? 'forced: $staleCount stale timestamp${staleCount == 1 ? '' : 's'}'
+      : 'incremental';
   try {
     final response = await service.callServiceExtension(
       'ext.noir.reassemble',
       isolateId: isolateId,
     );
     if (hotReloadResponseSucceeded(response.json)) {
-      _log(logFile, 'reloaded');
+      _log(logFile, 'reloaded ($mode)');
     } else {
-      _log(logFile, 'sources reloaded, but the app was not reassembled');
+      _log(
+        logFile,
+        'sources reloaded ($mode), but the app was not reassembled',
+      );
     }
   } on RPCError catch (error) {
     _log(
       logFile,
-      'sources reloaded, but ext.noir.reassemble is unavailable '
+      'sources reloaded ($mode), but ext.noir.reassemble is unavailable '
       '(${error.message})',
     );
   }
+  return completed;
+}
+
+/// Changed sources whose mtime is not newer than [baseline]. A removed source
+/// needs no force: the VM treats a missing file as modified.
+List<String> _stalePaths(
+  Map<String, _SourceStamp> before,
+  Map<String, _SourceStamp> after,
+  DateTime baseline,
+) {
+  final stale = <String>[];
+  for (final entry in after.entries) {
+    if (before[entry.key] == entry.value) {
+      continue;
+    }
+    if (!entry.value.modified.isAfter(baseline)) {
+      stale.add(entry.key);
+    }
+  }
+  return stale;
 }
 
 List<Directory> _watchRoots(File target) {

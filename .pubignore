@@ -58,7 +58,7 @@ AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md
 GOALS.md
-TODO.md
+publication.json
 
 # Tests are not part of the published package
 test/
