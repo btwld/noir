@@ -44,8 +44,10 @@ hot reload, and the Signals companion, merged through
 [#46](https://github.com/conceptadev/noir/pull/46) at `3bc516c`. That merge commit
 passed platform CI in run
 [`34274996205`](https://github.com/conceptadev/noir/actions/runs/34274996205).
-The host rename and documentation follow-up are in draft
-[#49](https://github.com/conceptadev/noir/pull/49). The alpha.5 changelog includes
+The host rename and documentation follow-up merged through
+[#49](https://github.com/conceptadev/noir/pull/49) at `29b058b`; its merge-commit
+CI passed in run
+[`34417535761`](https://github.com/conceptadev/noir/actions/runs/34417535761). The alpha.5 changelog includes
 hot reload's forced-recompilation cost.
 
 Closed on this tree:
@@ -160,18 +162,15 @@ Open review follow-ups:
 
 Release gates:
 
-The framework stack is merged and its merge-commit checks passed. The remaining
-candidate changes are tracked in [#49](https://github.com/conceptadev/noir/pull/49).
+The framework stack and host rename are merged, and their merge-commit checks
+passed. Cleanup is tracked in [#50](https://github.com/conceptadev/noir/pull/50).
 
-- [ ] **Host rename and documentation**: review and merge #49, then require
-      passing platform CI on its merge commit. At `b951182`, local formatting,
-      fatal-info analysis, 213 architecture tests, 2,232 root tests, and 118
-      companion tests passed. All five tutorial checkpoints analyzed in a fresh
-      consumer; the staged companion archive had zero warnings. Website format,
-      lint, typecheck, build, and browser smoke passed. Independent review and
-      the current PR checks remain open; use the PR and
-      [main CI runs](https://github.com/conceptadev/noir/actions/workflows/ci.yml?query=branch%3Amain)
-      for the latest status.
+- [x] **Host rename and documentation**: #49 merged at
+      `29b058bd2020da20fac773801b23aa235330cc3a`. Its merge-commit CI passed
+      analysis, website validation, and Linux, macOS, and Windows tests in
+      [run 34417535761](https://github.com/conceptadev/noir/actions/runs/34417535761).
+- [ ] **Cleanup candidate**: review and merge #50, then require passing
+      platform CI on its merge commit before publication.
 
 - [ ] **Publication order**: publish `noir 0.0.1-alpha.5` first, then
       `noir_signals 0.0.1-alpha.0` from a staged copy, then verify a hosted

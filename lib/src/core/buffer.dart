@@ -260,8 +260,7 @@ class Buffer {
 
   /// Clears the entire buffer to a uniform background color.
   ///
-  /// This efficiently resets all cells in the buffer, setting their
-  /// background colors and clearing any existing characters and formatting.
+  /// Resets all cells, clearing existing characters and formatting.
   ///
   /// Example:
   /// ```dart
@@ -308,9 +307,6 @@ class Buffer {
 
   /// Fills a rectangular region with solid background color.
   ///
-  /// This is very efficient for drawing solid areas, panels, and backgrounds.
-  /// Use this instead of multiple setCell calls for better performance.
-  ///
   /// Example:
   /// ```dart
   /// buffer.fillRect(5, 2, 20, 10, Color.darkGray);
@@ -329,11 +325,9 @@ class Buffer {
     _bindings.bufferFillRect(_ptr, x, y, width, height, color);
   }
 
-  /// Draws a bordered box with extensive customization options.
+  /// Draws a bordered rectangle with optional titles and fill.
   ///
-  /// This creates bordered rectangles with optional titles, custom border
-  /// characters, selective sides, and interior fills. Perfect for UI panels,
-  /// dialogs, and structured layouts.
+  /// [options] controls border characters, visible sides, titles, and fill.
   ///
   /// Example:
   /// ```dart
@@ -849,14 +843,6 @@ class _ClippedBufferView extends Buffer {
       super.acceptsTextCluster(x, y, clusterWidth) &&
       _inClip(x, y) &&
       _inClip(x + clusterWidth - 1, y);
-
-  @override
-  void setCell(int x, int y, String char, Color fg, Color bg, int attributes) {
-    _checkValid();
-    _checkUnsignedAbi(attributes, 0xFFFFFFFF, 'attributes');
-    if (!_inClip(x, y)) return;
-    super.setCell(x, y, char, fg, bg, attributes);
-  }
 
   @override
   void setCellWithAlphaBlending(

@@ -195,7 +195,7 @@ void main() {
       );
     }
 
-    // Function signatures are verified mechanically for all 33 selected
+    // Function signatures are verified mechanically for all selected
     // symbols by `opentui_abi_signature_test.dart`, which derives each
     // expected prototype from this same pinned source. Only the struct
     // layout is pinned here: that test compares call signatures, not the

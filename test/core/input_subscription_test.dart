@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'dart:io';
 
 import 'package:noir/src/core/input.dart';

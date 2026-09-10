@@ -4,7 +4,7 @@ import '../shared/demo_scaffold.dart';
 import 'models.dart';
 import 'theme.dart';
 
-/// The four calm, full-width package detail sections.
+/// Full-width package detail sections.
 enum PackageDetailTab {
   /// Identity, compatibility, discovery, and links.
   overview,
@@ -44,10 +44,10 @@ class PubPackageDetail extends StatelessWidget {
   /// Visible tab.
   final PackageDetailTab activeTab;
 
-  /// Selects a section from a tab click.
+  /// Selects a section from pointer or keyboard tab navigation.
   final ValueChanged<PackageDetailTab> onTabSelected;
 
-  /// Vertical content position.
+  /// Controls the detail viewport's vertical scroll offset.
   final ScrollController scrollController;
 
   /// Keyboard focus for scrolling.

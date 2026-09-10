@@ -56,10 +56,7 @@ void main() {
     });
 
     test('obscured input shows asterisks for entered chars', () async {
-      // The widget renders the literal value field as-is in the buffer; the
-      // `obscureText` flag converts inserted keys to '*' on input. To exercise
-      // the visual representation, we pass an already-masked value here.
-      const widget = TextInput(value: '*****', obscureText: true);
+      const widget = TextInput(value: 'hello', obscureText: true);
       await tester.expectGolden(
         widget,
         'text_input_obscured',

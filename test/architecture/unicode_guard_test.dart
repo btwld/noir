@@ -7,7 +7,7 @@ void main() {
     const files = <String>[
       'lib/src/rendering/paragraph.dart',
       'lib/src/painting/tui_canvas.dart',
-      'lib/src/widgets/input.dart',
+      'lib/src/widgets/text_input.dart',
       'lib/src/widgets/text_area.dart',
       'lib/src/widgets/select.dart',
       'lib/src/widgets/text.dart',
@@ -16,7 +16,6 @@ void main() {
       'lib/src/core/buffer.dart',
       'lib/src/foundation/text_editing_controller.dart',
     ];
-    const allowlist = <String>{};
     final violations = <String>[];
     final forbidden = <RegExp>[
       RegExp(r'\bcodeUnitAt\s*\('),
@@ -34,13 +33,12 @@ void main() {
     for (final path in files) {
       final source = File(path).readAsStringSync();
       for (final pattern in forbidden) {
-        if (pattern.hasMatch(source) && !allowlist.contains(path)) {
+        if (pattern.hasMatch(source)) {
           violations.add('$path: ${pattern.pattern}');
         }
       }
     }
 
-    expect(allowlist, isEmpty);
     expect(violations, isEmpty);
   });
 }

@@ -16,7 +16,6 @@ import '../render/geometry.dart';
 import 'actions.dart';
 import 'container.dart';
 import 'focus_node_owner_mixin.dart';
-import 'input.dart';
 import 'intents.dart';
 import 'list_view.dart';
 import 'overlay.dart' show WidgetBuilder;
@@ -24,6 +23,7 @@ import 'row_column.dart';
 import 'shortcuts.dart';
 import 'sized_box.dart';
 import 'text.dart';
+import 'text_input.dart';
 import 'theme.dart';
 
 /// Presentation supplied to a controlled [Autocomplete].

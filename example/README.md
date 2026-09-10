@@ -129,10 +129,10 @@ final lines = WidgetInspectorService.instance.describeTree();
 - Wide terminals reduce clipping in the layout demos. Chat, the focus form,
   Like Reactor, and the widget tour also need more than a 40×12 pane to show
   every region.
-- Dart may print `Running build hooks...` before a run. Use
-  `dart run --verbosity=error example/counter.dart` to hide routine status
-  while keeping errors visible. This still runs and verifies the native asset
-  whenever Dart invalidates the
+- Dart may print `Running build hooks...` before a run. On Dart 3.11 or later,
+  `dart run --verbosity=error example/counter.dart` hides routine status while
+  keeping errors visible. Dart 3.10 may still print build-hook progress despite
+  this flag. This still runs and verifies the native asset whenever Dart invalidates the
   build-hook cache.
 - Examples exit through `TuiApp.exit(context)` or Noir's default Ctrl+C
   handling; they do not call `dart:io`'s `exit`.

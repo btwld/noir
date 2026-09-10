@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'dart:io';
 
 import 'package:noir/noir.dart';
@@ -113,17 +112,6 @@ class GoldenTester {
     }
 
     await _compareBufferGolden(testName, bufferPath, actualBuffer);
-  }
-
-  /// Batch update multiple golden files.
-  Future<void> updateGoldenFiles(Map<String, Widget> widgets) async {
-    print('Updating ${widgets.length} golden files...');
-
-    for (final entry in widgets.entries) {
-      await expectGolden(entry.value, entry.key, updateGoldens: true);
-    }
-
-    print('All golden files updated successfully!');
   }
 
   /// Tests multiple widgets against consolidated golden files.
@@ -505,30 +493,5 @@ class GoldenTester {
     }
 
     return diff.toString();
-  }
-}
-
-/// Test utilities for golden file testing.
-class GoldenTestUtils {
-  /// Runs golden tests for a map of test cases.
-  static Future<void> runGoldenTests(
-    Map<String, Widget> testCases, {
-    bool updateGoldens = false,
-    int bufferWidth = 80,
-    int bufferHeight = 24,
-  }) async {
-    final tester = GoldenTester(width: bufferWidth, height: bufferHeight);
-
-    try {
-      if (updateGoldens) {
-        await tester.updateGoldenFiles(testCases);
-      } else {
-        for (final entry in testCases.entries) {
-          await tester.expectGolden(entry.value, entry.key);
-        }
-      }
-    } finally {
-      tester.dispose();
-    }
   }
 }

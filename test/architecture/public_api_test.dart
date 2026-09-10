@@ -175,7 +175,7 @@ void main() {
         'ImageLoadingBuilder',
       },
       'src/widgets/icons.dart': {'Icons'},
-      'src/widgets/input.dart': {'TextInput', 'ValueChanged'},
+      'src/widgets/text_input.dart': {'TextInput', 'ValueChanged'},
       'src/widgets/intents.dart': {
         'ActivateIntent',
         'DeleteBackwardIntent',

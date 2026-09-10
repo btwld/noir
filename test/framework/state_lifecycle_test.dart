@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes, cascade_invocations
+// ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';

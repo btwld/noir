@@ -41,6 +41,6 @@ final class TextIndexMap {
         high = mid - 1;
       }
     }
-    return low.clamp(0, graphemeCount);
+    return low;
   }
 }

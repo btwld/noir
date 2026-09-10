@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  final input = File('lib/src/widgets/input.dart').readAsStringSync();
+  final input = File('lib/src/widgets/text_input.dart').readAsStringSync();
   final area = File('lib/src/widgets/text_area.dart').readAsStringSync();
   final mixin = File(
     'lib/src/widgets/text_editing_owner_mixin.dart',

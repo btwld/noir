@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/src/animation/animation.dart';
 import 'package:noir/src/animation/animation_controller.dart';
 import 'package:noir/src/animation/ticker.dart';

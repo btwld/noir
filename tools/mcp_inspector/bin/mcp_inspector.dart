@@ -1,10 +1,10 @@
 /// Command-line entry point for the Noir MCP inspector.
 ///
-/// Start a server as a child process:
+/// From `tools/mcp_inspector`, start a server as a child process:
 ///
 /// ```sh
-/// dart run bin/mcp_inspector.dart -- dart run --verbosity=error \
-///   fixtures/calculate_server.dart
+/// dart run bin/mcp_inspector.dart -- \
+///   dart run ../mcp_fixtures/bin/calculate_server.dart
 /// ```
 ///
 /// Or connect to a Streamable HTTP endpoint:

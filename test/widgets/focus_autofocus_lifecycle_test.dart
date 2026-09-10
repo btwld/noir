@@ -6,7 +6,6 @@
 // forced to happen synchronously before the autofocus microtask
 // (scheduled during didChangeDependencies at mount time) has a chance to
 // run.
-// ignore_for_file: cascade_invocations
 import 'dart:async';
 
 import 'package:noir/noir.dart';

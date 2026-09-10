@@ -61,41 +61,44 @@ void main() {
 
   test('the example teardown releases its controller and model', () {
     final host = TestElementHost();
-    final log = <String>[];
-    late TextEditingController controller;
-    late FileSearchModel model;
-    TextEditingController? first;
+    addTearDown(host.dispose);
+    host.mount(const FileSearchApp());
+    final elements = [host.root!];
+    for (var index = 0; index < elements.length; index++) {
+      elements.addAll(elements[index].children);
+    }
+    final widgets = elements.map((element) => element.widget);
+    final field = widgets.whereType<TextInput>().single;
+    final controller = field.controller!;
+    final count = widgets.whereType<SignalValueBuilder<int>>().single.signal;
 
-    // The same ownership shape the example uses, with the owned objects
-    // published so the test can check them after teardown.
-    host.mount(
-      SignalBuilder(
-        builder: (context) {
-          controller = useTextEditingController();
-          model = useMemoized(() => FileSearchModel(const <String>['a.dart']));
-          useOnDispose(() {
-            model.dispose();
-            log.add('model-disposed');
-          });
-          first ??= controller;
-          return Text('${useSignalValue(model.visibleCount)}');
-        },
-      ),
-    );
-
-    model.query.value = 'a';
+    expect(count.disposed, isFalse);
+    expect(count.value, 7);
+    field.onChanged!('lib/src');
     host.pumpBuild();
-    expect(controller, same(first));
+    expect(count.value, 3);
 
     host.dispose();
 
-    expect(log, <String>['model-disposed']);
-    expect(model.query.disposed, isTrue);
-    expect(model.visibleFiles.disposed, isTrue);
+    expect(count.disposed, isTrue);
     expect(
       () => controller.addListener(() {}),
       throwsA(anyOf(isA<StateError>(), isA<AssertionError>())),
     );
+  });
+
+  test('the model releases its query and derived signals', () {
+    final model = FileSearchModel(const ['a.dart']);
+    addTearDown(model.dispose);
+    expect(model.query.disposed, isFalse);
+    expect(model.visibleFiles.value, ['a.dart']);
+    expect(model.visibleCount.value, 1);
+
+    model.dispose();
+
+    expect(model.query.disposed, isTrue);
+    expect(model.visibleFiles.disposed, isTrue);
+    expect(model.visibleCount.disposed, isTrue);
   });
 
   test('the example entry point enables basic mouse reporting once', () {

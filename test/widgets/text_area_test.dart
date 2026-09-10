@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/painting/tui_canvas.dart';
@@ -78,6 +77,8 @@ void main() {
     });
 
     test('readOnly blocks insertion but allows cursor movement', () async {
+      final controller = TextEditingController(text: 'abc');
+      addTearDown(controller.dispose);
       final changes = <String>[];
       final driver = KeyDriver(
         TextArea(
@@ -85,14 +86,18 @@ void main() {
           height: 3,
           width: 20,
           readOnly: true,
-          value: 'abc',
+          controller: controller,
           onChanged: changes.add,
         ),
       );
+      addTearDown(driver.dispose);
       await driver.ready();
+      expect(controller.selection, const TextSelection.collapsed(offset: 3));
       await driver.sendCharacter('x');
+      expect(controller.text, 'abc');
+      await driver.sendLogicalKey(LogicalKeyboardKey.arrowLeft);
+      expect(controller.selection, const TextSelection.collapsed(offset: 2));
       expect(changes, isEmpty);
-      driver.dispose();
     });
 
     test('Ctrl+Enter fires onSubmit', () async {

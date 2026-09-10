@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 // Run with: dart run example/framework_primitives.dart
 //
 // Press Enter or Space, or click Activate, to increment. Press q to quit.

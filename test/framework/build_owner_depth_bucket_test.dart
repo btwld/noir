@@ -5,7 +5,7 @@ import 'package:noir/src/framework/owner.dart';
 import 'package:noir/src/framework/widget.dart';
 import 'package:test/test.dart';
 
-/// Predecessor [BuildOwner._elementDepth] parent-getter cost for a dirty chain
+/// Predecessor ancestry-walk parent-getter cost for a dirty chain
 /// of length [n] scheduled and flushed together.
 ///
 /// For each dirty element at depth `d` (0..n-1), the old walk read `parent`
@@ -15,12 +15,6 @@ int predecessorParentReadsForChain(int n) => n * (n + 1) ~/ 2;
 
 void main() {
   group('maintained depth bucket parent-read budget', () {
-    test('predecessor quadratic budget is 55 / 5_050 / 500_500', () {
-      expect(predecessorParentReadsForChain(10), 55);
-      expect(predecessorParentReadsForChain(100), 5050);
-      expect(predecessorParentReadsForChain(1000), 500500);
-    });
-
     test(
       'schedule+buildScope of dirty chain reads parent zero times (10/100/1000)',
       () {

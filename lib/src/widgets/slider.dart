@@ -15,10 +15,10 @@ import '../rendering/object.dart';
 import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
-import 'input.dart' show ValueChanged;
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
+import 'text_input.dart' show ValueChanged;
 import 'theme.dart';
 
 /// A controlled horizontal or vertical value slider.

@@ -377,12 +377,16 @@ void main() {
 
   test('MenuController.maybeOf does not register a dependency', () {
     MenuController? found;
+    Element? lookupElement;
+    var builds = 0;
     final host = TestElementHost()
       ..mount(
         RootOverlay(
           child: MenuAnchor(
             menuChildren: const [Text('item')],
             builder: (context, controller, child) {
+              builds++;
+              lookupElement = context.element;
               found = MenuController.maybeOf(context);
               return const Text('launcher');
             },
@@ -394,6 +398,14 @@ void main() {
       );
     try {
       expect(found, isNotNull);
+      expect(builds, 1);
+      var ancestor = lookupElement!.parent;
+      while (ancestor != null) {
+        if (ancestor is InheritedElement) ancestor.notifyDependents();
+        ancestor = ancestor.parent;
+      }
+      host.pumpBuild();
+      expect(builds, 1);
     } finally {
       host.dispose();
     }

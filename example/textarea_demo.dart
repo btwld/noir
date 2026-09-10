@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 // Run with: dart run example/textarea_demo.dart
 //
 // Type to insert text. Enter inserts a newline. Ctrl+D submits. Ctrl+Enter

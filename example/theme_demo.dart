@@ -10,8 +10,8 @@ import 'src/shared/demo_scaffold.dart';
 
 void main() => runTuiApp(const ThemeDemoApp());
 
-/// Two presets that differ in every token a demo row reads, so a single
-/// keypress visibly re-colors the whole subtree.
+/// Two presets with different surface, text, border, and accent colors,
+/// so a keypress visibly re-colors the subtree.
 const _midnight = ThemeData.dark;
 final _sunset = ThemeData.dark.copyWith(
   surface: const Color(0.12, 0.06, 0.08),

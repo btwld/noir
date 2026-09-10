@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/src/animation/ticker.dart';
 import 'package:noir/src/scheduler/scheduler_binding.dart';
 import 'package:test/test.dart';

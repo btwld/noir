@@ -1,4 +1,4 @@
-// ignore_for_file: cascade_invocations, unnecessary_lambdas
+// ignore_for_file: unnecessary_lambdas
 
 import 'dart:async';
 

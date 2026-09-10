@@ -2,7 +2,7 @@
 /// and [BoxDecoration] inside a full Noir application.
 library;
 
-// ignore_for_file: avoid_redundant_argument_values, cascade_invocations
+// ignore_for_file: avoid_redundant_argument_values
 import 'package:noir/noir.dart';
 
 void main() => runTuiApp(const FlexLayoutShowcase(), enableMouse: true);

@@ -6,7 +6,6 @@
 //
 // Intentional `unfocus()` keeps its documented scope disposition and is not
 // recovered; `test/widgets/focus_unfocus_test.dart` owns that contract.
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 import 'package:noir/src/app/tui_binding.dart'
     show TuiBinding, runTuiAppForTesting;

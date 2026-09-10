@@ -517,6 +517,6 @@ enum BoxShape {
   /// An axis-aligned rectangle.
   rectangle,
 
-  /// A circle inscribed in the box.
+  /// Suppresses the body fill; borders and hit testing remain rectangular.
   circle,
 }

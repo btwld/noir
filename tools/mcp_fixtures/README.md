@@ -17,4 +17,4 @@ boundary.
 | `greeting_server` | `--protocol 2026` | `personalized_greeting` answers with `input_required`, then returns a greeting |
 | `legacy_elicit_server` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
 | `selection_server` | `--protocol legacy` | Two tools with distinct fields, for focus across form replacement |
-| `long_form_server` | default | One tool with eight fields, for a scrolling modal |
+| `long_form_server` | `--protocol legacy` | One tool with eight fields, for a scrolling modal |

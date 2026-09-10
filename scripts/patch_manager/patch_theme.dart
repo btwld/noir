@@ -5,7 +5,7 @@ import 'review_controller.dart';
 
 /// Visual design language for Patch Manager: palette tokens and status glyphs.
 ///
-/// Every value here is a `static const`. Widgets pull from this class instead
+/// Widgets pull colors and status glyphs from this class instead
 /// of hard-coding `Color(...)` literals or one-off glyph strings, so layout
 /// + style changes stay in one place.
 class PatchTheme {

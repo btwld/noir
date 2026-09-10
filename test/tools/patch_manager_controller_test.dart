@@ -1,5 +1,3 @@
-// ignore_for_file: cascade_invocations
-
 import 'package:test/test.dart';
 
 import '../../scripts/patch_manager/patch_manager.dart';

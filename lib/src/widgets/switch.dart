@@ -5,9 +5,9 @@ import '../framework/widget.dart';
 import 'activatable.dart';
 import 'focus_node_owner_mixin.dart';
 import 'icons.dart';
-import 'input.dart';
 import 'row_column.dart';
 import 'text.dart';
+import 'text_input.dart';
 import 'text_style.dart';
 import 'theme.dart';
 

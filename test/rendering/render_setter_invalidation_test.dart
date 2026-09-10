@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/core/cursor.dart';
 import 'package:noir/src/core/input.dart';
@@ -18,12 +17,12 @@ import 'package:noir/src/rendering/proxy_box.dart';
 import 'package:noir/src/rendering/render_view.dart';
 import 'package:noir/src/widgets/decorated_box.dart';
 import 'package:noir/src/widgets/flexible.dart';
-import 'package:noir/src/widgets/input.dart';
 import 'package:noir/src/widgets/pointer_listener.dart';
 import 'package:noir/src/widgets/row_column.dart';
 import 'package:noir/src/widgets/scroll_box.dart';
 import 'package:noir/src/widgets/select.dart';
 import 'package:noir/src/widgets/text_area.dart';
+import 'package:noir/src/widgets/text_input.dart';
 import 'package:noir/src/widgets/text_span.dart';
 import 'package:test/test.dart';
 

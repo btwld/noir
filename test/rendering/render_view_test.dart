@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'package:noir/src/render/geometry.dart';
 import 'package:noir/src/rendering/box.dart';
 import 'package:noir/src/rendering/object.dart';

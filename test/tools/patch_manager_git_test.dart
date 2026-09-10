@@ -1337,15 +1337,13 @@ void main() {
         }
 
         var targetReads = 0;
-        final repository =
-            Function.apply(GitPatchRepository.new, const [], {
-                  #worktreePath: repo.path,
-                  #linkTargetReader: (String _) async {
-                    targetReads++;
-                    throw StateError('omitted target must not be read');
-                  },
-                })
-                as GitPatchRepository;
+        final repository = GitPatchRepository(
+          worktreePath: repo.path,
+          linkTargetReader: (_) async {
+            targetReads++;
+            throw StateError('omitted target must not be read');
+          },
+        );
 
         final diff = await repository.loadWorkspace();
         final omitted = diff.files.singleWhere(

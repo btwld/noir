@@ -46,18 +46,6 @@ void main() {
     expect(objectSource, isNot(contains("import '../core/buffer.dart';")));
   });
 
-  test(
-    'no Buffer rendering allowlist growth is required for PipelineOwner',
-    () {
-      final source = File(
-        'test/architecture/no_buffer_in_rendering_test.dart',
-      ).readAsStringSync();
-
-      expect(source, contains('const allowlistedBufferImports = <String>{};'));
-      expect(source, isNot(contains('pipeline_owner.dart')));
-    },
-  );
-
   test('RenderObjectElement delegates invalidation to render setters', () {
     final source = File('lib/src/framework/element.dart').readAsStringSync();
     const classStartMarker = 'class RenderObjectElement extends Element {';

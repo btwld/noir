@@ -3,7 +3,6 @@
 /// framed by the shared demo chrome in `src/shared/demo_scaffold.dart`.
 library;
 
-// ignore_for_file: cascade_invocations
 import 'package:noir/noir.dart';
 
 import 'src/shared/demo_scaffold.dart';

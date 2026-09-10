@@ -169,7 +169,6 @@ export 'src/widgets/image.dart'
         ImageLoadErrorCode,
         ImageLoadException,
         ImageLoadingBuilder;
-export 'src/widgets/input.dart' show TextInput, ValueChanged;
 export 'src/widgets/intents.dart'
     show
         ActivateIntent,
@@ -234,6 +233,7 @@ export 'src/widgets/switch.dart' show Switch;
 export 'src/widgets/tab_select.dart' show TabSelect;
 export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
+export 'src/widgets/text_input.dart' show TextInput, ValueChanged;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
 export 'src/widgets/text_layout.dart'
     show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;
