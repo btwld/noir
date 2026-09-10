@@ -34,8 +34,10 @@ artifacts are unchanged from alpha.4.
   focused control or removing the region that owns focus previously left the
   tree with no primary focus, and `Shortcuts.handleKeyEvent` routes from the
   focused element, so the tree stopped answering every binding. Recovery runs
-  after the synchronous tree updates finish and prefers the nearest surviving
-  focusable explicit scope, then the first node in traversal order, and leaves
+  after the synchronous tree updates finish and focuses the first control
+  inside the nearest surviving explicit scope, so bindings mounted inside
+  that scope answer again; the scope itself takes focus only when it holds no
+  control. It then falls back to the first node in traversal order, and leaves
   focus empty when nothing is eligible. An explicit `requestFocus()` and an
   incoming `autofocus` both claim focus first, and an intentional `unfocus()`
   is not recovered.

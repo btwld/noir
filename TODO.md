@@ -152,8 +152,11 @@ Open review follow-ups:
       recompilation cost. Edits preserving both mtime and size remain invisible,
       and `NoirDriver.reload` in `scripts/driver/noir_driver.dart` still uses
       the original VM timestamp filtering.
-- [ ] **#44**: recovery onto a `FocusScopeNode` leaves bindings inside that
-      scope unanswered, which is the stated motive for the fix.
+- [x] **#44**: recovery now focuses the first control inside the nearest
+      surviving scope, descending through nested scopes, and takes the scope
+      node itself only when it holds no control. Three focused cases pin it,
+      including a `Shortcuts` binding inside the scope that answers a key
+      after recovery; each failed against the previous code.
 - [ ] **#45**: building elements during layout is a new ownership seam with no
       fitness test, though the repository freezes comparable seams elsewhere.
       A layout-time `markNeedsLayout` is dropped and never retried.
