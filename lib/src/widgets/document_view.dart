@@ -959,7 +959,7 @@ int _nextTextBoundary(String text, int offset) {
 int _sourceLineStart(String text, int offset) {
   final clamped = offset.clamp(0, text.length);
   if (clamped == 0) return 0;
-  if (clamped > 0 && text.codeUnitAt(clamped - 1) == 0x0a) return clamped;
+  if (text.codeUnitAt(clamped - 1) == 0x0a) return clamped;
   return text.lastIndexOf('\n', clamped - 1) + 1;
 }
 

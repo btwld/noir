@@ -313,7 +313,7 @@ final class _MarkdownViewState extends State<MarkdownView>
           ? Focus(
               focusNode: focusNode,
               autofocus: widget.autofocus,
-              canRequestFocus: !widget.embedded,
+              canRequestFocus: false,
               child: document,
             )
           : ScrollBox(

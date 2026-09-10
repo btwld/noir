@@ -133,7 +133,7 @@ abstract class HookState<R, H extends Hook<R>> {
   ///
   /// The hosting widget owns the queue, so this gives a custom hook the same
   /// guarantee as [State.deferDispose]: a resource this slot hands over when
-  /// its [keys] change stays alive until the replacement build's descendants
+  /// its [Hook.keys] change stays alive until the replacement build's descendants
   /// have reconciled and the removed ones have unmounted. Detach this hook's
   /// own observation immediately and defer only the disposal.
   ///

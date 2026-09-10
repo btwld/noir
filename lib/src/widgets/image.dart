@@ -489,9 +489,7 @@ final class _FileImageSource extends _ImageSource {
 @immutable
 final class _NetworkImageSource extends _ImageSource {
   _NetworkImageSource(this.uri, Map<String, String> headers)
-    : headers = Map<String, String>.unmodifiable(
-        Map<String, String>.of(headers),
-      ),
+    : headers = Map<String, String>.unmodifiable(headers),
       _hash = Object.hash(uri, _mapHash(headers));
 
   final Uri uri;

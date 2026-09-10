@@ -5,9 +5,9 @@ import 'package:noir/src/rendering/box.dart';
 import 'package:noir/src/rendering/constrained_box.dart';
 import 'package:noir/src/rendering/object.dart';
 import 'package:noir/src/rendering/padding.dart';
-import 'package:noir/src/widgets/input.dart';
 import 'package:noir/src/widgets/select.dart';
 import 'package:noir/src/widgets/text_area.dart';
+import 'package:noir/src/widgets/text_input.dart';
 
 void main() {
   final constrained = RenderConstrainedBox(

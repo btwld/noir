@@ -108,14 +108,15 @@ that way and reads commands from its own stdin, interactively or from a pipe:
     quit
 
 Rendered frames and tree output go to stdout while status and errors go to
-stderr, so a scripted run captures exactly what the app painted:
+stderr. Use Dart 3.11 or later to keep build-hook progress out of scripted
+captures:
 
     printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
       dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
 
-Pass `--verbosity=error` whenever the frames are piped or redirected. Dart
-writes its build-hook status to stdout, which otherwise lands in front of the
-first captured row.
+On Dart 3.11 or later, pass `--verbosity=error` whenever frames are piped or
+redirected. Dart 3.10 may still write build-hook progress to stdout despite
+this flag, prepending it to the first captured row.
 
 `scripts/driver/noir_driver.dart` exposes the same surface as a Dart client for
 scripts that assert against captures. `tree()` returns structured `DriverNode`

@@ -909,7 +909,7 @@ const Set<_Owner> _builtInRenderWidgetOwners = <_Owner>{
 
 const Set<_Owner> _privateBridgeOwners = <_Owner>{
   (path: 'lib/src/widgets/flexible.dart', name: '_FlexibleNode'),
-  (path: 'lib/src/widgets/input.dart', name: '_TextInputLeaf'),
+  (path: 'lib/src/widgets/text_input.dart', name: '_TextInputLeaf'),
   (path: 'lib/src/widgets/text_area.dart', name: '_TextAreaLeaf'),
   (path: 'lib/src/widgets/select.dart', name: '_SelectLeaf'),
   (

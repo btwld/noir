@@ -7,7 +7,7 @@ void main() {
     const files = <String>[
       'lib/src/rendering/paragraph.dart',
       'lib/src/painting/tui_canvas.dart',
-      'lib/src/widgets/input.dart',
+      'lib/src/widgets/text_input.dart',
       'lib/src/widgets/text_area.dart',
       'lib/src/widgets/select.dart',
       'lib/src/widgets/text.dart',
