@@ -783,6 +783,6 @@ mixin RenderObjectWithSingleChild on RenderObject {
 
 /// Optional mouse pointer annotation on a render-tree hit target.
 abstract interface class MouseCursorTarget implements HitTestTarget {
-  /// The requested shape, or null to defer to an annotated ancestor.
-  MouseCursor? get mouseCursor;
+  /// Shape at a hit-tested local position, or null to defer to an ancestor.
+  MouseCursor? mouseCursorAt(Offset position);
 }

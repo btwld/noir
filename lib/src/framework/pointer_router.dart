@@ -29,8 +29,9 @@ final class PointerRouter {
       if (result != null) {
         for (final entry in result.path) {
           final target = entry.target;
-          if (target is MouseCursorTarget && target.mouseCursor != null) {
-            return target.mouseCursor!;
+          if (target is MouseCursorTarget) {
+            final cursor = target.mouseCursorAt(entry.localPosition);
+            if (cursor != null) return cursor;
           }
         }
       }

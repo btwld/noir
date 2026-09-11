@@ -90,8 +90,11 @@ class RenderPointerListener extends RenderProxyBox
        _onPointerScroll = onPointerScroll,
        super(child);
 
-  @override
+  /// Shape shared by every cell in this listener.
   MouseCursor? mouseCursor;
+
+  @override
+  MouseCursor? mouseCursorAt(Offset position) => mouseCursor;
 
   MouseEventHandler? _onPointerDown;
   MouseEventHandler? _onPointerUp;

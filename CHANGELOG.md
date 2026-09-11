@@ -15,7 +15,9 @@ artifacts are unchanged from alpha.4.
   after layout even when the mouse is stationary. High-level mouse reporting
   now includes movement by default; explicit `enableMovement: false` preserves
   click/drag-only reporting. iTerm2 uses legacy OSC 22 shape names and restores
-  its default pointer on exit. Unsupported terminals retain their own pointer.
+  its default pointer on exit. Select option rows, including popup menus, show
+  a hand only over valid visible options. Unsupported terminals retain their
+  own pointer.
 - Terminal output stays synchronous; removing redundant asynchronous stdout
   flushes prevents immediate mouse setup or cleanup from failing with a bound
   stream sink.
