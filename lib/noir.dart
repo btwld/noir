@@ -58,6 +58,7 @@ export 'src/core/input.dart'
         MouseScrollDirection,
         PasteEvent,
         PasteEventHandler;
+export 'src/core/mouse_cursor.dart' show MouseCursor;
 export 'src/core/terminal_image.dart'
     show
         ImageColorStatus,

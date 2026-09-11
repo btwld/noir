@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 
 import '../core/color.dart';
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -206,6 +207,7 @@ final class _SliderState extends State<Slider>
           autofocus: widget.autofocus && _enabled,
           canRequestFocus: _enabled,
           child: PointerListener(
+            mouseCursor: _enabled ? MouseCursor.pointer : MouseCursor.basic,
             onPointerDown: _handleDown,
             onPointerMove: _handleMove,
             onPointerUp: _handleUp,

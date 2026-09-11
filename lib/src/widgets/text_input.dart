@@ -4,6 +4,7 @@ import 'package:characters/characters.dart';
 import '../core/color.dart';
 import '../core/cursor.dart';
 import '../core/grapheme_metrics.dart';
+import '../core/mouse_cursor.dart';
 import '../foundation/listenable.dart';
 import '../foundation/text_editing_controller.dart';
 import '../framework/build_context.dart';
@@ -154,6 +155,7 @@ class _TextInputState extends State<TextInput>
           autofocus: widget.autofocus,
           onFocusChange: handleFocusChange,
           child: PointerListener(
+            mouseCursor: MouseCursor.text,
             onPointerDown: handlePointerDown,
             child: _TextInputLeaf(
               value: controller.text,

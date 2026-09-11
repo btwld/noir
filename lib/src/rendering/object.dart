@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../painting/tui_canvas.dart';
 import '../render/geometry.dart';
 
@@ -778,4 +779,10 @@ mixin RenderObjectWithSingleChild on RenderObject {
     }
     setChild(null);
   }
+}
+
+/// Optional mouse pointer annotation on a render-tree hit target.
+abstract interface class MouseCursorTarget implements HitTestTarget {
+  /// Shape at a hit-tested local position, or null to defer to an ancestor.
+  MouseCursor? mouseCursorAt(Offset position);
 }

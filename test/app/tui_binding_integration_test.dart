@@ -476,7 +476,7 @@ void main() {
       expect(driver.starts, 1);
       expect(driver.stops, 1);
       expect(platform.stdoutWriteAttempts, 5);
-      expect(platform.stdoutFlushes, 2);
+
       expect(() => renderer!.nextBuffer, throwsStateError);
       expect(WidgetInspectorService.instance.rootElement, isNull);
     },
@@ -515,7 +515,7 @@ void main() {
       expect(stateDisposals, 1);
       expect(driver.stops, 1);
       expect(platform.stdoutWriteAttempts, 5);
-      expect(platform.stdoutFlushes, 2);
+
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
       expect(binding.buildOwner.pipelineOwner.debugNeedsLayout, isFalse);
@@ -563,7 +563,7 @@ void main() {
     expect(stateDisposals, 1);
     expect(driver.stops, 1);
     expect(platform.stdoutWriteAttempts, 5);
-    expect(platform.stdoutFlushes, 2);
+
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
@@ -757,6 +757,9 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
   });
 
   @override
+  String? get terminalProgram => null;
+
+  @override
   bool stdoutHasTerminal;
 
   @override
@@ -771,7 +774,6 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
   bool _stdinLineMode = false;
   bool _stdinEchoMode = false;
   int stdoutWriteAttempts = 0;
-  int stdoutFlushes = 0;
   int stdinLineModeSets = 0;
   int stdinEchoModeSets = 0;
 
@@ -800,11 +802,6 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
   }
 
   @override
-  void stdoutFlush() {
-    stdoutFlushes++;
-  }
-
-  @override
   Stream<void> watchSignal(TerminalSignal signal) => _signals[signal]!.stream;
 
   void emit(TerminalSignal signal) {
@@ -823,6 +820,9 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   }
 
   @override
+  String? get terminalProgram => null;
+
+  @override
   bool get stdoutHasTerminal => false;
 
   @override
@@ -836,9 +836,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
 
   @override
   void stdoutWrite(String data) {}
-
-  @override
-  void stdoutFlush() {}
 
   @override
   Stream<void> watchSignal(TerminalSignal signal) => _signals[signal]!.stream;

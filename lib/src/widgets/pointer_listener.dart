@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
@@ -14,11 +15,23 @@ class PointerListener extends SingleChildRenderObjectWidget {
   const PointerListener({
     super.key,
     super.child,
+    this.mouseCursor,
     this.onPointerDown,
     this.onPointerUp,
     this.onPointerMove,
     this.onPointerScroll,
   });
+
+  /// Pointer shape over this region; null defers to an annotated ancestor.
+  ///
+  /// Requires mouse reporting and an OSC 22 supporting terminal. High-level
+  /// mouse reporting includes movement by default. Unsupported terminals keep
+  /// their own pointer. iTerm2 uses legacy shape names and restores its default
+  /// pointer on exit; modern OSC 22 terminals restore the previous stack entry.
+  /// The deepest annotated hit target wins; use
+  /// [MouseCursor.basic] to override an ancestor with the standard arrow.
+  /// This annotation also participates in hit testing without callbacks.
+  final MouseCursor? mouseCursor;
 
   /// Called for a hit-tested mouse-button press.
   final MouseEventHandler? onPointerDown;
@@ -36,6 +49,7 @@ class PointerListener extends SingleChildRenderObjectWidget {
   @internal
   RenderPointerListener createRenderObject(BuildContext context) =>
       RenderPointerListener(
+        mouseCursor: mouseCursor,
         onPointerDown: onPointerDown,
         onPointerUp: onPointerUp,
         onPointerMove: onPointerMove,
@@ -48,6 +62,7 @@ class PointerListener extends SingleChildRenderObjectWidget {
     BuildContext context,
     RenderPointerListener renderObject,
   ) {
+    renderObject.mouseCursor = mouseCursor;
     renderObject.updateCallbacks(
       onPointerDown: onPointerDown,
       onPointerUp: onPointerUp,
@@ -57,11 +72,13 @@ class PointerListener extends SingleChildRenderObjectWidget {
   }
 }
 
-/// Proxy render box that hit-tests itself only while a handler is set and
-/// dispatches local-position mouse events.
-class RenderPointerListener extends RenderProxyBox implements HitTestTarget {
+/// Proxy render box that hit-tests while a handler or cursor annotation is set
+/// and dispatches local-position mouse events.
+class RenderPointerListener extends RenderProxyBox
+    implements HitTestTarget, MouseCursorTarget {
   /// Stores optional handlers and child for local-position hit dispatch.
   RenderPointerListener({
+    this.mouseCursor,
     MouseEventHandler? onPointerDown,
     MouseEventHandler? onPointerUp,
     MouseEventHandler? onPointerMove,
@@ -72,6 +89,12 @@ class RenderPointerListener extends RenderProxyBox implements HitTestTarget {
        _onPointerMove = onPointerMove,
        _onPointerScroll = onPointerScroll,
        super(child);
+
+  /// Shape shared by every cell in this listener.
+  MouseCursor? mouseCursor;
+
+  @override
+  MouseCursor? mouseCursorAt(Offset position) => mouseCursor;
 
   MouseEventHandler? _onPointerDown;
   MouseEventHandler? _onPointerUp;
@@ -93,6 +116,7 @@ class RenderPointerListener extends RenderProxyBox implements HitTestTarget {
 
   @override
   bool hitTestSelf(Offset position) =>
+      mouseCursor != null ||
       _onPointerDown != null ||
       _onPointerUp != null ||
       _onPointerMove != null ||

@@ -1,8 +1,21 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:async';
 
+import 'package:noir/noir.dart'
+    show
+        Align,
+        Alignment,
+        BuildContext,
+        Button,
+        GlobalKey,
+        State,
+        StatefulWidget,
+        Widget;
 import 'package:noir/src/app/terminal_session.dart';
+import 'package:noir/src/app/tui_binding.dart';
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/core/input.dart';
+import 'package:noir/src/core/mouse_cursor.dart';
 import 'package:noir/src/core/renderer.dart';
 import 'package:test/test.dart';
 
@@ -13,6 +26,136 @@ KeyEvent _ctrlC() => KeyEvent(
 );
 
 void main() {
+  test(
+    'binding emits pointer changes after layout without another mouse event',
+    () {
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      final renderer = Renderer.create(8, 2, testing: true);
+      addTearDown(renderer.dispose);
+      final binding = createTuiBindingForTesting(
+        renderer: renderer,
+        terminalPlatform: platform,
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      );
+      addTearDown(binding.dispose);
+      binding.enableMouse();
+      final key = GlobalKey<_PointerButtonState>();
+      binding.runApp(_PointerButton(key: key));
+      binding.debugFlushFrame();
+      binding.inputManager.dispatchMouse(
+        MouseEvent(
+          type: MouseEventType.move,
+          button: MouseButton.left,
+          x: 1,
+          y: 0,
+        ),
+      );
+      binding.debugFlushFrame();
+      expect(platform.writes.last, '\x1b]22;pointer\x1b\\');
+      key.currentState!.disable();
+      binding.debugFlushFrame();
+      expect(platform.writes.last, '\x1b]22;default\x1b\\');
+      binding.dispose();
+      final pointerWrites = platform.writes
+          .where((s) => s.contains(']22;'))
+          .toList();
+      expect(pointerWrites.last, '\x1b]22;<\x1b\\');
+      expect(
+        platform.writes.indexOf(pointerWrites.last),
+        lessThan(platform.writes.indexOf('\x1b[?1049l\x1b[?25h\x1b[0m')),
+      );
+    },
+  );
+
+  test(
+    'mouse pointer push, deduplicated updates and pop are session-owned',
+    () {
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      final renderer = Renderer.create(8, 2, testing: true);
+      addTearDown(renderer.dispose);
+      final session = TerminalSession(
+        width: 8,
+        height: 2,
+        headless: false,
+        inputDispatcher: _dispatcher(),
+        scheduleFrame: () {},
+        renderer: renderer,
+        platform: platform,
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      );
+      session.updateMouseCursor(MouseCursor.pointer);
+      expect(platform.writes.where((s) => s.contains(']22;')), isEmpty);
+      session.enableMouse();
+      session.enableMouse();
+      session.updateMouseCursor(MouseCursor.pointer);
+      session.updateMouseCursor(MouseCursor.pointer);
+      session.updateMouseCursor(MouseCursor.text);
+      session.disableMouse();
+      session.updateMouseCursor(MouseCursor.pointer);
+      session.close();
+      session.close();
+      expect(platform.writes.where((s) => s.contains(']22;')), [
+        '\x1b]22;>default\x1b\\',
+        '\x1b]22;pointer\x1b\\',
+        '\x1b]22;text\x1b\\',
+        '\x1b]22;<\x1b\\',
+      ]);
+    },
+  );
+
+  test('headless and non-TTY mouse sessions never emit pointer commands', () {
+    for (final headless in [true, false]) {
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: headless);
+      final renderer = Renderer.create(8, 2, testing: true);
+      final session = TerminalSession(
+        width: 8,
+        height: 2,
+        headless: headless,
+        inputDispatcher: _dispatcher(),
+        scheduleFrame: () {},
+        renderer: renderer,
+        platform: platform,
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      );
+      session.enableMouse();
+      session.updateMouseCursor(MouseCursor.pointer);
+      session.disableMouse();
+      session.close();
+      renderer.dispose();
+      expect(platform.writes, isEmpty);
+    }
+  });
+
+  test(
+    'failed pointer restoration still restores terminal and stops input',
+    () {
+      final error = StateError('pointer output failed');
+      final platform = _FakeTerminalPlatform(
+        stdoutHasTerminal: true,
+        stdoutWriteError: error,
+        stdoutWriteErrorAttempt: 3,
+      );
+      final renderer = Renderer.create(8, 2, testing: true);
+      addTearDown(renderer.dispose);
+      final driver = _FakeTerminalInputDriver();
+      final session = TerminalSession(
+        width: 8,
+        height: 2,
+        headless: false,
+        inputDispatcher: _dispatcher(),
+        scheduleFrame: () {},
+        renderer: renderer,
+        platform: platform,
+        inputDriverFactory: (_) => driver,
+      );
+      session.enableMouse();
+      expect(session.close, throwsA(same(error)));
+      expect(driver.stops, 1);
+      expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
+      session.close();
+    },
+  );
+
   test(
     'headless session does not create renderer, start stdin, install signals, '
     'or write terminal restore',
@@ -122,7 +265,6 @@ void main() {
       addTearDown(session.close);
 
       expect(platform.writes, ['\x1b[>4;2m']);
-      expect(platform.stdoutFlushes, 1);
 
       session.close();
 
@@ -133,7 +275,6 @@ void main() {
         '\x1b[?1000l\x1b[?1006l',
         '\x1b[?1049l\x1b[?25h\x1b[0m',
       ]);
-      expect(platform.stdoutFlushes, 2);
     },
   );
 
@@ -617,7 +758,6 @@ void main() {
     expect(driver.starts, 1);
     expect(driver.stops, 1);
     expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-    expect(platform.stdoutFlushes, 1);
   });
 
   test('capability route is installed before input starts', () {
@@ -797,7 +937,7 @@ void main() {
     expect(driver.starts, 1);
     expect(driver.stops, 1);
     expect(platform.writes, isEmpty);
-    expect(platform.stdoutFlushes, 0);
+
     expect(() => renderer!.nextBuffer, throwsStateError);
   });
 
@@ -859,7 +999,7 @@ void main() {
     expect(session.close, throwsA(same(stopError)));
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(5));
-    expect(platform.stdoutFlushes, 2);
+
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
@@ -868,7 +1008,7 @@ void main() {
     expect(session.close, returnsNormally);
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(5));
-    expect(platform.stdoutFlushes, 2);
+
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(platform.canceledSignals, canceledSignals);
@@ -903,7 +1043,7 @@ void main() {
       expect(platform.writes, isNot(contains('\x1b[<u')));
       expect(platform.writes, contains('\x1b[>4;0m'));
       expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-      expect(platform.stdoutFlushes, 2);
+
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
       expect(() => renderer.nextBuffer, returnsNormally);
@@ -989,9 +1129,11 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   final int? stdoutWriteErrorAttempt;
 
   int stdoutWriteAttempts = 0;
-  int stdoutFlushes = 0;
   int stdinLineModeSets = 0;
   int stdinEchoModeSets = 0;
+
+  @override
+  String? get terminalProgram => null;
 
   @override
   bool get stdoutHasTerminal => _stdoutHasTerminal;
@@ -1037,11 +1179,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   }
 
   @override
-  void stdoutFlush() {
-    stdoutFlushes++;
-  }
-
-  @override
   Stream<void> watchSignal(TerminalSignal signal) {
     watchedSignals.add(signal);
     // ignore: close_sinks
@@ -1075,4 +1212,20 @@ class _AsyncCancelErrorPlatform extends _FakeTerminalPlatform {
       },
     ).stream;
   }
+}
+
+class _PointerButton extends StatefulWidget {
+  const _PointerButton({super.key});
+  @override
+  State<_PointerButton> createState() => _PointerButtonState();
+}
+
+class _PointerButtonState extends State<_PointerButton> {
+  bool enabled = true;
+  void disable() => setState(() => enabled = false);
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topLeft,
+    child: Button(label: 'Go', onPressed: enabled ? () {} : null),
+  );
 }

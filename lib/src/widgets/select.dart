@@ -6,6 +6,7 @@ import 'package:characters/characters.dart';
 import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -409,7 +410,8 @@ class _SelectLeaf<T> extends RenderObjectWidget {
 /// RenderBox that paints a [Select] list. Validates visible rows during
 /// construction and passively publishes the completed option-row count so
 /// widget state can read it after layout; list painting never reads it.
-class RenderSelect<T> extends RenderBox {
+class RenderSelect<T> extends RenderBox
+    implements HitTestTarget, MouseCursorTarget {
   /// Validates a non-negative [visibleRows] and snapshots list styling.
   RenderSelect({
     required List<SelectOption<T>> options,
@@ -554,6 +556,28 @@ class RenderSelect<T> extends RenderBox {
     );
     size = Size(w, h);
     _layoutMetrics?.publish(paintedRows);
+  }
+
+  @override
+  bool hitTestSelf(Offset position) => _layoutMetrics != null;
+
+  @override
+  MouseCursor? mouseCursorAt(Offset position) {
+    // Standalone low-level render boxes have no widget activation handler.
+    if (_layoutMetrics == null) return null;
+    final row = position.dy;
+    final index = _scrollOffset + row;
+    return row >= 0 &&
+            row < math.min(height, _visibleRows) &&
+            index >= 0 &&
+            index < _options.length
+        ? MouseCursor.pointer
+        : MouseCursor.basic;
+  }
+
+  @override
+  void handleEvent(MouseEvent event, HitTestEntry entry) {
+    // Select's ancestor PointerListener owns focus and activation callbacks.
   }
 
   bool _showsScrollIndicator(int paintedRows) =>

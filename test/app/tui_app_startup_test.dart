@@ -180,6 +180,9 @@ class _InputDriver implements TerminalInputDriver {
 
 class _TerminalPlatform implements TerminalPlatform {
   @override
+  String? get terminalProgram => null;
+
+  @override
   bool get stdoutHasTerminal => false;
 
   @override
@@ -193,9 +196,6 @@ class _TerminalPlatform implements TerminalPlatform {
 
   @override
   void stdoutWrite(String data) {}
-
-  @override
-  void stdoutFlush() {}
 
   @override
   Stream<void> watchSignal(TerminalSignal signal) => const Stream.empty();

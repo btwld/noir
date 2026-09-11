@@ -222,7 +222,7 @@ final class TuiBinding {
   }
 
   /// Enable mouse reporting through the terminal renderer.
-  void enableMouse({bool enableMovement = false}) {
+  void enableMouse({bool enableMovement = true}) {
     _session.enableMouse(enableMovement: enableMovement);
   }
 
@@ -255,6 +255,7 @@ final class TuiBinding {
         _renderView,
         _renderView.terminalConstraints,
       );
+      _session.updateMouseCursor(_owner.mouseCursor);
       return;
     }
 
@@ -265,6 +266,8 @@ final class TuiBinding {
       _renderView,
       _renderView.terminalConstraints,
     );
+
+    _session.updateMouseCursor(_owner.mouseCursor);
 
     final painted = _owner.pipelineOwner.flushPaint(_renderView, (root) {
       buf.clear(Color.black);
