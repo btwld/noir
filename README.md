@@ -378,7 +378,9 @@ its frames from.
 | xterm `modifyOtherKeys` | modified named and printable keys, including Ctrl+Enter |
 | Kitty keyboard | modifiers and press/repeat/release metadata after `app.enableKittyKeyboard()` |
 
-SIGWINCH resizes the terminal buffer and lays out the widget tree again.
+Unix sessions observe SIGWINCH; interactive Windows sessions check terminal
+size every 100ms. A changed, positive size resizes the terminal buffer and lays
+out the widget tree again.
 
 ## Native Libraries
 
