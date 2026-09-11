@@ -56,6 +56,23 @@ Headless tests and Noir Driver are useful for layout, painted cells, cursor
 state, and parsed input. They cannot replace a check in the terminal you
 target.
 
+## Mouse pointer shapes
+
+The unreleased candidate can request desktop mouse shapes with OSC 22. This is
+separate from the text caret. See [Handle input and focus](/docs/input-focus#show-a-hand-over-an-action)
+for the widget behavior and custom `MouseCursor` regions.
+
+Noir uses the modern OSC 22 shape stack where supported. Disabling mouse
+reporting or disposing the app restores the previous stack entry. For iTerm2,
+identified by `TERM_PROGRAM=iTerm.app`, Noir uses its legacy shape names and
+resets to the terminal's default pointer instead; that protocol cannot restore
+a previously requested custom shape.
+
+Unsupported terminals keep their own pointer appearance. Terminal and
+multiplexer support varies; emitting a request does not prove that the desktop
+pointer changed. Validate hover, clicks, and cleanup in the terminal you plan
+to use. Headless captures cannot show the desktop pointer.
+
 ## Known limits, and what to do about them
 
 <dl className="limitation-list">
