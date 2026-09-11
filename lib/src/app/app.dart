@@ -52,7 +52,7 @@ TuiApp runTuiApp(
         exitCodeSink: host.handleAppExit,
         onMounted: host.start,
       );
-    } on Object catch (error, stackTrace) {
+    } on Object {
       try {
         // The binding borrows its renderer from this host, so mount rollback
         // must also release the host's renderer and any started keep-alive.
@@ -60,7 +60,7 @@ TuiApp runTuiApp(
       } on Object {
         // The startup failure remains primary after every cleanup attempt.
       }
-      Error.throwWithStackTrace(error, stackTrace);
+      rethrow;
     }
   }
   if (headless && enableMouse) {
@@ -96,13 +96,13 @@ TuiApp _mount(
     }
     onMounted?.call(handle);
     return handle;
-  } on Object catch (error, stackTrace) {
+  } on Object {
     try {
       handle.dispose();
     } on Object {
       // Preserve the mount or activation failure after attempting all cleanup.
     }
-    Error.throwWithStackTrace(error, stackTrace);
+    rethrow;
   }
 }
 
