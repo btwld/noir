@@ -207,7 +207,7 @@ void main() {
       await driver.clickLocator(const DriverLocator.byKey('confirm-deploy'));
       final frame = await driver.capture();
       expect(frame.contains('Confirm deployment'), isFalse);
-      expect(frame.contains('Deployment scheduled for noir 0.0.1.'), isTrue);
+      expect(frame.contains('Deployment scheduled for noir 0.0.2.'), isTrue);
     });
 
     test(

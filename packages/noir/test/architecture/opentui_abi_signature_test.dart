@@ -23,7 +23,9 @@ void main() {
 
   setUpAll(() {
     zigExports = parseZigExports(
-      File('../../external/opentui/packages/core/src/zig/lib.zig').readAsStringSync(),
+      File(
+        '../../external/opentui/packages/core/src/zig/lib.zig',
+      ).readAsStringSync(),
     );
     headerPrototypes = parseCHeader(
       File('native/opentui_v0_5_1.h').readAsStringSync(),

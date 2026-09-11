@@ -14,7 +14,7 @@ not package-consumer API.
 | `createTuiTestApp` (`tui_test_app.dart`) | Runs the repository-only `runTuiAppForTesting` path with a real `TuiBinding`, `StdinInputDriver`, scheduler frame pump, and byte-level input mocks. | End-to-end app/event-loop tests where ANSI parsing, resize propagation, frame scheduling, or shutdown behavior matters. |
 
 **Drive mode is not a fifth harness.** `NOIR_DRIVE=1` plus
-`scripts/noir_drive.dart` drives a *live app process*: it mounts nothing here.
+`tool/noir_drive.dart` drives a *live app process*: it mounts nothing here.
 Inside that process it reuses exactly the `createTuiTestApp` composition —
 headless binding, injected testing renderer, and `StdinInputDriver` bytes — so
 there is nothing to unify. Use it to look at or script a running app; use the

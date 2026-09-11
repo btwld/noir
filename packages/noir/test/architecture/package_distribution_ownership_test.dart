@@ -10,7 +10,9 @@ void main() {
   final testingGuide = _read('../../skills/noir/references/testing.md');
   final widgetsGuide = _read('../../skills/noir/references/widgets.md');
   final inputsGuide = _read('../../skills/noir/references/inputs-and-focus.md');
-  final stateGuide = _read('../../skills/noir/references/state-and-animation.md');
+  final stateGuide = _read(
+    '../../skills/noir/references/state-and-animation.md',
+  );
   final designGuide = _read('../../skills/noir/references/design.md');
   final exampleGuide = _read('example/README.md');
   final pubspec = _read('pubspec.yaml');
@@ -131,7 +133,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    expect(packageVersion, '0.0.1');
+    expect(packageVersion, '0.0.2');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -145,6 +147,24 @@ void main() {
   test('current changelog records its release contracts', () {
     final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
     final currentRelease = _changelogSection(changelog, packageVersion);
+
+    expect(currentRelease, isNotEmpty);
+    expect(
+      RegExp(r'^### Changed$', multiLine: true).allMatches(currentRelease),
+      hasLength(1),
+    );
+    for (final contract in const [
+      'packages/noir',
+      'The package `repository` field',
+      'bundled native artifacts are unchanged from 0.0.1',
+    ]) {
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
+    }
+  });
+
+  test('published 0.0.1 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final currentRelease = _changelogSection(changelog, '0.0.1');
 
     expect(currentRelease, isNotEmpty);
     expect(
@@ -266,9 +286,7 @@ void main() {
       expect(_read(path), isNot(contains('alpha.3')), reason: path);
     }
 
-    final historicalRecording = _read(
-      'tool/recordings/pub_search_demo.dart',
-    );
+    final historicalRecording = _read('tool/recordings/pub_search_demo.dart');
     expect(historicalRecording, contains("version: '0.0.1-alpha.3'"));
   });
 
@@ -500,12 +518,12 @@ void main() {
     expect(
       readme,
       contains(
-        '[example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)',
+        '[example catalog](https://github.com/conceptadev/noir/blob/main/packages/noir/example/README.md)',
       ),
     );
     expect(
       RegExp(
-        r'\[example catalog\]\(https://github\.com/conceptadev/noir/blob/main/example/README\.md\)',
+        r'\[example catalog\]\(https://github\.com/conceptadev/noir/blob/main/packages/noir/example/README\.md\)',
       ).allMatches(readme),
       hasLength(1),
     );
@@ -774,7 +792,7 @@ void main() {
         '--cached',
         '--others',
         '--ignored',
-        '--exclude-from=.pubignore',
+        '--exclude-per-directory=.pubignore',
         '--',
         ...requiredPaths,
       ]);
@@ -843,28 +861,14 @@ void main() {
   test(
     'website application and its design record stay outside the Dart package archive',
     () {
+      // The website is a sibling of the package, so the archive cannot carry
+      // it and no ignore rule is needed.
+      expect(Directory('website').existsSync(), isFalse);
+      expect(File('../../website/README.md').existsSync(), isTrue);
+      expect(File('../../website/DESIGN.md').existsSync(), isTrue);
       final pubignoreLines = _read('.pubignore').split('\n');
-
-      expect(pubignoreLines, contains('/website/'));
-      expect(pubignoreLines, contains('/.impeccable/'));
       expect(pubignoreLines, isNot(contains('/PRODUCT.md')));
       expect(pubignoreLines, isNot(contains('/DESIGN.md')));
-
-      final ignored = Process.runSync('git', [
-        'ls-files',
-        '--cached',
-        '--others',
-        '--ignored',
-        '--exclude-from=.pubignore',
-        '--',
-        '../../website/README.md',
-        '../../website/DESIGN.md',
-      ]);
-      expect(ignored.exitCode, 0, reason: ignored.stderr as String);
-      expect(
-        (ignored.stdout as String).trim().split('\n'),
-        unorderedEquals(<String>['../../website/DESIGN.md', '../../website/README.md']),
-      );
     },
   );
 
@@ -921,7 +925,9 @@ void main() {
     // One curated page exists; the catalog must point at it.
     expect(catalog, contains('](/docs/widgets/text-input)'));
     expect(
-      File('../../website/src/content/docs/widgets/text-input.mdx').existsSync(),
+      File(
+        '../../website/src/content/docs/widgets/text-input.mdx',
+      ).existsSync(),
       isTrue,
     );
   });
@@ -943,26 +949,18 @@ void main() {
         '../../skills/noir/SKILL.md ../../skills/noir/agents/openai.yaml ../../skills/noir/references/testing.md ../../skills/noir/references/widgets.md ../../skills/noir/references/inputs-and-focus.md ../../skills/noir/references/state-and-animation.md ../../skills/noir/references/design.md ../../skills/noir/references/hooks.md'
             .split(' ');
     const exampleGuidePath = 'example/README.md';
-    final ignored = Process.runSync('git', [
-      'ls-files',
-      '--cached',
-      '--others',
-      '--ignored',
-      '--exclude-from=.pubignore',
-      '--',
-      ...repositorySkillDocs,
-    ]);
-    expect(ignored.exitCode, 0, reason: ignored.stderr as String);
-    expect(
-      (ignored.stdout as String).trim().split('\n'),
-      unorderedEquals(repositorySkillDocs),
-    );
+    // Agent skills are repository guidance beside the package, never inside
+    // it, so no ignore rule is needed to keep them out of the archive.
+    for (final doc in repositorySkillDocs) {
+      expect(File(doc).existsSync(), isTrue, reason: doc);
+    }
+    expect(Directory('skills').existsSync(), isFalse);
     final exampleIgnored = Process.runSync('git', [
       'ls-files',
       '--cached',
       '--others',
       '--ignored',
-      '--exclude-from=.pubignore',
+      '--exclude-per-directory=.pubignore',
       '--',
       exampleGuidePath,
     ]);

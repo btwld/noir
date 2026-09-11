@@ -14,7 +14,7 @@ const _tag = 'v0.5.1';
 const _commit = 'ad9a818d7a9d73f3386e92a445d0feb4b395c69e';
 const _maximumArchiveBytes = 64 * 1024 * 1024;
 const _usage =
-    'Usage: dart run scripts/fetch_opentui_binaries.dart '
+    'Usage: dart run tool/fetch_opentui_binaries.dart '
     '<--verify-only|--verify-upstream|--refresh-from-upstream>';
 
 const _targets = <_NativeTarget>[

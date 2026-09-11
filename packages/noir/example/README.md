@@ -1,7 +1,7 @@
 # Noir examples
 
 These examples ship with Noir and use its supported package APIs. Run them
-from the repository root:
+from `packages/noir/` in a repository checkout:
 
 ```sh
 dart run example/main.dart

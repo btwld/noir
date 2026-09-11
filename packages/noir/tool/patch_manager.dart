@@ -8,7 +8,7 @@ void main(List<String> args) {
   if (args.contains('--help') || args.contains('-h')) {
     io.stdout.writeln('Interactive Patch Manager');
     io.stdout.writeln();
-    io.stdout.writeln('Usage: dart run scripts/patch_manager.dart [worktree]');
+    io.stdout.writeln('Usage: dart run tool/patch_manager.dart [worktree]');
     io.stdout.writeln();
     io.stdout.writeln(
       'Reviews tracked unstaged changes, split sections, and untracked files.',

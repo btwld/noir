@@ -31,10 +31,16 @@ void main() {
   });
 
   test('the repository is one Pub workspace with an explicit member', () {
-    expect(rootPubspec, contains('workspace:\n  - packages/noir_signals'));
+    final workspace = File('../../pubspec.yaml').readAsStringSync();
+    expect(workspace, contains('publish_to: none'));
+    expect(
+      workspace,
+      contains('workspace:\n  - packages/noir\n  - packages/noir_signals'),
+    );
+    expect(rootPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('name: noir_signals'));
-    expect(companionPubspec, contains('noir: ^0.0.1'));
+    expect(companionPubspec, contains('noir: ^0.0.2'));
     expect(companionPubspec, contains('signals_core: ^7.0.0'));
   });
 
@@ -218,7 +224,7 @@ void main() {
       'test_element_host.dart',
       'tui_test_app.dart',
     ]) {
-      expect(bridge, contains("export '../../../../test/helpers/$helper';"));
+      expect(bridge, contains("export '../../../noir/test/helpers/$helper';"));
       expect(File('test/helpers/$helper').existsSync(), isTrue);
     }
     final helperFiles = Directory(
@@ -275,10 +281,10 @@ void main() {
     final changelog = File('CHANGELOG.md').readAsStringSync();
     final readme = File('README.md').readAsStringSync();
 
-    expect(rootPubignore, contains('/packages/'));
+    expect(rootPubignore, isNot(contains('/packages/')));
     expect(companionPubignore, contains('test/'));
-    // Pub applies ancestor ignore files, so the companion cannot be archived
-    // in place. One script owns the staged dry-run.
+    // The packages are siblings, so each archives its own directory in place.
+    // One script stages the standalone copy that the consumer check resolves.
     final stagingScript = File(
       'tool/stage_companion_package.dart',
     ).readAsStringSync();
@@ -368,7 +374,7 @@ void main() {
   test('the Noir skill routes hook guidance to the companion guide', () {
     final skillDirectory = Directory('../../skills/noir').absolute.uri;
     final canonicalHooksGuide = File.fromUri(
-      skillDirectory.resolve('../../$_companionRoot/doc/hooks.md'),
+      skillDirectory.resolve('../../packages/noir_signals/doc/hooks.md'),
     );
     final hooksReference = File.fromUri(
       skillDirectory.resolve('references/hooks.md'),
@@ -381,7 +387,7 @@ void main() {
     expect(hooksReference.existsSync(), isTrue);
     expect(File('doc/hooks.md').existsSync(), isFalse);
     expect(skill, contains('`references/hooks.md`'));
-    expect(skill, contains('`../../$_companionRoot/doc/hooks.md`'));
+    expect(skill, contains('`../../packages/noir_signals/doc/hooks.md`'));
     expect(skill, isNot(contains('noir-hooks')));
 
     final hooks = hooksReference.readAsStringSync();
@@ -389,7 +395,7 @@ void main() {
       '../../skills/noir/references',
     ).absolute.uri;
     for (final path in <String>[
-      '../../../$_companionRoot/doc/hooks.md',
+      '../../../packages/noir_signals/doc/hooks.md',
       'design.md',
       'inputs-and-focus.md',
       'testing.md',
@@ -406,7 +412,7 @@ void main() {
     expect(hooks, contains('package:noir_signals/noir_signals.dart'));
     expect(
       hooks,
-      contains('`../../../$_companionRoot/doc/signals.md`'),
+      contains('`../../../packages/noir_signals/doc/signals.md`'),
       reason: 'the skill must route reactive-state questions too',
     );
     expect(hooks, contains('Call hooks unconditionally'));
@@ -415,22 +421,21 @@ void main() {
     expect(hooks, contains('retained hook state'));
   });
 
-  test('hook guidance uses the existing Noir discovery entry points', () {
-    for (final linkPath in <String>[
-      '.agents/skills/noir',
-      '.claude/skills/noir',
-    ]) {
-      final link = Link(linkPath);
-      expect(link.existsSync(), isTrue, reason: linkPath);
-      expect(
-        link.targetSync(),
-        path.join('..', '..', 'skills', 'noir'),
-        reason: linkPath,
-      );
-    }
+  test('agent skills live only in the repository skills directory', () {
+    expect(File('../../skills/noir/SKILL.md').existsSync(), isTrue);
     expect(Directory('../../skills/noir-hooks').existsSync(), isFalse);
-    expect(Link('.agents/skills/noir-hooks').existsSync(), isFalse);
-    expect(Link('.claude/skills/noir-hooks').existsSync(), isFalse);
+    final tracked = Process.runSync('git', <String>[
+      'ls-files',
+      '--',
+      '../../.agents',
+      '../../.claude',
+    ]);
+    expect(tracked.exitCode, 0, reason: tracked.stderr as String);
+    expect(
+      (tracked.stdout as String).trim(),
+      isEmpty,
+      reason: 'agent skills are shared from skills/, not per-tool folders',
+    );
   });
 }
 

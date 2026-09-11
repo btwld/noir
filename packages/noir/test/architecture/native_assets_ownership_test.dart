@@ -181,14 +181,26 @@ void main() {
       expect(readme, isNot(contains(stale)), reason: stale);
     }
 
+    // Repository tooling, guides, and records sit beside the package
+    // directory, so the archive cannot reach them.
+    for (final outside in <String>[
+      'skills',
+      'website',
+      'external',
+      'scripts',
+      'tools',
+      'publication.json',
+      'AGENTS.md',
+      'CLAUDE.md',
+    ]) {
+      expect(
+        FileSystemEntity.typeSync(outside),
+        FileSystemEntityType.notFound,
+        reason: outside,
+      );
+    }
     for (final rule in <String>[
-      '.agents/',
-      '.claude/',
-      '/skills/',
-      '/scripts/',
-      '/tools/',
-      '/external/',
-      '../../publication.json',
+      '/tool/',
       'test/',
       'FFIGEN.md',
       'ffigen_dynamic.yaml',
@@ -215,7 +227,7 @@ void main() {
 
     for (final clause in <String>[
       'read-only',
-      '../../external/opentui',
+      'external/opentui',
       'native artifacts',
       'separate explicit dependency-strategy decision',
       'exact-cursor restoration',

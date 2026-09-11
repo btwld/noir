@@ -14,13 +14,13 @@ building an app, start with [Build a task list](getting-started.md).
 
 ## Install and import
 
-The companion is not published yet and requires Noir 0.0.1. Use the repository
+The companion is not published yet and requires Noir 0.0.2. Use the repository
 checkout setup in the [package overview](../README.md). After companion
 publication, an application will declare:
 
 ```yaml
 dependencies:
-  noir: ^0.0.1
+  noir: ^0.0.2
   noir_signals: ^0.0.1-alpha.0
 ```
 

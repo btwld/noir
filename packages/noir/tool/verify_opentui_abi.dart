@@ -1,9 +1,9 @@
 // Verifies the Noir-owned OpenTUI header against the pinned Zig ABI and
 // reports which exports remain unbound.
 //
-//   dart run scripts/verify_opentui_abi.dart            # verify + summary
-//   dart run scripts/verify_opentui_abi.dart --missing  # also list unbound
-//   dart run scripts/verify_opentui_abi.dart --emit foo # prototypes for `foo*`
+//   dart run tool/verify_opentui_abi.dart            # verify + summary
+//   dart run tool/verify_opentui_abi.dart --missing  # also list unbound
+//   dart run tool/verify_opentui_abi.dart --emit foo # prototypes for `foo*`
 //
 // Exits non-zero when the header disagrees with the pinned source. The same
 // check runs in `test/architecture/opentui_abi_signature_test.dart`; this entry

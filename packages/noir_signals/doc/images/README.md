@@ -22,9 +22,10 @@ the recording. Each JPEG is 745×472 pixels.
 | `06-clear.jpg` | Repeat the previous sequence, then click `clear-completed`. | Two stored rows; `2 of 2 remaining`, removal disabled. |
 
 Every image above has a scene in
-[`scripts/recordings/doc_frames.json`](https://github.com/conceptadev/noir/blob/main/scripts/recordings/doc_frames.json)
+[`packages/noir/tool/recordings/doc_frames.json`](https://github.com/conceptadev/noir/blob/main/packages/noir/tool/recordings/doc_frames.json)
 that names its checkpoint, its input, and the text the lesson promises.
-`dart run scripts/capture_doc_frames.dart --check` checks the captured frames,
+`dart run tool/capture_doc_frames.dart --check`, run from `packages/noir/`,
+checks the captured frames,
 including cell colors, attributes, and cursor state. It does not update or
 approve JPEGs.
 
@@ -34,7 +35,7 @@ and architecture tests reject a mismatch. Recapturing a changed checkpoint
 cannot silently approve its old screenshot.
 
 To refresh a screenshot, recapture the frames, then record the same scene with
-[`record_noir_demo.dart`](https://github.com/conceptadev/noir/blob/main/scripts/record_noir_demo.dart)
+[`record_noir_demo.dart`](https://github.com/conceptadev/noir/blob/main/packages/noir/tool/record_noir_demo.dart)
 at the geometry above and inspect the rendered poster before you replace the
 JPEG. Each scene starts from a fresh app; it does not inherit an earlier
 lesson's interactive state. After checking the JPEG against the scene, copy

@@ -1,13 +1,11 @@
 #!/usr/bin/env dart
 
-/// Stages `packages/noir_signals/` outside this checkout so pub can archive it.
+/// Stages `packages/noir_signals/` outside this checkout as a standalone
+/// package.
 ///
-/// Pub applies the ignore files of every ancestor directory, so the root
-/// package's `.pubignore` rule that keeps `packages/` out of the `noir`
-/// archive also hides the companion's own files when the companion is
-/// published in place. Copying the package to a directory outside the
-/// repository removes that ancestor and lets the companion's own `.pubignore`
-/// decide its archive by itself.
+/// The companion publishes in place from its own directory. The staged copy is
+/// what an application outside this Pub workspace resolves, so the
+/// companion's consumer check and pre-release verification run against it.
 ///
 /// The staged copy drops `resolution: workspace`, which only resolves inside
 /// this repository's Pub workspace, and points `noir` at this checkout through
@@ -16,8 +14,8 @@
 ///
 /// Usage:
 ///
-///     dart run scripts/stage_companion_package.dart [--output <dir>]
-///     dart run scripts/stage_companion_package.dart --verify
+///     dart run tool/stage_companion_package.dart [--output <dir>]
+///     dart run tool/stage_companion_package.dart --verify
 ///
 /// `--verify` runs `dart pub get` and `dart pub publish --dry-run` in the
 /// staged copy and fails when the dry-run reports a warning.
@@ -25,7 +23,7 @@ library;
 
 import 'dart:io';
 
-const _companionPath = 'packages/noir_signals';
+const _companionPath = '../noir_signals';
 
 /// Entries the staged copy never carries, matched at the package root only.
 ///
@@ -37,7 +35,7 @@ const _skippedRootEntries = <String>{
   'pubspec_overrides.yaml',
 };
 const _usage =
-    'Usage: dart run scripts/stage_companion_package.dart '
+    'Usage: dart run tool/stage_companion_package.dart '
     '[--output <dir>] [--verify]';
 
 Future<void> main(List<String> arguments) async {
@@ -64,11 +62,11 @@ Future<int> _stage(List<String> arguments) async {
     }
   }
 
-  final repositoryRoot = Directory.current.absolute;
-  final companion = Directory('${repositoryRoot.path}/$_companionPath');
+  final noirRoot = Directory.current.absolute;
+  final companion = Directory('${noirRoot.path}/$_companionPath');
   if (!companion.existsSync()) {
     stderr.writeln(
-      'Run this from the repository root: $_companionPath is '
+      'Run this from packages/noir: $_companionPath is '
       'missing.',
     );
     return 66;
@@ -93,7 +91,7 @@ Future<int> _stage(List<String> arguments) async {
 
   _copyDirectory(companion, destination, skipRootEntries: true);
   _rewritePubspec(destination);
-  _writeNoirOverride(destination, repositoryRoot);
+  _writeNoirOverride(destination, noirRoot);
 
   stdout.writeln('Staged $_companionPath at ${destination.path}');
   if (!verify) {
@@ -153,11 +151,11 @@ void _rewritePubspec(Directory staged) {
   pubspec.writeAsStringSync('${kept.join('\n')}\n');
 }
 
-void _writeNoirOverride(Directory staged, Directory repositoryRoot) {
+void _writeNoirOverride(Directory staged, Directory noirRoot) {
   File('${staged.path}/pubspec_overrides.yaml').writeAsStringSync(
     'dependency_overrides:\n'
     '  noir:\n'
-    '    path: ${repositoryRoot.path}\n',
+    '    path: ${noirRoot.path}\n',
   );
 }
 

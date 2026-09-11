@@ -23,7 +23,7 @@ Use one JSON object per recording:
 ## Fields
 
 - `version`: `1`.
-- `entrypoint`: existing Dart entry point, relative to the repository root.
+- `entrypoint`: existing Dart entry point, relative to `packages/noir/`.
 - `output`: local `.cast` path. Prefer `.context/demos/` for review.
 - `title`: factual recording title shown by compatible players.
 - `width`, `height`: emulated terminal cells. Start from the example's focused
@@ -37,7 +37,7 @@ Use one JSON object per recording:
 
 Each action has `atMs` plus exactly one operation:
 
-- `key`: any name accepted by `scripts/driver/ansi_keys.dart`, except `ctrl-c`.
+- `key`: any name accepted by `tool/driver/ansi_keys.dart`, except `ctrl-c`.
 - `type`: UTF-8 text sent through Noir's production input parser.
 - `clickKey`: exact `ValueKey<String>` resolved through render-tree hit testing.
 

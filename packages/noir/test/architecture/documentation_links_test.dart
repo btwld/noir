@@ -54,8 +54,8 @@ void main() {
         final prefix = match.group(1)!;
         final target = match.group(2)!.split('#').first;
         final exists = prefix == _treePrefix
-            ? Directory(target).existsSync()
-            : File(target).existsSync();
+            ? Directory('../../$target').existsSync()
+            : File('../../$target').existsSync();
         if (!exists) broken.add('${document.path} -> $prefix$target');
       }
     }

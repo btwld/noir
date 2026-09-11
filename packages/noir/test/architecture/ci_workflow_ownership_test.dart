@@ -55,7 +55,12 @@ void main() {
     expect(analyze, contains('runs-on: ubuntu-latest'));
     expect(analyze, contains('    timeout-minutes: 15\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
-    expect(analyze, contains('timeout-minutes: 2\n        run: dart format'));
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart format',
+      ),
+    );
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
 
     expect(ubuntu, contains('needs: analyze'));
@@ -63,12 +68,14 @@ void main() {
     expect(
       ubuntu,
       contains(
-        'timeout-minutes: 2\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
+        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
       ),
     );
     expect(
       ubuntu,
-      contains('timeout-minutes: 15\n        run: dart test --concurrency=1'),
+      contains(
+        'timeout-minutes: 15\n        working-directory: packages/noir\n        run: dart test --concurrency=1',
+      ),
     );
 
     expect(desktop, contains('needs: analyze'));
@@ -78,12 +85,14 @@ void main() {
     expect(
       desktop,
       contains(
-        'timeout-minutes: 2\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
+        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
       ),
     );
     expect(
       desktop,
-      contains('timeout-minutes: 20\n        run: dart test --concurrency=1'),
+      contains(
+        'timeout-minutes: 20\n        working-directory: packages/noir\n        run: dart test --concurrency=1',
+      ),
     );
   });
 
@@ -145,34 +154,31 @@ void main() {
     );
   });
 
-  test(
-    'each CI job caches only the isolated pub cache and always resolves',
-    () {
-      expect('actions/cache@'.allMatches(workflow), hasLength(3));
-      expect(
-        r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', "
-                "'packages/noir_signals/pubspec.yaml') }}"
-            .allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
-            .allMatches(workflow),
-        hasLength(3),
-      );
-      expect(
-        workflow,
-        isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
-        reason: 'runner context is unavailable in job-level env',
-      );
-      expect('run: dart pub get'.allMatches(workflow), hasLength(3));
-      expect(workflow, isNot(contains('.dart_tool')));
-    },
-  );
+  test('each CI job caches only the isolated pub cache and always resolves', () {
+    expect('actions/cache@'.allMatches(workflow), hasLength(3));
+    expect(
+      r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', "
+              "'packages/noir_signals/pubspec.yaml') }}"
+          .allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
+          .allMatches(workflow),
+      hasLength(3),
+    );
+    expect(
+      workflow,
+      isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
+      reason: 'runner context is unavailable in job-level env',
+    );
+    expect('run: dart pub get'.allMatches(workflow), hasLength(3));
+    expect(workflow, isNot(contains('.dart_tool')));
+  });
 
   test('ordinary suite has no removed wrapper, parity, or restricted lane', () {
     for (final stale in <String>[

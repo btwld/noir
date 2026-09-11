@@ -17,7 +17,7 @@ function readRepositoryFile(path) {
 }
 
 const firstAppSource = readRepositoryFile(
-  'example/tutorials/first_app/step_01.dart',
+  'packages/noir/example/tutorials/first_app/step_01.dart',
 );
 const firstAppStateSource = firstAppSource
   .slice(firstAppSource.indexOf('class _CounterAppState'))

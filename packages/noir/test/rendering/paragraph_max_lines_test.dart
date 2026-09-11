@@ -225,7 +225,7 @@ void main() {
         );
         addTearDown(() => temp.delete(recursive: true));
         final packageConfig =
-            '${Directory.current.path}/.dart_tool/package_config.json';
+            '${Directory.current.path}/../../.dart_tool/package_config.json';
         final cases = <String, String>{
           'text-zero': "const value = Text('x', maxLines: 0);",
           'text-neg': "const value = Text('x', maxLines: -1);",

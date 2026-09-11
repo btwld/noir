@@ -88,14 +88,15 @@ void main() {
         jsonDecode(File('tool/recordings/doc_frames.json').readAsStringSync())
             as Map<String, Object?>;
     final output = manifest['output']! as String;
-    expect(output, '../../website/src/generated/terminal-frames.json');
+    expect(output, 'website/src/generated/terminal-frames.json');
 
     final scenes = (manifest['scenes']! as List<Object?>)
         .cast<Map<String, Object?>>();
     expect(scenes, isNotEmpty);
 
     final captured =
-        jsonDecode(File(output).readAsStringSync()) as Map<String, Object?>;
+        jsonDecode(File('../../$output').readAsStringSync())
+            as Map<String, Object?>;
     expect(captured['capturedWith'], contains('NOIR_DRIVE=1'));
     final frames = captured['frames']! as Map<String, Object?>;
     expect(frames.keys, unorderedEquals(scenes.map((s) => s['id'])));
@@ -103,7 +104,7 @@ void main() {
     for (final scene in scenes) {
       final id = scene['id']! as String;
       final entrypoint = scene['entrypoint']! as String;
-      final source = File(entrypoint);
+      final source = File('../../$entrypoint');
       expect(
         source.existsSync(),
         isTrue,

@@ -148,7 +148,7 @@ void main() {
     // could publish. The job must therefore own its steps.
     expect(
       publishJob,
-      isNot(contains('../../.github/workflows/')),
+      isNot(contains('.github/workflows/')),
       reason: 'publish must not delegate to an external reusable workflow',
     );
     expect(publishJob, contains('runs-on: ubuntu-latest'));

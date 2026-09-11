@@ -21,10 +21,10 @@ TTY or raw mode.
 4. Save local review output under `.context/demos/`. Use a tracked
    `website/public/demos/` destination only when the website exists and the user
    has asked to publish the artifact.
-5. Run:
+5. Run, from `packages/noir/`:
 
    ```sh
-   dart run scripts/record_noir_demo.dart --recipe <recipe.json>
+   dart run tool/record_noir_demo.dart --recipe <recipe.json>
    ```
 
    The recorder refuses to overwrite an existing artifact. Pass `--force` only
@@ -55,7 +55,7 @@ TTY or raw mode.
   replay cannot be mistaken for a real shell or terminal-emulator capture.
 - It does not prove Kitty, Sixel, OSC52, tmux, or Screen behavior.
 - Do not import repository test helpers or invent another harness. Compose the
-  existing `scripts/driver/noir_driver.dart` client.
+  existing `tool/driver/noir_driver.dart` client.
 - Do not include secrets, personal data, shell history, or unrelated output.
 - Keep autoplay off in documentation. Provide a static poster and honor reduced
   motion.

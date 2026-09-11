@@ -12,18 +12,17 @@ import 'helpers/package_paths.dart';
 /// Checks that an application outside this Pub workspace can depend on the
 /// staged companion artifact and use both public libraries.
 ///
-/// Pub applies the ignore files of every ancestor directory, so the companion
-/// is staged outside the checkout by `scripts/stage_companion_package.dart`,
-/// exactly as its publish dry-run is. The consumer therefore resolves the same
-/// files the archive would carry.
+/// The companion is staged outside the checkout by
+/// `packages/noir/tool/stage_companion_package.dart`, so the consumer resolves
+/// the same files an application outside this Pub workspace would.
 void main() {
-  late Directory repository;
+  late Directory noir;
   late Directory staged;
   late Directory sandbox;
   late ProcessResult resolution;
 
   setUpAll(() async {
-    repository = repositoryRoot;
+    noir = noirRoot;
 
     final workspace = Directory.systemTemp.createTempSync(
       'noir_signals_consumer.',
@@ -37,10 +36,10 @@ void main() {
 
     final stage = await Process.run(Platform.resolvedExecutable, <String>[
       'run',
-      'scripts/stage_companion_package.dart',
+      'tool/stage_companion_package.dart',
       '--output',
       staged.path,
-    ], workingDirectory: repository.path);
+    ], workingDirectory: noir.path);
     expect(
       stage.exitCode,
       0,
@@ -62,7 +61,7 @@ void main() {
     expect(template, contains('path: NOIR_SIGNALS_PATH'));
     pubspec.writeAsStringSync(
       template
-          .replaceAll('path: NOIR_PATH', 'path: ${repository.path}')
+          .replaceAll('path: NOIR_PATH', 'path: ${noir.path}')
           .replaceFirst('path: NOIR_SIGNALS_PATH', 'path: ${staged.path}'),
     );
 
@@ -129,7 +128,7 @@ void main() {
       '\n'
       'dependencies:\n'
       '  noir:\n'
-      '    path: ${repository.path}\n',
+      '    path: ${noir.path}\n',
     );
 
     final result = await Process.run(Platform.resolvedExecutable, <String>[

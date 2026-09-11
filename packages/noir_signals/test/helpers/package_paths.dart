@@ -1,6 +1,6 @@
 import 'dart:io';
 
-/// Resolves this package's root and the repository root that owns it.
+/// Resolves this package's root and its `noir` sibling.
 ///
 /// Tests read example sources and stage the package by path, so they must not
 /// assume the process was started from any one directory. `dart test` from
@@ -27,9 +27,9 @@ Directory get companionRoot {
   }
 }
 
-/// The repository root, which is also the `noir` package and workspace root.
-Directory get repositoryRoot {
-  final root = companionRoot.parent.parent;
+/// The `noir` package, the companion's sibling under `packages/`.
+Directory get noirRoot {
+  final root = Directory('${companionRoot.parent.path}/noir');
   if (!_isPackage(root, 'noir')) {
     throw StateError('${root.path} is not the noir package root.');
   }

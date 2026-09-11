@@ -188,7 +188,7 @@ void main() {
       );
       addTearDown(() => temp.delete(recursive: true));
       final packageConfig =
-          '${Directory.current.path}/.dart_tool/package_config.json';
+          '${Directory.current.path}/../../.dart_tool/package_config.json';
       final cases = <String, String>{
         'constraints': 'const value = Constraints(maxWidth: -1);',
         'box': 'const value = BoxConstraints(minWidth: 2, maxWidth: 1);',

@@ -1,7 +1,7 @@
 #!/usr/bin/env dart
 // Drive a Noir app from the command line, interactively or from a pipe.
 //
-//     dart run scripts/noir_drive.dart example/counter.dart [--size 100x30]
+//     dart run tool/noir_drive.dart example/counter.dart [--size 100x30]
 //                                      [--json] [-- app arguments...]
 //
 // The app starts in drive mode (`NOIR_DRIVE=1`): headless, painting into
@@ -32,7 +32,7 @@
 // stdout, which otherwise lands in front of the first captured row.
 //
 //     printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
-//       dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+//       dart run --verbosity=error tool/noir_drive.dart example/counter.dart
 //
 // The exit code is the driven app's own, or 65 when a command failed.
 
@@ -43,7 +43,7 @@ import 'driver/ansi_keys.dart';
 import 'driver/noir_driver.dart';
 
 const _usage =
-    'Usage: dart run scripts/noir_drive.dart <entry-point.dart> '
+    'Usage: dart run tool/noir_drive.dart <entry-point.dart> '
     '[--size WxH] [--json] [-- app arguments...]';
 
 const _commands =

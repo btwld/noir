@@ -10,7 +10,7 @@ import 'driver/ansi_keys.dart';
 import 'driver/noir_driver.dart';
 
 const _usage =
-    'Usage: dart run scripts/record_noir_demo.dart '
+    'Usage: dart run tool/record_noir_demo.dart '
     '--recipe <recipe.json> [--force]';
 
 Future<void> main(List<String> arguments) async {

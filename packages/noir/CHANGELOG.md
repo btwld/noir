@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.2
+
+This release changes where Noir lives in its repository, not what it does.
+The package moved to `packages/noir`, next to `noir_signals`, so the README
+and the package metadata now link to the new paths. The library, its public
+API, and the bundled native artifacts are unchanged from 0.0.1.
+
+### Changed
+
+- README, example, and notice links point at `packages/noir` in the
+  repository. Links on the 0.0.1 pub.dev page that name the old root paths
+  no longer resolve.
+- The package `repository` field names `packages/noir`.
+
 ## 0.0.1
 
 This initial 0.0.x release adds `LayoutBuilder` and one framework lifecycle

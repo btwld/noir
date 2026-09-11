@@ -42,7 +42,7 @@ updates automatically when documentation changes reach `main`.
 
 Source guides and generated reference:
 
-- [Runnable example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)
+- [Runnable example catalog](https://github.com/conceptadev/noir/blob/main/packages/noir/example/README.md)
   — every shipped app, listed by the question it answers.
 - [Build a task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md)
   — a five-lesson tutorial on lifecycle hooks and reactive state.
@@ -105,7 +105,7 @@ class HelloApp extends StatelessWidget {
 }
 ```
 
-The complete version is available in [the hello example](https://github.com/conceptadev/noir/blob/main/example/hello.dart).
+The complete version is available in [the hello example](https://github.com/conceptadev/noir/blob/main/packages/noir/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state:
@@ -145,7 +145,7 @@ class _CounterAppState extends State<CounterApp> {
 
 Save either complete example as `bin/main.dart`, then run `dart run bin/main.dart`
 in a terminal. The counter rebuilds its label after keyboard or mouse activation.
-See [the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
+See [the counter example](https://github.com/conceptadev/noir/blob/main/packages/noir/example/counter.dart)
 for a larger layout and additional shortcuts.
 
 ## Hot Reload During Development
@@ -299,9 +299,9 @@ only on Noir's high-level API; `noir` never depends on it.
 
 ## Examples
 
-Start with [Main](https://github.com/conceptadev/noir/blob/main/example/main.dart), [Counter](https://github.com/conceptadev/noir/blob/main/example/counter.dart), or
-[Components](https://github.com/conceptadev/noir/blob/main/example/components_demo.dart). The
-[example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md) lists every runnable app by the question
+Start with [Main](https://github.com/conceptadev/noir/blob/main/packages/noir/example/main.dart), [Counter](https://github.com/conceptadev/noir/blob/main/packages/noir/example/counter.dart), or
+[Components](https://github.com/conceptadev/noir/blob/main/packages/noir/example/components_demo.dart). The
+[example catalog](https://github.com/conceptadev/noir/blob/main/packages/noir/example/README.md) lists every runnable app by the question
 it answers, including focused controls, complete applications, animation,
 advanced validation, and the tutorial checkpoints the documentation captures
 its frames from.
@@ -361,7 +361,7 @@ native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
 
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](https://github.com/conceptadev/noir/blob/main/THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
+[Third-Party Notices](https://github.com/conceptadev/noir/blob/main/packages/noir/THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
 license terms.
 
 High-level Unicode cell measurement uses a compact pure-Dart range table

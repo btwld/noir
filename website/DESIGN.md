@@ -232,7 +232,7 @@ The active route uses a narrow ink marker, not a filled block.
 
 A figure with a short caption, verbatim cell output as selectable text, the
 producing command, and the capture boundary. The text comes from
-`scripts/capture_doc_frames.dart`, which drives the same checkpoint the page
+`packages/noir/tool/capture_doc_frames.dart`, which drives the same checkpoint the page
 teaches. A frame the reader cannot trace to a runnable file does not belong on
 the site.
 
