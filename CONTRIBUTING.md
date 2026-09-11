@@ -25,20 +25,20 @@ If the repository was cloned without submodules:
 The submodule and bundled libraries are read-only under ordinary contribution
 work. See [`AGENTS.md`](AGENTS.md#opentui-reference-and-ownership).
 
-The repository is one Pub workspace. `dart pub get` at the root resolves both
-the `noir` package and the optional companion package under
+The repository is one Pub workspace. `dart pub get` at the root resolves the
+`noir` package under `packages/noir/` and the optional companion package under
 `packages/noir_signals/`, which owns the widget lifecycle hooks and the
-Signals integration.
+Signals integration. The root `pubspec.yaml` only defines the workspace.
 
 ## Required checks
 
-Run focused tests while developing, then, from the repository root:
+Run focused tests while developing, then, from `packages/noir/`:
 
-    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
-    dart run scripts/fetch_opentui_binaries.dart --verify-only
+    dart run tool/fetch_opentui_binaries.dart --verify-only
 
 When a change touches the companion package, also run, from
 `packages/noir_signals/`:
@@ -70,16 +70,16 @@ Use the existing harness that owns the behavior:
 | `KeyDriver` | Synthetic parsed input behavior |
 | `createTuiTestApp` | End-to-end binding/parser integration |
 
-Architecture tests in `test/architecture` are executable package boundaries,
+Architecture tests in `packages/noir/test/architecture` are executable package boundaries,
 not snapshots of old plans. Visual goldens use `.buffer.txt` plus style and
 cursor sidecars by default. Prefer `BufferMatchers` for cell assertions.
 
-`tools/mcp_inspector` is a separate package with its own format, analyze, and
-test commands, and the root analysis options exclude `tools/**`. Its fixture
-servers live in `tools/mcp_fixtures`, which depends on `package:mcp_dart`
-alone: a fixture that inherited Noir's native-assets build hook would let
-`dart run` write hook progress onto the MCP protocol channel. Two root tests
-keep both packages in the ordinary suite:
+`packages/noir/tool/mcp_inspector` is a separate package with its own format,
+analyze, and test commands, and Noir's analysis options exclude it. Its
+fixture servers live in `packages/noir/tool/mcp_fixtures`, which depends on
+`package:mcp_dart` alone: a fixture that inherited Noir's native-assets build
+hook would let `dart run` write hook progress onto the MCP protocol channel.
+Two Noir tests keep both packages in the ordinary suite:
 `test/tools/mcp_inspector_package_test.dart` runs their gates as subprocesses,
 and `test/tools/mcp_inspector_drive_test.dart` drives the real screen against
 the fixture servers.
@@ -95,10 +95,11 @@ For behavior changes:
 
 `NOIR_DRIVE=1` mounts any Noir entry point headlessly, painting into OpenTUI's
 non-terminal testing renderer and publishing `ext.noir.driver.*` over the VM
-service. Nothing in the app changes. `scripts/noir_drive.dart` launches an app
-that way and reads commands from its own stdin, interactively or from a pipe:
+service. Nothing in the app changes. `tool/noir_drive.dart` in `packages/noir/`
+launches an app that way and reads commands from its own stdin, interactively
+or from a pipe. Run it from `packages/noir/`:
 
-    dart run scripts/noir_drive.dart example/counter.dart [--size 100x30] [--json]
+    dart run tool/noir_drive.dart example/counter.dart [--size 100x30] [--json]
 
     capture [--ansi|--plain|--cells]
     tree [depth]
@@ -118,13 +119,13 @@ stderr. Use Dart 3.11 or later to keep build-hook progress out of scripted
 captures:
 
     printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
-      dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+      dart run --verbosity=error tool/noir_drive.dart example/counter.dart
 
 On Dart 3.11 or later, pass `--verbosity=error` whenever frames are piped or
 redirected. Dart 3.10 may still write build-hook progress to stdout despite
 this flag, prepending it to the first captured row.
 
-`scripts/driver/noir_driver.dart` exposes the same surface as a Dart client for
+`tool/driver/noir_driver.dart` exposes the same surface as a Dart client for
 scripts that assert against captures. `tree()` returns structured `DriverNode`
 snapshots, and `DriverLocator.byKey`, `.byType`, `.byText`, and `.focused`
 resolve exactly and case-sensitively on the client. Only `ValueKey<String>` is
@@ -177,7 +178,8 @@ session; and `reload` inherits the documented `reassemble()` limits, so
 - Keep examples compilable and use symbols exported by the documented barrel.
 - Do not claim gradients, images, shadows, shapes, performance, platform
   support, or terminal fidelity that tests do not establish.
-- Generated FFI files are never edited by hand; see [`FFIGEN.md`](FFIGEN.md).
+- Generated FFI files are never edited by hand; see
+  [`packages/noir/FFIGEN.md`](packages/noir/FFIGEN.md).
 
 ## Changes and review
 
@@ -193,20 +195,19 @@ decision and review.
 
 ## Releasing
 
-`pubspec.yaml` carries the candidate version and the top section of
-`CHANGELOG.md` describes it. `publication.json` records the latest version of
-each package on pub.dev, or `null`; the website derives every availability
-label from it and both manifests, so update it in the same change as a
-publication.
+`packages/noir/pubspec.yaml` carries the candidate version and the top section
+of `packages/noir/CHANGELOG.md` describes it. `publication.json` records the
+latest version of each package on pub.dev, or `null`; the website derives
+every availability label from it and both manifests, so update it in the same
+change as a publication.
 
-Publish in this order:
+Publish in this order, each package from its own directory:
 
-1. `noir`, from the exact reviewed commit, after its merge-commit CI passed.
-2. `noir_signals`, from a staged copy: run
-   `dart run scripts/stage_companion_package.dart --verify` from the root,
-   because pub applies every ancestor `.pubignore` and the root rule that
-   keeps `packages/` out of Noir's archive would otherwise hide the
-   companion's own files.
+1. `noir`, from `packages/noir/`, at the exact reviewed commit, after its
+   merge-commit CI passed.
+2. `noir_signals`, from `packages/noir_signals/`. First run
+   `dart run tool/stage_companion_package.dart --verify` from `packages/noir/`
+   to check the archive as an application outside this workspace resolves it.
 3. A consumer that depends on both published versions with no local
    override, to confirm the hosted packages resolve together.
 

@@ -5,9 +5,9 @@
 *.so binary
 
 # Preserve exact license bytes extracted from the verified official archives.
-third_party/opentui-v0.5.1/** -whitespace
+packages/noir/third_party/opentui-v0.5.1/** -whitespace
 
 # Golden snapshots are compared with LF normalization.
-test/goldens/** text eol=lf
+packages/noir/test/goldens/** text eol=lf
 # Buffer snapshots intentionally preserve fixed-width terminal padding.
-test/goldens/*.buffer.txt whitespace=-trailing-space
+packages/noir/test/goldens/*.buffer.txt whitespace=-trailing-space

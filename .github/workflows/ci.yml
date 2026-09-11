@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -45,7 +45,8 @@ jobs:
 
       - name: Check formatting
         timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+        working-directory: packages/noir
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
 
       - name: Run strict analysis
         timeout-minutes: 4
@@ -136,7 +137,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -144,13 +145,15 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+        working-directory: packages/noir
+        run: dart run tool/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
         # The serial suite compiles consumer packages and MCP fixture servers.
         # Windows finished in 9m56s under the previous 10-minute ceiling and
         # was killed while the process was still exiting.
         timeout-minutes: 15
+        working-directory: packages/noir
         run: dart test --concurrency=1
 
       - name: Run companion tests
@@ -187,7 +190,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -195,11 +198,13 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+        working-directory: packages/noir
+        run: dart run tool/fetch_opentui_binaries.dart --verify-only
 
       - name: Run ordinary tests
         # A loaded macOS runner exceeded 15 minutes without an assertion failure.
         timeout-minutes: 20
+        working-directory: packages/noir
         run: dart test --concurrency=1
 
       - name: Run companion tests

@@ -1,9 +1,23 @@
 # Noir contributor and agent guide
 
 Start with [`GOALS.md`](GOALS.md), which defines the durable architecture
-and quality bar. The top section of [`CHANGELOG.md`](CHANGELOG.md) describes
-the current candidate, `publication.json` records what is on pub.dev, and
-open work lives in GitHub issues and pull requests.
+and quality bar. The top section of
+[`packages/noir/CHANGELOG.md`](packages/noir/CHANGELOG.md) describes the
+current candidate, `publication.json` records what is on pub.dev, and open
+work lives in GitHub issues and pull requests.
+
+## Repository layout
+
+- `packages/noir/`: the `noir` package, with its tests, examples, bundled
+  native artifacts, and development tooling in `tool/`.
+- `packages/noir_signals/`: the optional companion package.
+- `website/`: the documentation site.
+- `skills/`: agent skills for building with Noir and maintaining this
+  repository.
+- `external/opentui/`: the read-only OpenTUI submodule.
+
+The root `pubspec.yaml` only defines the Pub workspace and is never
+published.
 
 ## Purpose and architecture
 
@@ -73,15 +87,19 @@ remove obsolete API shapes instead of adding compatibility shims.
 
 ## Authorized local verification
 
-Run these from the repository root, for the `noir` package:
+The repository is one Pub workspace. `dart pub get` at the root resolves both
+packages together, and `dart analyze --fatal-infos` at the root covers every
+package.
 
-    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+Run these from `packages/noir/`, for the `noir` package:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
     dart analyze --fatal-infos
     dart test test/architecture/ --concurrency=1
     dart test <focused test paths> --concurrency=1
     dart test --concurrency=1
-    dart run scripts/fetch_opentui_binaries.dart --verify-only
-    dart run scripts/capture_doc_frames.dart --check
+    dart run tool/fetch_opentui_binaries.dart --verify-only
+    dart run tool/capture_doc_frames.dart --check
     dart pub publish --dry-run
 
 `capture_doc_frames.dart` drives the documented tutorial checkpoints in
@@ -93,19 +111,16 @@ Run these from `packages/noir_signals/`, for the companion package:
     dart format --output=none --set-exit-if-changed lib/ test/ example/
     dart analyze --fatal-infos
     dart test --concurrency=1
+    dart pub publish --dry-run
 
-The repository is one Pub workspace. `dart pub get` at the root resolves both
-packages together, and `dart analyze --fatal-infos` at the root also covers
-the companion tree.
+Each package publishes in place from its own directory. To check the
+companion the way an application outside this workspace resolves it, run this
+from `packages/noir/`:
 
-Check the companion archive from the repository root instead of in place:
+    dart run tool/stage_companion_package.dart --verify
 
-    dart run scripts/stage_companion_package.dart --verify
-
-Pub applies the ignore files of every ancestor directory, so the root
-`.pubignore` rule that keeps `packages/` out of Noir's archive also hides the
-companion's own files when the companion is published in place. The script
-stages a copy outside the checkout and runs the dry-run there.
+The script stages a standalone copy outside the checkout, points its `noir`
+dependency at `packages/noir`, and runs the dry-run there.
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.
@@ -168,8 +183,9 @@ published archive.
 ## Current release boundary
 
 The target is the current core-framework release candidate, not a stable
-1.0 claim. Its exact version is the one in `pubspec.yaml`, its changes are
-the top section of [`CHANGELOG.md`](CHANGELOG.md), the versions on pub.dev
+1.0 claim. Its exact version is the one in `packages/noir/pubspec.yaml`, its
+changes are the top section of
+[`packages/noir/CHANGELOG.md`](packages/noir/CHANGELOG.md), the versions on pub.dev
 are in `publication.json`, and known native limitations are on the
 website's platform limitations page. The release procedure is in
 [`CONTRIBUTING.md`](CONTRIBUTING.md).

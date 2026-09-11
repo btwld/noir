@@ -20,6 +20,9 @@ jobs:
     name: Verify and package native assets
     runs-on: ubuntu-latest
     timeout-minutes: 36
+    defaults:
+      run:
+        working-directory: packages/noir
 
     steps:
       - name: Checkout repository
@@ -60,7 +63,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -68,11 +71,11 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+        run: dart run tool/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
         timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
 
       - name: Run strict analysis
         timeout-minutes: 4
@@ -102,8 +105,8 @@ jobs:
         with:
           name: opentui-binaries
           path: |
-            native/
-            native_manifest.json
+            packages/noir/native/
+            packages/noir/native_manifest.json
           retention-days: 7
           if-no-files-found: error
 
@@ -111,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: opentui-binaries-release
-          path: opentui-binaries-*.tar.gz
+          path: packages/noir/opentui-binaries-*.tar.gz
           retention-days: 7
           if-no-files-found: error
 
@@ -124,6 +127,9 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: packages/noir
 
     steps:
       - name: Checkout repository
@@ -148,13 +154,13 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: opentui-binaries
-          path: .
+          path: packages/noir
 
       - name: Cache pub packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3

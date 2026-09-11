@@ -18,7 +18,7 @@ export const availability: {
 } = {
   noir: {
     name: 'noir',
-    manifest: '0.0.1',
+    manifest: '0.0.2',
     published: '0.0.1',
     isPublished: true,
     installCommand: 'dart pub add noir',
