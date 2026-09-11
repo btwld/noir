@@ -60,6 +60,44 @@ void main() {
     }
   });
 
+  test('Windows terminal resize updates layout and the captured frame', () {
+    final constraints = <BoxConstraints>[];
+    final platform = _RecordingTerminalPlatform(
+      isWindows: true,
+      terminalColumns: 8,
+      terminalLines: 2,
+    );
+    final app = createTuiTestApp(
+      _LayoutProbe(log: constraints),
+      width: 8,
+      height: 2,
+      headless: false,
+      terminalPlatform: platform,
+      inputDriverFactory: (_) => _ProbeInputDriver(),
+    );
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+    final initialFrame = app.binding.debugFrameCount;
+
+    platform
+      ..terminalColumns = 20
+      ..terminalLines = 5
+      ..emit(TerminalSignal.resize);
+    app.pumpFrame();
+
+    expect(constraints.last.maxWidth, 20);
+    expect(constraints.last.maxHeight, 5);
+    expect(app.captureFrame().width, 20);
+    expect(app.captureFrame().height, 5);
+    expect(app.captureFrame(), BufferMatchers.containsText('probe'));
+    expect(app.binding.debugFrameCount, initialFrame + 1);
+    // Applying RenderView's new size can leave a clean scheduler follow-up.
+    app.pumpFrame();
+    expect(app.binding.debugFrameCount, initialFrame + 1);
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+  });
+
   test('changed pixel metrics repaint an idle scene through parsed input', () {
     final app = createTuiTestApp(
       const _MetricsProbe(),
@@ -711,19 +749,24 @@ class _ProbeInputDriver implements TerminalInputDriver {
 }
 
 class _RecordingTerminalPlatform implements TerminalPlatform {
-  _RecordingTerminalPlatform({this.stdoutHasTerminal = true});
+  _RecordingTerminalPlatform({
+    this.stdoutHasTerminal = true,
+    this.isWindows = false,
+    this.terminalColumns = 80,
+    this.terminalLines = 24,
+  });
 
   @override
   bool stdoutHasTerminal;
 
   @override
-  bool get isWindows => false;
+  final bool isWindows;
 
   @override
-  int get terminalColumns => 80;
+  int terminalColumns;
 
   @override
-  int get terminalLines => 24;
+  int terminalLines;
 
   bool _stdinLineMode = false;
   bool _stdinEchoMode = false;
@@ -763,6 +806,10 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
 
   @override
   Stream<void> watchSignal(TerminalSignal signal) => _signals[signal]!.stream;
+
+  void emit(TerminalSignal signal) {
+    _signals[signal]!.add(null);
+  }
 }
 
 class _FakeTerminalPlatform implements TerminalPlatform {

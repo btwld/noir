@@ -86,6 +86,9 @@ artifacts are unchanged from alpha.4.
 - Changed terminal pixel measurements now repaint an idle scene and update
   natural image sizes without an unrelated widget rebuild. Duplicate and
   invalid measurements still leave an otherwise clean scene unpainted.
+- Windows terminal sessions now check for size changes every 100ms and update
+  layout and rendering when dimensions change. Checks stop when the session
+  closes and do not run in headless or non-terminal sessions.
 
 ### Changed
 

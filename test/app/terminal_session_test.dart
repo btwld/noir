@@ -245,6 +245,161 @@ void main() {
     expect(platform.canceledSignals, contains(TerminalSignal.resize));
   });
 
+  test('Windows resize checks apply changed valid sizes and stop on close', () {
+    final platform = _FakeTerminalPlatform(
+      stdoutHasTerminal: true,
+      terminalColumns: 10,
+      terminalLines: 4,
+    )..isWindows = true;
+    var scheduledFrames = 0;
+    final session = TerminalSession(
+      width: 5,
+      height: 2,
+      headless: false,
+      inputDispatcher: _dispatcher(),
+      scheduleFrame: () => scheduledFrames++,
+      platform: platform,
+      inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+      rendererFactory: (width, height) =>
+          Renderer.create(width, height, testing: true),
+    );
+    addTearDown(session.close);
+    final renderer = session.renderer!;
+    final initialBuffer = renderer.nextBuffer;
+
+    for (final (columns, lines) in [
+      (10, 4),
+      (0, 6),
+      (18, 0),
+      (-1, 6),
+      (18, -1),
+    ]) {
+      platform
+        ..terminalColumns = columns
+        ..terminalLines = lines
+        ..emit(TerminalSignal.resize);
+      expect(session.width, 10);
+      expect(session.height, 4);
+      expect(renderer.nextBuffer, same(initialBuffer));
+      expect(scheduledFrames, 0);
+    }
+
+    platform
+      ..terminalColumns = 18
+      ..terminalLines = 6
+      ..emit(TerminalSignal.resize);
+    expect(session.width, 18);
+    expect(session.height, 6);
+    expect(renderer.nextBuffer.width, 18);
+    expect(renderer.nextBuffer.height, 6);
+    expect(scheduledFrames, 1);
+    final resizedBuffer = renderer.nextBuffer;
+
+    platform.emit(TerminalSignal.resize);
+    expect(renderer.nextBuffer, same(resizedBuffer));
+    expect(scheduledFrames, 1);
+
+    platform
+      ..terminalColumns = 20
+      ..terminalLines = 7
+      ..emit(TerminalSignal.resize);
+    expect(session.width, 20);
+    expect(session.height, 7);
+    expect(scheduledFrames, 2);
+
+    session
+      ..close()
+      ..close();
+    expect(
+      platform.canceledSignals.where(
+        (signal) => signal == TerminalSignal.resize,
+      ),
+      hasLength(1),
+    );
+    expect(() => renderer.nextBuffer, throwsStateError);
+    platform
+      ..terminalColumns = 25
+      ..terminalLines = 9
+      ..emit(TerminalSignal.resize);
+    expect(session.width, 20);
+    expect(session.height, 7);
+    expect(scheduledFrames, 2);
+  });
+
+  for (final headless in [false, true]) {
+    test('Windows ${headless ? 'headless' : 'non-terminal'} session does not '
+        'watch resize', () {
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: headless)
+        ..isWindows = true;
+      var scheduledFrames = 0;
+      final session = TerminalSession(
+        width: 5,
+        height: 2,
+        headless: headless,
+        inputDispatcher: _dispatcher(),
+        scheduleFrame: () => scheduledFrames++,
+        platform: platform,
+        inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+        rendererFactory: (width, height) =>
+            Renderer.create(width, height, testing: true),
+      );
+      addTearDown(session.close);
+
+      expect(platform.watchedSignals, isNot(contains(TerminalSignal.resize)));
+      platform
+        ..terminalColumns = 20
+        ..terminalLines = 7
+        ..emit(TerminalSignal.resize);
+      expect(session.width, 5);
+      expect(session.height, 2);
+      expect(scheduledFrames, 0);
+    });
+  }
+
+  test(
+    'Windows resize failure does not publish dimensions or a frame',
+    () async {
+      final platform = _FakeTerminalPlatform(
+        stdoutHasTerminal: true,
+        terminalColumns: 5,
+        terminalLines: 2,
+      )..isWindows = true;
+      final renderer = Renderer.create(5, 2, testing: true);
+      addTearDown(renderer.dispose);
+      final errors = <Object>[];
+      var scheduledFrames = 0;
+      late final TerminalSession session;
+      runZonedGuarded(() {
+        session = TerminalSession(
+          width: 5,
+          height: 2,
+          headless: false,
+          inputDispatcher: _dispatcher(),
+          renderer: renderer,
+          scheduleFrame: () => scheduledFrames++,
+          platform: platform,
+          inputDriverFactory: (_) => _FakeTerminalInputDriver(),
+        );
+      }, (error, _) => errors.add(error));
+      addTearDown(session.close);
+      // The disposed guard fails in Dart before any native resize is attempted.
+      renderer.dispose();
+
+      platform
+        ..terminalColumns = 9
+        ..terminalLines = 4
+        ..emit(TerminalSignal.resize);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(errors, [isA<StateError>()]);
+      expect(session.width, 5);
+      expect(session.height, 2);
+      expect(scheduledFrames, 0);
+      session.close();
+      expect(platform.canceledSignals, contains(TerminalSignal.resize));
+    },
+  );
+
   test('resize after close is a no-op and does not touch the renderer', () {
     final renderer = Renderer.create(5, 2, testing: true);
     final session = TerminalSession(
@@ -897,7 +1052,7 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   }
 
   void emit(TerminalSignal signal) {
-    _controllers[signal]!.add(null);
+    _controllers[signal]?.add(null);
   }
 }
 
