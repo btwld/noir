@@ -54,7 +54,7 @@ it wraps the row in, so the key existed twice in the element tree. A strict
 driver locator then failed.
 
 *Original reproduction.* Give a row `key: ValueKey('primitive:calculate')` and
-run `wait key primitive:calculate` through `scripts/noir_drive.dart`:
+run `wait key primitive:calculate` through `tool/noir_drive.dart`:
 
 ```
 Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
@@ -152,10 +152,10 @@ an empty tab does not build.
 
 *Classification.* Noir framework gap.
 
-### 5. `scripts/noir_drive.dart` cannot send Ctrl with a digit or Ctrl+Enter
+### 5. `tool/noir_drive.dart` cannot send Ctrl with a digit or Ctrl+Enter
 
 `encodeKey` accepts the named keys plus `ctrl-<a-z>`
-(`scripts/driver/ansi_keys.dart:63-77`). A keyboard contract that uses
+(`tool/driver/ansi_keys.dart:63-77`). A keyboard contract that uses
 `Ctrl+1..5` or `Ctrl+Enter` is therefore not scriptable from the shipped
 driver, even though a Kitty-protocol terminal can send both.
 

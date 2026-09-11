@@ -133,7 +133,7 @@ dart analyze --fatal-infos
 dart test --concurrency=1
 ```
 
-From the repository root, two ordinary tests cover this package so no workflow
+From `packages/noir/`, two ordinary tests cover this package so no workflow
 change is needed:
 
 ```sh
@@ -147,13 +147,13 @@ log, field and schema scrolling, the 80x24 and 60x18 floors, both elicitation
 profiles, and the fixture child ending with the app. Lifecycle counts use a
 unique process argument, so an interactive inspector may stay open beside them.
 
-Look at the screen at three sizes from the repository root:
+Look at the screen at three sizes from `packages/noir/`:
 
 ```sh
 printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick key run\ncapture --plain\nresize 80x24\ncapture --plain\nresize 60x18\ncapture --plain\nquit\n' | \
-  dart run --verbosity=error scripts/noir_drive.dart \
-    "$PWD/tools/mcp_inspector/bin/mcp_inspector.dart" --size 100x30 -- \
-    -- "$PWD/tools/mcp_fixtures/.dart_tool/calculate_server"
+  dart run --verbosity=error tool/noir_drive.dart \
+    "$PWD/tool/mcp_inspector/bin/mcp_inspector.dart" --size 100x30 -- \
+    -- "$PWD/tool/mcp_fixtures/.dart_tool/calculate_server"
 ```
 
 ## What the build exposed

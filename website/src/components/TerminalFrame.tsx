@@ -8,7 +8,8 @@ import {
 
 const repository = 'https://github.com/conceptadev/noir/blob/main';
 
-// OpenTUI attribute bits, as `scripts/capture_doc_frames.dart` records them.
+// OpenTUI attribute bits, as `packages/noir/tool/capture_doc_frames.dart`
+// records them.
 // Blink has no meaning in a still frame, so it is not drawn.
 const bold = 1 << 0;
 const dim = 1 << 1;
@@ -38,7 +39,7 @@ function runStyle({ fg, bg, attrs = 0 }: TerminalRun) {
 }
 
 interface TerminalFrameProps {
-  /** A scene id from `scripts/recordings/doc_frames.json`. */
+  /** A scene id from `packages/noir/tool/recordings/doc_frames.json`. */
   id: string;
   /** Overrides the caption when a page needs its own wording. */
   title?: string;
@@ -58,7 +59,7 @@ export function TerminalFrame({ id, title }: TerminalFrameProps) {
   if (!frame) {
     throw new Error(
       `Unknown captured frame "${id}". Add the scene to ` +
-        'scripts/recordings/doc_frames.json and recapture.',
+        'packages/noir/tool/recordings/doc_frames.json and recapture.',
     );
   }
   const grid = {
