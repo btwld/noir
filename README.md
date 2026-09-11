@@ -177,8 +177,7 @@ with different arguments.
 ## Widget Lifecycle Hooks
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`.
-The companion requires Noir 0.0.1 and is not published yet. Use a repository
-checkout to try it. The
+The companion is not published yet. Use a repository checkout to try it. The
 [companion overview](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/README.md)
 has that setup. After publication, add `noir_signals` beside Noir, then import
 `package:noir_signals/noir_signals.dart` together with
