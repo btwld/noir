@@ -59,11 +59,15 @@ void main() {
         viewportExtent: 3,
         scrollOffset: 11,
       );
+      expect(controller.hasListeners, isTrue);
+      expect(replacement.hasListeners, isFalse);
       try {
         key.currentState!.change(
           () => key.currentState!.controller = replacement,
         );
         app.pumpFrame();
+        expect(controller.hasListeners, isFalse);
+        expect(replacement.hasListeners, isTrue);
         expect(replacement.scrollOffset, 11);
         _expectWindow(app, 11);
 
@@ -71,6 +75,7 @@ void main() {
         app.pumpFrame();
         _expectWindow(app, 11);
         app.dispose();
+        expect(replacement.hasListeners, isFalse);
         expect(
           replacement.jumpTo(12),
           isTrue,
