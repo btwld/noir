@@ -13,9 +13,9 @@ in one runnable app.
 
 ## Install
 
-`noir_signals` and its required Noir 0.0.1 are unpublished candidates, so
-both packages come from one checkout of the
-[public Noir repository](https://github.com/conceptadev/noir) today.
+`noir_signals` is not published yet and requires Noir 0.0.1. Use a checkout of
+the [public Noir repository](https://github.com/conceptadev/noir) to try the
+companion. The setup below resolves both packages from that revision.
 
 ### In your own application
 

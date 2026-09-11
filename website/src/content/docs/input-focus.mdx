@@ -167,7 +167,7 @@ Do not reconstruct the widget's absolute origin. The local coordinate stays
 correct when the widget moves inside a scrollable region or an overlay.
 
 **If no pointer event arrives:** mouse reporting is opt-in. Enable it once with
-`runTuiApp(app, enableMouse: true)`. The unreleased candidate includes movement
+`runTuiApp(app, enableMouse: true)`. Noir includes movement
 reporting by default; `app.enableMouse(enableMovement: false)` opts into
 click and drag reporting only. For versions that default to click and drag reporting, request hover with
 `app.enableMouse(enableMovement: true)`. A terminal that does not report mouse
@@ -175,9 +175,9 @@ input cannot be made to; see [Platform support](/docs/platform-limitations).
 
 ## Show a hand over an action
 
-Mouse pointer shapes require the unreleased Noir candidate. Use the checkout
-instructions in [Installation](/docs/installation) before copying this API.
-The pointer is the desktop mouse shape, separate from the text caret.
+Mouse pointer shapes are available in Noir 0.0.1. See
+[Installation](/docs/installation) for package setup. The pointer is the desktop
+mouse shape, separate from the text caret.
 
 With mouse reporting enabled, buttons, checkboxes, switches, sliders, valid
 `Select` and selectable `ListView` rows, and `TabSelect` tab cells request a

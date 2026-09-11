@@ -14,8 +14,8 @@ building an app, start with [Build a task list](getting-started.md).
 
 ## Install and import
 
-Both packages are unpublished candidates. Resolve them from a Noir repository
-checkout; the [package overview](../README.md) has the setup. After
+The companion is not published yet and requires Noir 0.0.1. Use the repository
+checkout setup in the [package overview](../README.md). After companion
 publication, an application will declare:
 
 ```yaml

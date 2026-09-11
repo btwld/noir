@@ -282,7 +282,7 @@ async function runSmoke() {
     );
     assert.equal(
       await page.locator('.availability strong').textContent(),
-      'Published version · 0.0.1-alpha.4',
+      `Published version · ${JSON.parse(readRepositoryFile('publication.json')).noir}`,
       'the homepage must carry one generated availability label',
     );
     assert.equal(
