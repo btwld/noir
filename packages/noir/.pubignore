@@ -1,0 +1,41 @@
+# Pub ignore rules for the noir package.
+#
+# The repository's tooling, website, skills, and companion package live
+# outside packages/noir, so only package-local development files need
+# excluding here. Pub also applies the repository's .gitignore.
+
+# Development tooling and its standalone packages
+/tool/
+
+# Tests are not part of the published package
+test/
+coverage/
+.lcov
+
+# Codegen and test configuration (development-only)
+FFIGEN.md
+ffigen_dynamic.yaml
+ffigen_native_assets.yaml
+dart_test.yaml
+
+# Generated API documentation
+/doc/api/
+
+# Build artifacts and temporary files
+*.tar.gz
+*.tgz
+*.zip
+build/
+.dart_tool/cache/
+.dart_tool/package_config_subset
+
+# Local state, editors, and logs
+.context/
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+
+# Keep packaged native binaries, native_manifest.json, and third_party/.

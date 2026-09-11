@@ -7,6 +7,6 @@
 /// checkout. `.pubignore` keeps `test/` out of the published archive.
 library;
 
-export '../../../../test/helpers/buffer_capture.dart';
-export '../../../../test/helpers/test_element_host.dart';
-export '../../../../test/helpers/tui_test_app.dart';
+export '../../../noir/test/helpers/buffer_capture.dart';
+export '../../../noir/test/helpers/test_element_host.dart';
+export '../../../noir/test/helpers/tui_test_app.dart';

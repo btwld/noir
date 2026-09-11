@@ -14,12 +14,11 @@ coverage/
 **/.packages
 node_modules/
 test/failures/
-.claude/*
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/noir
-!.claude/skills/nextra-docs
 .context/
+
+# Local agent state. Shared agent skills live in skills/.
+.agents/
+.claude/
 .impeccable/
 
 # FVM Version Cache

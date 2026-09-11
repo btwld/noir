@@ -1,7 +1,7 @@
 name: Publish to pub.dev
 
 # One-time pub.dev configuration:
-#   package: noir
+#   package: noir (published from packages/noir)
 #   repository: conceptadev/noir
 #   tag pattern: v{{version}}
 # Automated publishing applies only after the first version is published
@@ -29,6 +29,9 @@ jobs:
     name: Validate package
     runs-on: ubuntu-latest
     timeout-minutes: 36
+    defaults:
+      run:
+        working-directory: packages/noir
 
     steps:
       - name: Checkout repository
@@ -67,7 +70,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
@@ -75,11 +78,11 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        run: dart run scripts/fetch_opentui_binaries.dart --verify-only
+        run: dart run tool/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
         timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
+        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
 
       - name: Run strict analysis
         timeout-minutes: 4
@@ -108,6 +111,9 @@ jobs:
       # credential. The workflow holds no long-lived secret.
       id-token: write
       contents: read
+    defaults:
+      run:
+        working-directory: packages/noir
 
     steps:
       - name: Checkout repository
@@ -128,7 +134,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
