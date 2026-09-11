@@ -138,7 +138,10 @@ async function readRepositoryFile(path) {
  * 1. Availability
  * ------------------------------------------------------------------ */
 
-const semanticVersion = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)*$/;
+// Pre-release and build parts are dot-separated identifiers. An identifier
+// never contains a dot, so each part has only one way to match.
+const semanticVersion =
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
 function parseManifestVersion(pubspec, path) {
   const match = pubspec.match(/^version: (.+)$/m);
@@ -733,14 +736,33 @@ async function resolveLink(target, lesson, routes) {
   return `${base}/${repositoryPath}${suffix}`;
 }
 
+/**
+ * Removes Markdown comments, which MDX does not accept.
+ *
+ * One pass can join the halves of a nested marker into a new comment opener,
+ * so the removal repeats until the text stops changing.
+ */
+function stripComments(markdown, lesson) {
+  let previous;
+  let current = markdown;
+  do {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?-->\n?/g, '');
+  } while (current !== previous);
+  if (current.includes('<!--')) {
+    fail(`${lesson.source} has an unterminated Markdown comment.`);
+  }
+  return current;
+}
+
 async function toMdxBody(markdown, lesson, imageNames) {
-  let body = markdown
-    // Generator markers are Markdown comments; MDX does not accept them.
-    .replace(/<!--[\s\S]*?-->\n?/g, '')
-    .replace(/\]\((?:\.\.\/)*\.?\/?images\/([a-z0-9-]+\.jpg)\)/g, (_, name) => {
+  let body = stripComments(markdown, lesson).replace(
+    /\]\((?:\.\.\/)*\.?\/?images\/([a-z0-9-]+\.jpg)\)/g,
+    (_, name) => {
       imageNames.add(name);
       return `](/demos/signals-task-list/${name})`;
-    });
+    },
+  );
 
   const routes = routeMap();
   const relativeLinks = [
