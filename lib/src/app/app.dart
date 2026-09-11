@@ -44,44 +44,66 @@ TuiApp runTuiApp(
 }) {
   final host = createDriveModeHost(io.Platform.environment);
   if (host != null) {
-    // The host timer is the only thing holding this process open.
-    final driven = _mount(
-      host.binding,
-      app,
-      enableMouse: enableMouse,
-      exitCodeSink: host.handleAppExit,
-    );
-    host.start(driven);
-    return driven;
+    try {
+      return _mount(
+        host.binding,
+        app,
+        enableMouse: enableMouse,
+        exitCodeSink: host.handleAppExit,
+        onMounted: host.start,
+      );
+    } on Object catch (error, stackTrace) {
+      try {
+        // The binding borrows its renderer from this host, so mount rollback
+        // must also release the host's renderer and any started keep-alive.
+        host.dispose();
+      } on Object {
+        // The startup failure remains primary after every cleanup attempt.
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
-  final handle = _mount(
+  if (headless && enableMouse) {
+    throw StateError('Mouse support requires a renderer');
+  }
+  return _mount(
     TuiBinding(headless: headless),
     app,
     enableMouse: enableMouse,
+    onMounted: registerHotReloadExtension,
   );
-  registerHotReloadExtension(handle);
-  return handle;
 }
 
 /// Builds the handle, wraps [app] in the app scope, and applies mount-time
-/// terminal modes.
+/// terminal modes and registration before transferring ownership to the caller.
 TuiApp _mount(
   TuiBinding binding,
   Widget app, {
   required bool enableMouse,
   void Function(int exitCode)? exitCodeSink,
+  void Function(TuiApp app)? onMounted,
 }) {
   final handle = TuiApp._(binding, exitCodeSink ?? _defaultExitCodeSink);
-  binding.runApp(
-    _TuiAppScope(
-      handle: handle,
-      child: RootOverlay(child: app),
-    ),
-  );
-  if (enableMouse) {
-    handle.enableMouse();
+  try {
+    binding.runApp(
+      _TuiAppScope(
+        handle: handle,
+        child: RootOverlay(child: app),
+      ),
+    );
+    if (enableMouse) {
+      handle.enableMouse();
+    }
+    onMounted?.call(handle);
+    return handle;
+  } on Object catch (error, stackTrace) {
+    try {
+      handle.dispose();
+    } on Object {
+      // Preserve the mount or activation failure after attempting all cleanup.
+    }
+    Error.throwWithStackTrace(error, stackTrace);
   }
-  return handle;
 }
 
 /// A soft exit sets the code the process will report once the event loop
@@ -105,7 +127,15 @@ TuiApp mountTuiAppForTesting(
   TuiBinding binding,
   Widget app, {
   required void Function(int exitCode) exitCodeSink,
-}) => _mount(binding, app, enableMouse: false, exitCodeSink: exitCodeSink);
+  bool enableMouse = false,
+  void Function(TuiApp app)? onMounted,
+}) => _mount(
+  binding,
+  app,
+  enableMouse: enableMouse,
+  exitCodeSink: exitCodeSink,
+  onMounted: onMounted,
+);
 
 /// Publishes the owning [TuiApp] to its tree so any widget can end the app.
 ///
