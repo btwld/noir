@@ -13,13 +13,28 @@ user actions in one runnable app.
 
 ## Install
 
-`noir_signals` is not published yet and requires Noir 0.0.2. Use a checkout of
-the [public Noir repository](https://github.com/conceptadev/noir) to try the
-companion. The setup below resolves both packages from that revision.
+Add the companion beside Noir. It requires Noir 0.0.2:
 
-### In your own application
+```sh
+dart pub add noir noir_signals
+```
 
-Clone Noir beside your application directory, then declare both packages:
+```yaml
+dependencies:
+  noir: ^0.0.2
+  noir_signals: ^0.0.1-alpha.0
+```
+
+### Inside the Noir repository
+
+The repository is one Pub workspace, so `dart pub get` at its root resolves
+both packages. The task-list tutorial builds its app there, in
+`packages/noir_signals/example/`.
+
+### From a repository checkout
+
+To evaluate unreleased changes, clone Noir beside your application directory,
+pin an exact commit or tag, and resolve both packages from that revision:
 
 ```yaml
 dependencies:
@@ -28,29 +43,11 @@ dependencies:
     path: ../noir/packages/noir_signals
 dependency_overrides:
   noir:
-    path: ../noir
+    path: ../noir/packages/noir
 ```
 
-Run `dart pub get` from your application directory. The override routes the
-companion's own `noir` dependency to the same checkout, so one revision
-supplies both packages.
-
-### Inside the Noir repository
-
-The repository is one Pub workspace, so `dart pub get` at its root resolves
-both packages. The task-list tutorial builds its app there, in
-`packages/noir_signals/example/`.
-
-### After publication
-
-An application will declare hosted versions instead. This block cannot resolve
-from pub.dev yet:
-
-```yaml
-dependencies:
-  noir: ^0.0.2
-  noir_signals: ^0.0.1-alpha.0
-```
+The override routes the companion's own `noir` dependency to the same
+checkout, so one revision supplies both packages.
 
 ## Import
 

@@ -177,11 +177,11 @@ with different arguments.
 ## Widget Lifecycle Hooks
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`.
-The companion is not published yet. Use a repository checkout to try it. The
-[companion overview](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/README.md)
-has that setup. After publication, add `noir_signals` beside Noir, then import
+Add it beside Noir with `dart pub add noir_signals`, then import
 `package:noir_signals/noir_signals.dart` together with
-`package:noir/noir.dart`.
+`package:noir/noir.dart`. The
+[companion overview](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/README.md)
+covers setup and a repository checkout.
 
 The companion includes state, effects, memoization, listenables, asynchronous
 snapshots, animation, focus, editing, scroll, and viewport hooks, plus the

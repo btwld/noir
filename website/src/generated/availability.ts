@@ -27,9 +27,9 @@ export const availability: {
   companion: {
     name: 'noir_signals',
     manifest: '0.0.1-alpha.0',
-    published: 'none',
-    isPublished: false,
+    published: '0.0.1-alpha.0',
+    isPublished: true,
     installCommand: 'dart pub add noir_signals',
-    label: 'Not published yet · repository checkout only',
+    label: 'Published version · 0.0.1-alpha.0',
   },
 } as const;
