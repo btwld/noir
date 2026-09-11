@@ -515,7 +515,7 @@ void main() {
   });
 
   test(
-    'pixel resolution reports update session state and repaint on change',
+    'pixel resolution reports update session state and request a frame on change',
     () {
       final renderer = Renderer.create(6, 2, testing: true);
       final dispatcher = _dispatcher();

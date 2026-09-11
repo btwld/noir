@@ -80,6 +80,12 @@ artifacts are unchanged from alpha.4.
 - `ListView` now follows its highlight when its own height or item extent
   changes, so a resized list keeps the selected row on screen while the
   controller keeps a valid scroll position.
+- App startup now releases acquired resources if terminal-mode activation or
+  final registration fails, preserving the original error if cleanup also
+  fails. Rendererless headless mouse requests are rejected before mounting.
+- Changed terminal pixel measurements now repaint an idle scene and update
+  natural image sizes without an unrelated widget rebuild. Duplicate and
+  invalid measurements still leave an otherwise clean scene unpainted.
 
 ### Changed
 
