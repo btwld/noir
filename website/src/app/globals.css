@@ -26,6 +26,7 @@
   --rule: #d4d4cb;
   --signal: #244fd7;
   --terminal: #090a0a;
+  --terminal-screen: #000;
   --terminal-ink: #f5f5ed;
   --terminal-quiet: #b9b9ad;
   --terminal-rule: #3d3d38;
@@ -91,13 +92,6 @@ a:hover {
 :focus-visible {
   outline: 3px solid currentColor;
   outline-offset: 3px;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
 }
 
 button {
@@ -203,11 +197,39 @@ pre {
   color: var(--ink);
 }
 
+/* A group label names the rows under it; it is not a second size of link.
+   Nextra gives only separator rows the semibold class. */
+.nextra-sidebar li[class~='x:font-semibold'],
+.nextra-mobile-nav li[class~='x:font-semibold'] {
+  color: var(--quiet);
+  font-family: var(--mono);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+  padding-block: 0;
+}
+
+.nextra-sidebar li[class~='x:font-semibold']:not(:first-child),
+.nextra-mobile-nav li[class~='x:font-semibold']:not(:first-child) {
+  margin-top: 1.6rem;
+}
+
 /* One focus indicator. The 3px current-color outline above is the contract;
    Nextra ships a second gray ring as a box-shadow, and this system has no
    shadow vocabulary to hang it on. */
 :focus-visible {
   box-shadow: none !important;
+}
+
+/* A one-item trail only repeats the page title directly beneath it. */
+.nextra-breadcrumb:has(> :only-child) {
+  display: none;
+}
+
+/* Room for the longest guide title on one line. */
+.nextra-sidebar {
+  width: 17rem;
 }
 
 .nextra-footer {
@@ -220,19 +242,20 @@ pre {
 .home-page,
 .not-found {
   margin: 0 auto;
-  max-width: 76rem;
-  padding: clamp(3.5rem, 9vw, 9rem) clamp(1.25rem, 5vw, 4rem) 7rem;
+  max-width: 80rem;
+  padding: clamp(3.5rem, 8vw, 7.5rem) clamp(1.25rem, 5vw, 4rem) 7rem;
 }
 
 .home-hero {
   align-items: start;
   display: grid;
-  gap: clamp(2.5rem, 5vw, 4.5rem);
-  grid-template-columns: minmax(20rem, 0.85fr) minmax(28rem, 1.15fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .home-hero-copy {
   min-width: 0;
+  padding-top: 0.5rem;
 }
 
 .home-hero h1,
@@ -248,7 +271,7 @@ pre {
 .home-summary {
   font-size: var(--text-intro);
   line-height: 1.55;
-  margin: 1.5rem 0 1.9rem;
+  margin: 0 0 1.9rem;
   max-width: 34rem;
 }
 
@@ -324,7 +347,10 @@ pre {
 }
 
 .home-proof {
+  border-top: 1px solid var(--rule);
+  margin-top: clamp(3rem, 6vw, 4.5rem);
   min-width: 0;
+  padding-top: clamp(1.75rem, 3vw, 2.25rem);
 }
 
 .home-proof h2 {
@@ -332,8 +358,17 @@ pre {
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.35rem;
   text-wrap: balance;
+}
+
+/* Source and output side by side: the frame column fits the 40-column
+   capture, and the code keeps the rest so no line scrolls at desktop width. */
+.home-proof-pair {
+  align-items: stretch;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 24rem;
 }
 
 .capability-index h2 {
@@ -396,13 +431,15 @@ html.dark .highlighted-code span {
   background: var(--terminal);
   border: 1px solid var(--terminal);
   color: var(--terminal-ink);
+  display: flex;
+  flex-direction: column;
   margin: 1.75rem 0;
   min-width: 0;
 }
 
 .home-proof .terminal-frame,
 .home-proof .highlighted-code {
-  margin: 0 0 1.1rem;
+  margin: 0;
 }
 
 .terminal-frame figcaption {
@@ -425,20 +462,47 @@ html.dark .highlighted-code span {
   flex: 0 0 auto;
 }
 
+/* The pre is the stage and the scroll region. The code inside it is the
+   captured screen: exactly its columns by its rows, edged by one rule, so the
+   capture boundary is visible. Rows use the cell height of the asciinema
+   player that renders Noir's recordings, and every run fills its whole cell,
+   so a painted background reads as it does in a terminal. */
 .terminal-frame pre {
+  align-items: center;
   background: transparent;
   border: 0;
   color: var(--terminal-ink);
+  display: flex;
+  flex: 1 1 auto;
   font-size: var(--text-code);
-  line-height: 1.45;
+  line-height: 1.333;
   margin: 0;
   overflow-x: auto;
-  padding: 0.9rem 0.85rem;
+  padding: 1.5rem 0.85rem;
 }
 
-.terminal-frame code {
+.terminal-frame pre > code {
+  background: var(--terminal-screen);
+  border: 1px solid var(--terminal-rule);
+  box-sizing: content-box;
+  display: block;
+  flex: 0 0 auto;
   font-size: inherit;
+  line-height: inherit;
+  margin-inline: auto;
+  min-height: calc(var(--rows) * 1lh);
   white-space: pre;
+  width: calc(var(--columns) * 1ch);
+}
+
+.terminal-frame pre > code span {
+  font-size: inherit;
+}
+
+.terminal-frame pre > code span span {
+  display: inline-block;
+  height: 1lh;
+  vertical-align: top;
 }
 
 .terminal-frame-meta {
@@ -488,10 +552,15 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
   color: var(--terminal-ink);
 }
 
+/* The player scales to its container, so the container caps the recording
+   near the type size of a captured frame instead of the article width. */
 .terminal-recording > div[aria-label] {
   background: var(--terminal);
+  margin: 1.5rem auto;
+  max-width: min(40rem, calc(100% - 1.7rem));
   min-height: 12rem;
   overflow: hidden;
+  width: 100%;
 }
 
 .terminal-recording div.ap-wrapper {
@@ -521,9 +590,12 @@ main[data-pagefind-body='true'] .terminal-frame-meta code {
   padding: 0.7rem 0.85rem;
 }
 
-.terminal-recording-meta code {
+.terminal-recording-meta code,
+main[data-pagefind-body='true'] .terminal-recording-meta code {
+  border: 0;
   color: var(--terminal-ink);
   overflow-wrap: anywhere;
+  padding: 0;
 }
 
 .terminal-recording-meta span {
@@ -928,6 +1000,11 @@ main[data-pagefind-body='true'] th {
 
   .home-hero-copy {
     max-width: 42rem;
+    padding-top: 0;
+  }
+
+  .home-proof-pair {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1019,6 +1096,11 @@ main[data-pagefind-body='true'] th {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  /* A 40-column screen still fits a 390px phone without scrolling. */
+  .terminal-frame pre {
+    padding-inline: 0.4rem;
   }
 
   .concept-flow > li {

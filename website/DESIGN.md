@@ -200,12 +200,22 @@ have no second route: the mobile drawer carries the documentation tree only, so
 hiding the navbar links on phones stranded two of the four top-level
 destinations.
 
-The documentation sidebar groups pages by reader intent: Start here, Guides,
-noir_signals, Concepts, and Reference. The package name identifies the extra
-dependency required by this group. The noir_signals group keeps its package
-overview, hook and Signals guides, and task-list lessons together on this site.
-Existing guide URLs stay stable. Installation, Architecture, and curated widget pages
-stay routable and linked in context, without occupying the default sidebar.
+The documentation sidebar opens directly on its groups. Every guide lives under
+`/docs`, and the layout lifts that folder's entries to the top of the page map,
+so the navbar names Docs once and the sidebar never wraps the whole tree in one
+collapsible Docs row. Routes do not change.
+
+The groups follow reader intent, core before the companion: Start here
+(Installation, Your first app), Guides, Concepts (including Architecture),
+noir_signals, and Reference. The package name identifies the extra dependency
+required by its group, which keeps its package overview, hook and Signals
+guides, and task-list lessons together. The docs overview lists the same pages
+in the same order. Existing guide URLs stay stable. Curated widget pages stay
+routable and linked from the catalog, without occupying the sidebar.
+
+A group label is a label, not a link: small quiet mono text with space above
+it. Folders use the same type size as the pages beside them. A breadcrumb with
+one item only repeats the title beneath it, so it is hidden.
 
 **This supersedes the previous rule that the site needs no separate Examples
 route.** A guide that also has to carry an example catalog serves two readers
@@ -226,10 +236,21 @@ producing command, and the capture boundary. The text comes from
 teaches. A frame the reader cannot trace to a runnable file does not belong on
 the site.
 
+The frame draws the cells the app painted, not only their text. The capture
+records each row as styled runs, and the figure renders their colors, bold,
+dim, italic, underline, reverse, and strikethrough. Unstyled cells take the
+site's terminal ink and screen, so plain output reads the same in both themes.
+The screen is exactly the captured columns by rows, edged by one terminal rule
+and centered on the black stage, with the cell height of the asciinema player
+that renders Noir's recordings. A painted background fills its whole cell, as
+it does in a terminal.
+
 ### Terminal recording
 
 The asciicast player, for behavior that motion explains better than a static
-frame. It never autoplays, keeps a real poster frame, and respects
+frame. It sits on the same black stage as a frame, capped near the type size of
+a captured screen rather than scaled to the article width. It never autoplays,
+keeps a real poster frame, and respects
 `prefers-reduced-motion`. It lives where its program lives: the examples index,
 not a tutorial that teaches different code.
 
