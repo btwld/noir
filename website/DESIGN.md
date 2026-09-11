@@ -186,6 +186,10 @@ anywhere; independently authored copies of a changing rule may not.
 stale input rather than publishing a wrong version, an unrunnable snippet, or a
 frame that no longer matches its source.
 
+`npm run sync:check` verifies the committed derivations without writing them.
+PR validation and Pages deployment run it before commands that regenerate
+content. A source change includes its generated output in the same commit.
+
 ## Navigation
 
 Top navigation is **Docs · Examples · API · GitHub**. The wordmark returns

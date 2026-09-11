@@ -39,6 +39,12 @@ const treeBase = 'https://github.com/conceptadev/noir/tree/main';
 
 const companionRoot = 'packages/noir_signals';
 const taskListRoute = '/docs/signals-task-list';
+const arguments_ = process.argv.slice(2);
+if (arguments_.length > 1 || arguments_.some((value) => value !== '--check')) {
+  throw new Error('Usage: node scripts/sync-docs.mjs [--check]');
+}
+const checkOnly = arguments_.includes('--check');
+const outdatedOutputs = new Set();
 
 /** The ordered task-list lessons, their sources, and their checkpoints. */
 const taskListLessons = [
@@ -85,9 +91,33 @@ function fail(message) {
   throw new Error(message);
 }
 
+function noteOutdated(path) {
+  outdatedOutputs.add(relative(repositoryRoot, path).split('\\').join('/'));
+}
+
+async function writeOutput(path, value) {
+  if (!checkOnly) return writeFile(path, value);
+  try {
+    if (!(await readFile(path)).equals(Buffer.from(value))) noteOutdated(path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    noteOutdated(path);
+  }
+}
+
+async function removeOutput(path) {
+  if (!checkOnly) return rm(path, { force: true });
+  try {
+    await stat(path);
+    noteOutdated(path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
+
 async function writeGenerated(name, source) {
   const target = join(generatedRoot, name);
-  await writeFile(
+  await writeOutput(
     target,
     await format(source, {
       ...prettierConfig,
@@ -700,10 +730,10 @@ async function toMdxBody(markdown, lesson, imageNames) {
 async function syncTaskList() {
   const imageNames = new Set();
   const targetRoot = join(websiteRoot, 'src/content/docs/signals-task-list');
-  await rm(join(websiteRoot, 'src/content/docs/signals-task-list.mdx'), {
-    force: true,
-  });
-  await mkdir(targetRoot, { recursive: true });
+  await removeOutput(
+    join(websiteRoot, 'src/content/docs/signals-task-list.mdx'),
+  );
+  if (!checkOnly) await mkdir(targetRoot, { recursive: true });
 
   const checkpoints = [];
   for (const lesson of taskListLessons) {
@@ -747,7 +777,7 @@ async function syncTaskList() {
     }
 
     verifyExcerpts(markdown, checkpoint, sourcePath);
-    await writeFile(join(repositoryRoot, sourcePath), markdown);
+    await writeOutput(join(repositoryRoot, sourcePath), markdown);
 
     const title = markdownTitle(markdown, sourcePath);
     const description = markdownDescription(markdown, sourcePath);
@@ -766,7 +796,7 @@ sourceUrl: ${blobBase}/${sourcePath}
 
 ${body}
 `;
-    await writeFile(
+    await writeOutput(
       target,
       await format(page, { ...prettierConfig, filepath: target }),
     );
@@ -788,18 +818,18 @@ ${taskListLessons
 export default pages;
 `;
   const metaPath = join(targetRoot, '_meta.ts');
-  await writeFile(
+  await writeOutput(
     metaPath,
     await format(meta, { ...prettierConfig, filepath: metaPath }),
   );
 
   const imageRoot = join(websiteRoot, 'public/demos/signals-task-list');
-  await mkdir(imageRoot, { recursive: true });
+  if (!checkOnly) await mkdir(imageRoot, { recursive: true });
   const sourceImages = join(repositoryRoot, companionRoot, 'doc/images');
   const available = new Set(await readdir(sourceImages));
   for (const name of imageNames) {
     if (!available.has(name)) fail(`Missing walkthrough image: ${name}`);
-    await writeFile(
+    await writeOutput(
       join(imageRoot, name),
       await readFile(join(sourceImages, name)),
     );
@@ -811,16 +841,22 @@ export default pages;
  * Entry point
  * ------------------------------------------------------------------ */
 
-await mkdir(generatedRoot, { recursive: true });
+if (!checkOnly) await mkdir(generatedRoot, { recursive: true });
 const availability = await writeAvailability(await readAvailability());
 const frames = await readFrames();
 await writeFrames(frames);
 await writeCheckpoints(frames);
 const taskList = await syncTaskList();
+if (outdatedOutputs.size > 0) {
+  fail(
+    `Generated documentation is out of date:\n- ${[...outdatedOutputs].join('\n- ')}\n` +
+      'Run npm run sync and commit the regenerated files with the source change.',
+  );
+}
 await checkReleaseClaims(availability);
 
 console.log(
-  `Synced availability (noir ${availability.noir.published}, ` +
+  `${checkOnly ? 'Checked' : 'Synced'} availability (noir ${availability.noir.published}, ` +
     `noir_signals ${availability.companion.published}), ` +
     `${Object.keys(frames.frames).length} captured frames, ` +
     `${taskList.pages} task-list lessons, and ${taskList.images} screenshots.`,

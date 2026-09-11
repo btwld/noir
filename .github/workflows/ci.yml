@@ -85,6 +85,9 @@ jobs:
         timeout-minutes: 3
         run: npm ci
 
+      - name: Check generated documentation
+        run: npm run sync:check
+
       - name: Install browser
         timeout-minutes: 4
         run: npx --no-install playwright install --with-deps chromium

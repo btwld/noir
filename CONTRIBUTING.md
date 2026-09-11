@@ -50,6 +50,12 @@ When a change touches the companion package, also run, from
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.
 
+Package-consumer checks export Noir using Pub's archive file selection, then
+analyze and run an application against the extracted package outside the
+checkout. They cover native cell output, the packaged health check, a relocated
+CLI bundle, and driven widget/input behavior. This catches files or dependencies
+that work through a source path but are missing from the published archive.
+
 Automatic push/pull-request CI is ordinary verification. Do not manually
 dispatch or rerun a workflow without exact authorization.
 
