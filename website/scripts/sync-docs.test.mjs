@@ -164,10 +164,10 @@ test('a canonical lesson replaces stale generated release prose before validatio
   // pages to isolate the generated lesson's before/after contract.
   await f.write(
     'publication.json',
-    (await f.read('publication.json')).replace(
-      '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1"',
-    ),
+    JSON.stringify({
+      ...JSON.parse(await f.read('publication.json')),
+      noir: '0.0.1',
+    }),
   );
   for (const path of [
     'docs/installation',
@@ -192,10 +192,10 @@ test('newly generated wrapped release contradictions fail in the same sync', asy
   const f = await fixture(t);
   await f.write(
     'publication.json',
-    (await f.read('publication.json')).replace(
-      '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1"',
-    ),
+    JSON.stringify({
+      ...JSON.parse(await f.read('publication.json')),
+      noir: '0.0.1',
+    }),
   );
   const source = 'packages/noir_signals/doc/getting-started.md';
   await f.write(
@@ -212,10 +212,10 @@ test('wrapped authored release claims are rejected', async (t) => {
   const f = await fixture(t);
   await f.write(
     'publication.json',
-    (await f.read('publication.json')).replace(
-      '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1"',
-    ),
+    JSON.stringify({
+      ...JSON.parse(await f.read('publication.json')),
+      noir: '0.0.1',
+    }),
   );
   await f.write(
     'website/src/content/docs/hooks.mdx',

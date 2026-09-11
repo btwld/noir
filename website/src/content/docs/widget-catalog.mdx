@@ -7,8 +7,7 @@ description: Find the Noir widget that matches a layout, input, data, document, 
 
 Start with the job the interface must do. Every published name below links to
 its generated signature. Match that reference to the version in your
-`pubspec.lock`. One widget, `LayoutBuilder`, is unreleased and has no generated
-signature yet, so its name is plain text.
+`pubspec.lock`.
 
 [`TextInput`](/docs/widgets/text-input) has a curated page with its properties,
 key handling, and ownership rules.
@@ -25,11 +24,10 @@ key handling, and ownership rules.
 | Fill, border, and child composition     | [`Container`][container], [`DecoratedBox`][decoratedbox]       | Use Container for composition; DecoratedBox only paints  |
 | Overlapping children                    | [`Stack`][stack], [`Positioned`][positioned]                   | Positions are integer cell offsets                       |
 | Children that continue onto another run | [`Wrap`][wrap]                                                 | Use Row when wrapping would be surprising                |
-| A child that must read its own space    | `LayoutBuilder`                                                | Builds during layout from the offered `BoxConstraints`   |
+| A child that must read its own space    | [`LayoutBuilder`][layoutbuilder]                               | Builds during layout from the offered `BoxConstraints`   |
 
-`LayoutBuilder` is the only widget that reports the space a parent offers. It
-needs the unreleased Noir 0.0.1, so it has no published signature yet; see
-[Installation](/docs/installation).
+`LayoutBuilder` reports the space a parent offers. It is available in Noir
+0.0.1; see [Installation](/docs/installation).
 
 Read [Layout in terminal cells](/docs/widgets-layout) before you fix widths
 across a screen. Terminal proportions make one row of spacing visually larger
@@ -78,11 +76,10 @@ Row(
 | Semantic key commands       | [`Shortcuts`][shortcuts], [`Actions`][actions] | Map keys to Intents, then Intents to application commands               |
 | Pointer hit region          | [`PointerListener`][pointerlistener]           | Read `MouseEvent.localPosition` after hit testing                       |
 
-The unreleased candidate adds `PointerListener.mouseCursor` for custom mouse
-shapes and built-in hover pointers for interactive controls. See
+`PointerListener.mouseCursor` selects a custom mouse shape. Interactive
+controls provide hover pointers automatically. See
 [Show a hand over an action](/docs/input-focus#show-a-hand-over-an-action) for
-requirements and behavior; the published API reference does not include this
-addition yet.
+requirements and behavior.
 
 `Select` and `TabSelect` share typed options but express different spatial
 models:
@@ -290,3 +287,4 @@ reusable.
 [valuenotifier]: https://pub.dev/documentation/noir/latest/noir/ValueNotifier-class.html
 [changenotifier]: https://pub.dev/documentation/noir/latest/noir/ChangeNotifier-class.html
 [statefulwidget]: https://pub.dev/documentation/noir/latest/noir/StatefulWidget-class.html
+[layoutbuilder]: https://pub.dev/documentation/noir/latest/noir/LayoutBuilder-class.html
