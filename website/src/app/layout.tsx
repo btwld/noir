@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import type { Folder, MetaJsonFile, PageMapItem } from 'nextra';
 import { Head } from 'nextra/components';
 import { getPageMap } from 'nextra/page-map';
 import { Footer, Layout, Navbar } from 'nextra-theme-docs';
@@ -48,6 +49,29 @@ const footer = (
   </Footer>
 );
 
+const isMeta = (item: PageMapItem): item is MetaJsonFile => 'data' in item;
+
+/**
+ * Lifts the documentation groups to the top of the sidebar.
+ *
+ * Every guide lives under `/docs`, so the raw page map wraps the whole tree in
+ * one collapsible Docs folder. The navbar already names Docs; the sidebar
+ * should open on the groups. Routes do not change.
+ */
+function liftDocs(pageMap: PageMapItem[]): PageMapItem[] {
+  const docs = pageMap.find(
+    (item): item is Folder => 'children' in item && item.name === 'docs',
+  );
+  if (!docs) throw new Error('The page map has no docs folder to lift.');
+  const rootMeta = { ...pageMap.find(isMeta)?.data };
+  delete rootMeta.docs;
+  return [
+    { data: { ...docs.children.find(isMeta)?.data, ...rootMeta } },
+    ...docs.children.filter((item) => !isMeta(item)),
+    ...pageMap.filter((item) => item !== docs && !isMeta(item)),
+  ];
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
@@ -74,7 +98,7 @@ export default async function RootLayout({
           // Chapter order belongs to a tutorial, not to the whole document
           // tree. Lessons link forward in their own prose.
           navigation={false}
-          pageMap={await getPageMap()}
+          pageMap={liftDocs(await getPageMap())}
           sidebar={{ defaultMenuCollapseLevel: 1 }}
         >
           {children}

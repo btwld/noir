@@ -10,8 +10,8 @@ export default function HomePage() {
   return (
     <main className="home-page" id="nextra-skip-nav" tabIndex={-1}>
       <section className="home-hero" aria-labelledby="home-title">
+        <h1 id="home-title">Build terminal apps in Dart.</h1>
         <div className="home-hero-copy">
-          <h1 id="home-title">Build terminal apps in Dart.</h1>
           <p className="home-summary">
             Noir gives a terminal program a widget tree, retained state, and
             layout measured in cells.
@@ -25,9 +25,11 @@ export default function HomePage() {
           <InstallCommand />
           <p className="home-command-note">Requires Dart 3.10 or later.</p>
         </div>
+      </section>
 
-        <div className="home-proof">
-          <h2 id="proof-title">Press the button to update the count.</h2>
+      <section className="home-proof" aria-labelledby="proof-title">
+        <h2 id="proof-title">Press the button to update the count.</h2>
+        <div className="home-proof-pair">
           <HighlightedCode
             caption="The retained State of the first-app tutorial"
             html={firstAppStateHtml}

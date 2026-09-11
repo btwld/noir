@@ -211,8 +211,51 @@ Future<Map<String, Object?>> _captureScene(_Scene scene) async {
         )
         .toString(),
     'lines': lines,
+    'runs': [for (final row in frame.rows) _styledRuns(row)],
   };
 }
+
+/// The colors the headless renderer resolves for a cell the app never styled.
+const _defaultForeground = '#ffffff';
+const _defaultBackground = '#000000';
+
+/// Groups one captured row into runs of identically styled cells.
+///
+/// A run names only what differs from an unstyled cell, so plain text stays
+/// plain and the website can draw it in its own terminal palette. Trailing
+/// unstyled blanks are dropped; a styled blank, such as the padding of a
+/// focused button, is kept because it is visible.
+List<Map<String, Object?>> _styledRuns(List<DriverCell> row) {
+  var end = row.length;
+  while (end > 0 && _isUnstyledBlank(row[end - 1])) {
+    end--;
+  }
+  final runs = <Map<String, Object?>>[];
+  for (final cell in row.take(end)) {
+    final foreground = cell.foreground.toAnsiHex();
+    final background = cell.background.toAnsiHex();
+    final style = <String, Object?>{
+      if (foreground != _defaultForeground) 'fg': foreground,
+      if (background != _defaultBackground) 'bg': background,
+      if (cell.attributes != 0) 'attrs': cell.attributes,
+    };
+    final previous = runs.lastOrNull;
+    if (previous != null &&
+        previous['fg'] == style['fg'] &&
+        previous['bg'] == style['bg'] &&
+        previous['attrs'] == style['attrs']) {
+      previous['text'] = '${previous['text']}${cell.char}';
+    } else {
+      runs.add(<String, Object?>{'text': cell.char, ...style});
+    }
+  }
+  return runs;
+}
+
+bool _isUnstyledBlank(DriverCell cell) =>
+    cell.char.trim().isEmpty &&
+    cell.background.toAnsiHex() == _defaultBackground &&
+    cell.attributes == 0;
 
 Future<void> _perform(NoirDriver driver, _Action action) async {
   switch (action.kind) {

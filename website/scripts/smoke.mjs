@@ -26,8 +26,13 @@ const capturedFrames = JSON.parse(
   readFileSync(join(websiteRoot, 'src/generated/terminal-frames.json'), 'utf8'),
 ).frames;
 
+/** Rendered frame text, ignoring the styled blanks a row may end with. */
+function screenText(text) {
+  return text.replace(/[ \t]+$/gm, '').replace(/\s+$/, '');
+}
+
 function frameText(id) {
-  return capturedFrames[id].lines.join('\n').replace(/\s+$/, '');
+  return screenText(capturedFrames[id].lines.join('\n'));
 }
 
 const port = Number(process.env.NOIR_WEBSITE_PORT ?? 3018);
@@ -109,7 +114,7 @@ async function assertFramesMatchCaptures(page, route) {
   const expected = Object.keys(capturedFrames).map((id) => frameText(id));
   for (const text of frames) {
     assert.ok(
-      expected.includes(text.replace(/\s+$/, '')),
+      expected.includes(screenText(text)),
       `${route} shows a frame that no capture produced:\n${text}`,
     );
   }
@@ -261,11 +266,27 @@ async function runSmoke() {
       'homepage source must equal the runnable first-app checkpoint excerpt',
     );
     assert.equal(
-      (
-        await page.locator('.home-proof .terminal-frame pre').innerText()
-      ).replace(/\s+$/, ''),
+      screenText(
+        await page.locator('.home-proof .terminal-frame pre').innerText(),
+      ),
       frameText('first-app-count'),
       'the homepage output must be the captured frame of that same file',
+    );
+    assert.equal(
+      await page
+        .locator('.home-proof .terminal-frame pre span', {
+          hasText: '+ Add one',
+        })
+        .last()
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+      'rgb(102, 217, 255)',
+      'the frame must keep the focused button colors the app painted',
+    );
+    assert.ok(
+      await page
+        .locator('.home-proof .highlighted-code pre')
+        .evaluate((element) => element.scrollWidth <= element.clientWidth),
+      'the homepage source must fit its column without scrolling at 1440px',
     );
     assert.equal(
       await page
@@ -352,30 +373,64 @@ async function runSmoke() {
       `the application root must default to sans-serif, not ${rootFont}`,
     );
 
-    // ---- Documentation router ----
-    await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
-    const activeSection = page.locator(
-      ".nextra-sidebar button[class~='x:bg-primary-100']",
+    // ---- Sidebar hierarchy ----
+    // A lesson index is both the open folder and its first page.
+    await page.goto(`${baseUrl}/docs/signals-task-list`, {
+      waitUntil: 'networkidle',
+    });
+    const sidebar = page.locator('.nextra-sidebar');
+    assert.equal(
+      await sidebar.getByRole('button', { name: 'Docs', exact: true }).count(),
+      0,
+      'the sidebar must open on its groups, not one Docs folder around them',
+    );
+    assert.deepEqual(
+      (
+        await sidebar.locator("li[class~='x:font-semibold']").allTextContents()
+      ).map((text) => text.trim()),
+      ['Start here', 'Guides', 'Concepts', 'noir_signals', 'Reference'],
+      'the sidebar must group pages by reader intent, core before companion',
+    );
+    const activeRoute = sidebar.locator("a[class~='x:bg-primary-100']");
+    const activeSection = sidebar.locator("button[class~='x:bg-primary-100']");
+    assert.equal(
+      await activeRoute.count(),
+      1,
+      'the sidebar must mark the current page once',
     );
     assert.equal(
       await activeSection.count(),
       1,
-      'the sidebar must mark the current section once',
+      'the sidebar must mark the section that contains the current page',
     );
+    for (const active of [activeRoute, activeSection]) {
+      assert.equal(
+        await active.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+        'rgba(0, 0, 0, 0)',
+        'an active sidebar row must use the quiet marker, not a filled block',
+      );
+      assert.equal(
+        await active.evaluate(
+          (element) => getComputedStyle(element).borderInlineStartWidth,
+        ),
+        '2px',
+        'an active sidebar row must retain the ink marker',
+      );
+    }
     assert.equal(
       await activeSection.evaluate(
-        (element) => getComputedStyle(element).backgroundColor,
+        (element) => getComputedStyle(element).fontSize,
       ),
-      'rgba(0, 0, 0, 0)',
-      'an active sidebar section must use the quiet marker, not a filled block',
-    );
-    assert.equal(
-      await activeSection.evaluate(
-        (element) => getComputedStyle(element).borderInlineStartWidth,
+      await activeRoute.evaluate(
+        (element) => getComputedStyle(element).fontSize,
       ),
-      '2px',
-      'an active sidebar section must retain the ink marker',
+      'a sidebar folder must use the same type size as its pages',
     );
+
+    // ---- Documentation router ----
+    await page.goto(`${baseUrl}/docs`, { waitUntil: 'networkidle' });
     assert.equal(
       new URL(page.url()).pathname.replace(/\/$/, ''),
       `${basePath}/docs`,
@@ -386,10 +441,10 @@ async function runSmoke() {
       [
         'Start here',
         'Finish a task',
-        'Add hooks and Signals with noir_signals',
         'Understand the model',
+        'Add hooks and Signals with noir_signals',
         'Look something up',
-        'Advanced and contributing',
+        'Contribute',
       ],
       'the overview must route by reader intent',
     );
