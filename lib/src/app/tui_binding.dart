@@ -128,7 +128,9 @@ final class TuiBinding {
         headless: headless,
         inputDispatcher: inputDispatcher,
         renderer: renderer,
-        scheduleFrame: scheduler.scheduleFrame,
+        // Session changes can affect paint metrics without changing widgets.
+        // Render invalidation also schedules the frame through PipelineOwner.
+        scheduleFrame: renderView.markNeedsPaint,
         onExitSignal: dispose,
         platform: terminalPlatform,
         rendererFactory: rendererFactory,

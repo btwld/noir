@@ -12,6 +12,50 @@ void main() {
   };
   final publish = workflows['publish']!;
 
+  for (final (name, jobName) in [
+    ('release', 'verify'),
+    ('publish', 'preflight'),
+  ]) {
+    test('$name preflight budgets cover CI tests and each bounded stage', () {
+      final job = _job(workflows[name]!, jobName);
+      final ordinaryBudget = _stepBudget(job, 'Run ordinary tests');
+      expect(
+        ordinaryBudget,
+        greaterThanOrEqualTo(
+          _stepBudget(
+            _job(workflows['ci']!, 'ubuntu-test'),
+            'Run ordinary tests',
+          ),
+        ),
+        reason: 'release validation runs the same ordinary suite as Ubuntu CI',
+      );
+      final checkBudgets = [
+        for (final name in [
+          'Install dependencies',
+          'Verify bundled native assets',
+          'Check formatting',
+          'Run strict analysis',
+          'Run ordinary tests',
+          'Validate documentation links',
+          'Validate publish archive',
+        ])
+          _stepBudget(job, name),
+      ];
+      expect(checkBudgets, everyElement(greaterThan(0)));
+      final jobBudget = int.parse(
+        RegExp(
+          r'^    timeout-minutes: (\d+)',
+          multiLine: true,
+        ).firstMatch(job)!.group(1)!,
+      );
+      expect(
+        jobBudget,
+        greaterThanOrEqualTo(checkBudgets.reduce((a, b) => a + b)),
+        reason: 'the job must cover its individual validation ceilings',
+      );
+    });
+  }
+
   test('workflows never depend on Git LFS restoration', () {
     for (final entry in workflows.entries) {
       expect(
@@ -68,7 +112,6 @@ void main() {
     expect(publishStart, greaterThan(preflightStart));
 
     final preflight = publish.substring(preflightStart, publishStart);
-    expect(preflight, contains('timeout-minutes: 15'));
     expect(
       preflight,
       contains(
@@ -132,3 +175,26 @@ void main() {
 
 String _read(String path) =>
     File(path).readAsStringSync().replaceAll('\r\n', '\n');
+
+String _job(String workflow, String name) {
+  final start = workflow.indexOf('  $name:');
+  expect(start, isNonNegative, reason: 'missing job $name');
+  final end = workflow.indexOf(
+    RegExp('^  [a-z][a-z-]+:', multiLine: true),
+    start + 3,
+  );
+  return workflow.substring(start, end < 0 ? workflow.length : end);
+}
+
+int _stepBudget(String job, String name) {
+  final start = job.indexOf('      - name: $name\n');
+  expect(start, isNonNegative, reason: 'missing step $name');
+  final end = job.indexOf('      - name:', start + 7);
+  final step = job.substring(start, end < 0 ? job.length : end);
+  final timeout = RegExp(
+    r'^        timeout-minutes: (\d+)',
+    multiLine: true,
+  ).firstMatch(step);
+  expect(timeout, isNotNull, reason: '$name must have an explicit ceiling');
+  return int.parse(timeout!.group(1)!);
+}

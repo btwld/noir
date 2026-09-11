@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
@@ -8,6 +9,7 @@ import 'package:noir/src/core/input.dart' show InputManagerKernelAccess;
 import 'package:noir/src/core/stdin_input_driver.dart';
 import 'package:test/test.dart';
 
+import '../helpers/buffer_capture.dart';
 import '../helpers/tui_test_app.dart';
 
 void main() {
@@ -56,6 +58,125 @@ void main() {
     } finally {
       app.dispose();
     }
+  });
+
+  test('Windows terminal resize updates layout and the captured frame', () {
+    final constraints = <BoxConstraints>[];
+    final platform = _RecordingTerminalPlatform(
+      isWindows: true,
+      terminalColumns: 8,
+      terminalLines: 2,
+    );
+    final app = createTuiTestApp(
+      _LayoutProbe(log: constraints),
+      width: 8,
+      height: 2,
+      headless: false,
+      terminalPlatform: platform,
+      inputDriverFactory: (_) => _ProbeInputDriver(),
+    );
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+    final initialFrame = app.binding.debugFrameCount;
+
+    platform
+      ..terminalColumns = 20
+      ..terminalLines = 5
+      ..emit(TerminalSignal.resize);
+    app.pumpFrame();
+
+    expect(constraints.last.maxWidth, 20);
+    expect(constraints.last.maxHeight, 5);
+    expect(app.captureFrame().width, 20);
+    expect(app.captureFrame().height, 5);
+    expect(app.captureFrame(), BufferMatchers.containsText('probe'));
+    expect(app.binding.debugFrameCount, initialFrame + 1);
+    // Applying RenderView's new size can leave a clean scheduler follow-up.
+    app.pumpFrame();
+    expect(app.binding.debugFrameCount, initialFrame + 1);
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+  });
+
+  test('changed pixel metrics repaint an idle scene through parsed input', () {
+    final app = createTuiTestApp(
+      const _MetricsProbe(),
+      width: 40,
+      height: 8,
+      headless: false,
+      terminalPlatform: _RecordingTerminalPlatform(),
+      inputDriverFactory: (_) => _ProbeInputDriver(),
+    );
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    final firstFrame = app.binding.debugFrameCount;
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+    expect(app.captureFrame(), BufferMatchers.containsText('pixels=?x?'));
+
+    app.mockInput.typeText('\x1b[4;720;1280t');
+    app.pumpFrame();
+
+    expect(app.binding.debugFrameCount, firstFrame + 1);
+    expect(app.captureFrame(), BufferMatchers.containsText('pixels=1280x720'));
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+
+    for (final input in [
+      '\x1b[4;720;1280t',
+      '\x1b[4;0;1280t',
+      '\x1b[4;720;0t',
+      'x',
+    ]) {
+      app.mockInput.typeText(input);
+      app.pumpFrame();
+      expect(app.binding.debugFrameCount, firstFrame + 1, reason: input);
+    }
+
+    app.mockInput.typeText('\x1b[4;1080;1920t');
+    app.pumpFrame();
+    expect(app.binding.debugFrameCount, firstFrame + 2);
+    expect(app.captureFrame(), BufferMatchers.containsText('pixels=1920x1080'));
+  });
+
+  test('pixel metrics resize a natural image and clear its former cells', () {
+    final imageKey = GlobalKey<State<StatefulWidget>>();
+    final app = createTuiTestApp(
+      Align(
+        alignment: Alignment.topLeft,
+        child: Image.rgba(
+          Uint8List.fromList([
+            for (var i = 0; i < 48; i++) ...[255, 0, 0, 255],
+          ]),
+          pixelWidth: 8,
+          pixelHeight: 6,
+          rowStride: 32,
+          key: imageKey,
+        ),
+      ),
+      headless: false,
+      terminalPlatform: _RecordingTerminalPlatform(),
+      inputDriverFactory: (_) => _ProbeInputDriver(),
+    );
+    addTearDown(app.dispose);
+    app
+      ..pumpFrame()
+      ..pumpFrame();
+    final render = imageKey.currentContext!.findRenderObject()! as RenderImage;
+    expect(render.size, const Size(8, 3));
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+    expect(app.captureFrame(), BufferMatchers.hasCharAt(2, 1, '▀'));
+
+    app.mockInput.typeText('\x1b[4;480;800t');
+    app.pumpFrame();
+    final followUpScheduled = app.binding.debugHasScheduledFrame;
+    // RenderImage receives metrics while painting, then requests its natural
+    // size layout. The framework schedules that follow-up without a rebuild.
+    app.pumpFrame();
+
+    expect(render.size, const Size(1, 1));
+    expect(followUpScheduled, isTrue);
+    expect(app.binding.debugHasScheduledFrame, isFalse);
+    expect(app.captureFrame(), BufferMatchers.hasCharAt(0, 0, '▀'));
+    expect(app.captureFrame(), BufferMatchers.hasCharAt(2, 1, ' '));
   });
 
   test(
@@ -473,6 +594,31 @@ class _CounterAppState extends State<_CounterApp> {
   }
 }
 
+class _MetricsProbe extends RenderObjectWidget {
+  const _MetricsProbe();
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMetricsProbe();
+}
+
+class _RenderMetricsProbe extends RenderBox {
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    size = Size(constraints.constrainWidth(40), constraints.constrainHeight(1));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final metrics = context.cellMetrics;
+    context.canvas.drawText(
+      'pixels=${metrics.pixelWidth ?? '?'}x${metrics.pixelHeight ?? '?'}',
+      offset,
+      Color.white,
+    );
+  }
+}
+
 class _LayoutProbe extends RenderObjectWidget {
   const _LayoutProbe({required this.log});
 
@@ -603,19 +749,24 @@ class _ProbeInputDriver implements TerminalInputDriver {
 }
 
 class _RecordingTerminalPlatform implements TerminalPlatform {
-  _RecordingTerminalPlatform({this.stdoutHasTerminal = true});
+  _RecordingTerminalPlatform({
+    this.stdoutHasTerminal = true,
+    this.isWindows = false,
+    this.terminalColumns = 80,
+    this.terminalLines = 24,
+  });
 
   @override
   bool stdoutHasTerminal;
 
   @override
-  bool get isWindows => false;
+  final bool isWindows;
 
   @override
-  int get terminalColumns => 80;
+  int terminalColumns;
 
   @override
-  int get terminalLines => 24;
+  int terminalLines;
 
   bool _stdinLineMode = false;
   bool _stdinEchoMode = false;
@@ -655,6 +806,10 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
 
   @override
   Stream<void> watchSignal(TerminalSignal signal) => _signals[signal]!.stream;
+
+  void emit(TerminalSignal signal) {
+    _signals[signal]!.add(null);
+  }
 }
 
 class _FakeTerminalPlatform implements TerminalPlatform {

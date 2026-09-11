@@ -19,7 +19,7 @@ jobs:
   verify:
     name: Verify and package native assets
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 36
 
     steps:
       - name: Checkout repository
@@ -71,26 +71,31 @@ jobs:
         run: dart run scripts/fetch_opentui_binaries.dart --verify-only
 
       - name: Check formatting
+        timeout-minutes: 2
         run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ scripts/
 
       - name: Run strict analysis
+        timeout-minutes: 4
         run: dart analyze --fatal-infos
 
       - name: Run ordinary tests
-        timeout-minutes: 8
+        # Match Ubuntu CI; a successful run already exceeded eight minutes.
+        timeout-minutes: 15
         run: dart test --concurrency=1
 
       - name: Validate documentation links
+        timeout-minutes: 5
         run: dart doc --validate-links --output .context/dartdoc
 
       - name: Validate publish archive
+        timeout-minutes: 5
         run: dart pub publish --dry-run
 
       - name: Package tracked native assets
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag }}
-        run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native/ native_manifest.json
+        run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
 
       - name: Upload package-test assets
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -27,6 +27,20 @@ artifacts are unchanged from alpha.4.
 
 ### Fixed
 
+- A component rebuilding below `Row`, `Column`, `Stack`, or `Wrap` now
+  reconnects a replacement render object in its existing child slot. Local
+  changes to a component's root widget previously removed its visible output
+  until the parent rebuilt. Sibling state and order, flex/position data, and
+  pointer routing remain attached to the correct child.
+- `Flexible`, `Expanded`, and `Positioned` now preserve their layout behavior
+  through non-render component wrappers, including metadata-only local
+  updates. Invalid placement, duplicate metadata on one render edge, and
+  non-positive widget flex values now reject in release mode instead of
+  silently losing their layout behavior.
+- Plain `ListView` instances now preserve valid caller scroll positions when
+  mounting, changing controllers, or changing item counts. Switching off
+  selection keeps the current window, and simultaneous controller/selection
+  changes follow the new highlight without first jumping to the old one.
 - The packaged hot-reload runner now recompiles detected edits whose file
   timestamps are not newer than the last successful reload, including
   recovery after a rejected reload. The VM's own timestamp filter skipped such
@@ -66,6 +80,15 @@ artifacts are unchanged from alpha.4.
 - `ListView` now follows its highlight when its own height or item extent
   changes, so a resized list keeps the selected row on screen while the
   controller keeps a valid scroll position.
+- App startup now releases acquired resources if terminal-mode activation or
+  final registration fails, preserving the original error if cleanup also
+  fails. Rendererless headless mouse requests are rejected before mounting.
+- Changed terminal pixel measurements now repaint an idle scene and update
+  natural image sizes without an unrelated widget rebuild. Duplicate and
+  invalid measurements still leave an otherwise clean scene unpainted.
+- Windows terminal sessions now check for size changes every 100ms and update
+  layout and rendering when dimensions change. Checks stop when the session
+  closes and do not run in headless or non-terminal sessions.
 
 ### Changed
 

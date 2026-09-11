@@ -91,7 +91,7 @@ class HelloApp extends StatelessWidget {
 }
 ```
 
-The complete version is available in [the hello example](example/hello.dart).
+The complete version is available in [the hello example](https://github.com/conceptadev/noir/blob/main/example/hello.dart).
 
 Stateful widgets persist a `State` object between supported rebuilds. Call
 `setState` after changing local state:
@@ -197,7 +197,7 @@ class _CounterAppState extends State<CounterApp> {
 }
 ```
 
-See [the counter example](example/counter.dart) for the complete styled version
+See [the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart) for the complete styled version
 with a solid action button.
 
 ## Hot Reload During Development
@@ -352,9 +352,9 @@ only on Noir's high-level API; `noir` never depends on it.
 
 ## Examples
 
-Start with [Main](example/main.dart), [Counter](example/counter.dart), or
-[Components](example/components_demo.dart). The
-[example catalog](example/README.md) lists every runnable app by the question
+Start with [Main](https://github.com/conceptadev/noir/blob/main/example/main.dart), [Counter](https://github.com/conceptadev/noir/blob/main/example/counter.dart), or
+[Components](https://github.com/conceptadev/noir/blob/main/example/components_demo.dart). The
+[example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md) lists every runnable app by the question
 it answers, including focused controls, complete applications, animation,
 advanced validation, and the tutorial checkpoints the documentation captures
 its frames from.
@@ -378,7 +378,9 @@ its frames from.
 | xterm `modifyOtherKeys` | modified named and printable keys, including Ctrl+Enter |
 | Kitty keyboard | modifiers and press/repeat/release metadata after `app.enableKittyKeyboard()` |
 
-SIGWINCH resizes the terminal buffer and lays out the widget tree again.
+Unix sessions observe SIGWINCH; interactive Windows sessions check terminal
+size every 100ms. A changed, positive size resizes the terminal buffer and lays
+out the widget tree again.
 
 ## Native Libraries
 
@@ -412,7 +414,7 @@ native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
 
 Android, iOS, and web are not supported targets. See
-[Third-Party Notices](THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
+[Third-Party Notices](https://github.com/conceptadev/noir/blob/main/THIRD_PARTY_NOTICES.md) for OpenTUI provenance and
 license terms.
 
 High-level Unicode cell measurement uses a compact pure-Dart range table

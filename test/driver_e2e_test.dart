@@ -12,12 +12,21 @@ import 'package:vm_service/vm_service_io.dart';
 
 import '../scripts/driver/ansi_keys.dart';
 import '../scripts/driver/noir_driver.dart';
+import 'helpers/published_package.dart';
 
 void main() {
   test(
-    'NOIR_DRIVE drives an unmodified consumer app over the VM service',
+    'NOIR_DRIVE renders reactive widgets from the exact Pub archive',
     () async {
-      final packageRoot = Directory.current.resolveSymbolicLinksSync();
+      final packageSandbox = await Directory.systemTemp.createTemp(
+        'noir_driver_package_',
+      );
+      addTearDown(() => _deleteTempDirectory(packageSandbox));
+      final package = await extractPublishedPackage(
+        Directory.current,
+        packageSandbox,
+      );
+      final packageRoot = package.resolveSymbolicLinksSync();
       final consumer = await Directory.systemTemp.createTemp(
         'noir_driver_consumer_',
       );
@@ -120,6 +129,7 @@ class _ProbeState extends State<Probe> {
         ],
         workingDirectory: consumer.path,
         environment: <String, String>{
+          'OPENTUI_LIBRARY_PATH': '',
           'NOIR_DRIVE': '1',
           'NOIR_DRIVE_SIZE': '24x4',
         },

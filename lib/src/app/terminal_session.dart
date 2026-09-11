@@ -8,7 +8,7 @@ import '../core/renderer.dart';
 import '../core/stdin_input_driver.dart';
 import '../foundation/first_error.dart';
 
-/// Terminal signal kinds watched by [TerminalSession].
+/// Terminal signals and resize checks watched by [TerminalSession].
 @visibleForTesting
 enum TerminalSignal {
   /// SIGINT.
@@ -20,7 +20,7 @@ enum TerminalSignal {
   /// SIGHUP.
   hangup,
 
-  /// SIGWINCH.
+  /// SIGWINCH on Unix, periodic size checks on Windows.
   resize,
 }
 
@@ -77,7 +77,7 @@ abstract interface class TerminalPlatform {
   /// Flushes stdout.
   void stdoutFlush();
 
-  /// Watches a terminal signal.
+  /// Watches a terminal signal or requests terminal-size checks.
   Stream<void> watchSignal(TerminalSignal signal);
 }
 
@@ -332,7 +332,7 @@ class TerminalSession {
   }
 
   void _installResizeHandler() {
-    if (_platform.isWindows) {
+    if (_platform.isWindows && !_useTerminalSession) {
       return;
     }
     try {
@@ -350,7 +350,7 @@ class TerminalSession {
         }),
       );
     } on Object {
-      // Some runtimes cannot watch SIGWINCH.
+      // Some runtimes cannot watch terminal resize notifications.
     }
   }
 
@@ -482,8 +482,14 @@ class _IoTerminalPlatform implements TerminalPlatform {
   }
 
   @override
-  Stream<void> watchSignal(TerminalSignal signal) =>
-      _processSignal(signal).watch().map((_) {});
+  Stream<void> watchSignal(TerminalSignal signal) {
+    if (signal == TerminalSignal.resize && isWindows) {
+      // Windows has no SIGWINCH watcher. Canceling the session's existing
+      // stream subscription also cancels this periodic timer.
+      return Stream<void>.periodic(const Duration(milliseconds: 100));
+    }
+    return _processSignal(signal).watch().map((_) {});
+  }
 
   io.ProcessSignal _processSignal(TerminalSignal signal) => switch (signal) {
     TerminalSignal.interrupt => io.ProcessSignal.sigint,

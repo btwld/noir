@@ -23,6 +23,7 @@ Before committing a website change, run:
 
 ```sh
 npm run format:check
+npm run sync:check
 npm run lint
 npm run typecheck
 npm run build
@@ -49,6 +50,11 @@ verbatim, and lesson Dart that is not in the lesson's runnable checkpoint.
 
 Commit the regenerated files with the source change. Rerun the sync after
 editing a source while the dev server is already running.
+
+`npm run sync:check` compares the derived files, generated lesson regions, and
+copied screenshots without writing them. It fails when an output is stale,
+missing, or obsolete. PR validation and Pages deployment run this check before
+typecheck or build can refresh the files. Run `npm run sync` to update them.
 
 ## Captured terminal frames
 
@@ -98,7 +104,9 @@ NOIR_WEBSITE_BASE_PATH=/noir npm run test:smoke
 
 `npm run build` performs a Next.js static export and writes the Pagefind index
 into `website/out/_pagefind`. The `out` directory is generated deployment
-output and is not committed. Pushes to `main` deploy automatically; the manual
+output and is not committed. Pushes to `main` that change the website or its
+canonical manifests, publication record, examples, or companion documentation
+deploy automatically; the manual
 workflow trigger exists for an intentional deployment from another ref.
 
 ## Ownership

@@ -5,9 +5,11 @@ description: How one event becomes the next terminal frame, and which layer owns
 
 # Architecture
 
-Noir separates what an application declares from the state and native
-resources the framework must preserve. That separation is why a callback can
-change one value without rebuilding a terminal session from scratch.
+Noir implements Flutter-inspired widgets, elements, and integer-cell layout in
+Dart, then uses OpenTUI's native renderer for terminal output. It separates
+what an application declares from the state and native resources the framework
+must preserve. That separation lets a callback change one value while keeping
+the terminal session.
 
 > Widgets declare. Elements preserve identity. RenderObjects layout and record
 > paint. The compositor talks to OpenTUI. The native layer owns FFI, memory,
@@ -74,8 +76,10 @@ recorded trade-off, not an optimization the framework promises to make later.
 A `StatefulWidget` is replaceable configuration. Its element owns the stable
 place in the tree, and that place retains the `State` object. If a rebuild puts
 the same widget type and key at the same position, Noir updates the
-configuration and keeps the state. Change that identity and Noir disposes the
-old state before it mounts a new one.
+configuration and keeps the state. During a successful replacement, Noir
+deactivates the old element and mounts the new one. At the end of the build
+pass, it unmounts inactive elements and disposes their state. The replacement's
+`initState` can therefore run before the old state's `dispose`.
 
 Inherited dependencies also belong to the element tree. When an
 `InheritedWidget` reports a meaningful update, the dependent elements rebuild

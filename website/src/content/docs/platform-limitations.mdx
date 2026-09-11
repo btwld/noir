@@ -78,9 +78,10 @@ target.
   <div>
     <dt>macOS terminal teardown</dt>
     <dd>
-      On an observed iTerm path, alternate-screen teardown can restore the
-      launch cursor imperfectly. Always dispose <code>TuiApp</code>. Skipping
-      cleanup does not avoid the limitation and leaves terminal modes owned.
+      On an observed macOS/iTerm path, alternate-screen teardown can return to
+      main-screen row 1, column 1 and overwrite prior shell rows. Always dispose{' '}
+      <code>TuiApp</code> to release owned resources and terminal modes. The
+      cursor-restoration limitation remains after disposal.
     </dd>
   </div>
   <div>

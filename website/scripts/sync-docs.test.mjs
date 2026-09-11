@@ -35,6 +35,7 @@ async function fixture(t) {
     'packages/noir_signals/doc',
     'packages/noir_signals/example',
     'website/.prettierrc.json',
+    'website/public/demos/signals-task-list',
     'website/scripts/sync-docs.mjs',
     'website/src',
   ]) {
@@ -49,8 +50,9 @@ async function fixture(t) {
   return {
     read: (path) => readFile(join(root, path), 'utf8'),
     write: (path, value) => writeFile(join(root, path), value),
-    sync: () =>
-      execFileSync(process.execPath, ['scripts/sync-docs.mjs'], {
+    remove: (path) => rm(join(root, path)),
+    sync: (...arguments_) =>
+      execFileSync(process.execPath, ['scripts/sync-docs.mjs', ...arguments_], {
         cwd: join(root, 'website'),
         stdio: 'pipe',
         encoding: 'utf8',
@@ -68,6 +70,57 @@ function rejectsSync(f, message) {
 test('the current documentation synchronizes', async (t) => {
   const f = await fixture(t);
   assert.match(f.sync(), /6 screenshots/);
+});
+
+test('the current generated documentation passes check mode', async (t) => {
+  const f = await fixture(t);
+  assert.match(f.sync('--check'), /6 screenshots/);
+});
+
+for (const path of [
+  'website/src/generated/availability.ts',
+  'website/src/generated/checkpoints.ts',
+  'website/src/generated/frames.ts',
+  'website/src/content/docs/signals-task-list/index.mdx',
+  'website/public/demos/signals-task-list/01-screen.jpg',
+]) {
+  test(`check mode reports stale output without repairing ${path}`, async (t) => {
+    const f = await fixture(t);
+    const stale = 'outdated generated output';
+    await f.write(path, stale);
+    assert.throws(() => f.sync('--check'), /documentation is out of date/);
+    assert.equal(await f.read(path), stale);
+    assert.match(f.sync(), /6 screenshots/);
+    assert.notEqual(await f.read(path), stale);
+  });
+}
+
+test('check mode reports a missing generated file without creating it', async (t) => {
+  const f = await fixture(t);
+  const path = 'website/src/generated/availability.ts';
+  await f.remove(path);
+  assert.throws(() => f.sync('--check'), /documentation is out of date/);
+  await assert.rejects(f.read(path), { code: 'ENOENT' });
+});
+
+test('check mode reports stale generated regions in canonical lessons', async (t) => {
+  const f = await fixture(t);
+  const path = 'packages/noir_signals/doc/getting-started.md';
+  const stale = (await f.read(path)).replace(
+    '<!-- noir:file -->',
+    '<!-- noir:file -->\n\nstale generated code',
+  );
+  await f.write(path, stale);
+  assert.throws(() => f.sync('--check'), /documentation is out of date/);
+  assert.equal(await f.read(path), stale);
+});
+
+test('check mode reports an obsolete generated page without removing it', async (t) => {
+  const f = await fixture(t);
+  const path = 'website/src/content/docs/signals-task-list.mdx';
+  await f.write(path, '# Obsolete generated page\n');
+  assert.throws(() => f.sync('--check'), /documentation is out of date/);
+  assert.equal(await f.read(path), '# Obsolete generated page\n');
 });
 
 test('recapturing changed padding cannot approve an unchanged JPEG', async (t) => {

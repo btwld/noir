@@ -497,9 +497,16 @@ void main() {
 
     expect(catalogEntries.toSet(), hasLength(catalogEntries.length));
     expect(catalogEntries, unorderedEquals(shippedExamples));
-    expect(readme, contains('[example catalog](example/README.md)'));
     expect(
-      RegExp(r'\[example catalog\]\(example/README\.md\)').allMatches(readme),
+      readme,
+      contains(
+        '[example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)',
+      ),
+    );
+    expect(
+      RegExp(
+        r'\[example catalog\]\(https://github\.com/conceptadev/noir/blob/main/example/README\.md\)',
+      ).allMatches(readme),
       hasLength(1),
     );
     expect(
