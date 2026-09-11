@@ -14,7 +14,11 @@ artifacts are unchanged from alpha.4.
   `mouseCursor`. Pointer selection follows render-tree hit testing and updates
   after layout even when the mouse is stationary. High-level mouse reporting
   now includes movement by default; explicit `enableMovement: false` preserves
-  click/drag-only reporting. Unsupported terminals retain their own pointer.
+  click/drag-only reporting. iTerm2 uses legacy OSC 22 shape names and restores
+  its default pointer on exit. Unsupported terminals retain their own pointer.
+- Terminal output stays synchronous; removing redundant asynchronous stdout
+  flushes prevents immediate mouse setup or cleanup from failing with a bound
+  stream sink.
 
 - Added `LayoutBuilder`, which builds its child from the incoming
   `BoxConstraints`. The builder runs during layout and its result is laid out

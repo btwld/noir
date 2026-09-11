@@ -4,16 +4,11 @@
 /// Unsupported terminals retain their own pointer appearance.
 enum MouseCursor {
   /// Standard arrow pointer.
-  basic('default'),
+  basic,
 
   /// Pointing hand for an enabled action.
-  pointer('pointer'),
+  pointer,
 
   /// I-beam for text interaction.
-  text('text');
-
-  const MouseCursor(this.name);
-
-  /// Shape name defined by the OSC 22 pointer protocol.
-  final String name;
+  text,
 }

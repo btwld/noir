@@ -265,7 +265,6 @@ void main() {
       addTearDown(session.close);
 
       expect(platform.writes, ['\x1b[>4;2m']);
-      expect(platform.stdoutFlushes, 1);
 
       session.close();
 
@@ -276,7 +275,6 @@ void main() {
         '\x1b[?1000l\x1b[?1006l',
         '\x1b[?1049l\x1b[?25h\x1b[0m',
       ]);
-      expect(platform.stdoutFlushes, 2);
     },
   );
 
@@ -760,7 +758,6 @@ void main() {
     expect(driver.starts, 1);
     expect(driver.stops, 1);
     expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-    expect(platform.stdoutFlushes, 1);
   });
 
   test('capability route is installed before input starts', () {
@@ -940,7 +937,7 @@ void main() {
     expect(driver.starts, 1);
     expect(driver.stops, 1);
     expect(platform.writes, isEmpty);
-    expect(platform.stdoutFlushes, 0);
+
     expect(() => renderer!.nextBuffer, throwsStateError);
   });
 
@@ -1002,7 +999,7 @@ void main() {
     expect(session.close, throwsA(same(stopError)));
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(5));
-    expect(platform.stdoutFlushes, 2);
+
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
@@ -1011,7 +1008,7 @@ void main() {
     expect(session.close, returnsNormally);
     expect(driver.stops, 1);
     expect(platform.writes, hasLength(5));
-    expect(platform.stdoutFlushes, 2);
+
     expect(platform.stdinLineModeSets, 0);
     expect(platform.stdinEchoModeSets, 0);
     expect(platform.canceledSignals, canceledSignals);
@@ -1046,7 +1043,7 @@ void main() {
       expect(platform.writes, isNot(contains('\x1b[<u')));
       expect(platform.writes, contains('\x1b[>4;0m'));
       expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
-      expect(platform.stdoutFlushes, 2);
+
       expect(platform.stdinLineModeSets, 0);
       expect(platform.stdinEchoModeSets, 0);
       expect(() => renderer.nextBuffer, returnsNormally);
@@ -1132,9 +1129,11 @@ class _FakeTerminalPlatform implements TerminalPlatform {
   final int? stdoutWriteErrorAttempt;
 
   int stdoutWriteAttempts = 0;
-  int stdoutFlushes = 0;
   int stdinLineModeSets = 0;
   int stdinEchoModeSets = 0;
+
+  @override
+  String? get terminalProgram => null;
 
   @override
   bool get stdoutHasTerminal => _stdoutHasTerminal;
@@ -1177,11 +1176,6 @@ class _FakeTerminalPlatform implements TerminalPlatform {
       throw error;
     }
     writes.add(data);
-  }
-
-  @override
-  void stdoutFlush() {
-    stdoutFlushes++;
   }
 
   @override

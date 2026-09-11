@@ -63,6 +63,9 @@ abstract interface class TerminalPlatform {
   /// Whether stdout is attached to a terminal.
   bool get stdoutHasTerminal;
 
+  /// Terminal application identity from TERM_PROGRAM, when available.
+  String? get terminalProgram;
+
   /// Whether the current platform is Windows.
   bool get isWindows;
 
@@ -72,11 +75,8 @@ abstract interface class TerminalPlatform {
   /// Current terminal lines.
   int get terminalLines;
 
-  /// Writes raw data to stdout.
+  /// Writes raw data to stdout synchronously, completing before returning.
   void stdoutWrite(String data);
-
-  /// Flushes stdout.
-  void stdoutFlush();
 
   /// Watches a terminal signal or requests terminal-size checks.
   Stream<void> watchSignal(TerminalSignal signal);
@@ -152,7 +152,6 @@ class TerminalSession {
         // well-known controls such as Ctrl+C, keeping them in the input stream
         // instead of letting POSIX ISIG intercept them under multiplexers.
         _platform.stdoutWrite(_modifyOtherKeysMode2);
-        _platform.stdoutFlush();
         _renderer!.queryPixelResolution();
       }
       _installSignalHandlers();
@@ -213,25 +212,45 @@ class TerminalSession {
   /// The renderer owned or borrowed by this session.
   Renderer? get renderer => _renderer;
 
-  bool _mouseCursorPushed = false;
+  bool _ownsMouseCursor = false;
   MouseCursor? _mouseCursor;
+  // iTerm2 3.7.1 implements the legacy xterm vocabulary, without a stack.
+  // Cache the dialect so teardown always matches acquisition.
+  late final bool _legacyMouseCursor = _platform.terminalProgram == 'iTerm.app';
+
+  String _mouseCursorName(MouseCursor cursor) {
+    if (_legacyMouseCursor) {
+      return switch (cursor) {
+        MouseCursor.basic => 'arrow',
+        MouseCursor.pointer => 'hand2',
+        MouseCursor.text => 'xterm',
+      };
+    }
+    return switch (cursor) {
+      MouseCursor.basic => 'default',
+      MouseCursor.pointer => 'pointer',
+      MouseCursor.text => 'text',
+    };
+  }
 
   /// Updates the pointer on OSC 22 terminals while mouse reporting is active.
   void updateMouseCursor(MouseCursor cursor) {
-    if (!_mouseCursorPushed || _closed || _closing || cursor == _mouseCursor) {
+    if (!_ownsMouseCursor || _closed || _closing || cursor == _mouseCursor) {
       return;
     }
-    _platform.stdoutWrite('\x1b]22;${cursor.name}\x1b\\');
-    _platform.stdoutFlush();
+    _platform.stdoutWrite('\x1b]22;${_mouseCursorName(cursor)}\x1b\\');
     _mouseCursor = cursor;
   }
 
   void _restoreMouseCursor() {
-    if (!_mouseCursorPushed) return;
-    _mouseCursorPushed = false;
+    if (!_ownsMouseCursor) return;
+    _ownsMouseCursor = false;
     _mouseCursor = null;
-    _platform.stdoutWrite('\x1b]22;<\x1b\\');
-    _platform.stdoutFlush();
+    // Legacy OSC 22 can restore the terminal default, but cannot pop a saved
+    // custom shape. Modern terminals restore the previous stack entry.
+    _platform.stdoutWrite(
+      _legacyMouseCursor ? '\x1b]22;\x1b\\' : '\x1b]22;<\x1b\\',
+    );
   }
 
   /// Enables mouse reporting through the renderer, including hover by default.
@@ -239,11 +258,12 @@ class TerminalSession {
     _requireRenderer(
       'Mouse support requires a renderer',
     ).enableMouse(enableMovement: enableMovement);
-    if (!_isHeadless && _useTerminalSession && !_mouseCursorPushed) {
+    if (!_isHeadless && _useTerminalSession && !_ownsMouseCursor) {
       // Mark ownership before writing so partial failures still trigger cleanup.
-      _mouseCursorPushed = true;
-      _platform.stdoutWrite('\x1b]22;>default\x1b\\');
-      _platform.stdoutFlush();
+      _ownsMouseCursor = true;
+      _platform.stdoutWrite(
+        _legacyMouseCursor ? '\x1b]22;arrow\x1b\\' : '\x1b]22;>default\x1b\\',
+      );
       _mouseCursor = MouseCursor.basic;
     }
   }
@@ -466,7 +486,6 @@ class TerminalSession {
     ]) {
       attempt(() => _platform.stdoutWrite(sequence));
     }
-    attempt(_platform.stdoutFlush);
   }
 }
 
@@ -496,6 +515,9 @@ class _StdinTerminalInputDriver implements TerminalInputDriver {
 
 class _IoTerminalPlatform implements TerminalPlatform {
   @override
+  String? get terminalProgram => io.Platform.environment['TERM_PROGRAM'];
+
+  @override
   bool get stdoutHasTerminal => io.stdout.hasTerminal;
 
   @override
@@ -509,12 +531,9 @@ class _IoTerminalPlatform implements TerminalPlatform {
 
   @override
   void stdoutWrite(String data) {
+    // Default Dart Stdout is blocking. An asynchronous flush is unnecessary
+    // and temporarily binds the sink, rejecting immediate writes or teardown.
     io.stdout.write(data);
-  }
-
-  @override
-  void stdoutFlush() {
-    io.stdout.flush();
   }
 
   @override

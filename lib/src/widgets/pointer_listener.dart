@@ -26,7 +26,9 @@ class PointerListener extends SingleChildRenderObjectWidget {
   ///
   /// Requires mouse reporting and an OSC 22 supporting terminal. High-level
   /// mouse reporting includes movement by default. Unsupported terminals keep
-  /// their own pointer. The deepest annotated hit target wins; use
+  /// their own pointer. iTerm2 uses legacy shape names and restores its default
+  /// pointer on exit; modern OSC 22 terminals restore the previous stack entry.
+  /// The deepest annotated hit target wins; use
   /// [MouseCursor.basic] to override an ancestor with the standard arrow.
   /// This annotation also participates in hit testing without callbacks.
   final MouseCursor? mouseCursor;
