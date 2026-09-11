@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/pages.yml"
       - "website/**"
+      - "README.md"
+      - "packages/noir_signals/README.md"
       - "publication.json"
       - "pubspec.yaml"
       - "example/**"

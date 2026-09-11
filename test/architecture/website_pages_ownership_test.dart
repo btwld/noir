@@ -25,6 +25,8 @@ void main() {
 
     expect(workflow, contains('push:\n    branches:\n      - main'));
     expect(workflow, contains('  workflow_dispatch:'));
+    expect(workflow, contains('      - "README.md"'));
+    expect(workflow, contains('      - "packages/noir_signals/README.md"'));
     expect(
       workflow,
       contains(r'NOIR_WEBSITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}'),
@@ -82,10 +84,7 @@ void main() {
   test('website records the Pages URL and deployment boundary', () {
     final readme = _read('website/README.md');
 
-    expect(
-      readme,
-      contains('https://cuddly-adventure-1v2ez7p.pages.github.io/'),
-    );
+    expect(readme, contains('https://conceptadev.github.io/noir/'));
     expect(readme, contains('Source: GitHub Actions'));
     expect(readme, contains('website/out'));
     expect(readme, contains('NOIR_WEBSITE_BASE_PATH=/noir'));

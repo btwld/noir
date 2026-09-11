@@ -86,15 +86,13 @@ sessions loop after that explicit action; reduced-motion sessions play once.
 
 ## GitHub Pages
 
-The configured private Pages site is
-<https://cuddly-adventure-1v2ez7p.pages.github.io/>. The
+The public documentation site is <https://conceptadev.github.io/noir/>. The
 `.github/workflows/pages.yml` workflow builds `main` and deploys only the
 generated `website/out` artifact. In the repository settings, Pages uses
 **Source: GitHub Actions**.
 
-GitHub supplies the deployed base path to the build. The current private URL
-uses the root path; to verify compatibility with a public `/noir` project path,
-run:
+GitHub supplies the deployed `/noir` base path to the build. Verify the same
+project path locally:
 
 ```sh
 cd website
@@ -106,8 +104,8 @@ NOIR_WEBSITE_BASE_PATH=/noir npm run test:smoke
 into `website/out/_pagefind`. The `out` directory is generated deployment
 output and is not committed. Pushes to `main` that change the website or its
 canonical manifests, publication record, examples, or companion documentation
-deploy automatically; the manual
-workflow trigger exists for an intentional deployment from another ref.
+deploy automatically. The manual workflow trigger remains available for an
+intentional deployment.
 
 ## Ownership
 

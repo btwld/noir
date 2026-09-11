@@ -1,9 +1,13 @@
 # Noir
 
-Noir is a Flutter-like reactive terminal UI framework for Dart, powered by
-OpenTUI. It combines declarative widgets, integer-cell layout, stateful
-rebuilds, focus and input routing, animation, and bundled native rendering in
-one package.
+[Documentation](https://conceptadev.github.io/noir/) ·
+[Examples](https://conceptadev.github.io/noir/examples/) ·
+[API reference](https://pub.dev/documentation/noir/latest/)
+
+Build terminal applications in Dart with declarative widgets and stateful
+rebuilds. Noir provides a Flutter-like widget model, cell-based layout, focus,
+keyboard and mouse input, and animation. OpenTUI renders the output through
+bundled native libraries; Noir owns the Dart widget and resource lifecycles.
 
 Noir is currently a prerelease. APIs and platform guarantees may change before
 stable 1.0.
@@ -27,9 +31,16 @@ stable 1.0.
 
 ## Documentation
 
-Tutorials, task guides, concepts, and reference live in Noir's browser
-documentation, which is built from `website/`. These canonical sources ship
-with the repository:
+Start at **[conceptadev.github.io/noir](https://conceptadev.github.io/noir/)**
+for tutorials, task guides, platform support, and the widget catalog. The site
+updates automatically when documentation changes reach `main`.
+
+- [Build your first app](https://conceptadev.github.io/noir/docs/getting-started/)
+  — a runnable counter, from initial layout to state and user input.
+- [Installation and platform requirements](https://conceptadev.github.io/noir/docs/installation/)
+  — published packages, checkout dependencies, and supported systems.
+
+Source guides and generated reference:
 
 - [Runnable example catalog](https://github.com/conceptadev/noir/blob/main/example/README.md)
   — every shipped app, listed by the question it answers.
@@ -42,7 +53,8 @@ with the repository:
 
 ## Install
 
-Install the latest prerelease from pub.dev:
+Use Dart 3.10 or later and a terminal on macOS, Linux, or Windows. The bundled
+macOS libraries require macOS 13 or later. Install the published prerelease:
 
     dart pub add noir
 
@@ -53,8 +65,10 @@ evaluating an unreleased API, use a path dependency:
       noir:
         path: ../noir
 
-Private Git consumers need access to `conceptadev/noir` and should pin an exact
-commit or release tag rather than a moving branch.
+The [repository](https://github.com/conceptadev/noir) is public. For a Git
+dependency, pin an exact commit or release tag rather than a moving branch.
+A public repository does not mean every checkout API is published on pub.dev;
+the installation guide identifies which package versions are available.
 
 ## Quick Start
 
@@ -113,92 +127,26 @@ class _CounterAppState extends State<CounterApp> {
 
   void _incrementCounter() => setState(() => _count++);
 
-  void _decrementCounter() => setState(() => _count--);
-
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (!event.isPress) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
-        event.character == '+' ||
-        event.logicalKey == LogicalKeyboardKey.enter ||
-        event.logicalKey == LogicalKeyboardKey.space) {
-      _incrementCounter();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
-        event.character == '-') {
-      _decrementCounter();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
-  void _handlePointerDown(MouseEvent event) {
-    if (event.button == MouseButton.left) _incrementCounter();
-  }
-
   @override
-  Widget build(BuildContext context) => Focus(
-    autofocus: true,
-    onKeyEvent: _handleKey,
-    child: Container(
-      color: Color.fromHex('#FAFAFA'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            height: 3,
-            color: Color.fromHex('#1976D2'),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: const Text(
-              'Noir Counter',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'You have pushed the button this many times:',
-                  style: TextStyle(color: Color.fromHex('#424242')),
-                ),
-                Text(
-                  '$_count',
-                  style: TextStyle(color: Color.fromHex('#1976D2')),
-                ),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Up/+ | Down/- | Enter/Space | Ctrl+C',
-                  style: TextStyle(color: Color.gray),
-                ),
-              ),
-              PointerListener(
-                onPointerDown: _handlePointerDown,
-                child: Container(
-                  width: 7,
-                  height: 3,
-                  alignment: Alignment.center,
-                  color: Color.fromHex('#1976D2'),
-                  child: const Text(Icons.plus),
-                ),
-              ),
-            ],
-          ),
-        ],
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Count: $_count'),
+      Button(
+        label: 'Increase',
+        autofocus: true,
+        onPressed: _incrementCounter,
       ),
-    ),
+      const Text('Enter, Space, or click to increase. Ctrl+C to quit.'),
+    ],
   );
 }
 ```
 
-See [the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart) for the complete styled version
-with a solid action button.
+Save either complete example as `bin/main.dart`, then run `dart run bin/main.dart`
+in a terminal. The counter rebuilds its label after keyboard or mouse activation.
+See [the counter example](https://github.com/conceptadev/noir/blob/main/example/counter.dart)
+for a larger layout and additional shortcuts.
 
 ## Hot Reload During Development
 
@@ -263,7 +211,7 @@ This package's archive does not carry the companion files.
 | Feedback and chrome | `Divider`, `ProgressBar`, `Spinner`, `Badge`, `Theme`, `Icons` |
 
 `Icons` is a catalog of named single-cell glyph strings, not a widget: a
-terminal icon is a character, so `Text(Icons.check)` is the whole API and there
+terminal icon is a character, so `Text(Icons.plus)` is the whole API and there
 is no `Icon`, `IconData`, or `IconTheme`. No non-ASCII member carries the
 Unicode `Emoji` property, avoiding environment-dependent emoji presentation;
 ASCII keycap bases such as `*` remain ordinary one-cell text when used alone.
