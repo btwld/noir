@@ -768,7 +768,15 @@ class _PubSearchAppState extends State<PubSearchApp> {
                       onSubmit: _submitSearch,
                     ),
                   ),
-                  if (_completionLoading) const Spinner(),
+                  SizedBox(
+                    width: 1,
+                    height: 1,
+                    child:
+                        _completionLoading ||
+                            _searchState == PubLoadState.loading
+                        ? const Spinner()
+                        : null,
+                  ),
                 ],
               ),
             ),
@@ -934,24 +942,7 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Widget _menuPanel({required String title, required Widget child}) => SizedBox(
     width: 48,
-    child: Panel(
-      title: title,
-      focused: _menuFocus.hasFocus,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_searchState == PubLoadState.loading) ...[
-            const Row(
-              spacing: 1,
-              children: [Spinner(), Text('Updating results…')],
-            ),
-            const SizedBox(height: 1),
-          ],
-          child,
-        ],
-      ),
-    ),
+    child: Panel(title: title, focused: _menuFocus.hasFocus, child: child),
   );
 
   Widget _menuSelect<T>({
@@ -976,24 +967,14 @@ class _PubSearchAppState extends State<PubSearchApp> {
 
   Widget _buildSearchLoading(BuildContext context) {
     final previous = _searchPage;
-    final showResultsProgress = _activeMenu == null;
-    final hasPreviousResults = previous != null && previous.packages.isNotEmpty;
-    // Keep the last Select mounted so result-scoped menu shortcuts and
-    // package activation remain available while paging is suppressed for the
-    // pending request.
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showResultsProgress) ...[
-          const Row(
-            spacing: 1,
-            children: [Spinner(), Text('Searching pub.dev…')],
-          ),
-          if (hasPreviousResults) const SizedBox(height: 1),
-        ],
-        if (hasPreviousResults) _buildResultList(context),
-      ],
+    // Keep the result composition and row coordinates stable while refreshing.
+    // The query's reserved progress cell owns all search/completion animation.
+    if (previous != null && previous.packages.isNotEmpty) {
+      return _buildResultList(context);
+    }
+    return Text(
+      'Searching pub.dev…',
+      style: TextStyle(color: Theme.of(context).textMuted),
     );
   }
 
