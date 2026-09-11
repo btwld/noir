@@ -47,6 +47,45 @@ void main() {
       expect(first!.disposed, isTrue);
     });
 
+    test('a replaced computed can still evaluate before deferred dispose', () {
+      final host = TestElementHost();
+      addTearDown(host.dispose);
+      var key = 0;
+      final source = signal(1);
+      addTearDown(source.dispose);
+      Computed<int>? first;
+
+      Widget buildRoot() => SignalBuilder(
+        builder: (context) {
+          final derived = useComputed(
+            () => source.value * 10,
+            keys: <Object?>[key],
+          );
+          first ??= derived;
+          return SignalValueBuilder<int>(
+            signal: derived,
+            builder: (context, value) => Text('$value'),
+          );
+        },
+      );
+
+      host.mount(buildRoot());
+      expect(first!.value, 10);
+
+      key = 1;
+      host.update(buildRoot());
+      expect(first!.disposed, isFalse);
+
+      // The retired slot is unmounted, but deferDispose has not run. A
+      // dependency write must recompute through the stored function, not
+      // HookState.hook.
+      source.value = 2;
+      expect(first!.value, 20);
+
+      host.pumpBuild();
+      expect(first!.disposed, isTrue);
+    });
+
     test('a child effect cleanup can still read the retired source', () {
       final host = TestElementHost();
       addTearDown(host.dispose);

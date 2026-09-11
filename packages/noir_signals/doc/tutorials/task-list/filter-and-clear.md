@@ -4,32 +4,36 @@ Hide completed tasks without deleting them, then remove them for good. This
 lesson separates what the app stores from what the screen shows.
 
 Start from the lesson 4 checkpoint in `example/my_task_list.dart`. Restart the
-app after this lesson, because it adds one more hook.
+app after this lesson, because it adds hooks.
 
-## Add a local visibility flag
+## Add a visibility signal and a derived view
 
-Add the flag after the computed value:
-
-```dart
-    final hideCompleted = useState(false);
-```
-
-This flag is presentation state. Nothing computes a value from it, so an
-observed `ValueNotifier` from `useState` is enough.
-
-After the theme lookup, select the records to display:
+Add the flag and the visible list after the remaining count:
 
 ```dart
-    final visible = tasks.value
-        .where((task) => !hideCompleted.value || !task.done)
-        .toList();
+    final hideCompleted = useSignal(false);
+    final visible = useComputed(
+      () => [
+        for (final task in tasks.value)
+          if (!hideCompleted.value || !task.done) task,
+      ],
+    );
 ```
 
-> **New Dart syntax.** `!` means not and `||` means or. The expression keeps
-> every task while hiding is off, and only the unfinished tasks while it is on.
+`hideCompleted` is a signal so `useComputed` can track it the same way it
+tracks `tasks`.
 
-Change the row loop to `for (final task in visible)`. The stored list does not
-change, so the summary still counts every task.
+> **New Dart syntax.** `!` means not and `||` means or. The collection `if`
+> keeps every task while hiding is off, and only the unfinished tasks while it
+> is on.
+
+Change the row loop to iterate the derived list:
+
+```dart
+                  for (final task in visible.value)
+```
+
+The stored list does not change, so the summary still counts every task.
 
 ## Add the filter control
 
@@ -47,7 +51,7 @@ Place this checkbox between the summary and the task area:
 Add an empty-state message inside the task-area `Column`, before the row loop:
 
 ```dart
-                  if (visible.isEmpty)
+                  if (visible.value.isEmpty)
                     Text(
                       tasks.value.isEmpty
                           ? 'Add your first task.'
@@ -149,16 +153,19 @@ adds its doc comments. They do not change behavior.
      final draft = useTextEditingController();
      final tasks = useSignal(<({int id, String title, bool done})>[
        (id: 0, title: 'Read the hooks guide', done: false),
-@@ -18,12 +21,17 @@
+@@ -17,12 +20,20 @@
+     final remaining = useComputed(
        () => tasks.value.where((task) => !task.done).length,
-       keys: [tasks],
      );
-+    final hideCompleted = useState(false);
++    final hideCompleted = useSignal(false);
++    final visible = useComputed(
++      () => [
++        for (final task in tasks.value)
++          if (!hideCompleted.value || !task.done) task,
++      ],
++    );
      final nextId = useRef(3);
      final theme = Theme.of(context);
-+    final visible = tasks.value
-+        .where((task) => !hideCompleted.value || !task.done)
-+        .toList();
 
      void addTask() {
        final title = draft.text.trim();
@@ -167,7 +174,7 @@ adds its doc comments. They do not change behavior.
        tasks.value = [
          ...tasks.value,
          (id: nextId.value++, title: title, done: false),
-@@ -62,12 +70,24 @@
+@@ -61,12 +72,24 @@
              ],
            ),
            Text('${remaining.value} of ${tasks.value.length} remaining'),
@@ -183,17 +190,17 @@ adds its doc comments. They do not change behavior.
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
 -                  for (final task in tasks.value)
-+                  if (visible.isEmpty)
++                  if (visible.value.isEmpty)
 +                    Text(
 +                      tasks.value.isEmpty
 +                          ? 'Add your first task.'
 +                          : 'All done!',
 +                    ),
-+                  for (final task in visible)
++                  for (final task in visible.value)
                      Checkbox(
                        key: ValueKey<String>('task-${task.id}'),
                        label: task.title,
-@@ -86,6 +106,18 @@
+@@ -85,6 +108,18 @@
                ),
              ),
            ),
@@ -245,14 +252,16 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
-    final hideCompleted = useState(false);
+    final hideCompleted = useSignal(false);
+    final visible = useComputed(
+      () => [
+        for (final task in tasks.value)
+          if (!hideCompleted.value || !task.done) task,
+      ],
+    );
     final nextId = useRef(3);
     final theme = Theme.of(context);
-    final visible = tasks.value
-        .where((task) => !hideCompleted.value || !task.done)
-        .toList();
 
     void addTask() {
       final title = draft.text.trim();
@@ -307,13 +316,13 @@ class TaskListApp extends SignalWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (visible.isEmpty)
+                  if (visible.value.isEmpty)
                     Text(
                       tasks.value.isEmpty
                           ? 'Add your first task.'
                           : 'All done!',
                     ),
-                  for (final task in visible)
+                  for (final task in visible.value)
                     Checkbox(
                       key: ValueKey<String>('task-${task.id}'),
                       label: task.title,
@@ -362,8 +371,8 @@ class TaskListApp extends SignalWidget {
 ## What you built
 
 The screen owns an editable draft, a computed remaining count, a visibility
-flag, and stable row IDs. The controller, local-state notifier, signal, and
-computed value are released when the screen unmounts.
+signal, a computed visible list, and stable row IDs. The controller, signals,
+and computed values are released when the screen unmounts.
 
 `SignalWidget` hosts hooks. It does not track every signal read in `build`.
 `useSignal` and `useComputed` observe the values they own. A model that
@@ -378,7 +387,7 @@ dart run example/file_search.dart
 ```
 
 It retains its model with `useMemoized`, registers `useOnDispose(model.dispose)`,
-and observes the model with `useSignalValue`. The
+and observes each derived source with `SignalValueBuilder`. The
 [Signals guide](../../signals.md) explains that ownership and observation
 contract, and the [hooks guide](../../hooks.md) covers controllers, effects,
 and custom hooks.

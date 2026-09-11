@@ -19,7 +19,7 @@ containing this `example/` directory:
 | --- | --- | --- |
 | [Counter](counter.dart) | `dart run example/counter.dart` | Press Enter or Space to increment `useState`. |
 | [Task list](task_list.dart) | `dart run example/task_list.dart` | Add tasks, complete them, hide completed rows, and remove completed records. |
-| [File search](file_search.dart) | `dart run example/file_search.dart` | Type `lib/src` to filter a model observed through `useSignalValue` and `SignalValueBuilder`. |
+| [File search](file_search.dart) | `dart run example/file_search.dart` | Type `lib/src` to filter a model observed through `SignalValueBuilder`. |
 
 Follow the task-list tutorial, which begins at
 [Build a task list](../doc/getting-started.md), to build the app one lesson at

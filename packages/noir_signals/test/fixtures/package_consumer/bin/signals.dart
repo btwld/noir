@@ -7,7 +7,7 @@ final class SignalsConsumer extends SignalWidget {
   @override
   Widget build(BuildContext context) {
     final count = useSignal(0);
-    final doubled = useComputed(() => count.value * 2, keys: <Object?>[count]);
+    final doubled = useComputed(() => count.value * 2);
     return SignalValueBuilder<int>(
       signal: doubled,
       builder: (context, value) => Text('$value'),

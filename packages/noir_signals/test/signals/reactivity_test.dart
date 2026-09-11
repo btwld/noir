@@ -161,10 +161,7 @@ void main() {
         SignalBuilder(
           builder: (context) {
             builds++;
-            isOdd = useComputed(
-              () => count.value.isOdd,
-              keys: <Object?>[count],
-            );
+            isOdd = useComputed(() => count.value.isOdd);
             return Text('${isOdd.value}');
           },
         ),
@@ -200,7 +197,6 @@ void main() {
           builder: (context) {
             final selected = useComputed(
               () => preferLeft.value ? left.value : right.value,
-              keys: <Object?>[preferLeft, left, right],
             );
             rendered.add(selected.value);
             return const Container();
@@ -229,7 +225,7 @@ void main() {
       expect(rendered, <int>[1, 20, 30]);
     });
 
-    test('retains the computation until keys change', () {
+    test('uses the latest compute when a tracked signal changes', () {
       final host = TestElementHost();
       addTearDown(host.dispose);
       var factor = 2;
@@ -240,9 +236,10 @@ void main() {
 
       Widget buildRoot() => SignalBuilder(
         builder: (context) {
+          final currentFactor = factor;
           scaled = useComputed(
-            () => count.value * factor,
-            keys: <Object?>[count, key],
+            () => count.value * currentFactor,
+            keys: <Object?>[key],
           );
           return Text('${scaled.value}');
         },
@@ -253,12 +250,21 @@ void main() {
 
       factor = 10;
       host.update(buildRoot());
-      expect(scaled.value, 6, reason: 'captured props need a key change');
+      expect(scaled.value, 6, reason: 'a cached result waits for a dep change');
+
+      count.value = 4;
+      host.pumpBuild();
+      expect(
+        scaled.value,
+        40,
+        reason: 'the latest compute runs on invalidation',
+      );
 
       key = 1;
+      factor = 2;
       host.update(buildRoot());
       host.pumpBuild();
-      expect(scaled.value, 30);
+      expect(scaled.value, 8, reason: 'a key change recreates the computed');
     });
 
     test('rejects an auto-disposing owned computed', () {

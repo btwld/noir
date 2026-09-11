@@ -18,7 +18,6 @@ In `build`, before `final theme`, add the task signal and the computed value:
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
 ```
 
@@ -31,9 +30,6 @@ updates the count.
 > with named fields, and `<...>[...]` declares a list of those records.
 > `() => ...` is a function literal passed to `useComputed`. `where` keeps the
 > unfinished records and `length` counts them.
-
-`keys: [tasks]` names the captured signal object, not its contents. The hook
-keeps the same computed value while that signal identity stays the same.
 
 ## Show the summary and the task titles
 
@@ -87,7 +83,7 @@ the signal, so the summary is always a function of the stored list.
 ```diff
 --- lesson-1
 +++ lesson-2
-@@ -8,6 +8,15 @@
+@@ -8,6 +8,14 @@
 
    @override
    Widget build(BuildContext context) {
@@ -98,12 +94,11 @@ the signal, so the summary is always a function of the stored list.
 +    ]);
 +    final remaining = useComputed(
 +      () => tasks.value.where((task) => !task.done).length,
-+      keys: [tasks],
 +    );
      final theme = Theme.of(context);
 
      return Container(
-@@ -21,7 +30,15 @@
+@@ -21,7 +29,15 @@
              'Task list',
              style: TextStyle(fontWeight: FontWeight.bold),
            ),
@@ -149,7 +144,6 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
     final theme = Theme.of(context);
 

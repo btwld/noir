@@ -21,10 +21,7 @@ void main() {
         SignalBuilder(
           builder: (context) {
             owned = useSignal(1);
-            derived = useComputed(
-              () => owned.value + borrowed.value,
-              keys: <Object?>[owned, borrowed],
-            );
+            derived = useComputed(() => owned.value + borrowed.value);
             useSignalValue(borrowed);
             return Text('${derived.value}');
           },
@@ -218,7 +215,7 @@ void main() {
       expect(runs, <int>[0]);
     });
 
-    test('replaces the callback only when its keys change', () {
+    test('uses the latest callback and re-installs when keys change', () {
       final host = TestElementHost();
       addTearDown(host.dispose);
       final source = signal(0);
@@ -243,11 +240,19 @@ void main() {
 
       label = 'second';
       host.update(buildRoot());
-      expect(log, <String>['first:0'], reason: 'the callback is retained');
+      expect(log, <String>[
+        'first:0',
+      ], reason: 'a rebuild does not re-run the effect');
+
+      source.value = 1;
+      expect(log, <String>[
+        'first:0',
+        'second:1',
+      ], reason: 'the latest callback runs');
 
       key = 1;
       host.update(buildRoot());
-      expect(log, <String>['first:0', 'second:0']);
+      expect(log, <String>['first:0', 'second:1', 'second:1']);
     });
 
     test('a throwing cleanup still releases the rest of the host', () {

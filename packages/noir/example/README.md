@@ -44,7 +44,7 @@ for step-by-step code changes, screenshots, and complete runnable checkpoints.
 | --- | --- | --- |
 | [Counter](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/counter.dart) | `dart run packages/noir_signals/example/counter.dart` | `SignalWidget` and `useState` for local state. |
 | [Task list](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/task_list.dart) | `dart run packages/noir_signals/example/task_list.dart` | `useSignal`, `useComputed`, retained input, and completion/filter actions. |
-| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run packages/noir_signals/example/file_search.dart` | An owned model, `useSignalValue`, and `SignalValueBuilder`. |
+| [File search](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart) | `dart run packages/noir_signals/example/file_search.dart` | An owned model observed with `SignalValueBuilder`. |
 
 ## Core concepts
 

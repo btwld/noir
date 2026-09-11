@@ -27,10 +27,6 @@ class FileSearchApp extends SignalWidget {
     final model = useMemoized(() => FileSearchModel(_files));
     useOnDispose(model.dispose);
 
-    // The field owns text, selection, and caret. This bridges its edits into
-    // the model; it is not a two-way binding.
-    final visible = useSignalValue(model.visibleFiles);
-
     return Container(
       padding: const EdgeInsets.all(1),
       child: Column(
@@ -44,14 +40,17 @@ class FileSearchApp extends SignalWidget {
             placeholder: 'Filter files',
             onChanged: (text) => model.query.value = text,
           ),
-          // This builder subscribes to the count; parent rebuilds also update it.
+          // Each builder observes one source. Typing does not rebuild the field.
           SignalValueBuilder<int>(
             signal: model.visibleCount,
             builder: (context, count) => Text('$count files'),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [for (final file in visible) Text(file)],
+          SignalValueBuilder<List<String>>(
+            signal: model.visibleFiles,
+            builder: (context, visible) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final file in visible) Text(file)],
+            ),
           ),
           const Text('Type to filter · Ctrl+C exits'),
         ],

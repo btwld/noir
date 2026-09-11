@@ -28,8 +28,12 @@ Signal<T> useSignal<T>(
 ///
 /// The host rebuilds when the computed result changes, so an unchanged result
 /// requests no rebuild. Signals read inside [compute] are tracked by Signals
-/// itself. Ordinary values the closure captures are not: list them in [keys],
-/// which recreates the computed when they change.
+/// itself. Do not list those signals in [keys]; the latest [compute] runs on
+/// the next reactive evaluation.
+///
+/// Ordinary Dart values [compute] captures are not tracked. A computed keeps
+/// its last result until a tracked signal changes. List a captured value in
+/// [keys] only when a change must recreate the computed immediately.
 ///
 /// The hook owns the computed's lifetime, so `options.autoDispose` must stay
 /// false.
@@ -57,7 +61,10 @@ T useSignalValue<T>(ReadonlySignal<T> source) =>
 /// the run acquired. The hook cancels the effect when the host leaves the tree
 /// and ignores callbacks after that.
 ///
-/// [callback] and [options] are retained until [keys] change.
+/// The latest [callback] runs on the next reactive evaluation. A rebuild does
+/// not re-install the effect. List a captured value in [keys] only when a
+/// change must re-install it immediately. [options] stay tied to the slot that
+/// installed the effect.
 ///
 /// The install and the lifecycle cleanup run under the same guard as
 /// `useEffect`, so neither may request a hook rebuild while it runs. That
@@ -191,14 +198,22 @@ final class _ComputedHook<T> extends Hook<Computed<T>> {
 final class _ComputedHookState<T>
     extends HookState<Computed<T>, _ComputedHook<T>>
     with _OwnsObservedSignal<Computed<T>, _ComputedHook<T>, T> {
+  late T Function() _compute;
+
   @override
   void initHook() {
     final options = hook.options;
     if (options != null && options.autoDispose) {
       _rejectAutoDispose('useComputed', 'useSignalValue');
     }
-    own(computed<T>(hook.compute, options: options));
+    _compute = hook.compute;
+    // Call the stored function, not `hook.compute`, so a deferred computed can
+    // still evaluate after this slot unmounts.
+    own(computed<T>(() => _compute(), options: options));
   }
+
+  @override
+  void didUpdateHook(_ComputedHook<T> oldHook) => _compute = hook.compute;
 
   @override
   Computed<T> build(BuildContext context) => owned! as Computed<T>;
@@ -289,16 +304,18 @@ final class _SignalEffectHook extends Hook<Object?> {
 
 final class _SignalEffectHookState
     extends HookState<Object?, _SignalEffectHook> {
+  late EffectCallback _callback;
   EffectCleanup? _cancel;
   bool _retired = false;
 
   @override
   void initHook() {
-    final callback = hook.callback;
+    _callback = hook.callback;
     final options = hook.options;
     // The install runs the body once, synchronously, inside the host's build.
     // Guard it like `useEffect`, so it cannot request a hook rebuild from
-    // there. Later dependency-driven reruns keep upstream timing.
+    // there. Later dependency-driven reruns keep upstream timing and call
+    // the stored latest callback.
     _cancel = EffectExecutionGuard.run(
       () => effect(() {
         // Defense in depth. Upstream already skips a disposed effect, and it
@@ -307,10 +324,13 @@ final class _SignalEffectHookState
         if (_retired) {
           return null;
         }
-        return callback();
+        return _callback();
       }, options: options),
     );
   }
+
+  @override
+  void didUpdateHook(_SignalEffectHook oldHook) => _callback = hook.callback;
 
   @override
   Object? build(BuildContext context) => null;

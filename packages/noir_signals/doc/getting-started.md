@@ -41,7 +41,7 @@ tutorial, the hooks guide, or the Signals guide.
 5. <a id="step-5-filter-the-view-and-remove-completed-tasks"></a>
    <a id="continue-with-your-app"></a>
    [Filter and clear completed tasks](./tutorials/task-list/filter-and-clear.md)
-   — `useState`, a derived view, and a disabled action.
+   — `useSignal`, a computed view, and a disabled action.
 
 ## Set up the learner project
 

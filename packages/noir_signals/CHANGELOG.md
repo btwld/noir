@@ -18,10 +18,13 @@ First prerelease of the optional companion package for
 - Added the Signals integration: `useSignal` and `useComputed` own and observe
   the upstream object they create, `useSignalValue` observes a borrowed source,
   `useSignalEffect` owns a reactive effect and its cleanup, and
-  `SignalValueBuilder` rebuilds only its own subtree. Hook-owned signals reject
-  `autoDispose: true`, and a key change hands the retired signal to Noir's
-  `State.deferDispose` so a child observer never reads a signal released too
-  early. Automatic whole-build tracking is not part of this release.
+  `SignalValueBuilder` rebuilds only its own subtree. `useComputed` and
+  `useSignalEffect` run the latest callback on the next reactive evaluation;
+  `keys` recreate the slot and are not a list of tracked signals. Hook-owned
+  signals reject `autoDispose: true`, and a key change hands the retired signal
+  to Noir's `State.deferDispose` so a child observer never reads a signal
+  released too early. Automatic whole-build tracking is not part of this
+  release.
 - Added `package:noir_signals/noir_signals.dart` as the one authoring
   entrypoint. It also re-exports the `signals_core` primitives an application
   needs to declare a model. Noir's hook `Effect` typedef keeps its name; the
