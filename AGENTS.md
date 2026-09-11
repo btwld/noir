@@ -167,7 +167,7 @@ published archive.
 
 ## Current release boundary
 
-The target is the current core-framework prerelease candidate, not a stable
+The target is the current core-framework release candidate, not a stable
 1.0 claim. Its exact version is the one in `pubspec.yaml`, its changes are
 the top section of [`CHANGELOG.md`](CHANGELOG.md), the versions on pub.dev
 are in `publication.json`, and known native limitations are on the

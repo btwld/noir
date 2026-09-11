@@ -16,7 +16,7 @@ publication, an application will declare:
 
 ```yaml
 dependencies:
-  noir: ^0.0.1-alpha.5
+  noir: ^0.0.1
   noir_signals: ^0.0.1-alpha.0
 ```
 

@@ -13,7 +13,7 @@ in one runnable app.
 
 ## Install
 
-`noir_signals` and its required Noir alpha.5 are unpublished candidates, so
+`noir_signals` and its required Noir 0.0.1 are unpublished candidates, so
 both packages come from one checkout of the
 [public Noir repository](https://github.com/conceptadev/noir) today.
 
@@ -23,7 +23,7 @@ Clone Noir beside your application directory, then declare both packages:
 
 ```yaml
 dependencies:
-  noir: ^0.0.1-alpha.5
+  noir: ^0.0.1
   noir_signals:
     path: ../noir/packages/noir_signals
 dependency_overrides:
@@ -48,7 +48,7 @@ from pub.dev yet:
 
 ```yaml
 dependencies:
-  noir: ^0.0.1-alpha.5
+  noir: ^0.0.1
   noir_signals: ^0.0.1-alpha.0
 ```
 

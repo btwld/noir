@@ -166,7 +166,7 @@ test('a canonical lesson replaces stale generated release prose before validatio
     'publication.json',
     (await f.read('publication.json')).replace(
       '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1-alpha.5"',
+      '"noir": "0.0.1"',
     ),
   );
   for (const path of [
@@ -194,17 +194,17 @@ test('newly generated wrapped release contradictions fail in the same sync', asy
     'publication.json',
     (await f.read('publication.json')).replace(
       '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1-alpha.5"',
+      '"noir": "0.0.1"',
     ),
   );
   const source = 'packages/noir_signals/doc/getting-started.md';
   await f.write(
     source,
-    `${await f.read(source)}\nRequires the unreleased Noir\n  alpha.5.\n`,
+    `${await f.read(source)}\nRequires the unreleased Noir\n  0.0.1.\n`,
   );
   rejectsSync(
     f,
-    /signals-task-list[/\\]index\.mdx says "unreleased Noir alpha\.5"/,
+    /signals-task-list[/\\]index\.mdx says "unreleased Noir 0\.0\.1"/,
   );
 });
 
@@ -214,10 +214,14 @@ test('wrapped authored release claims are rejected', async (t) => {
     'publication.json',
     (await f.read('publication.json')).replace(
       '"noir": "0.0.1-alpha.4"',
-      '"noir": "0.0.1-alpha.5"',
+      '"noir": "0.0.1"',
     ),
   );
-  rejectsSync(f, /hooks\.mdx says "unreleased Noir alpha\.5"/);
+  await f.write(
+    'website/src/content/docs/hooks.mdx',
+    '# Hooks\nRequires the unreleased Noir\n  0.0.1.\n',
+  );
+  rejectsSync(f, /hooks\.mdx says "unreleased Noir 0\.0\.1"/);
 });
 
 for (const version of [['0.0.1-alpha.4'], { version: '0.0.1-alpha.4' }]) {

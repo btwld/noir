@@ -34,7 +34,7 @@ void main() {
     expect(rootPubspec, contains('workspace:\n  - packages/noir_signals'));
     expect(companionPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('name: noir_signals'));
-    expect(companionPubspec, contains('noir: ^0.0.1-alpha.5'));
+    expect(companionPubspec, contains('noir: ^0.0.1'));
     expect(companionPubspec, contains('signals_core: ^7.0.0'));
   });
 

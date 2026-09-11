@@ -9,7 +9,7 @@ rebuilds. Noir provides a Flutter-like widget model, cell-based layout, focus,
 keyboard and mouse input, and animation. OpenTUI renders the output through
 bundled native libraries; Noir owns the Dart widget and resource lifecycles.
 
-Noir is currently a prerelease. APIs and platform guarantees may change before
+Noir is at an early 0.0.x stage. APIs and platform guarantees may change before
 stable 1.0.
 
 - Build interfaces with `StatelessWidget`, `StatefulWidget`, `BuildContext`,
@@ -54,11 +54,11 @@ Source guides and generated reference:
 ## Install
 
 Use Dart 3.10 or later and a terminal on macOS, Linux, or Windows. The bundled
-macOS libraries require macOS 13 or later. Install the published prerelease:
+macOS libraries require macOS 13 or later. Install the published version:
 
     dart pub add noir
 
-The source tree can be ahead of the latest published prerelease. When
+The source tree can be ahead of the latest published version. When
 evaluating an unreleased API, use a path dependency:
 
     dependencies:
@@ -177,8 +177,7 @@ with different arguments.
 ## Widget Lifecycle Hooks
 
 Hooks live in the optional companion package `noir_signals`, not in `noir`.
-The companion and its required Noir alpha.5 are currently unpublished
-candidates, so they resolve from a repository checkout. The
+The companion is not published yet. Use a repository checkout to try it. The
 [companion overview](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/README.md)
 has that setup. After publication, add `noir_signals` beside Noir, then import
 `package:noir_signals/noir_signals.dart` together with

@@ -18,11 +18,11 @@ export const availability: {
 } = {
   noir: {
     name: 'noir',
-    manifest: '0.0.1-alpha.5',
+    manifest: '0.0.1',
     published: '0.0.1-alpha.4',
     isPublished: true,
     installCommand: 'dart pub add noir',
-    label: 'Published prerelease · 0.0.1-alpha.4',
+    label: 'Published version · 0.0.1-alpha.4',
   },
   companion: {
     name: 'noir_signals',

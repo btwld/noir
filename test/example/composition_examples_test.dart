@@ -112,7 +112,7 @@ void main() {
 
         frame = app.captureFrame();
         expect(frame.toText(), contains('Confirm deployment'));
-        expect(frame.toText(), contains('Deploy noir 0.0.1-alpha.5'));
+        expect(frame.toText(), contains('Deploy noir 0.0.1'));
         _expectBold(frame, 'Cancel');
         final titleAt80 = frame.findText('Confirm deployment').single;
 
@@ -177,7 +177,7 @@ void main() {
         await _settle(app);
         expect(
           app.captureFrame().toText(),
-          contains('Deployment scheduled for noir 0.0.1-alpha.5.'),
+          contains('Deployment scheduled for noir 0.0.1.'),
         );
       } finally {
         app.dispose();
