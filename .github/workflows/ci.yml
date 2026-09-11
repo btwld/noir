@@ -89,10 +89,6 @@ jobs:
       - name: Check generated documentation
         run: npm run sync:check
 
-      - name: Install browser
-        timeout-minutes: 4
-        run: npx --no-install playwright install --with-deps chromium
-
       - name: Check website formatting
         run: npm run format:check
 
@@ -106,6 +102,10 @@ jobs:
         env:
           NOIR_WEBSITE_BASE_PATH: /noir
         run: npm run build
+
+      - name: Install browser
+        timeout-minutes: 4
+        run: npx --no-install playwright install --with-deps chromium
 
       - name: Run website smoke test
         env:
