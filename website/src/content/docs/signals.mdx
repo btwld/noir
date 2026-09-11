@@ -123,13 +123,13 @@ widget tree, layout, painting, and native resources.
 
 ## When a borrowed value does not update the screen
 
-| Symptom                                                      | Cause and fix                                                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| The model changes, but the widget never repaints             | The widget read `.value` without observing. Wrap it in `useSignalValue` or `SignalValueBuilder`.        |
-| A list assignment changes nothing                            | The list changed in place. Assign a newly built list to the signal instead.                             |
+| Symptom                                                      | Cause and fix                                                                                                    |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| The model changes, but the widget never repaints             | The widget read `.value` without observing. Wrap it in `useSignalValue` or `SignalValueBuilder`.                 |
+| A list assignment changes nothing                            | The list changed in place. Assign a newly built list to the signal instead.                                      |
 | The value updates once, then stops                           | The read happened in a callback or a deferred builder. Observe it with `useSignalValue` or `SignalValueBuilder`. |
-| The app throws while an effect runs                          | An effect changed an observed hook value synchronously. Move the write to an input callback or a timer. |
-| A child reads a disposed signal after its parent replaced it | Hand the retired source to `deferDispose` instead of disposing it during the update.                    |
+| The app throws while an effect runs                          | An effect changed an observed hook value synchronously. Move the write to an input callback or a timer.          |
+| A child reads a disposed signal after its parent replaced it | Hand the retired source to `deferDispose` instead of disposing it during the update.                             |
 
 The
 [Signals contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
