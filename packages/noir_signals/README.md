@@ -14,8 +14,8 @@ in one runnable app.
 ## Install
 
 `noir_signals` and its required Noir alpha.5 are unpublished candidates, so
-both packages come from one Noir repository checkout today. That repository is
-private; this path needs access to `conceptadev/noir`.
+both packages come from one checkout of the
+[public Noir repository](https://github.com/conceptadev/noir) today.
 
 ### In your own application
 

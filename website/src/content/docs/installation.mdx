@@ -52,9 +52,9 @@ The companion adds `SignalWidget`, reusable lifecycle hooks, and the Signals
 integration. Noir never depends on it, and a Noir-only application resolves
 neither the companion nor `signals_core`.
 
-The Noir repository is private, so this path needs access to
-`conceptadev/noir`. Clone it beside your application directory, pin an exact
-commit or tag rather than a moving branch, then declare both packages:
+Clone the [public Noir repository](https://github.com/conceptadev/noir) beside
+your application directory. Pin an exact commit or tag rather than a moving
+branch, then declare both packages:
 
 ```yaml
 dependencies:
@@ -90,8 +90,8 @@ dependencies:
 ## Try an unreleased Noir API without the companion
 
 Some documented features, such as `LayoutBuilder` and `State.deferDispose`,
-need Noir alpha.5. Point your application at the same private checkout on its
-own:
+need Noir alpha.5. Point your application at the same repository checkout on
+its own:
 
 ```yaml
 dependencies:
