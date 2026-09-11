@@ -28,8 +28,8 @@ async function fixture(t) {
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const path of [
     'publication.json',
-    'pubspec.yaml',
-    'example/tutorials',
+    'packages/noir/pubspec.yaml',
+    'packages/noir/example/tutorials',
     'packages/noir_signals/README.md',
     'packages/noir_signals/pubspec.yaml',
     'packages/noir_signals/doc',
@@ -238,8 +238,8 @@ for (const version of [['0.0.1-alpha.4'], { version: '0.0.1-alpha.4' }]) {
 test('an invalid manifest version cannot generate availability', async (t) => {
   const f = await fixture(t);
   await f.write(
-    'pubspec.yaml',
-    (await f.read('pubspec.yaml')).replace(
+    'packages/noir/pubspec.yaml',
+    (await f.read('packages/noir/pubspec.yaml')).replace(
       /^version: .+$/m,
       'version: invalid',
     ),

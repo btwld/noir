@@ -1,11 +1,11 @@
 {
-  "generatedBy": "scripts/capture_doc_frames.dart",
+  "generatedBy": "packages/noir/tool/capture_doc_frames.dart",
   "capturedWith": "NoirDriver (NOIR_DRIVE=1), headless",
   "frames": {
     "first-app-count": {
       "title": "The first app after one activation",
       "command": "dart run noir:run bin/noir_demo.dart",
-      "entrypoint": "example/tutorials/first_app/step_01.dart",
+      "entrypoint": "packages/noir/example/tutorials/first_app/step_01.dart",
       "width": 40,
       "height": 6,
       "interaction": "Press Space once on the focused button.",
@@ -51,7 +51,7 @@
     "first-app-total": {
       "title": "The same app after the label edit",
       "command": "dart run noir:run bin/noir_demo.dart",
-      "entrypoint": "example/tutorials/first_app/step_02.dart",
+      "entrypoint": "packages/noir/example/tutorials/first_app/step_02.dart",
       "width": 40,
       "height": 6,
       "interaction": "Press Space once, then change Count: to Total:.",

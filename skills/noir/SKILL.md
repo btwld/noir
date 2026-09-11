@@ -285,12 +285,12 @@ headlessly — no TTY, no raw mode, no code change — and publish an
 bytes through the production ANSI parser, resize the emulated terminal
 (`NOIR_DRIVE_SIZE=WxH`, default 80×24), and quit.
 
-Inside this repo, the bundled driver CLI launches an app that way and reads
+Inside this repo, from `packages/noir/`, the bundled driver CLI launches an app that way and reads
 commands from its own stdin — interactively, or piped for scripted checks:
 
 ```sh
 printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
-  dart run --verbosity=error scripts/noir_drive.dart example/counter.dart
+  dart run --verbosity=error tool/noir_drive.dart example/counter.dart
 ```
 
 `capture --ansi` prints the frame in true color ("see the design");

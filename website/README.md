@@ -58,27 +58,27 @@ typecheck or build can refresh the files. Run `npm run sync` to update them.
 
 ## Captured terminal frames
 
-Static frames come from the checkpoints they document. Regenerate them from the
-repository root after an intentional change:
+Static frames come from the checkpoints they document. Regenerate them from
+`packages/noir/` after an intentional change:
 
 ```sh
-dart run scripts/capture_doc_frames.dart
+dart run tool/capture_doc_frames.dart
 ```
 
 `--check` recaptures without writing, and fails when the committed artifact is
-out of date. Scenes live in `scripts/recordings/doc_frames.json`. A frame is
+out of date. Scenes live in `packages/noir/tool/recordings/doc_frames.json`. A frame is
 headless drive-mode evidence: it proves layout, painted cells, and parsed
 input, not that a particular terminal emulator agrees.
 
 ## Recorded examples
 
 The examples index uses a self-hosted asciicast of the shipped counter.
-Regenerate it from the repository root after an intentional visual or
+Regenerate it from `packages/noir/` after an intentional visual or
 interaction change:
 
 ```sh
-dart run scripts/record_noir_demo.dart \
-  --recipe scripts/recordings/counter.json --force
+dart run tool/record_noir_demo.dart \
+  --recipe tool/recordings/counter.json --force
 ```
 
 The player shows a static poster until the reader presses Play. Normal-motion
