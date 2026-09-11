@@ -37,6 +37,10 @@ artifacts are unchanged from alpha.4.
   updates. Invalid placement, duplicate metadata on one render edge, and
   non-positive widget flex values now reject in release mode instead of
   silently losing their layout behavior.
+- Plain `ListView` instances now preserve valid caller scroll positions when
+  mounting, changing controllers, or changing item counts. Switching off
+  selection keeps the current window, and simultaneous controller/selection
+  changes follow the new highlight without first jumping to the old one.
 - The packaged hot-reload runner now recompiles detected edits whose file
   timestamps are not newer than the last successful reload, including
   recovery after a rejected reload. The VM's own timestamp filter skipped such

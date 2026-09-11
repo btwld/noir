@@ -100,7 +100,9 @@ class ListView extends StatefulWidget {
   final int height;
 
   /// Scroll position shared with the caller. One is created internally when
-  /// null; a supplied controller is not disposed by this widget.
+  /// null; a supplied controller is not disposed by this widget. Plain lists
+  /// preserve its valid offset as content changes. Selectable lists also
+  /// scroll to keep their highlight visible.
   final ViewportController? controller;
 
   /// Index highlighted when the list is first built, or null for a list with
@@ -170,37 +172,41 @@ class _ListViewState extends State<ListView>
   /// before the list has ever built and only schedule a redundant rebuild.
   void _adoptViewport() {
     _syncViewportExtents();
-    _viewport
-      ..ensureVisible(_highlighted, _highlighted + 1)
-      ..addListener(_handleViewportChanged);
+    if (_selectable) {
+      _viewport.ensureVisible(_highlighted, _highlighted + 1);
+    }
+    _viewport.addListener(_handleViewportChanged);
   }
 
   @override
   void didUpdateWidget(ListView oldWidget) {
     super.didUpdateWidget(oldWidget);
     syncFocusNode(oldWidget.focusNode);
+    final selectionChanged = widget.selectedIndex != oldWidget.selectedIndex;
+    final countChanged = widget.itemCount != oldWidget.itemCount;
+    if (selectionChanged) {
+      _highlighted = (widget.selectedIndex ?? 0).clamp(0, _maxIndex);
+    } else if (countChanged) {
+      _highlighted = _highlighted.clamp(0, _maxIndex);
+    }
+
     if (!identical(oldWidget.controller, widget.controller)) {
       _viewport.removeListener(_handleViewportChanged);
       if (_ownsViewport) _viewport.dispose();
-      // A fresh controller starts at offset zero and knows nothing about the
-      // highlight, so adopt it exactly as initState would.
+      // Adopt against the new selection, preserving a caller's valid window
+      // unless the current highlight needs to be brought into view.
       _viewport = widget.controller ?? ViewportController();
       _ownsViewport = widget.controller == null;
       _adoptViewport();
     }
     _syncViewportExtents();
-    if (widget.selectedIndex != oldWidget.selectedIndex) {
-      _highlighted = (widget.selectedIndex ?? 0).clamp(0, _maxIndex);
-      _viewport.ensureVisible(_highlighted, _highlighted + 1);
-    } else if (widget.itemCount != oldWidget.itemCount) {
-      _highlighted = _highlighted.clamp(0, _maxIndex);
-      _viewport.ensureVisible(_highlighted, _highlighted + 1);
-    } else if (_selectable &&
-        (widget.height != oldWidget.height ||
+    if (_selectable &&
+        (selectionChanged ||
+            countChanged ||
+            widget.height != oldWidget.height ||
             widget.itemExtent != oldWidget.itemExtent)) {
-      // A resized selectable list keeps its highlight on screen. A
-      // plain-scroll list has no highlight to follow, so its window keeps the
-      // offset `_syncViewportExtents` has already clamped.
+      // A plain list has no highlight to follow; extent synchronization alone
+      // clamps its window when the content or viewport size changes.
       _viewport.ensureVisible(_highlighted, _highlighted + 1);
     }
   }
@@ -213,6 +219,11 @@ class _ListViewState extends State<ListView>
   }
 
   void _syncViewportExtents() {
+    // Apply a shrinking viewport first so a simultaneous content shrink does
+    // not clamp against the previous, larger window and lose a valid offset.
+    if (_visibleRows < _viewport.viewportExtent) {
+      _viewport.viewportExtent = _visibleRows;
+    }
     _viewport
       ..contentExtent = widget.itemCount
       ..viewportExtent = _visibleRows;
