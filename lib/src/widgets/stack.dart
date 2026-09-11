@@ -52,6 +52,10 @@ class Stack extends MultiChildRenderObjectWidget {
 }
 
 /// Positions one child relative to the edges of its nearest [Stack].
+///
+/// Stateless, Stateful, and other non-render components may separate this
+/// widget from the Stack. An intervening render-object widget or another
+/// Positioned on the same render-child edge is invalid.
 class Positioned extends ProxyWidget {
   /// Creates an absolutely positioned stack child.
   const Positioned({
@@ -104,6 +108,37 @@ final class _PositionedElement extends ProxyElement {
   _PositionedElement(Positioned super.widget);
 
   StackChildData get data => (widget as Positioned)._data;
+
+  @override
+  void performRebuild() {
+    _validateParentData();
+    super.performRebuild();
+    // Position and size can change while the render child stays identical.
+    final renderElement = Element.findRenderObjectElement(this);
+    final render = renderElement?.renderObject;
+    if (render != null) {
+      insertRenderObjectChild(render, renderElement!);
+    }
+  }
+
+  void _validateParentData() {
+    var ancestor = parent;
+    while (ancestor != null && ancestor is! RenderObjectElement) {
+      if (ancestor is _PositionedElement) {
+        throw StateError(
+          'Multiple Positioned widgets cannot share one render child.',
+        );
+      }
+      ancestor = ancestor.parent;
+    }
+    if (ancestor is! RenderObjectElement ||
+        ancestor.renderObject is! RenderStack) {
+      throw StateError(
+        'Positioned requires a Stack ancestor with only non-render components '
+        'between them.',
+      );
+    }
+  }
 }
 
 final class _StackElement extends MultiChildRenderObjectElement {
@@ -112,10 +147,18 @@ final class _StackElement extends MultiChildRenderObjectElement {
   @override
   void adoptChildRenderObject(RenderBox child, Element childElement, int slot) {
     final stack = renderObject! as RenderStack;
-    final data = childElement is _PositionedElement
-        ? childElement.data
-        : const StackChildData();
-    stack.add(child, data: data);
+    stack.add(child, data: _resolveParentData(childElement));
+  }
+
+  StackChildData _resolveParentData(Element element) {
+    var ancestor = element.parent;
+    while (ancestor != null && !identical(ancestor, this)) {
+      if (ancestor is _PositionedElement) {
+        return ancestor.data;
+      }
+      ancestor = ancestor.parent;
+    }
+    return const StackChildData();
   }
 
   @override

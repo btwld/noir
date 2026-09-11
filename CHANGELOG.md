@@ -27,6 +27,16 @@ artifacts are unchanged from alpha.4.
 
 ### Fixed
 
+- A component rebuilding below `Row`, `Column`, `Stack`, or `Wrap` now
+  reconnects a replacement render object in its existing child slot. Local
+  changes to a component's root widget previously removed its visible output
+  until the parent rebuilt. Sibling state and order, flex/position data, and
+  pointer routing remain attached to the correct child.
+- `Flexible`, `Expanded`, and `Positioned` now preserve their layout behavior
+  through non-render component wrappers, including metadata-only local
+  updates. Invalid placement, duplicate metadata on one render edge, and
+  non-positive widget flex values now reject in release mode instead of
+  silently losing their layout behavior.
 - The packaged hot-reload runner now recompiles detected edits whose file
   timestamps are not newer than the last successful reload, including
   recovery after a rejected reload. The VM's own timestamp filter skipped such

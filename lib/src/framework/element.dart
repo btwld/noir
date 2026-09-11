@@ -1011,6 +1011,11 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
   @override
   late final List<Element> children = UnmodifiableListView(_children);
 
+  // A parent reconciliation publishes its final child order before syncing
+  // render edges. Local descendant rebuilds outside this window insert into
+  // their already-published logical slot immediately.
+  bool _reconcilingChildren = false;
+
   @override
   MultiChildRenderObjectWidget get widget =>
       super.widget as MultiChildRenderObjectWidget;
@@ -1019,7 +1024,7 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
   void mount(Element? parent, BuildOwner owner) {
     _validateUniqueChildKeys(widget);
     super.mount(parent, owner);
-    _buildChildren();
+    _reconcileChildren(_buildChildren);
   }
 
   @override
@@ -1028,7 +1033,17 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
     _validateUniqueChildKeys(nextWidget);
     _validateGlobalKeyPlacements(nextWidget);
     super.update(newWidget);
-    _updateChildren();
+    _reconcileChildren(_updateChildren);
+  }
+
+  void _reconcileChildren(void Function() reconcile) {
+    final wasReconciling = _reconcilingChildren;
+    _reconcilingChildren = true;
+    try {
+      reconcile();
+    } finally {
+      _reconcilingChildren = wasReconciling;
+    }
   }
 
   @override
@@ -1214,7 +1229,7 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
             'Multiple child Elements resolved to the same RenderObject.',
           );
         }
-        desiredElements.add(element);
+        desiredElements.add(renderElement!);
         desiredRenderObjects.add(renderObject);
       }
     }
@@ -1241,8 +1256,9 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
   }
 
   /// Adopt [child] onto this element's render object at [slot] (document
-  /// order). Subclasses override to attach extra metadata such as flex
-  /// factors.
+  /// order). [childElement] is the element owning [child]; its ancestor path
+  /// to this element identifies metadata such as flex factors, including
+  /// through Stateless/Stateful components still being inflated.
   void adoptChildRenderObject(RenderBox child, Element childElement, int slot) {
     final parentRenderObject = _renderObject;
     if (parentRenderObject == null) return;
@@ -1263,8 +1279,48 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
 
   @override
   void insertRenderObjectChild(RenderObject child, Element childElement) {
-    // Multi-child elements manage render children explicitly via
-    // _syncRenderChildren. No-op here to avoid double adoption.
+    if (_reconcilingChildren || child is! RenderBox) {
+      return;
+    }
+    final parentRenderObject = _renderObject;
+    if (parentRenderObject == null) {
+      return;
+    }
+
+    // The incoming render element has its parent chain before its mounting
+    // call returns, even though the component's child list may not yet contain
+    // it. The direct logical child is already present for a local rebuild.
+    var logicalChild = childElement;
+    while (!identical(logicalChild.parent, this)) {
+      final ancestor = logicalChild.parent;
+      if (ancestor == null) {
+        throw StateError('Render child is not a descendant of this element.');
+      }
+      logicalChild = ancestor;
+    }
+    final logicalSlot = _children.indexWhere(
+      (element) => identical(element, logicalChild),
+    );
+    if (logicalSlot < 0) {
+      throw StateError('Render child has no published logical child slot.');
+    }
+
+    RenderObject? previous;
+    var renderSlot = 0;
+    for (var index = 0; index < logicalSlot; index++) {
+      final sibling = Element.findRenderObjectElement(
+        _children[index],
+      )?.renderObject;
+      if (sibling is RenderBox &&
+          identical(sibling.parent, parentRenderObject)) {
+        previous = sibling;
+        renderSlot++;
+      }
+    }
+    adoptChildRenderObject(child, childElement, renderSlot);
+    // Framework reconciliation owns this protected reorder hook.
+    // ignore: invalid_use_of_protected_member
+    parentRenderObject.moveChild(child, after: previous);
   }
 
   @override

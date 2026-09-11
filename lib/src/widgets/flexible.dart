@@ -19,6 +19,10 @@ enum FlexFit {
 }
 
 /// A widget that gives its [child] a share of the main-axis space in a [Flex].
+///
+/// Stateless, Stateful, and other non-render components may separate this
+/// widget from its Flex. An intervening render-object widget or another
+/// Flexible on the same render-child edge is invalid.
 class Flexible extends StatelessWidget {
   /// Gives [child] a positive flex share with loose fit by default.
   const Flexible({
@@ -83,6 +87,7 @@ class FlexibleElement extends Element {
 
   @override
   void performRebuild() {
+    _validateParentData();
     final candidate = _widget.child;
     final currentChild = _children.isEmpty ? null : _children.single;
     final key = candidate.key;
@@ -100,22 +105,49 @@ class FlexibleElement extends Element {
     }
     if (currentChild == null) {
       _children.add(Element.inflateWidget(candidate, this));
-      return;
-    }
-    if (Widget.canUpdate(currentChild.widget, candidate)) {
+    } else if (Widget.canUpdate(currentChild.widget, candidate)) {
       currentChild.update(candidate);
-      return;
+    } else {
+      try {
+        owner.deactivateChild(currentChild);
+      } finally {
+        if (currentChild.parent == null && !currentChild.active) {
+          _children.clear();
+        }
+      }
+      final child = Element.inflateWidget(candidate, this);
+      _children.add(child);
     }
 
-    try {
-      owner.deactivateChild(currentChild);
-    } finally {
-      if (currentChild.parent == null && !currentChild.active) {
-        _children.clear();
-      }
+    // A metadata-only update keeps the RenderObject, so it does not produce
+    // an attachment callback. Reapply this edge after the child reconciles.
+    final renderElement = Element.findRenderObjectElement(this);
+    final render = renderElement?.renderObject;
+    if (render != null) {
+      insertRenderObjectChild(render, renderElement!);
     }
-    final child = Element.inflateWidget(candidate, this);
-    _children.add(child);
+  }
+
+  void _validateParentData() {
+    if (flex <= 0) {
+      throw ArgumentError.value(flex, 'flex', 'must be greater than zero');
+    }
+    var ancestor = parent;
+    while (ancestor != null && ancestor is! RenderObjectElement) {
+      if (ancestor is FlexibleElement) {
+        throw StateError(
+          'Multiple Flexible widgets cannot share one render child.',
+        );
+      }
+      ancestor = ancestor.parent;
+    }
+    if (ancestor is! RenderObjectElement ||
+        ancestor.renderObject is! RenderFlex) {
+      throw StateError(
+        'Flexible requires a Flex ancestor with only non-render components '
+        'between them.',
+      );
+    }
   }
 
   @override
@@ -159,12 +191,12 @@ class FlexRenderObjectElement extends MultiChildRenderObjectElement {
   }
 
   _ResolvedFlexMetadata _resolveFlexMetadata(Element element) {
-    if (element is FlexibleElement) {
-      return _ResolvedFlexMetadata(element.flex, element.fit);
-    }
-    final widget = element.widget;
-    if (widget is Flexible) {
-      return _ResolvedFlexMetadata(widget.flex, widget.fit);
+    var ancestor = element.parent;
+    while (ancestor != null && !identical(ancestor, this)) {
+      if (ancestor is FlexibleElement) {
+        return _ResolvedFlexMetadata(ancestor.flex, ancestor.fit);
+      }
+      ancestor = ancestor.parent;
     }
     return const _ResolvedFlexMetadata(null, null);
   }
