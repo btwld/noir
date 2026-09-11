@@ -53,20 +53,23 @@ constructors or an `InheritedWidget`. The
 [file-search model](../example/models/file_search_model.dart) and its
 [screen](../example/file_search.dart) show the complete ownership pattern.
 
-Inside `SignalWidget.build`, use `useSignalValue` to observe the model’s source:
-
-```dart
-final visible = useSignalValue(model.visibleFiles);
-```
-
-Use `SignalValueBuilder` to observe one source in a smaller subtree:
+The file-search screen observes each derived source with
+`SignalValueBuilder`, so the field host does not rebuild on every filter:
 
 ```dart
 SignalValueBuilder<int>(
   signal: model.visibleCount,
   builder: (context, count) => Text('$count files'),
-)
+),
+SignalValueBuilder<List<String>>(
+  signal: model.visibleFiles,
+  builder: (context, visible) => Column(
+    children: [for (final file in visible) Text(file)],
+  ),
+),
 ```
+
+`useSignalValue` observes one borrowed source on the host instead.
 
 These observers borrow their source; the model remains responsible for disposal.
 Replace a collection signal's value instead of mutating the list in place. A
@@ -92,13 +95,15 @@ succeeds.
 ## Keys and captured values
 
 Signals read inside a `useComputed` or a `useSignalEffect` callback are tracked
-by Signals, including dependencies that change between evaluations. Ordinary
-Dart values the closure captures are not tracked: list them in `keys`. A
-changed key list creates the replacement.
+by Signals, including dependencies that change between evaluations. Do not
+list those signals in `keys`; the latest computation and effect callback run
+on the next reactive evaluation.
 
-`initialValue`, the computation, the effect callback, and the creation options
-are used only when the slot is created. An unchanged key list does not refresh
-a captured value.
+Ordinary Dart values the closure captures are not tracked. A computed keeps
+its last result until a tracked signal changes. An effect does not re-run
+until a tracked signal changes. List a captured value in `keys` only when a
+change must recreate the computed or re-install the effect immediately.
+Creation options stay tied to the slot that installed them.
 
 ## Effects
 

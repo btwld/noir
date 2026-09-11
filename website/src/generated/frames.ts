@@ -330,7 +330,7 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'No input.',
     image: '02-state.jpg',
     sourceSha256:
-      '289d62d7e0f4f61b4d39c773a824062502261883f4c35187c46183527a44f6e2',
+      'b33f9e114cf54b5dcf926c9177c425c6afb992d66d3a201f05966a0ca2d80afe',
     visualSha256:
       '79a5c4dc9305f488f1ac97b61d14e963ae5c97b63a11596f774eeb53dfb73bae',
     lines: [
@@ -661,7 +661,7 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Complete the first task.',
     image: '03-complete.jpg',
     sourceSha256:
-      'f9d3fa2825869ec2df1fa55762849d7af69aa7ada56fed8a1a0461f94f97f51e',
+      '19ade2e7e9e21eef72a25ec30187a3a8406fbe4c7988af610a194b8f1a0ab967',
     visualSha256:
       '2a794d47df6cea8152ab4ef287df96cba34b521ae8f420f4be610bca16f44952',
     lines: [
@@ -1016,7 +1016,7 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Type Ship the guide, then press Enter.',
     image: '04-add.jpg',
     sourceSha256:
-      '55d4278274685dcf2b1df15bed30e3fe38de27411f3ed1894502ed3fcdc1e2e1',
+      '20ff6e6692db668f0d96c45ced64e3c50de92cb24dafd4765139815cc010485c',
     visualSha256:
       'dc66df8e5eef7f337b4715aab62fb6610ebdb056a35f8a3f73e092dd131f842b',
     lines: [
@@ -1365,7 +1365,7 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Add a task, complete the first one, then hide completed.',
     image: '05-filter.jpg',
     sourceSha256:
-      'df9cb317b60411f624d429aa8860fc1e0041d9023eeb45eccd6454447339e4b5',
+      '793745605d508ff80503793ae3379dece5744c11b2ef2f0ab016e73ed5612515',
     visualSha256:
       'fa65bf3d317f2462202f9465d1f2eca3f0a39beab9fcc471222a8c4a38abbb55',
     lines: [
@@ -1705,7 +1705,7 @@ export const terminalFrames: Record<string, TerminalFrameData> = {
     interaction: 'Repeat the filter sequence, then clear completed tasks.',
     image: '06-clear.jpg',
     sourceSha256:
-      'df9cb317b60411f624d429aa8860fc1e0041d9023eeb45eccd6454447339e4b5',
+      '793745605d508ff80503793ae3379dece5744c11b2ef2f0ab016e73ed5612515',
     visualSha256:
       '8b23af158e75619d71fea39fc0d989e1f460d3326a697fa60495635d9fa43472',
     lines: [

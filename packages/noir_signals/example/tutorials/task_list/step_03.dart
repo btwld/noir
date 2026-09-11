@@ -15,7 +15,6 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
     final theme = Theme.of(context);
 

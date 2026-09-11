@@ -40,8 +40,8 @@ void main() {
     final app = createTuiTestApp(const FileSearchApp());
 
     try {
-      // Each keystroke rebuilds the host through the signal observation. The
-      // accumulated text only survives that if one controller is retained.
+      // Each keystroke updates the observed builders, not the field host. The
+      // accumulated text only survives if one controller is retained.
       for (final chunk in <String>['l', 'i', 'b', '/', 'src']) {
         app.mockInput.typeText(chunk);
         await _settle(app);

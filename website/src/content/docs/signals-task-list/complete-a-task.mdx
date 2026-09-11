@@ -92,7 +92,7 @@ stored list because `useComputed` reads it.
 ```diff
 --- lesson-2
 +++ lesson-3
-@@ -35,11 +35,30 @@
+@@ -34,11 +34,30 @@
              child: ScrollBox(
                child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +150,6 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
     final theme = Theme.of(context);
 

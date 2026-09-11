@@ -127,9 +127,9 @@ text stays because the hook, not the widget, owns the controller.
      final tasks = useSignal(<({int id, String title, bool done})>[
        (id: 0, title: 'Read the hooks guide', done: false),
        (id: 1, title: 'Run the counter example', done: true),
-@@ -17,8 +18,19 @@
+@@ -16,8 +17,19 @@
+     final remaining = useComputed(
        () => tasks.value.where((task) => !task.done).length,
-       keys: [tasks],
      );
 +    final nextId = useRef(3);
      final theme = Theme.of(context);
@@ -147,7 +147,7 @@ text stays because the hook, not the widget, owns the controller.
      return Container(
        color: theme.surface,
        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-@@ -30,6 +42,25 @@
+@@ -29,6 +41,25 @@
              'Task list',
              style: TextStyle(fontWeight: FontWeight.bold),
            ),
@@ -173,7 +173,7 @@ text stays because the hook, not the widget, owns the controller.
            Text('${remaining.value} of ${tasks.value.length} remaining'),
            Expanded(
              child: ScrollBox(
-@@ -56,7 +87,7 @@
+@@ -55,7 +86,7 @@
              ),
            ),
            Text(
@@ -212,7 +212,6 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
     final nextId = useRef(3);
     final theme = Theme.of(context);

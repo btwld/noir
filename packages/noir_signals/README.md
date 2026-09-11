@@ -8,8 +8,8 @@ This package is optional. Installing Noir alone does not pull it in.
 
 Start with the task-list tutorial, which begins at
 [Build a task list](doc/getting-started.md). Its five lessons connect
-hook-owned text input, signals, a computed remaining count, and user actions
-in one runnable app.
+hook-owned text input, signals, computed remaining and visible lists, and
+user actions in one runnable app.
 
 ## Install
 

@@ -58,24 +58,26 @@ One owner creates the model and disposes it, deepest derivation first.
 ## Observe it from a widget
 
 Reading `model.visibleFiles.value` in `build` gets the current value and
-nothing else. It does not subscribe the widget. Ask for rebuilds explicitly:
-
-```dart
-final visible = useSignalValue(model.visibleFiles);
-```
-
-To rebuild only one subtree, use the builder instead:
+nothing else. It does not subscribe the widget. The file-search screen
+observes each derived source with `SignalValueBuilder`, so the field host
+does not rebuild on every filter:
 
 ```dart
 SignalValueBuilder<int>(
   signal: model.visibleCount,
   builder: (context, count) => Text('$count files'),
-)
+),
+SignalValueBuilder<List<String>>(
+  signal: model.visibleFiles,
+  builder: (context, visible) => Column(
+    children: [for (final file in visible) Text(file)],
+  ),
+),
 ```
 
-The builder subscribes only to the supplied signal. A parent rebuild still
-updates it, and reading a second signal inside the callback does not create a
-second subscription.
+Each builder subscribes only to the supplied signal. Reading a second signal
+inside the callback does not create a second subscription. `useSignalValue`
+observes one borrowed source on the host instead.
 
 Write to the model from input callbacks:
 
@@ -91,7 +93,7 @@ TextInput(
 The complete program is the
 [file-search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart).
 It retains the model with `useMemoized`, registers `useOnDispose(model.dispose)`,
-and observes it with `useSignalValue`.
+and observes each derived source with `SignalValueBuilder`.
 
 ## Match the API to the ownership
 
@@ -125,7 +127,7 @@ widget tree, layout, painting, and native resources.
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | The model changes, but the widget never repaints             | The widget read `.value` without observing. Wrap it in `useSignalValue` or `SignalValueBuilder`.        |
 | A list assignment changes nothing                            | The list changed in place. Assign a newly built list to the signal instead.                             |
-| The value updates once, then stops                           | The read happened in a callback or a deferred builder. Observe at the top of `build`.                   |
+| The value updates once, then stops                           | The read happened in a callback or a deferred builder. Observe it with `useSignalValue` or `SignalValueBuilder`. |
 | The app throws while an effect runs                          | An effect changed an observed hook value synchronously. Move the write to an input callback or a timer. |
 | A child reads a disposed signal after its parent replaced it | Hand the retired source to `deferDispose` instead of disposing it during the update.                    |
 

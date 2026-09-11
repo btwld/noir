@@ -19,14 +19,16 @@ class TaskListApp extends SignalWidget {
     ]);
     final remaining = useComputed(
       () => tasks.value.where((task) => !task.done).length,
-      keys: [tasks],
     );
-    final hideCompleted = useState(false);
+    final hideCompleted = useSignal(false);
+    final visible = useComputed(
+      () => [
+        for (final task in tasks.value)
+          if (!hideCompleted.value || !task.done) task,
+      ],
+    );
     final nextId = useRef(3);
     final theme = Theme.of(context);
-    final visible = tasks.value
-        .where((task) => !hideCompleted.value || !task.done)
-        .toList();
 
     void addTask() {
       final title = draft.text.trim();
@@ -81,13 +83,13 @@ class TaskListApp extends SignalWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (visible.isEmpty)
+                  if (visible.value.isEmpty)
                     Text(
                       tasks.value.isEmpty
                           ? 'Add your first task.'
                           : 'All done!',
                     ),
-                  for (final task in visible)
+                  for (final task in visible.value)
                     Checkbox(
                       key: ValueKey<String>('task-${task.id}'),
                       label: task.title,
