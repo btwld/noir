@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:convert';
 
 import 'package:noir/noir.dart';
@@ -73,6 +75,62 @@ void main() {
       expect(() => encodeKey('ctrl-'), throwsArgumentError);
       expect(() => encodeKey(''), throwsArgumentError);
     });
+  });
+
+  test(
+    'driver readiness waits for the first painted frame after registration',
+    () async {
+      var polls = 0;
+      var delays = 0;
+      await awaitDriverReady(
+        frames: () async {
+          polls++;
+          if (polls == 1) throw RPCError('info', -32601);
+          return polls < 4 ? 0 : 1;
+        },
+        timeout: const Duration(seconds: 5),
+        delay: (_) async => delays++,
+      );
+      expect(polls, 4);
+      expect(delays, 3);
+    },
+  );
+
+  test(
+    'driver readiness times out when registered but no frame is painted',
+    () async {
+      await expectLater(
+        awaitDriverReady(frames: () async => 0, timeout: Duration.zero),
+        throwsA(isA<TimeoutException>()),
+      );
+    },
+  );
+
+  test(
+    'driver readiness bounds a pending info response by its deadline',
+    () async {
+      await expectLater(
+        awaitDriverReady(
+          frames: () => Completer<int>().future,
+          timeout: Duration.zero,
+        ).timeout(
+          const Duration(milliseconds: 200),
+          onTimeout: () => throw StateError('Readiness exceeded its deadline'),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+    },
+  );
+
+  test('driver readiness propagates unexpected service errors', () async {
+    final error = RPCError('info', RPCErrorKind.kServiceDisappeared.code);
+    await expectLater(
+      awaitDriverReady(
+        frames: () async => throw error,
+        timeout: const Duration(seconds: 5),
+      ),
+      throwsA(same(error)),
+    );
   });
 
   test('pollFrameAdvance returns as soon as frames increase', () async {

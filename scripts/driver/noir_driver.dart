@@ -57,6 +57,47 @@ Future<bool> pollFrameAdvance({
 
 Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
 
+/// Waits for the driven app's extensions and its first painted frame.
+///
+/// Registration precedes the scheduled initial layout, so a successful service
+/// response alone does not make capture or pointer locators ready. [timeout]
+/// bounds both registration and the wait for a positive frame count.
+Future<void> awaitDriverReady({
+  required Future<int> Function() frames,
+  required Duration timeout,
+  Future<void> Function(Duration duration) delay = _pollDelay,
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (true) {
+    try {
+      final remaining = deadline.difference(DateTime.now());
+      final count = await frames().timeout(
+        remaining.isNegative ? Duration.zero : remaining,
+        onTimeout: () => throw TimeoutException(
+          'The driven app did not paint its first frame',
+          timeout,
+        ),
+      );
+      if (count > 0) return;
+      if (!DateTime.now().isBefore(deadline)) {
+        throw TimeoutException(
+          'The driven app did not paint its first frame',
+          timeout,
+        );
+      }
+    } on RPCError catch (error) {
+      if (error.code != _methodNotFound || !DateTime.now().isBefore(deadline)) {
+        rethrow;
+      }
+    }
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining > Duration.zero) {
+      const pollInterval = Duration(milliseconds: 50);
+      await delay(remaining < pollInterval ? remaining : pollInterval);
+    }
+  }
+}
+
 /// Whether [error] is the VM service disappearing with the driven isolate.
 ///
 /// After [TuiApp.exit], in-flight input RPCs fail this way. That is the
@@ -384,25 +425,8 @@ class NoirDriver {
     return json;
   }
 
-  /// Polls `info` until the app has registered `ext.noir.driver.*`.
-  ///
-  /// The VM publishes its service URI before `main()` runs, so a driver that
-  /// connects promptly sees "method not found" for a moment.
-  Future<void> _awaitDriverSurface(Duration timeout) async {
-    final deadline = DateTime.now().add(timeout);
-    while (true) {
-      try {
-        await info();
-        return;
-      } on RPCError catch (error) {
-        if (error.code != _methodNotFound ||
-            !DateTime.now().isBefore(deadline)) {
-          rethrow;
-        }
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-  }
+  Future<void> _awaitDriverSurface(Duration timeout) =>
+      awaitDriverReady(frames: _frames, timeout: timeout);
 
   Future<int> _finish() async {
     try {

@@ -1178,20 +1178,20 @@ void main() {
       await _settle(app);
       app.mockInput.typeText('noir');
       await _waitForCompletionDebounce(app);
-      expect(_spinnerPositions(app), hasLength(1));
+      final spinner = _spinnerPositions(app).single;
 
       app.mockInput.pressEnter();
       await _settle(app);
 
       expect(catalog.searchCalls.single.query, 'noir');
-      expect(_spinnerPositions(app), hasLength(1));
+      expect(_spinnerPositions(app), [spinner]);
       expect(_render(app), contains('Searching pub.dev…'));
 
       completion.complete(const [PubSuggestion.package('stale_completion')]);
       await _settle(app);
 
       expect(_render(app), isNot(contains('stale_completion')));
-      expect(_spinnerPositions(app), hasLength(1));
+      expect(_spinnerPositions(app), [spinner]);
 
       search.complete(_pageValue(['search_result']));
       await _settle(app);
@@ -2328,7 +2328,48 @@ void main() {
   });
 
   test(
-    'menu replaces search loading copy with one updating indicator',
+    'refresh keeps result rows stationary until the replacement arrives',
+    () async {
+      final refresh = Completer<PackageSearchPage>();
+      final catalog = _FakePubCatalog()
+        ..searchResults.addAll([
+          _page(['kept_result'], hasNextPage: true),
+          refresh.future,
+        ]);
+      final app = createTuiTestApp(
+        PubSearchApp(catalog: catalog, onQuit: () {}),
+        width: 100,
+        height: 32,
+      );
+
+      try {
+        await _settle(app);
+        final before = app.captureFrame().findText('kept_result').single;
+        app.mockInput
+          ..pressTab()
+          ..pressTab()
+          ..pressTab()
+          ..typeText('n');
+        await _settle(app);
+
+        final pending = app.captureFrame().findText('kept_result').single;
+        expect((pending.x, pending.y), (before.x, before.y));
+        final spinner = _spinnerPositions(app).single;
+        expect(spinner.y, app.captureFrame().findText('noir').single.y);
+
+        refresh.complete(_pageValue(['next_result'], page: 2));
+        await _settle(app);
+        final after = app.captureFrame().findText('next_result').single;
+        expect((after.x, after.y), (before.x, before.y));
+        expect(_spinnerPositions(app), isEmpty);
+      } finally {
+        app.dispose();
+      }
+    },
+  );
+
+  test(
+    'menus keep query progress stationary and options stable during refresh',
     () async {
       final nextPage = Completer<PackageSearchPage>();
       final catalog = _FakePubCatalog()
@@ -2348,15 +2389,31 @@ void main() {
           ..pressTab()
           ..pressTab()
           ..pressTab()
-          ..typeText('n')
-          ..typeText('s');
+          ..typeText('n');
         await _settle(app);
+        final spinner = _spinnerPositions(app).single;
 
+        app.mockInput.typeText('s');
+        await _settle(app);
         expect(_render(app), contains('Sort menu'));
-        expect(_render(app), contains('Updating results…'));
+        expect(_render(app), isNot(contains('Updating results…')));
         expect(_render(app), isNot(contains('Searching pub.dev…')));
-        expect(_spinnerPositions(app), hasLength(1));
-        expect(_render(app), contains('Pub.dev ranking'));
+        expect(_spinnerPositions(app), [spinner]);
+        final option = app.captureFrame().findText('Pub.dev ranking').single;
+
+        nextPage.complete(_pageValue(['next_result'], page: 2));
+        await _settle(app);
+        final settledOption = app
+            .captureFrame()
+            .findText('Pub.dev ranking')
+            .single;
+        expect((settledOption.x, settledOption.y), (option.x, option.y));
+        expect(_spinnerPositions(app), isEmpty);
+        app.mockInput.pressEnter();
+        await _settle(app);
+        expect(_render(app), isNot(contains('Sort menu')));
+        expect(catalog.searchCalls, hasLength(2));
+        expect(_render(app), contains('Enter/Space/click choose sort'));
       } finally {
         app.dispose();
       }
@@ -3605,8 +3662,9 @@ void main() {
       await _settle(app);
       // The page 2 request is still in flight; the header must not keep
       // advertising the page the user already left.
-      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_spinnerPositions(app), hasLength(1));
       expect(_render(app), contains('PAGE  2'));
+      expect(_render(app), contains('page_one'));
       // Last results stay mounted so result-scoped shortcuts keep working.
 
       secondPage.completeError(Exception('page unavailable'));
@@ -3644,7 +3702,7 @@ void main() {
         ..typeText('n');
       await _settle(app);
 
-      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_spinnerPositions(app), hasLength(1));
       expect(_render(app), contains('page_one'));
       expect(_render(app), isNot(contains('n next')));
       expect(_render(app), isNot(contains('n/p page')));
@@ -3686,7 +3744,7 @@ void main() {
         ..typeText('p');
       await _settle(app);
 
-      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_spinnerPositions(app), hasLength(1));
       expect(_render(app), contains('page_two'));
       expect(_render(app), isNot(contains('n/p page')));
       expect(_render(app), isNot(contains('n next')));
@@ -3730,7 +3788,7 @@ void main() {
         ..pressEnter();
       await _settle(app);
 
-      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_spinnerPositions(app), hasLength(1));
       expect(_render(app), contains('kept_package'));
       expect(_render(app), contains('Sort: RELEVANCE ▾'));
 
@@ -3776,7 +3834,8 @@ void main() {
         ..pressArrow(ArrowDirection.down)
         ..pressEnter();
       await _settle(app);
-      expect(_render(app), contains('Searching pub.dev…'));
+      expect(_spinnerPositions(app), hasLength(1));
+      expect(_render(app), contains('kept_package'));
 
       app.mockInput
         ..pressTab()
@@ -3788,6 +3847,7 @@ void main() {
 
       expect(_render(app), contains('kept_package'));
       expect(_render(app), isNot(contains('Searching pub.dev…')));
+      expect(_spinnerPositions(app), isEmpty);
       expect(_render(app), contains('Sort: TOP ▾'));
     } finally {
       app.dispose();
