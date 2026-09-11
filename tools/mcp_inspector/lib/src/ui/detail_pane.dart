@@ -112,7 +112,7 @@ class DetailPane extends StatelessWidget {
               // a second call.
               Button(
                 key: const ValueKey<String>('run'),
-                label: _runLabel,
+                label: '${Icons.pointerRight} $_runLabel',
                 focusNode: runFocusNode,
                 onPressed: controller.isRunning ? null : controller.run,
               ),

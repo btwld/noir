@@ -9,14 +9,16 @@ artifacts are unchanged from alpha.4.
 
 ### Added
 
-- Mouse pointer shapes for OSC 22 terminals: enabled buttons, checkboxes, switches, and sliders request a hand,
+- Mouse pointer shapes for OSC 22 terminals: enabled buttons, checkboxes,
+  switches, and sliders request a hand,
   text fields request an I-beam, and custom `PointerListener` regions can set
   `mouseCursor`. Pointer selection follows render-tree hit testing and updates
   after layout even when the mouse is stationary. High-level mouse reporting
   now includes movement by default; explicit `enableMovement: false` preserves
   click/drag-only reporting. iTerm2 uses legacy OSC 22 shape names and restores
-  its default pointer on exit. Select option rows, including popup menus, show
-  a hand only over valid visible options. Unsupported terminals retain their
+  its default pointer on exit. Select and selectable ListView rows, including
+  popup menus, show a hand only over valid visible options. TabSelect requests
+  a hand over tab cells while leaving its underline and description unchanged. Unsupported terminals retain their
   own pointer.
 - Terminal output stays synchronous; removing redundant asynchronous stdout
   flushes prevents immediate mouse setup or cleanup from failing with a bound

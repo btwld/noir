@@ -18,9 +18,10 @@ excludes from the Noir archive.
 cd tools/mcp_inspector
 dart pub get
 
-# Start a server as a child process.
-dart run bin/mcp_inspector.dart -- \
-  dart run ../mcp_fixtures/bin/calculate_server.dart
+# Compile the fixture, then start it as a child process.
+# From tools/mcp_inspector:
+(cd ../mcp_fixtures && dart pub get && dart compile exe bin/calculate_server.dart -o .dart_tool/calculate_server)
+dart run bin/mcp_inspector.dart -- ../mcp_fixtures/.dart_tool/calculate_server
 
 # Or connect to a Streamable HTTP endpoint.
 dart run bin/mcp_inspector.dart --url http://localhost:3000/mcp
@@ -33,6 +34,11 @@ Options:
 | `--protocol stable\|legacy\|2026` | MCP compatibility profile. Defaults to `stable`. |
 | `--url <uri>` | Streamable HTTP endpoint of a running server. |
 | `-- <command> [args...]` | Everything after `--` starts a server as a child process. |
+
+The compiled fixture command above was validated in iTerm2. Launching the same
+fixture through `dart run` timed out during the MCP handshake in a live check;
+the cause has not been isolated. The compiled executable avoids that launcher
+and is also the path used by the automated integration tests.
 
 The child's stdout is the protocol channel, so nothing else may write to it.
 In a package whose dependency graph has a native-assets build hook, `dart run`
@@ -147,8 +153,7 @@ Look at the screen at three sizes from the repository root:
 printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick key run\ncapture --plain\nresize 80x24\ncapture --plain\nresize 60x18\ncapture --plain\nquit\n' | \
   dart run --verbosity=error scripts/noir_drive.dart \
     "$PWD/tools/mcp_inspector/bin/mcp_inspector.dart" --size 100x30 -- \
-    -- dart run --verbosity=error \
-      "$PWD/tools/mcp_fixtures/bin/calculate_server.dart"
+    -- "$PWD/tools/mcp_fixtures/.dart_tool/calculate_server"
 ```
 
 ## What the build exposed
