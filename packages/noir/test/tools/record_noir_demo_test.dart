@@ -88,7 +88,7 @@ void main() {
         'pulse-animation.json',
       };
       // `doc_frames.json` is the static-frame manifest for
-      // `scripts/capture_doc_frames.dart`, not an asciicast recipe. Its own
+      // `tool/capture_doc_frames.dart`, not an asciicast recipe. Its own
       // architecture test covers it.
       const frameManifest = 'doc_frames.json';
       final files = Directory('tool/recordings')

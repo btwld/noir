@@ -175,7 +175,7 @@ void main() {
       published.difference(backed),
       isEmpty,
       reason:
-          'add a scene to scripts/recordings/doc_frames.json so a checkpoint '
+          'add a scene to packages/noir/tool/recordings/doc_frames.json so a checkpoint '
           'change fails before the screenshot goes stale',
     );
     expect(

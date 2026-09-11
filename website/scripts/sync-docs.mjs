@@ -4,7 +4,8 @@
 //
 //   1. Package availability, from `publication.json` and the two
 //      `pubspec.yaml` files.
-//   2. Tutorial code, from the canonical runnable checkpoints in `example/`.
+//   2. Tutorial code, from the canonical runnable checkpoints in each
+//      package's `example/`.
 //   3. Captured terminal frames, from `packages/noir/tool/capture_doc_frames.dart`.
 //   4. The task-list lesson pages, from the Markdown that ships with the
 //      companion package.
