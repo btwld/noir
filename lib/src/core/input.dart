@@ -731,6 +731,11 @@ final class InputDispatcher {
   final SplayTreeMap<int, List<CapabilityResponseHandler>>
   _capabilityByPriority = SplayTreeMap<int, List<CapabilityResponseHandler>>();
   VoidCallback? _afterEvent;
+  Offset? _mousePosition;
+
+  /// Last reported terminal cell, recorded before consumable event dispatch.
+  @internal
+  Offset? get mousePosition => _mousePosition;
 
   /// Registers [handler] in [byPriority] and returns a handle that, when
   /// cancelled, removes the subscription (dropping empty priority buckets).
@@ -823,8 +828,10 @@ final class InputDispatcher {
 
   /// Dispatch a mouse event to all subscribers in priority order
   /// (highest first). Stops as soon as a handler calls [event.consume].
-  void dispatchMouseEvent(MouseEvent event) =>
-      _dispatchEventBucket<MouseEvent>(_mouseByPriority, event);
+  void dispatchMouseEvent(MouseEvent event) {
+    _mousePosition = Offset(event.x, event.y);
+    _dispatchEventBucket<MouseEvent>(_mouseByPriority, event);
+  }
 
   /// Dispatch a paste event to all subscribers in priority order
   /// (highest first). Stops as soon as a handler calls [event.consume].

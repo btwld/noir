@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../core/renderer.dart';
 import '../core/stdin_input_driver.dart';
 import '../foundation/first_error.dart';
@@ -212,16 +213,50 @@ class TerminalSession {
   /// The renderer owned or borrowed by this session.
   Renderer? get renderer => _renderer;
 
-  /// Enables mouse reporting through the renderer.
-  void enableMouse({bool enableMovement = false}) {
+  bool _mouseCursorPushed = false;
+  MouseCursor? _mouseCursor;
+
+  /// Updates the pointer on OSC 22 terminals while mouse reporting is active.
+  void updateMouseCursor(MouseCursor cursor) {
+    if (!_mouseCursorPushed || _closed || _closing || cursor == _mouseCursor) {
+      return;
+    }
+    _platform.stdoutWrite('\x1b]22;${cursor.name}\x1b\\');
+    _platform.stdoutFlush();
+    _mouseCursor = cursor;
+  }
+
+  void _restoreMouseCursor() {
+    if (!_mouseCursorPushed) return;
+    _mouseCursorPushed = false;
+    _mouseCursor = null;
+    _platform.stdoutWrite('\x1b]22;<\x1b\\');
+    _platform.stdoutFlush();
+  }
+
+  /// Enables mouse reporting through the renderer, including hover by default.
+  void enableMouse({bool enableMovement = true}) {
     _requireRenderer(
       'Mouse support requires a renderer',
     ).enableMouse(enableMovement: enableMovement);
+    if (!_isHeadless && _useTerminalSession && !_mouseCursorPushed) {
+      // Mark ownership before writing so partial failures still trigger cleanup.
+      _mouseCursorPushed = true;
+      _platform.stdoutWrite('\x1b]22;>default\x1b\\');
+      _platform.stdoutFlush();
+      _mouseCursor = MouseCursor.basic;
+    }
   }
 
   /// Disables mouse reporting through the renderer.
   void disableMouse() {
-    _requireRenderer('Mouse support requires a renderer').disableMouse();
+    final failures = FirstErrorRecorder();
+    failures.attempt(
+      () =>
+          _requireRenderer('Mouse support requires a renderer').disableMouse(),
+    );
+    failures.attempt(_restoreMouseCursor);
+    failures.rethrowFirst();
   }
 
   /// Enables Kitty keyboard reporting through the renderer.
@@ -311,6 +346,7 @@ class TerminalSession {
       if (interruptKeySubscription != null) {
         failures.attempt(interruptKeySubscription.cancel);
       }
+      failures.attempt(_restoreMouseCursor);
       failures.attempt(_restoreTerminalSession);
       if (renderer != null && ownsRenderer) {
         failures.attempt(renderer.dispose);

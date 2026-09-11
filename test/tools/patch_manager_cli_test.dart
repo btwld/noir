@@ -24,6 +24,6 @@ void main() {
     expect(source, isNot(contains('onQuit')));
     expect(source, isNot(contains('io.exit(')));
     expect(source, contains('runTuiApp('));
-    expect(source, contains('enableMouse(enableMovement: true)'));
+    expect(source, contains('enableMouse()'));
   });
 }

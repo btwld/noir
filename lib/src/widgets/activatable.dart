@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/widget.dart';
 import 'actions.dart';
 import 'focus.dart';
@@ -71,6 +72,7 @@ mixin ActivatableStateMixin<T extends StatefulWidget>
             canRequestFocus: isEnabled,
             onFocusChange: _handleFocusChange,
             child: PointerListener(
+              mouseCursor: isEnabled ? MouseCursor.pointer : MouseCursor.basic,
               onPointerDown: _handlePointerDown,
               child: child,
             ),

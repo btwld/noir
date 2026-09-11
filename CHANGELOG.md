@@ -9,6 +9,13 @@ artifacts are unchanged from alpha.4.
 
 ### Added
 
+- Mouse pointer shapes for OSC 22 terminals: enabled buttons, checkboxes, switches, and sliders request a hand,
+  text fields request an I-beam, and custom `PointerListener` regions can set
+  `mouseCursor`. Pointer selection follows render-tree hit testing and updates
+  after layout even when the mouse is stationary. High-level mouse reporting
+  now includes movement by default; explicit `enableMovement: false` preserves
+  click/drag-only reporting. Unsupported terminals retain their own pointer.
+
 - Added `LayoutBuilder`, which builds its child from the incoming
   `BoxConstraints`. The builder runs during layout and its result is laid out
   in the same frame, so the constraints it reads are the constraints its child

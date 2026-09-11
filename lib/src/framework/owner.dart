@@ -6,6 +6,7 @@ import '../animation/ticker.dart';
 import '../core/clipboard.dart';
 import '../core/cursor.dart';
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../core/renderer.dart';
 import '../foundation/first_error.dart';
 import '../render/geometry.dart';
@@ -99,6 +100,10 @@ class BuildOwner {
   /// scrolling, clipping, and paint-order occlusion remain authoritative.
   @internal
   HitTestResult? hitTestAt(Offset position) => _pointerRouter.hitTest(position);
+
+  /// Mouse pointer shape at the last reported position in the current layout.
+  @internal
+  MouseCursor get mouseCursor => _pointerRouter.mouseCursor;
 
   late final PointerRouter _pointerRouter;
   final TickerScheduler _tickerScheduler;

@@ -31,6 +31,7 @@ void main() {
         'TextAlign',
       },
       'src/core/cursor.dart': {'CursorStyle'},
+      'src/core/mouse_cursor.dart': {'MouseCursor'},
       'src/core/grapheme_metrics.dart': {
         'cellToGraphemeIndex',
         'graphemeIndexToCell',
@@ -390,8 +391,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(251),
-      reason: 'The high-level surface is locked at exactly 251 symbols.',
+      hasLength(252),
+      reason: 'The high-level surface is locked at exactly 252 symbols.',
     );
   });
 }

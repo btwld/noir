@@ -22,6 +22,6 @@ void main(List<String> args) {
         repository: GitPatchRepository(worktreePath: worktreePath),
       ),
     )
-    ..enableMouse(enableMovement: true)
+    ..enableMouse()
     ..enableKittyKeyboard();
 }

@@ -1,11 +1,13 @@
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../render/geometry.dart';
 import '../rendering/object.dart';
 
 /// Routes mouse events through render-tree hit testing.
 final class PointerRouter {
   /// Creates a pointer router backed by [inputManager].
-  PointerRouter(InputManager inputManager) {
+  PointerRouter(InputManager inputManager)
+    : _dispatcher = inputManager.dispatcher {
     _subscription = inputManager.dispatcher.onMouse(
       route,
       priority: InputPriority.focus,
@@ -16,6 +18,25 @@ final class PointerRouter {
 
   /// Render-tree root used for pointer hit testing.
   RenderObject? root;
+
+  final InputDispatcher _dispatcher;
+
+  /// Resolves the current pointer shape against the latest layout.
+  MouseCursor get mouseCursor {
+    final position = _dispatcher.mousePosition;
+    if (position != null) {
+      final result = hitTest(position);
+      if (result != null) {
+        for (final entry in result.path) {
+          final target = entry.target;
+          if (target is MouseCursorTarget && target.mouseCursor != null) {
+            return target.mouseCursor!;
+          }
+        }
+      }
+    }
+    return MouseCursor.basic;
+  }
 
   /// Dispose the input subscription owned by this router.
   void dispose() {

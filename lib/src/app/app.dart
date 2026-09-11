@@ -27,9 +27,9 @@ import 'tui_binding.dart';
 /// `package:noir/noir_low_level.dart`, which keeps its size parameters.
 ///
 /// Pass [enableMouse] to turn on mouse reporting as the app mounts; the
-/// returned handle still exposes runtime toggles and
-/// `enableMouse(enableMovement: true)`. Hot reload is registered
-/// automatically, so an edited `build()` shows up without extra wiring.
+/// returned handle still exposes runtime toggles. Movement reporting is enabled
+/// for hover pointers; `enableMouse(enableMovement: false)` opts out. Hot reload
+/// is registered automatically, so an edited `build()` shows up without extra wiring.
 ///
 /// With `NOIR_DRIVE=1` in the environment the app mounts in drive mode
 /// instead: a headless binding painting into a non-terminal renderer, with the
@@ -236,8 +236,9 @@ final class TuiApp implements Disposable {
     );
   }
 
-  /// Enables terminal mouse reporting.
-  void enableMouse({bool enableMovement = false}) {
+  /// Enables terminal mouse reporting, including movement for hover pointers.
+  /// Pass `enableMovement: false` for click and drag reporting only.
+  void enableMouse({bool enableMovement = true}) {
     _checkNotDisposed();
     _binding.enableMouse(enableMovement: enableMovement);
   }
