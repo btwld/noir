@@ -444,6 +444,8 @@ void main() {
     );
 
     session.close();
+    expect(platform.watchedSignals, contains(TerminalSignal.resize));
+    expect(platform.canceledSignals, contains(TerminalSignal.resize));
     scheduledFrames = 0;
     final closedWidth = session.width;
     final closedHeight = session.height;
