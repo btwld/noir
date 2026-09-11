@@ -167,10 +167,41 @@ Do not reconstruct the widget's absolute origin. The local coordinate stays
 correct when the widget moves inside a scrollable region or an overlay.
 
 **If no pointer event arrives:** mouse reporting is opt-in. Enable it once with
-`runTuiApp(app, enableMouse: true)`, and request movement events separately
-only when the app needs hover or drag. A terminal that does not report mouse
-input cannot be made to; see
-[Platform support](/docs/platform-limitations).
+`runTuiApp(app, enableMouse: true)`. The unreleased candidate includes movement
+reporting by default; `app.enableMouse(enableMovement: false)` opts into
+click and drag reporting only. For versions that default to click and drag reporting, request hover with
+`app.enableMouse(enableMovement: true)`. A terminal that does not report mouse
+input cannot be made to; see [Platform support](/docs/platform-limitations).
+
+## Show a hand over an action
+
+Mouse pointer shapes require the unreleased Noir candidate. Use the checkout
+instructions in [Installation](/docs/installation) before copying this API.
+The pointer is the desktop mouse shape, separate from the text caret.
+
+With mouse reporting enabled, buttons, checkboxes, switches, sliders, valid
+`Select` and selectable `ListView` rows, and `TabSelect` tab cells request a
+hand. Text fields request an I-beam. Blank list rows and disabled controls
+keep the basic pointer.
+
+For a custom action, add `mouseCursor` to its existing listener:
+
+```dart
+PointerListener(
+  mouseCursor: MouseCursor.pointer,
+  onPointerDown: handlePointerDown,
+  child: child,
+)
+```
+
+`MouseCursor.basic` requests an arrow; `MouseCursor.text` requests an I-beam.
+The deepest annotated hit target wins. Leaving `mouseCursor` null defers to
+an ancestor; setting `basic` explicitly overrides it. The annotation can also
+be used without callbacks around a child that already handles input.
+
+Noir resolves the shape again after layout, so removing or disabling a control
+under a stationary mouse updates the pointer. The terminal must support the
+request: see [mouse pointer support](/docs/platform-limitations#mouse-pointer-shapes).
 
 ## Keep a scrollable region's keys to itself
 

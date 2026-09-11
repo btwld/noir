@@ -78,6 +78,12 @@ Row(
 | Semantic key commands       | [`Shortcuts`][shortcuts], [`Actions`][actions] | Map keys to Intents, then Intents to application commands               |
 | Pointer hit region          | [`PointerListener`][pointerlistener]           | Read `MouseEvent.localPosition` after hit testing                       |
 
+The unreleased candidate adds `PointerListener.mouseCursor` for custom mouse
+shapes and built-in hover pointers for interactive controls. See
+[Show a hand over an action](/docs/input-focus#show-a-hand-over-an-action) for
+requirements and behavior; the published API reference does not include this
+addition yet.
+
 `Select` and `TabSelect` share typed options but express different spatial
 models:
 
