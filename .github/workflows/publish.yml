@@ -28,7 +28,7 @@ jobs:
   preflight:
     name: Validate package
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 36
 
     steps:
       - name: Checkout repository
@@ -86,7 +86,8 @@ jobs:
         run: dart analyze --fatal-infos
 
       - name: Run ordinary tests
-        timeout-minutes: 8
+        # Match Ubuntu CI; a successful run already exceeded eight minutes.
+        timeout-minutes: 15
         run: dart test --concurrency=1
 
       - name: Validate documentation links

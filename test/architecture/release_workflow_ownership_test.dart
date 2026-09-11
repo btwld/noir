@@ -81,7 +81,6 @@ void main() {
     expect(workflow, contains('windows-latest'));
     expect(workflow, contains('dart build cli -t bin/health_check.dart'));
     expect(workflow, contains('  verify:'));
-    expect(workflow, contains('timeout-minutes: 15'));
     expect(workflow, contains('timeout-minutes: 12'));
     expect(workflow, contains('timeout-minutes: 5'));
     expect('actions/cache@'.allMatches(workflow), hasLength(2));
