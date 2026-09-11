@@ -10,9 +10,8 @@ This document is the reference. To learn hooks by building an app, start with
 
 ## Install and import
 
-The companion is not published yet and requires Noir 0.0.2. Use the repository
-checkout setup in the [package overview](../README.md). After companion
-publication, an application will declare:
+The companion requires Noir 0.0.2. An application declares both packages; the
+[package overview](../README.md) also covers a repository checkout:
 
 ```yaml
 dependencies:

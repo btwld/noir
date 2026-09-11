@@ -15,8 +15,7 @@ Android, iOS, and web are not supported. See
 ## Add Noir
 
 <Availability of="noir" setup={false}>
-  The published package is the default path for an application. The optional
-  companion package still requires a repository checkout.
+  The published package is the default path for an application.
 </Availability>
 
 From your project directory:
@@ -44,17 +43,37 @@ surfaces and the generated symbol reference, see [API](/api).
 ## Add the noir_signals companion
 
 <Availability of="companion" setup={false}>
-  `noir_signals` is not published yet and requires Noir 0.0.2. The checkout
-  setup below resolves both packages from one repository revision.
+  `noir_signals` requires Noir 0.0.2.
 </Availability>
 
 The companion adds `SignalWidget`, reusable lifecycle hooks, and the Signals
 integration. Noir never depends on it, and a Noir-only application resolves
 neither the companion nor `signals_core`.
 
-Clone the [public Noir repository](https://github.com/conceptadev/noir) beside
-your application directory. Pin an exact commit or tag rather than a moving
-branch, then declare both packages:
+From your project directory:
+
+```sh
+dart pub add noir noir_signals
+```
+
+That declares both hosted packages:
+
+```yaml
+dependencies:
+  noir: ^0.0.2
+  noir_signals: ^0.0.1-alpha.0
+```
+
+Files that use hooks import both libraries:
+
+```dart
+import 'package:noir/noir.dart';
+import 'package:noir_signals/noir_signals.dart';
+```
+
+To evaluate unreleased changes to both packages, clone the
+[public Noir repository](https://github.com/conceptadev/noir) beside your
+application, pin an exact commit or tag, and resolve both from that revision:
 
 ```yaml
 dependencies:
@@ -66,26 +85,8 @@ dependency_overrides:
     path: ../noir/packages/noir
 ```
 
-Run `dart pub get` from your application directory. The override routes the
-companion's own `noir` dependency to the same checkout, so one revision
-supplies both packages.
-
-Files that use hooks import both libraries:
-
-```dart
-import 'package:noir/noir.dart';
-import 'package:noir_signals/noir_signals.dart';
-```
-
-After publication, the same project will declare hosted versions instead. Do
-not copy this block yet: `noir_signals: ^0.0.1-alpha.0` cannot resolve from
-pub.dev today.
-
-```yaml
-dependencies:
-  noir: ^0.0.2
-  noir_signals: ^0.0.1-alpha.0
-```
+The override routes the companion's own `noir` dependency to the same
+checkout, so one revision supplies both packages.
 
 ## Try an unreleased Noir API without the companion
 
@@ -107,7 +108,7 @@ published surface, or pin and evaluate one repository revision as a unit.
 
 | Symptom                                                     | What to check                                                                                            |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `dart pub get` cannot find `noir_signals`                   | It is not on pub.dev yet. Use the checkout path above.                                                   |
+| `dart pub get` cannot find `noir_signals`                   | It is a prerelease. Declare `^0.0.1-alpha.0`, or run `dart pub add`.                                     |
 | `dart pub get` reports a version conflict on `noir`         | The companion needs Noir 0.0.2. Use that version or the checkout override shown above.                   |
 | The app builds, then fails while loading the native library | Check the OS floor above. A macOS 12 machine can build and still fail to load Noir's macOS 13 libraries. |
 | `dart run noir:health_check` fails                          | Report the output with your OS and architecture. Do not rebuild or replace the bundled artifacts.        |
