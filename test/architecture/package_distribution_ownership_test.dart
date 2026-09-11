@@ -123,15 +123,15 @@ void main() {
     expect(source, contains("'--format=machine'"));
   });
 
-  test('public changelog leads with the current alpha package version', () {
+  test('public changelog leads with the current package version', () {
     final changelog = _read('CHANGELOG.md');
     final changelogVersions = RegExp(
       r'^##\s+([^\s]+)\s*$',
       multiLine: true,
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
-    expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$')));
-    expect(packageVersion, '0.0.1-alpha.5');
+    expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
+    expect(packageVersion, '0.0.1');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -142,24 +142,24 @@ void main() {
     expect(changelog.toLowerCase(), isNot(contains('muse')));
   });
 
-  test('current alpha changelog records its release contracts', () {
+  test('current changelog records its release contracts', () {
     final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
-    final currentAlpha = _changelogSection(changelog, packageVersion);
+    final currentRelease = _changelogSection(changelog, packageVersion);
 
-    expect(currentAlpha, isNotEmpty);
+    expect(currentRelease, isNotEmpty);
     expect(
       changelog,
       isNot(matches(RegExp(r'^## 0\.0\.1-alpha\.2$', multiLine: true))),
     );
     for (final heading in const ['Added', 'Fixed', 'Removed']) {
       expect(
-        RegExp('^### $heading\$', multiLine: true).allMatches(currentAlpha),
+        RegExp('^### $heading\$', multiLine: true).allMatches(currentRelease),
         hasLength(1),
         reason: heading,
       );
     }
     for (final contract in const [
-      'Unreleased.',
+      'This initial 0.0.x release',
       'State.deferDispose',
       'HookState.deferDispose',
       'LayoutBuilder',
@@ -168,7 +168,7 @@ void main() {
       'native ABI',
       'bundled native artifacts are unchanged',
     ]) {
-      expect(_normalized(currentAlpha), contains(contract), reason: contract);
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
     }
   });
 
@@ -245,7 +245,7 @@ void main() {
     expect(publication, contains('"noir_signals": '));
     expect(
       contributorGuide,
-      contains('The target is the current core-framework prerelease candidate'),
+      contains('The target is the current core-framework release candidate'),
     );
     expect(contributorGuide, isNot(contains(packageVersion)));
   });
@@ -374,7 +374,7 @@ void main() {
     expect(staleReferences, isEmpty);
   });
 
-  test('README gives truthful prerelease install and runnable samples', () {
+  test('README gives truthful install and runnable samples', () {
     final installStart = readme.indexOf('## Install');
     final quickStartIndex = readme.indexOf('## Quick Start');
     final nextSectionIndex = readme.indexOf('\n## ', quickStartIndex + 3);
@@ -389,7 +389,7 @@ void main() {
       _normalized(install),
       contains('pin an exact commit or release tag'),
     );
-    expect(readme, contains('Noir is currently a prerelease.'));
+    expect(readme, contains('Noir is at an early 0.0.x stage.'));
     // Three complete, runnable samples: the one-line entry point plus the
     // two Quick Start apps. Fragments stay inline so every block compiles.
     expect(

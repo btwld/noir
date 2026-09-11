@@ -207,7 +207,7 @@ async function readAvailability() {
       label:
         noir.published === 'none'
           ? 'Not published yet · repository checkout only'
-          : `Published prerelease · ${noir.published}`,
+          : `Published version · ${noir.published}`,
     },
     companion: {
       ...companion,
@@ -216,7 +216,7 @@ async function readAvailability() {
       label:
         companion.published === 'none'
           ? 'Not published yet · repository checkout only'
-          : `Published prerelease · ${companion.published}`,
+          : `Published version · ${companion.published}`,
     },
   };
 }

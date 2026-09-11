@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.0.1-alpha.5
+## 0.0.1
 
-Unreleased. This prerelease adds `LayoutBuilder` and one framework lifecycle
+This initial 0.0.x release adds `LayoutBuilder` and one framework lifecycle
 seam, fixes focus recovery and keyed `ListView` rows, and moves the opt-in
 hooks library to a separate package. The native ABI and the bundled native
 artifacts are unchanged from alpha.4.

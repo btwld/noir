@@ -25,7 +25,7 @@ platforms:
 
 dependencies:
   meta: ^1.12.0
-  noir: ^0.0.1-alpha.5
+  noir: ^0.0.1
   signals_core: ^7.0.0
 
 dev_dependencies:
