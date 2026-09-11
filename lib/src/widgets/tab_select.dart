@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -312,7 +313,7 @@ final class _TabSelectLeaf<T> extends RenderObjectWidget {
   }
 }
 
-final class _RenderTabSelect<T> extends RenderBox {
+final class _RenderTabSelect<T> extends RenderBox implements MouseCursorTarget {
   _RenderTabSelect({
     required List<SelectOption<T>> options,
     required int selectedIndex,
@@ -392,6 +393,25 @@ final class _RenderTabSelect<T> extends RenderBox {
     } else {
       _layoutContentSizedTabs(widths);
     }
+  }
+
+  @override
+  bool hitTestSelf(Offset position) => true;
+
+  @override
+  MouseCursor mouseCursorAt(Offset position) {
+    final index = _metrics.indexAt(position.dx);
+    return position.dy == 0 &&
+            index != null &&
+            index >= 0 &&
+            index < _options.length
+        ? MouseCursor.pointer
+        : MouseCursor.basic;
+  }
+
+  @override
+  void handleEvent(MouseEvent event, HitTestEntry entry) {
+    // The ancestor PointerListener owns focus and tab activation.
   }
 
   void _layoutFixedTabs(int tabWidth) {

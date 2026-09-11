@@ -11,6 +11,241 @@ MouseEvent move(int x) =>
     MouseEvent(type: MouseEventType.move, button: MouseButton.left, x: x, y: 0);
 
 void main() {
+  test(
+    'empty selectable ListView does not advertise or confirm a row',
+    () async {
+      var changes = 0;
+      var confirmations = 0;
+      final driver = KeyDriver(
+        PointerListener(
+          mouseCursor: MouseCursor.pointer,
+          child: SizedBox(
+            width: 12,
+            height: 3,
+            child: ListView(
+              itemCount: 0,
+              height: 3,
+              selectedIndex: 0,
+              itemBuilder: (_, index, _) => Text('Row $index'),
+              onChanged: (_) => changes++,
+              onSelect: (_) => confirmations++,
+            ),
+          ),
+        ),
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+      await driver.sendMouse(move(1));
+      expect(driver.app.buildOwner.mouseCursor, MouseCursor.basic);
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          button: MouseButton.left,
+          x: 1,
+          y: 0,
+        ),
+      );
+      expect(changes, 0);
+      expect(confirmations, 0);
+    },
+  );
+
+  test(
+    'ListView cursor matches extent bands, gutter and blank remainder',
+    () async {
+      var selected = -1;
+      final driver = KeyDriver(
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 12,
+            height: 7,
+            child: ListView(
+              itemCount: 2,
+              height: 7,
+              itemExtent: 2,
+              selectedIndex: 0,
+              showScrollIndicator: true,
+              itemBuilder: (_, index, _) => Text('Row $index'),
+              onSelect: (index) => selected = index,
+            ),
+          ),
+        ),
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+      for (final x in [1, 11]) {
+        for (final y in [0, 1, 2, 3, 4, 6]) {
+          await driver.sendMouse(
+            MouseEvent(
+              type: MouseEventType.move,
+              button: MouseButton.left,
+              x: x,
+              y: y,
+            ),
+          );
+          expect(
+            driver.app.buildOwner.mouseCursor,
+            y < 4 ? MouseCursor.pointer : MouseCursor.basic,
+            reason: 'cell ($x,$y)',
+          );
+        }
+      }
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.down,
+          button: MouseButton.left,
+          x: 11,
+          y: 3,
+        ),
+      );
+      expect(selected, 1);
+    },
+  );
+
+  test(
+    'plain ListView masks ancestor hand but preserves inner text cursor',
+    () async {
+      final driver = KeyDriver(
+        PointerListener(
+          mouseCursor: MouseCursor.pointer,
+          child: SizedBox(
+            width: 12,
+            height: 3,
+            child: ListView(
+              itemCount: 2,
+              height: 3,
+              itemBuilder: (_, index, _) => index == 0
+                  ? const PointerListener(
+                      mouseCursor: MouseCursor.text,
+                      child: Text('edit'),
+                    )
+                  : const Text('plain'),
+            ),
+          ),
+        ),
+      );
+      addTearDown(driver.dispose);
+      await driver.ready();
+      for (final y in [0, 1, 2]) {
+        await driver.sendMouse(
+          MouseEvent(
+            type: MouseEventType.move,
+            button: MouseButton.left,
+            x: 1,
+            y: y,
+          ),
+        );
+        expect(
+          driver.app.buildOwner.mouseCursor,
+          y == 0 ? MouseCursor.text : MouseCursor.basic,
+        );
+      }
+    },
+  );
+
+  test('TabSelect only advertises visible clickable tab cells', () async {
+    var selected = -1;
+    final driver = KeyDriver(
+      Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: 12,
+          height: 3,
+          child: TabSelect<int>(
+            tabWidth: 4,
+            options: const [
+              SelectOption(name: 'A', value: 0),
+              SelectOption(name: 'B', value: 1),
+            ],
+            onSelect: (index, _) => selected = index,
+          ),
+        ),
+      ),
+    );
+    addTearDown(driver.dispose);
+    await driver.ready();
+    for (final position in [
+      const Offset(1, 0),
+      const Offset(5, 0),
+      const Offset(9, 0),
+      const Offset(1, 1),
+      const Offset(1, 2),
+    ]) {
+      await driver.sendMouse(
+        MouseEvent(
+          type: MouseEventType.move,
+          button: MouseButton.left,
+          x: position.dx,
+          y: position.dy,
+        ),
+      );
+      expect(
+        driver.app.buildOwner.mouseCursor,
+        position.dy == 0 && position.dx < 8
+            ? MouseCursor.pointer
+            : MouseCursor.basic,
+        reason: 'cell $position',
+      );
+    }
+    await driver.sendMouse(
+      MouseEvent(
+        type: MouseEventType.down,
+        button: MouseButton.left,
+        x: 5,
+        y: 0,
+      ),
+    );
+    expect(selected, 1);
+  });
+
+  test(
+    'TabSelect hand follows scrolled metrics and clears when empty',
+    () async {
+      for (final empty in [false, true]) {
+        var selected = -1;
+        final driver = KeyDriver(
+          PointerListener(
+            mouseCursor: MouseCursor.pointer,
+            child: SizedBox(
+              width: 6,
+              height: 1,
+              child: TabSelect<int>(
+                tabWidth: 4,
+                selectedIndex: empty ? 0 : 3,
+                showDescription: false,
+                showUnderline: false,
+                options: empty
+                    ? const []
+                    : List.generate(
+                        4,
+                        (index) => SelectOption(name: '$index', value: index),
+                      ),
+                onSelect: (index, _) => selected = index,
+              ),
+            ),
+          ),
+        );
+        await driver.ready();
+        await driver.sendMouse(move(1));
+        expect(
+          driver.app.buildOwner.mouseCursor,
+          empty ? MouseCursor.basic : MouseCursor.pointer,
+        );
+        await driver.sendMouse(
+          MouseEvent(
+            type: MouseEventType.down,
+            button: MouseButton.left,
+            x: 1,
+            y: 0,
+          ),
+        );
+        expect(selected, empty ? -1 : 3);
+        driver.dispose();
+      }
+    },
+  );
+
   test('standalone RenderSelect remains noninteractive', () {
     final render = RenderSelect<int>(
       options: const [SelectOption(name: 'One', value: 1)],

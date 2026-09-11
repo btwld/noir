@@ -3,8 +3,8 @@
 /// From `tools/mcp_inspector`, start a server as a child process:
 ///
 /// ```sh
-/// dart run bin/mcp_inspector.dart -- \
-///   dart run ../mcp_fixtures/bin/calculate_server.dart
+/// (cd ../mcp_fixtures && dart pub get && dart compile exe bin/calculate_server.dart -o .dart_tool/calculate_server)
+/// dart run bin/mcp_inspector.dart -- ../mcp_fixtures/.dart_tool/calculate_server
 /// ```
 ///
 /// Or connect to a Streamable HTTP endpoint:

@@ -22,12 +22,17 @@ class InspectorHeader extends StatelessWidget {
     return Row(
       spacing: 1,
       children: <Widget>[
-        Text(
-          server == null ? 'MCP Inspector' : '${server.name} ${server.version}',
-          style: TextStyles.bold,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
+        Expanded(
+          flex: 2,
+          child: Text(
+            server == null
+                ? 'MCP Inspector'
+                : '${server.name} ${server.version}',
+            style: TextStyles.bold,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         Text(
           controller.protocolVersion ?? '-',
@@ -54,19 +59,19 @@ class InspectorHeader extends StatelessWidget {
   ({String label, BadgeVariant variant}) get _status =>
       switch (controller.connectionState) {
         InspectorConnectionState.connecting => (
-          label: 'connecting',
+          label: '${Icons.hourglass} connecting',
           variant: BadgeVariant.info,
         ),
         InspectorConnectionState.connected => (
-          label: 'connected',
+          label: '${Icons.check} connected',
           variant: BadgeVariant.success,
         ),
         InspectorConnectionState.failed => (
-          label: 'failed',
+          label: '${Icons.close} failed',
           variant: BadgeVariant.danger,
         ),
         InspectorConnectionState.closed => (
-          label: 'closed',
+          label: '${Icons.rectangle} closed',
           variant: BadgeVariant.neutral,
         ),
       };

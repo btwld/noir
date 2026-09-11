@@ -8,10 +8,12 @@ import 'package:meta/meta.dart';
 
 import '../core/color.dart';
 import '../core/input.dart';
+import '../core/mouse_cursor.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/key.dart';
 import '../framework/widget.dart';
+import '../render/geometry.dart';
 import 'actions.dart';
 import 'container.dart';
 import 'flexible.dart';
@@ -318,14 +320,24 @@ class _ListViewState extends State<ListView>
   void _handlePointerDown(MouseEvent event) {
     if (event.button != MouseButton.left) return;
     if (!focusNode.hasFocus) focusNode.requestFocus();
-    if (!_selectable) return;
-    final row = event.localPosition.dy ~/ widget.itemExtent;
-    if (row < 0 || row >= _visibleRows) return;
-    final index = _viewport.scrollOffset + row;
-    if (index > _maxIndex) return;
+    final index = _pointerIndexAt(event.localPosition);
+    if (index == null) return;
     _setHighlighted(index);
     if (_confirm() == KeyEventResult.handled) event.consume();
   }
+
+  int? _pointerIndexAt(Offset position) {
+    if (!_selectable || position.dy < 0) return null;
+    final row = position.dy ~/ widget.itemExtent;
+    if (row >= _visibleRows) return null;
+    final index = _viewport.scrollOffset + row;
+    return index >= 0 && index < widget.itemCount ? index : null;
+  }
+
+  MouseCursor _mouseCursorAt(Offset position) =>
+      _pointerIndexAt(position) == null
+      ? MouseCursor.basic
+      : MouseCursor.pointer;
 
   void _handlePointerScroll(MouseEvent event) {
     final scroll = event.scroll;
@@ -410,7 +422,8 @@ class _ListViewState extends State<ListView>
           focusNode: focusNode,
           autofocus: widget.autofocus,
           onFocusChange: _handleFocusChange,
-          child: PointerListener(
+          child: _ListPointerListener(
+            cursorAt: _mouseCursorAt,
             onPointerDown: _handlePointerDown,
             onPointerScroll: _handlePointerScroll,
             child: list,
@@ -451,4 +464,47 @@ class _ListRowKey extends ValueKey<LocalKey> {
 
   @override
   String toString() => '_ListRowKey($value)';
+}
+
+// Retains the list's existing hit target and row identities while resolving
+// the same activation bands across both item content and the indicator gutter.
+class _ListPointerListener extends PointerListener {
+  const _ListPointerListener({
+    required this.cursorAt,
+    super.onPointerDown,
+    super.onPointerScroll,
+    super.child,
+  });
+
+  final MouseCursor Function(Offset) cursorAt;
+
+  @override
+  _RenderListPointerListener createRenderObject(BuildContext context) =>
+      _RenderListPointerListener(
+        cursorAt: cursorAt,
+        onPointerDown: onPointerDown,
+        onPointerScroll: onPointerScroll,
+      );
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderListPointerListener renderObject,
+  ) {
+    super.updateRenderObject(context, renderObject);
+    renderObject.cursorAt = cursorAt;
+  }
+}
+
+class _RenderListPointerListener extends RenderPointerListener {
+  _RenderListPointerListener({
+    required this.cursorAt,
+    super.onPointerDown,
+    super.onPointerScroll,
+  });
+
+  MouseCursor Function(Offset) cursorAt;
+
+  @override
+  MouseCursor mouseCursorAt(Offset position) => cursorAt(position);
 }

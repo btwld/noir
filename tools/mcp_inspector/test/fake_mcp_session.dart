@@ -9,10 +9,14 @@ import 'package:noir_mcp_inspector/noir_mcp_inspector.dart';
 final class FakeMcpSession implements McpSession {
   /// Creates a fake that reports [serverInfo] once connected.
   FakeMcpSession({
+    this.identity = const McpServerInfo(name: 'fake_server', version: '1.0.0'),
     this.tools = const <McpToolInfo>[],
     this.resources = const <McpResourceInfo>[],
     this.prompts = const <McpPromptInfo>[],
   });
+
+  /// Identity advertised after connecting.
+  final McpServerInfo identity;
 
   /// Tools returned by [listTools].
   List<McpToolInfo> tools;
@@ -65,9 +69,7 @@ final class FakeMcpSession implements McpSession {
   ElicitationHandler? elicitationHandler;
 
   @override
-  McpServerInfo? get serverInfo => _connected
-      ? const McpServerInfo(name: 'fake_server', version: '1.0.0')
-      : null;
+  McpServerInfo? get serverInfo => _connected ? identity : null;
 
   @override
   String? get protocolVersion => _connected ? '2026-07-28' : null;
