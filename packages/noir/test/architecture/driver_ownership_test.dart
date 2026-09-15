@@ -140,7 +140,7 @@ void main() {
 
   test('the driver control channel stays out of the shipped package', () {
     // `vm_service` is a runtime dependency of the packaged hot-reload runner.
-    // The drive client and CLI still live under `scripts/` so ordinary
+    // The drive client and CLI still live under `tool/` so ordinary
     // widgets never import that control channel.
     const allowed = <String>{
       'lib/src/devtools/hot_reload_runner.dart',

@@ -15,9 +15,10 @@
 /// [waitForText] polls painted capture rows for a substring. Locator
 /// [DriverLocator.byText] matches `Text` / `RichText` source, not those cells.
 ///
-/// This lives under `scripts/` because `vm_service` is a dev dependency:
-/// `lib/` and `bin/` cannot import it without promoting it to a runtime
-/// dependency of every consumer.
+/// This lives under `tool/` to keep the driver control channel out of the
+/// shipped package, so ordinary widgets never import it. `vm_service` itself
+/// is already a runtime dependency of `noir`, because `bin/run.dart` ships the
+/// hot-reload runner; the boundary here is surface area, not dependencies.
 library;
 
 import 'dart:async';
