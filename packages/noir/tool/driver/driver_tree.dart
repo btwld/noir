@@ -38,44 +38,121 @@ final class DriverPoint {
 enum _DriverLocatorKind { key, type, text, focused }
 
 /// An exact, case-sensitive query evaluated against a fresh [DriverTree].
+///
+/// The four constructors each match one node property. [descendantOf] and
+/// [at] narrow an existing locator without changing it, which is how two
+/// nodes sharing a key become addressable:
+///
+/// ```dart
+/// DriverLocator.byKey('confirm').descendantOf(DriverLocator.byKey('dialog-b'))
+/// ```
 final class DriverLocator {
   /// Matches a `ValueKey<String>` value exactly.
   const DriverLocator.byKey(String key)
     : _kind = _DriverLocatorKind.key,
-      _value = key;
+      _value = key,
+      _ancestor = null,
+      _index = null;
 
   /// Matches a widget runtime type exactly.
   const DriverLocator.byType(String type)
     : _kind = _DriverLocatorKind.type,
-      _value = type;
+      _value = type,
+      _ancestor = null,
+      _index = null;
 
   /// Matches framework-provided source text exactly.
   const DriverLocator.byText(String text)
     : _kind = _DriverLocatorKind.text,
-      _value = text;
+      _value = text,
+      _ancestor = null,
+      _index = null;
 
   /// Matches the element that directly owns primary focus.
   const DriverLocator.focused()
     : _kind = _DriverLocatorKind.focused,
-      _value = null;
+      _value = null,
+      _ancestor = null,
+      _index = null;
+
+  const DriverLocator._({
+    required _DriverLocatorKind kind,
+    required String? value,
+    required DriverLocator? ancestor,
+    required int? index,
+  }) : _kind = kind,
+       _value = value,
+       _ancestor = ancestor,
+       _index = index;
 
   final _DriverLocatorKind _kind;
   final String? _value;
+  final DriverLocator? _ancestor;
+  final int? _index;
 
-  bool _matches(DriverNode node) => switch (_kind) {
+  /// Narrows this locator to matches sitting under [ancestor].
+  ///
+  /// The relationship is proper descent at any depth: a node never matches
+  /// as its own ancestor, and an intermediate node between the two does not
+  /// break the chain. [ancestor] resolves strictly, so an ambiguous ancestor
+  /// fails rather than quietly picking one.
+  DriverLocator descendantOf(DriverLocator ancestor) => DriverLocator._(
+    kind: _kind,
+    value: _value,
+    ancestor: ancestor,
+    index: _index,
+  );
+
+  /// Narrows this locator to the match at [index] in document order.
+  ///
+  /// The weakest locator here: it depends on tree position, so a layout
+  /// change silently re-points it. Prefer a key, or [descendantOf], and reach
+  /// for this only when the nodes are genuinely interchangeable.
+  DriverLocator at(int index) {
+    if (index < 0) {
+      throw ArgumentError.value(index, 'index', 'must be non-negative');
+    }
+    return DriverLocator._(
+      kind: _kind,
+      value: _value,
+      ancestor: _ancestor,
+      index: index,
+    );
+  }
+
+  bool _matchesNode(DriverNode node) => switch (_kind) {
     _DriverLocatorKind.key => node.key == _value,
     _DriverLocatorKind.type => node.type == _value,
     _DriverLocatorKind.text => node.text == _value,
     _DriverLocatorKind.focused => node.focused,
   };
 
-  @override
-  String toString() => switch (_kind) {
+  /// Describes only the node property, for a staged failure message.
+  String get _baseDescription => switch (_kind) {
     _DriverLocatorKind.key => 'key "$_value"',
     _DriverLocatorKind.type => 'type "$_value"',
     _DriverLocatorKind.text => 'text "$_value"',
     _DriverLocatorKind.focused => 'focused',
   };
+
+  @override
+  String toString() {
+    final ancestor = _ancestor;
+    final index = _index;
+    return <String>[
+      _baseDescription,
+      if (ancestor != null) 'inside $ancestor',
+      if (index != null) 'at index $index',
+    ].join(' ');
+  }
+}
+
+/// Whether [node] sits strictly below [ancestor].
+bool _isDescendantOf(DriverNode node, DriverNode ancestor) {
+  for (var walk = node.parent; walk != null; walk = walk.parent) {
+    if (identical(walk, ancestor)) return true;
+  }
+  return false;
 }
 
 /// One immutable node in a structured driver snapshot.
@@ -191,19 +268,77 @@ final class DriverTree {
   /// Serializes the tree using the VM-service wire shape.
   Map<String, Object?> toJson() => <String, Object?>{'root': root?.toJson()};
 
-  /// Returns every exact match in document order.
-  List<DriverNode> findAll(DriverLocator locator) => <DriverNode>[
-    for (final node in _nodes())
-      if (locator._matches(node)) node,
-  ];
+  /// Returns every match in document order, after any narrowing.
+  List<DriverNode> findAll(DriverLocator locator) => _resolve(locator).matches;
 
   /// Returns exactly one match, failing on both zero and ambiguity.
   DriverNode find(DriverLocator locator) {
-    final matches = findAll(locator);
-    if (matches.length != 1) {
-      throw _strictMatchError(locator, matches, treeNodes: _nodes());
+    final resolution = _resolve(locator);
+    if (resolution.matches.length != 1) {
+      throw _strictMatchError(locator, resolution, treeNodes: _nodes());
     }
-    return matches.single;
+    return resolution.matches.single;
+  }
+
+  /// Applies a locator stage by stage, keeping what each stage eliminated.
+  ///
+  /// The stages are recorded rather than collapsed so a failure can say which
+  /// one emptied the result: a base that matched nothing, an ancestor that
+  /// matched nothing, an ancestor that excluded every base match, or an index
+  /// past the end. Collapsing them would cost the diagnostics that make these
+  /// locators usable.
+  _LocatorResolution _resolve(DriverLocator locator) {
+    final base = <DriverNode>[
+      for (final node in _nodes())
+        if (locator._matchesNode(node)) node,
+    ];
+
+    final ancestorLocator = locator._ancestor;
+    var narrowed = base;
+    DriverNode? ancestor;
+    if (ancestorLocator != null) {
+      final ancestors = findAll(ancestorLocator);
+      if (ancestors.length != 1) {
+        return _LocatorResolution(
+          base: base,
+          matches: const <DriverNode>[],
+          stage: ancestors.isEmpty
+              ? _LocatorStage.ancestorMissing
+              : _LocatorStage.ancestorAmbiguous,
+          ancestorMatches: ancestors,
+        );
+      }
+      ancestor = ancestors.single;
+      narrowed = <DriverNode>[
+        for (final node in base)
+          if (_isDescendantOf(node, ancestor)) node,
+      ];
+      if (narrowed.isEmpty && base.isNotEmpty) {
+        return _LocatorResolution(
+          base: base,
+          matches: const <DriverNode>[],
+          stage: _LocatorStage.ancestorExcluded,
+        );
+      }
+    }
+
+    final index = locator._index;
+    if (index != null) {
+      if (index >= narrowed.length) {
+        return _LocatorResolution(
+          base: narrowed,
+          matches: const <DriverNode>[],
+          stage: _LocatorStage.indexOutOfRange,
+        );
+      }
+      narrowed = <DriverNode>[narrowed[index]];
+    }
+
+    return _LocatorResolution(
+      base: base,
+      matches: narrowed,
+      stage: _LocatorStage.resolved,
+    );
   }
 
   Iterable<DriverNode> _nodes() sync* {
@@ -229,17 +364,21 @@ Future<DriverNode> waitForDriverLocator(
   DriverTree? lastTree;
   while (true) {
     lastTree = await fetchTree();
-    final matches = lastTree.findAll(locator);
-    if (matches.length > 1) {
-      throw _strictMatchError(locator, matches, treeNodes: lastTree._nodes());
+    final resolution = lastTree._resolve(locator);
+    if (resolution.matches.length > 1) {
+      throw _strictMatchError(
+        locator,
+        resolution,
+        treeNodes: lastTree._nodes(),
+      );
     }
-    if (matches.length == 1) {
-      return matches.single;
+    if (resolution.matches.length == 1) {
+      return resolution.matches.single;
     }
     if (!DateTime.now().isBefore(deadline)) {
       throw StateError(
         'Timed out waiting for $locator: 0 matches.'
-        '${_zeroMatchHint(locator, lastTree._nodes())}',
+        '${_zeroMatchHint(locator, resolution, lastTree._nodes())}',
       );
     }
     await Future<void>.delayed(pollInterval);
@@ -284,39 +423,107 @@ Future<void> clickDriverLocator(
   await click(point);
 }
 
+/// Which stage of a locator produced the result being reported.
+enum _LocatorStage {
+  /// Every stage ran; [_LocatorResolution.matches] is what survived.
+  resolved,
+
+  /// The `descendantOf` ancestor matched no node.
+  ancestorMissing,
+
+  /// The `descendantOf` ancestor matched more than one node.
+  ancestorAmbiguous,
+
+  /// The node property matched, but nothing sat under the ancestor.
+  ancestorExcluded,
+
+  /// `at` asked for a position past the last match.
+  indexOutOfRange,
+}
+
+/// One locator applied to one snapshot, with the stage that shaped it.
+final class _LocatorResolution {
+  const _LocatorResolution({
+    required this.base,
+    required this.matches,
+    required this.stage,
+    this.ancestorMatches = const <DriverNode>[],
+  });
+
+  /// Matches of the node property alone, before narrowing.
+  ///
+  /// For [_LocatorStage.indexOutOfRange] this is the post-ancestor list, which
+  /// is the one whose length the index was compared against.
+  final List<DriverNode> base;
+
+  /// What survived every stage.
+  final List<DriverNode> matches;
+
+  /// The stage that produced [matches].
+  final _LocatorStage stage;
+
+  /// Ancestor candidates, when the ancestor stage is the one that failed.
+  final List<DriverNode> ancestorMatches;
+}
+
 StateError _strictMatchError(
   DriverLocator locator,
-  List<DriverNode> matches, {
+  _LocatorResolution resolution, {
   Iterable<DriverNode> treeNodes = const <DriverNode>[],
 }) {
-  if (matches.isNotEmpty) {
+  if (resolution.matches.isNotEmpty) {
     return StateError(
-      'Strict locator $locator resolved to ${matches.length} matches.\n'
-      '${_describeMatches(matches)}',
+      'Strict locator $locator resolved to ${resolution.matches.length} '
+      'matches.\n${_describeMatches(resolution.matches)}',
     );
   }
   return StateError(
     'Strict locator $locator resolved to 0 matches.'
-    '${_zeroMatchHint(locator, treeNodes)}',
+    '${_zeroMatchHint(locator, resolution, treeNodes)}',
   );
 }
 
-String _zeroMatchHint(DriverLocator locator, Iterable<DriverNode> nodes) {
-  final hint = switch (locator._kind) {
-    _DriverLocatorKind.type =>
-      'Type locators match runtimeType exactly. Types in this tree:\n'
-          '${_describeInventory(_distinct(nodes.map((node) => node.type)))}',
-    _DriverLocatorKind.key =>
-      'Keys in this tree:\n'
-          '${_describeInventory(_distinct(nodes.map((node) => node.key)))}',
-    _DriverLocatorKind.text =>
-      'Text locators read Text and RichText source, not painted cells.\n'
-          'Keys in this tree:\n'
-          '${_describeInventory(_distinct(nodes.map((node) => node.key)))}',
-    _DriverLocatorKind.focused => 'No node in this tree has primary focus.',
+String _zeroMatchHint(
+  DriverLocator locator,
+  _LocatorResolution resolution,
+  Iterable<DriverNode> nodes,
+) {
+  final hint = switch (resolution.stage) {
+    _LocatorStage.ancestorMissing =>
+      'No node matches the ancestor ${locator._ancestor}.\n'
+          '${_baseZeroMatchHint(locator._ancestor!, nodes)}',
+    _LocatorStage.ancestorAmbiguous =>
+      'The ancestor ${locator._ancestor} is itself ambiguous: '
+          '${resolution.ancestorMatches.length} matches. Narrow it first.\n'
+          '${_describeMatches(resolution.ancestorMatches)}',
+    _LocatorStage.ancestorExcluded =>
+      '${locator._baseDescription} matched ${resolution.base.length}, but '
+          'none is inside ${locator._ancestor}.\n'
+          '${_describeMatches(resolution.base)}',
+    _LocatorStage.indexOutOfRange =>
+      '${locator._ancestor == null ? locator._baseDescription : '${locator._baseDescription} inside ${locator._ancestor}'} '
+          'matched ${resolution.base.length}; index ${locator._index} is out '
+          'of range.\n${_describeMatches(resolution.base)}',
+    _LocatorStage.resolved => _baseZeroMatchHint(locator, nodes),
   };
   return hint.isEmpty ? '' : '\n$hint';
 }
+
+/// Explains a node property that matched nothing, with a tree inventory.
+String _baseZeroMatchHint(DriverLocator locator, Iterable<DriverNode> nodes) =>
+    switch (locator._kind) {
+      _DriverLocatorKind.type =>
+        'Type locators match runtimeType exactly. Types in this tree:\n'
+            '${_describeInventory(_distinct(nodes.map((node) => node.type)))}',
+      _DriverLocatorKind.key =>
+        'Keys in this tree:\n'
+            '${_describeInventory(_distinct(nodes.map((node) => node.key)))}',
+      _DriverLocatorKind.text =>
+        'Text locators read Text and RichText source, not painted cells.\n'
+            'Keys in this tree:\n'
+            '${_describeInventory(_distinct(nodes.map((node) => node.key)))}',
+      _DriverLocatorKind.focused => 'No node in this tree has primary focus.',
+    };
 
 String _describeMatches(List<DriverNode> matches) =>
     matches.map((node) => '  - $node').join('\n');

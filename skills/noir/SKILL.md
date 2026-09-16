@@ -309,6 +309,8 @@ other key types are intentionally not serialized. Text locators use exact
 source content from `Text` and `RichText`, not painted cells. Type locators
 are `runtimeType` strings (`Select<String>`, not `Select`). Each operation
 resolves a fresh client-side snapshot, and strict actions fail on ambiguity.
+In the Dart client, `descendantOf` and `at` narrow a locator when two nodes
+share a key; the CLI grammar stays flat.
 The line-oriented CLI trims outer command whitespace; use the Dart client for
 locator values that themselves begin or end with whitespace.
 Locator clicks use the current render-tree hit-test path, including custom

@@ -135,6 +135,23 @@ locators are `runtimeType` strings, so `Select<String>` matches and `Select`
 does not. Strict lookups and clicks reject ambiguous matches. A zero-match
 error lists nearby keys or exact types from the same snapshot.
 
+`descendantOf` and `at` narrow a locator without changing it, which is how
+two nodes sharing a key become addressable:
+
+    DriverLocator.byKey('confirm').descendantOf(DriverLocator.byKey('dialog-b'))
+    DriverLocator.byType('Button').at(1)
+
+`descendantOf` is proper descent at any depth: a node never matches as its own
+ancestor, an intermediate node does not break the chain, and the ancestor
+itself resolves strictly. `at` is document order and is the weakest locator
+here, since a layout change silently re-points it. A narrowed miss names the
+stage that emptied it — an ancestor that matched nothing, an ancestor that
+excluded every match, or an index past the end — and lists what it had.
+
+Composition is Dart-client only. The CLI grammar stays flat: it is the human
+and pipe surface, and `find key X in key Y` would grow a parser for a need
+that scripts express better in Dart.
+
 The line-oriented CLI trims outer command whitespace, so use the Dart client
 when an exact key, type, or text value itself starts or ends with whitespace.
 
