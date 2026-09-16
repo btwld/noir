@@ -73,3 +73,20 @@ npm run check                                  # lint + runtime + layout + motio
 npx hyperframes snapshot --at 1.5,8.6,11       # eyeball frames before rendering
 npm run render                                 # MP4 into renders/
 ```
+
+## Where the content comes from
+
+`example/counter.dart` is the app the video shows. It is a real Noir app, not a
+mock-up. To re-capture what it paints, from `packages/noir_driver/`:
+
+```sh
+cp ../../media/social-video/example/counter.dart test/fixtures/_c.dart
+printf 'click key increment\ncapture --cells\nquit\n' |
+  dart run --verbosity=error noir_driver:drive test/fixtures/_c.dart --size 26x5 --json
+rm test/fixtures/_c.dart
+```
+
+The `--cells` JSON carries each cell's `char`, `fg`, `bg` and `attrs`. The
+"what it paints" pane reproduces those exactly — the focused button really is
+`#051a29` on `#66d9ff`, bold. Paste real output; a mocked frame in a
+developer-tool post is the fastest way to lose the room.
