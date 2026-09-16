@@ -66,6 +66,9 @@ DriverLocator.byKey('confirm').descendantOf(DriverLocator.byKey('dialog-b'))
 DriverLocator.byType('Button').at(1)
 ```
 
+An ancestor must resolve uniquely. Ambiguous ancestry throws from lookups and
+waits, including `waitForAbsent`; it never counts as a missing target.
+
 Only `ValueKey<String>` is a key locator. Text locators read `Text` and
 `RichText` source, not painted cells — `waitForText` is the painted-cell wait.
 Type locators are `runtimeType` strings, so `Select<String>` matches and

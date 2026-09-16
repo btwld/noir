@@ -151,6 +151,75 @@ void main() {
         <String>['matched 1', 'none is inside', 'Close'],
       );
     });
+
+    final ambiguousAncestor = const DriverLocator.byKey(
+      'confirm',
+    ).descendantOf(const DriverLocator.byType('Dialog'));
+    final nestedAmbiguousAncestor = const DriverLocator.byType(
+      'Text',
+    ).descendantOf(ambiguousAncestor);
+    final ambiguityError = throwsA(
+      isA<StateError>().having(
+        (error) => error.message,
+        'message',
+        allOf(contains('ancestor'), contains('ambiguous: 2 matches')),
+      ),
+    );
+
+    for (final locator in <DriverLocator>[
+      ambiguousAncestor,
+      nestedAmbiguousAncestor,
+    ]) {
+      test('findAll rejects ambiguous ancestry for $locator', () {
+        expect(() => _tree().findAll(locator), ambiguityError);
+      });
+
+      test('absence never passes for ambiguous ancestry in $locator', () async {
+        await expectLater(
+          waitForAbsentDriverLocator(
+            locator,
+            fetchTree: () async => _tree(),
+            timeout: Duration.zero,
+          ),
+          ambiguityError,
+        );
+      });
+
+      test('waiting reports ambiguous ancestry in $locator', () async {
+        await expectLater(
+          waitForDriverLocator(
+            locator,
+            fetchTree: () async => _tree(),
+            timeout: Duration.zero,
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('ambiguous: 2 matches'),
+                isNot(contains('Timed out')),
+              ),
+            ),
+          ),
+        );
+      });
+    }
+
+    test('a missing ancestor still establishes absence', () async {
+      final locator = const DriverLocator.byKey(
+        'confirm',
+      ).descendantOf(const DriverLocator.byKey('missing-dialog'));
+      expect(_tree().findAll(locator), isEmpty);
+      await expectLater(
+        waitForAbsentDriverLocator(
+          locator,
+          fetchTree: () async => _tree(),
+          timeout: Duration.zero,
+        ),
+        completes,
+      );
+    });
   });
 
   group('at', () {

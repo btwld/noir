@@ -11,6 +11,8 @@ First release of the drive-mode client as its own package.
 - `DriverLocator` matches a key, type, source text, or focus exactly, and
   narrows with `descendantOf` and `at`. Strict lookups reject ambiguity, and a
   miss names the stage that emptied it alongside the tree's own inventory.
+  Ambiguous ancestors fail lookups and waits rather than falsely satisfying
+  an absence check, including when ancestor locators are nested.
 - Locator clicks resolve a currently visible hit-tested cell through the
   production render tree, including scroll translation, clipping, and
   occlusion. An offscreen or obscured target fails instead of passing.

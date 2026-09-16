@@ -269,6 +269,9 @@ final class DriverTree {
   Map<String, Object?> toJson() => <String, Object?>{'root': root?.toJson()};
 
   /// Returns every match in document order, after any narrowing.
+  ///
+  /// An ambiguous ancestor is invalid narrowing, not an empty result, and
+  /// throws even when the base locator matches nothing.
   List<DriverNode> findAll(DriverLocator locator) => _resolve(locator).matches;
 
   /// Returns exactly one match, failing on both zero and ambiguity.
@@ -299,7 +302,7 @@ final class DriverTree {
     if (ancestorLocator != null) {
       final ancestors = findAll(ancestorLocator);
       if (ancestors.length != 1) {
-        return _LocatorResolution(
+        final resolution = _LocatorResolution(
           base: base,
           matches: const <DriverNode>[],
           stage: ancestors.isEmpty
@@ -307,6 +310,10 @@ final class DriverTree {
               : _LocatorStage.ancestorAmbiguous,
           ancestorMatches: ancestors,
         );
+        if (ancestors.length > 1) {
+          throw _strictMatchError(locator, resolution, treeNodes: _nodes());
+        }
+        return resolution;
       }
       ancestor = ancestors.single;
       narrowed = <DriverNode>[
@@ -386,6 +393,8 @@ Future<DriverNode> waitForDriverLocator(
 }
 
 /// Polls fresh snapshots until [locator] has no matches.
+///
+/// An ambiguous ancestor throws; it does not establish absence.
 Future<void> waitForAbsentDriverLocator(
   DriverLocator locator, {
   required Future<DriverTree> Function() fetchTree,
