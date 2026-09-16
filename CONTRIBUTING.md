@@ -164,6 +164,15 @@ Keys and mouse reports are encoded to escape bytes on the client side and
 injected through the production ANSI parser, so a driven interaction takes the
 same path a real terminal would. This needs no TTY and no raw mode.
 
+Input waits for the app to paint before returning, capped at `defaultSettle`
+so a key an app ignores does not cost a full timeout. `sendKey`, `typeText`,
+`click`, `clickLocator`, and `scroll` return whether a frame arrived and take
+a `settle` override; the CLI notes a miss on stderr. A false return covers
+both an ignored input and one the app is still working on, so a following
+`capture` may show the pre-input frame. When an app can be slow to respond,
+raise `settle` or assert through `waitForText` or `wait` instead of a bare
+`capture`.
+
 Known limits: a continuously animating app never reports `stable: true`, and
 capture keeps working anyway; an app whose own quit path calls `exit` ends the
 session; and `reload` inherits the documented `reassemble()` limits, so

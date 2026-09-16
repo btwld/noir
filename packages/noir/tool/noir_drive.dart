@@ -137,10 +137,10 @@ class _Session {
         case 'wait':
           await _find(rest.trim(), wait: true);
         case 'key':
-          await _driver.sendKey(rest.trim());
+          _reportSettle(await _driver.sendKey(rest.trim()), 'key');
           await _afterAction();
         case 'type':
-          await _driver.typeText(rest);
+          _reportSettle(await _driver.typeText(rest), 'type');
           await _afterAction();
         case 'click':
           await _click(rest.trim());
@@ -223,13 +223,13 @@ class _Session {
     if (locatorClick) {
       final locator = _parseLocator(arguments, 'click');
       if (locator == null) return;
-      await _driver.clickLocator(locator);
+      _reportSettle(await _driver.clickLocator(locator), 'click');
       await _afterAction();
       return;
     }
     final point = _parsePoint(parts, 'click <x> <y>');
     if (point == null) return;
-    await _driver.click(point.x, point.y);
+    _reportSettle(await _driver.click(point.x, point.y), 'click');
     await _afterAction();
   }
 
@@ -275,7 +275,7 @@ class _Session {
     if (point == null) {
       return;
     }
-    await _driver.scroll(point.x, point.y, direction);
+    _reportSettle(await _driver.scroll(point.x, point.y, direction), 'scroll');
     await _afterAction();
   }
 
@@ -379,6 +379,15 @@ class _Session {
       return null;
     }
     return (x: x, y: y);
+  }
+
+  /// Notes on stderr when input produced no frame inside the settle window.
+  ///
+  /// A following `capture` then shows the frame from before the input, which
+  /// is otherwise a confusing thing to read in a piped session.
+  void _reportSettle(bool painted, String command) {
+    if (painted) return;
+    _log('$command did not repaint within the settle window');
   }
 
   void _log(String message) {
