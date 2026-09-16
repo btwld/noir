@@ -28,10 +28,10 @@ export const availability: {
   driver: {
     name: 'noir_driver',
     manifest: '0.0.1-alpha.0',
-    published: 'none',
-    isPublished: false,
+    published: '0.0.1-alpha.0',
+    isPublished: true,
     installCommand: 'dart pub add --dev noir_driver',
-    label: 'Not published yet · repository checkout only',
+    label: 'Published version · 0.0.1-alpha.0',
   },
   companion: {
     name: 'noir_signals',
