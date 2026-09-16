@@ -13,14 +13,12 @@ work lives in GitHub issues and pull requests.
 - `packages/noir_driver/`: the optional drive-mode client package.
 - `packages/noir_signals/`: the optional companion package.
 - `website/`: the documentation site.
-- `media/social-video/`: the HyperFrames template that renders Noir's social
-  clips. Never published; its `renders/` output is ignored.
 - `skills/`: agent skills for building with Noir and maintaining this
   repository.
 - `external/opentui/`: the read-only OpenTUI submodule.
 
 The root `pubspec.yaml` only defines the Pub workspace and is never
-published. `media/` carries no Dart code and is outside the workspace.
+published.
 
 ## Purpose and architecture
 
