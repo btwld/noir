@@ -318,20 +318,20 @@
     </style>
   </head>
   <body>
-    <div data-hf-id="hf-f9d5" id="frame" data-composition-id="main" data-start="0" data-duration="17.6" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-f9d5" id="frame" data-composition-id="main" data-start="0" data-duration="20" data-width="1080" data-height="1350">
       <div data-hf-id="hf-tan6" class="stage">
         <div data-hf-id="hf-er9m" class="bg-grid" id="bg-grid"></div>
         <div data-hf-id="hf-4m88" class="bg-glow" id="bg-glow"></div>
         <div data-hf-id="hf-qkdk" class="bg-vignette"></div>
         <div data-hf-id="hf-le50" class="brand" id="brand">Noir</div>
       <!-- SLOT 1 — hook, in outcome language -->
-      <section data-hf-id="hf-tk7n" id="s1" class="scene clip" data-start="0" data-duration="3" data-track-index="0">
+      <section data-hf-id="hf-tk7n" id="s1" class="scene clip" data-start="0" data-duration="3.8" data-track-index="0">
         <div data-hf-id="hf-cw5i" id="s1a" class="wordmark">Noir</div>
         <div data-hf-id="hf-0v6v" id="s1b" class="tagline">Flutter-like reactive UI,<br data-hf-id="hf-x5px">in your terminal.</div>
       </section>
 
       <!-- SLOT 3 — the widget, and what it paints -->
-      <section data-hf-id="hf-ljvw" id="s3" class="scene clip" data-start="3" data-duration="5.4" data-track-index="0">
+      <section data-hf-id="hf-ljvw" id="s3" class="scene clip" data-start="3.7" data-duration="6.2" data-track-index="0">
         <div data-hf-id="hf-xkfh" class="panes">
           <div data-hf-id="hf-4jez" id="pane-widget" class="pane">
             <div data-hf-id="hf-b6ye" class="pane-label">the widget</div>
@@ -361,7 +361,7 @@
       </section>
 
       <!-- SLOT 4 — and you can test exactly that -->
-      <section data-hf-id="hf-k735" id="s4" class="scene clip" data-start="8.4" data-duration="6" data-track-index="0">
+      <section data-hf-id="hf-k735" id="s4" class="scene clip" data-start="9.85" data-duration="6.8" data-track-index="0">
         <div data-hf-id="hf-mych" class="panes">
           <div data-hf-id="hf-ca7c" id="pane-code" class="pane">
             <div data-hf-id="hf-i46y" class="pane-label">the test</div>
@@ -392,9 +392,9 @@
       </section>
 
       <!-- SLOT 5 — the payoff -->
-      <section data-hf-id="hf-zng1" id="s5" class="scene clip" data-start="14.4" data-duration="3.2" data-track-index="0">
+      <section data-hf-id="hf-zng1" id="s5" class="scene clip" data-start="16.6" data-duration="3.4" data-track-index="0">
         <div data-hf-id="hf-0jnp" id="s5a" class="payoff">The assertion failed.<br data-hf-id="hf-rsrt">So it showed me the screen.</div>
-        <div data-hf-id="hf-97t7" id="s5b" class="pkg"><b data-hf-id="hf-nr1d">Noir Driver</b> · drive the app, read back the frame</div>
+        <div data-hf-id="hf-97t7" id="s5b" class="pkg"><b data-hf-id="hf-nr1d">Noir Driver</b> · drives the real process, reads back real cells</div>
       </section>
     </div>
 
@@ -402,39 +402,39 @@
       const tl = gsap.timeline({ paused: true });
 
       // Ambient background. Finite repeats only — the render seeks, not plays.
-      tl.fromTo('#bg-grid', { xPercent: 0, yPercent: 0 }, { xPercent: -1.2, yPercent: -0.8, duration: 9, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
-      tl.fromTo('#bg-glow', { scale: 0.94, opacity: 0.7 }, { scale: 1.06, opacity: 1, duration: 9, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
+      tl.fromTo('#bg-grid', { xPercent: 0, yPercent: 0 }, { xPercent: -1.2, yPercent: -0.8, duration: 10, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
+      tl.fromTo('#bg-glow', { scale: 0.94, opacity: 0.7 }, { scale: 1.06, opacity: 1, duration: 10, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
 
       // Beat 1 — the brand, then the tagline. The corner lockup settles in
       // afterwards so the hook does not print "Noir" twice.
-      tl.fromTo('#s1a', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.75, ease: 'power2.out' }, 0.2);
-      tl.fromTo('#s1b', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.95);
-      tl.to('#s1a, #s1b', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 2.5);
-      tl.fromTo('#brand', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.out' }, 3.1);
+      tl.fromTo('#s1a', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, 0.25);
+      tl.fromTo('#s1b', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.85, ease: 'power2.out' }, 1.15);
+      tl.to('#s1a, #s1b', { opacity: 0, duration: 0.62, ease: 'power1.inOut' }, 3.0);
+      tl.fromTo('#brand', { opacity: 0 }, { opacity: 1, duration: 0.7, ease: 'power1.out' }, 3.7);
 
       // Beat 2 — you declare a widget; Noir paints cells.
-      tl.fromTo('#pane-widget', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.15);
-      tl.fromTo('.w-line', { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.22, stagger: 0.055, ease: 'power1.out' }, 3.4);
-      tl.fromTo('#pane-paint', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 5.1);
-      tl.fromTo('.p-line', { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.1, ease: 'none' }, 5.35);
-      tl.fromTo('#s3cap', { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' }, 6.4);
-      tl.to('#pane-widget, #pane-paint, #s3cap', { opacity: 0, duration: 0.35, ease: 'power1.in' }, 7.95);
+      tl.fromTo('#pane-widget', { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.72, ease: 'power2.out' }, 3.75);
+      tl.fromTo('.w-line', { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.3, stagger: 0.07, ease: 'power1.out' }, 4.05);
+      tl.fromTo('#pane-paint', { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.72, ease: 'power2.out' }, 6.0);
+      tl.fromTo('.p-line', { opacity: 0 }, { opacity: 1, duration: 0.28, stagger: 0.13, ease: 'none' }, 6.3);
+      tl.fromTo('#s3cap', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 7.5);
+      tl.to('#pane-widget, #pane-paint, #s3cap', { opacity: 0, duration: 0.55, ease: 'power1.inOut' }, 9.2);
 
       // Beat 3 — and you can test exactly that.
-      tl.fromTo('#pane-code', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 8.55);
-      tl.fromTo('.code-line', { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.22, stagger: 0.055, ease: 'power1.out' }, 8.8);
-      tl.fromTo('#pane-out', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 10.5);
-      tl.fromTo('.out-line', { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.12, ease: 'none' }, 10.75);
+      tl.fromTo('#pane-code', { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.72, ease: 'power2.out' }, 9.95);
+      tl.fromTo('.code-line', { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.3, stagger: 0.07, ease: 'power1.out' }, 10.25);
+      tl.fromTo('#pane-out', { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.72, ease: 'power2.out' }, 12.2);
+      tl.fromTo('.out-line', { opacity: 0 }, { opacity: 1, duration: 0.28, stagger: 0.15, ease: 'none' }, 12.5);
 
       // The scarce accent: the count that should have been 2.
-      tl.fromTo('.hit', { scale: 1 }, { scale: 1.5, duration: 0.3, yoyo: true, repeat: 3, ease: 'power1.inOut', transformOrigin: '50% 50%' }, 12.2);
+      tl.fromTo('.hit', { scale: 1 }, { scale: 1.5, duration: 0.36, yoyo: true, repeat: 3, ease: 'power1.inOut', transformOrigin: '50% 50%' }, 14.1);
 
-      tl.fromTo('#s4cap', { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' }, 11.9);
-      tl.to('#pane-code, #pane-out, #s4cap', { opacity: 0, duration: 0.35, ease: 'power1.in' }, 13.95);
+      tl.fromTo('#s4cap', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 13.8);
+      tl.to('#pane-code, #pane-out, #s4cap', { opacity: 0, duration: 0.55, ease: 'power1.inOut' }, 16.0);
 
       // Beat 4 — the payoff, and the name.
-      tl.fromTo('#s5a', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 14.55);
-      tl.fromTo('#s5b', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 15.2);
+      tl.fromTo('#s5a', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.95, ease: 'power2.out' }, 16.75);
+      tl.fromTo('#s5b', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.85, ease: 'power2.out' }, 17.5);
 
       window.__timelines['main'] = tl;
       tl.seek(0);

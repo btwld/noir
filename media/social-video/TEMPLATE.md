@@ -90,3 +90,23 @@ The `--cells` JSON carries each cell's `char`, `fg`, `bg` and `attrs`. The
 "what it paints" pane reproduces those exactly — the focused button really is
 `#051a29` on `#66d9ff`, bold. Paste real output; a mocked frame in a
 developer-tool post is the fastest way to lose the room.
+
+## Positioning, checked against the field
+
+"Flutter-like reactive UI, in your terminal" is accurate but **not
+differentiating**. The Dart TUI space is crowded and several packages use the
+same framing: `radartui` is "a Flutter-inspired TUI framework for Dart" with
+"declarative widgets", and `termui` has a "widget tree structure inspired by
+Flutter". Keep the line — it is the fastest way to convey the shape — but do
+not expect it to carry the post.
+
+The wedge is the testing story. Every comparable framework tests **in
+process**: Textual has `pytest-textual-snapshot` (SVG screenshot diffing),
+Bubble Tea has `teatest` with golden files, Ratatui has `TestBackend`. Ratatui's
+own docs concede that TestBackend "tests rendering in-process, but does not
+cover event loop, key handling, terminal setup and teardown or exit codes."
+
+That is exactly the gap Noir Driver fills: a real OS process, input through the
+production ANSI parser, clicks through real render-tree hit testing. So the
+payoff line names it — "drives the real process, reads back real cells" — and
+the video spends its two evidence beats there rather than on the widget API.
