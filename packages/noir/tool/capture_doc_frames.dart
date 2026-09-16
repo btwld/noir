@@ -21,9 +21,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:noir_driver/noir_driver.dart';
 import 'package:path/path.dart' as p;
-
-import 'driver/noir_driver.dart';
 
 const _manifestPath = 'tool/recordings/doc_frames.json';
 const _usage =

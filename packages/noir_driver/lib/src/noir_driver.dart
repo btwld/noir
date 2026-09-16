@@ -15,9 +15,11 @@
 /// [waitForText] polls painted capture rows for a substring. Locator
 /// [DriverLocator.byText] matches `Text` / `RichText` source, not those cells.
 ///
-/// This lives under `scripts/` because `vm_service` is a dev dependency:
-/// `lib/` and `bin/` cannot import it without promoting it to a runtime
-/// dependency of every consumer.
+/// `DriverFrameMatchers` asserts on a captured frame and prints it on failure.
+///
+/// This is a separate package from `noir` so an app never carries a
+/// process-control channel in its production dependencies: add `noir_driver`
+/// under `dev_dependencies`.
 library;
 
 import 'dart:async';
@@ -31,8 +33,6 @@ import 'package:vm_service/vm_service_io.dart';
 import 'ansi_keys.dart';
 import 'driver_tree.dart';
 
-export 'driver_tree.dart';
-
 /// Polls [frames] until it is greater than [before], or [cap] expires.
 ///
 /// Used after injected input so a continuously animating app does not pay
@@ -40,7 +40,7 @@ export 'driver_tree.dart';
 Future<bool> pollFrameAdvance({
   required Future<int> Function() frames,
   required int before,
-  Duration cap = const Duration(milliseconds: 100),
+  Duration cap = defaultSettle,
   Future<void> Function(Duration duration) delay = _pollDelay,
 }) async {
   final deadline = DateTime.now().add(cap);
@@ -115,7 +115,20 @@ bool isDrivenServiceGone(Object error) {
       error.message == RPCErrorKind.kConnectionDisposed.message;
 }
 
+/// How long input waits for the app to paint before returning.
+///
+/// Short on purpose: a key an app ignores paints nothing, and charging every
+/// such call a long timeout would make a scripted session crawl.
+const Duration defaultSettle = Duration(milliseconds: 100);
+
 /// Drives one Noir app process over its `ext.noir.driver.*` surface.
+///
+/// Input methods return whether the app painted within their settle window.
+/// False means no frame arrived in time — which happens both when the app
+/// ignored the input and when it is still working on it — so a following
+/// [capture] may still show the pre-input frame. When an app can be slow to
+/// respond, either raise `settle` or assert through [waitForText] or
+/// [waitFor] rather than a bare [capture].
 class NoirDriver {
   NoirDriver._({
     required Process process,
@@ -293,32 +306,49 @@ class NoirDriver {
     return frame;
   }
 
-  /// Sends the key [name] and waits for the resulting frame to land.
-  Future<void> sendKey(String name) => _sendBytes(encodeKey(name));
+  /// Sends the key [name] and waits up to [settle] for the resulting frame.
+  ///
+  /// Returns whether a frame arrived. See [defaultSettle] for what a false
+  /// return does and does not mean.
+  Future<bool> sendKey(String name, {Duration settle = defaultSettle}) =>
+      _sendBytes(encodeKey(name), settle);
 
-  /// Types [text] one UTF-8 byte run and waits for the resulting frame.
-  Future<void> typeText(String text) => _sendBytes(encodeText(text));
+  /// Types [text] as one UTF-8 byte run and waits up to [settle] for a frame.
+  Future<bool> typeText(String text, {Duration settle = defaultSettle}) =>
+      _sendBytes(encodeText(text), settle);
 
   /// Presses and releases [button] at the zero-based cell (x, y).
-  Future<void> click(
+  Future<bool> click(
     int x,
     int y, {
     DriverMouseButton button = DriverMouseButton.left,
-  }) => _sendBytes(encodeClick(x, y, button: button));
+    Duration settle = defaultSettle,
+  }) => _sendBytes(encodeClick(x, y, button: button), settle);
 
   /// Re-resolves [locator], then clicks its current visible hit-tested point.
-  Future<void> clickLocator(
+  Future<bool> clickLocator(
     DriverLocator locator, {
     DriverMouseButton button = DriverMouseButton.left,
-  }) => clickDriverLocator(
-    locator,
-    fetchTree: tree,
-    click: (point) => click(point.x, point.y, button: button),
-  );
+    Duration settle = defaultSettle,
+  }) async {
+    var painted = false;
+    await clickDriverLocator(
+      locator,
+      fetchTree: tree,
+      click: (point) async {
+        painted = await click(point.x, point.y, button: button, settle: settle);
+      },
+    );
+    return painted;
+  }
 
   /// Sends one wheel notch in [direction] at the zero-based cell (x, y).
-  Future<void> scroll(int x, int y, DriverScrollDirection direction) =>
-      _sendBytes(encodeScroll(x, y, direction));
+  Future<bool> scroll(
+    int x,
+    int y,
+    DriverScrollDirection direction, {
+    Duration settle = defaultSettle,
+  }) => _sendBytes(encodeScroll(x, y, direction), settle);
 
   /// Resizes the emulated terminal and reports the applied dimensions.
   Future<({int width, int height})> resize(int width, int height) async {
@@ -388,7 +418,7 @@ class NoirDriver {
     return _finish();
   }
 
-  Future<void> _sendBytes(List<int> bytes) async {
+  Future<bool> _sendBytes(List<int> bytes, Duration settle) async {
     final response = await _call(
       'sendBytes',
       args: <String, Object?>{'bytes': base64Encode(bytes)},
@@ -398,10 +428,14 @@ class NoirDriver {
     // never reports stable. If the input ended the app, the service is
     // gone and there will never be another frame.
     try {
-      await pollFrameAdvance(frames: _frames, before: frameBaseline);
+      return await pollFrameAdvance(
+        frames: _frames,
+        before: frameBaseline,
+        cap: settle,
+      );
     } on Object catch (error) {
       if (isDrivenServiceGone(error)) {
-        return;
+        return false;
       }
       rethrow;
     }

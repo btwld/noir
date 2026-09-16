@@ -290,7 +290,7 @@ commands from its own stdin — interactively, or piped for scripted checks:
 
 ```sh
 printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
-  dart run --verbosity=error tool/noir_drive.dart example/counter.dart
+  dart run --verbosity=error noir_driver:drive example/counter.dart
 ```
 
 `capture --ansi` prints the frame in true color ("see the design");
@@ -309,6 +309,8 @@ other key types are intentionally not serialized. Text locators use exact
 source content from `Text` and `RichText`, not painted cells. Type locators
 are `runtimeType` strings (`Select<String>`, not `Select`). Each operation
 resolves a fresh client-side snapshot, and strict actions fail on ambiguity.
+In the Dart client, `descendantOf` and `at` narrow a locator when two nodes
+share a key; the CLI grammar stays flat.
 The line-oriented CLI trims outer command whitespace; use the Dart client for
 locator values that themselves begin or end with whitespace.
 Locator clicks use the current render-tree hit-test path, including custom

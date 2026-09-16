@@ -30,6 +30,7 @@ async function fixture(t) {
     'publication.json',
     'packages/noir/pubspec.yaml',
     'packages/noir/example/tutorials',
+    'packages/noir_driver/pubspec.yaml',
     'packages/noir_signals/README.md',
     'packages/noir_signals/pubspec.yaml',
     'packages/noir_signals/doc',

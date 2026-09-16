@@ -6,10 +6,9 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-
-import '../../tool/driver/noir_driver.dart';
 
 /// Drives the MCP inspector against its own fixture servers.
 ///
@@ -93,7 +92,7 @@ void main() {
         'Result: 8',
         timeout: const Duration(seconds: 30),
       );
-      expect(result.contains('example_server 1.0.0'), isTrue);
+      expect(result, _paints('example_server 1.0.0'));
 
       // Ctrl+N steps the tab strip from anywhere; the driver cannot encode
       // Ctrl with a digit.
@@ -104,11 +103,7 @@ void main() {
         '-> tools/call',
         timeout: const Duration(seconds: 10),
       );
-      expect(
-        protocol.lines.any((line) => line.contains('<- result')),
-        isTrue,
-        reason: protocol.lines.join('\n'),
-      );
+      expect(protocol, _paints('<- result'));
 
       for (final size in const <({int width, int height})>[
         (width: 80, height: 24),
@@ -202,7 +197,7 @@ void main() {
     // which threw. The app must still be answering after it.
     await driver.sendKey('enter');
     final afterEnter = await driver.capture();
-    expect(afterEnter.contains('Schema'), isTrue);
+    expect(afterEnter, _paints('Schema'));
 
     // Back to the form, which is what the README promises.
     await driver.sendKey('ctrl-g');
@@ -217,11 +212,9 @@ void main() {
       await driver.resize(size.width, size.height);
       final frame = await driver.capture();
       expect(
-        frame.contains('Run'),
-        isTrue,
-        reason:
-            'Run lost at ${size.width}x${size.height}:\n'
-            '${frame.lines.join('\n')}',
+        frame,
+        _paints('Run'),
+        reason: 'Run lost at ${size.width}x${size.height}',
       );
       expect(
         frame.lines.last,
@@ -237,7 +230,7 @@ void main() {
       'file:///logs',
       timeout: const Duration(seconds: 10),
     );
-    expect(afterTab.contains('file:///logs'), isTrue);
+    expect(afterTab, _paints('file:///logs'));
   });
 
   test('the schema view reaches the keywords the form cannot show', () async {
@@ -260,7 +253,7 @@ void main() {
       'Retry budget',
       timeout: const Duration(seconds: 10),
     );
-    expect(form.contains('1..10'), isTrue);
+    expect(form, _paints('1..10'));
 
     await driver.sendKey('ctrl-g');
     await driver.waitForText('Schema', timeout: const Duration(seconds: 10));
@@ -296,7 +289,7 @@ void main() {
       expect(after.key, before.key);
     }
     await driver.sendKey('ctrl-p');
-    expect((await driver.capture()).contains('Protocol'), isTrue);
+    expect(await driver.capture(), _paints('Protocol'));
   });
 
   test('Tab reveals every constrained field at each supported grid', () async {
@@ -367,7 +360,7 @@ void main() {
       'Hello, Leo!',
       timeout: const Duration(seconds: 30),
     );
-    expect(frame.contains('Result ('), isTrue);
+    expect(frame, _paints('Result ('));
   });
 
   test('Ctrl+R sends from a field and editing keys stay local', () async {
@@ -387,10 +380,7 @@ void main() {
     await driver.sendKey('home');
     await driver.sendKey('delete');
     await driver.sendKey('ctrl-r');
-    expect(
-      (await driver.waitForText('Result: 8')).contains('Result: 8'),
-      isTrue,
-    );
+    await driver.waitForText('Result: 8');
   });
 
   test('the primitives list fills the rows each grid offers', () async {
@@ -420,12 +410,7 @@ void main() {
     await driver.waitStable();
     expect(await _visibleRowCount(driver), tall);
     await driver.waitFor(const DriverLocator.byKey('primitive:tool03'));
-    expect(
-      (await driver.waitForText(
-        'Echo a note from tool03',
-      )).contains('Echo a note from tool03'),
-      isTrue,
-    );
+    await driver.waitForText('Echo a note from tool03');
   });
 
   test('shortcuts keep working while a request is in flight', () async {
@@ -455,12 +440,9 @@ void main() {
     await driver.waitForText('No resources');
     await driver.sendKey('ctrl-p');
 
-    expect(
-      (await driver.waitForText(
-        'slow: waiting',
-        timeout: const Duration(seconds: 30),
-      )).contains('slow: waiting'),
-      isTrue,
+    await driver.waitForText(
+      'slow: waiting',
+      timeout: const Duration(seconds: 30),
     );
   });
 
@@ -530,7 +512,7 @@ void main() {
       'Registered Leo.',
       timeout: const Duration(seconds: 30),
     );
-    expect(frame.contains('Result ('), isTrue);
+    expect(frame, _paints('Result ('));
   });
 }
 
@@ -666,6 +648,9 @@ Future<void> _waitForFocusIn(
 }
 
 /// Counts only the app and fixture processes carrying this test's marker.
+/// Short local alias; a failed drive assertion should print the frame.
+Matcher _paints(String text) => DriverFrameMatchers.containsText(text);
+
 Future<int> _childCount(String marker) async {
   final result = await Process.run('pgrep', <String>['-f', marker]);
   if (result.exitCode == 1) return 0;

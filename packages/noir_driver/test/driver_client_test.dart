@@ -5,11 +5,9 @@ import 'dart:convert';
 import 'package:noir/noir.dart';
 import 'package:noir/src/app/driver.dart';
 import 'package:noir/src/core/stdin_input_driver.dart';
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
 import 'package:vm_service/vm_service.dart';
-
-import '../tool/driver/ansi_keys.dart';
-import '../tool/driver/noir_driver.dart';
 
 /// The driver encodes names to escape bytes on the client side so the app
 /// stays byte-only. That split is only correct while the bytes it produces

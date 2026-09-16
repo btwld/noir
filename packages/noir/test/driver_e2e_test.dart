@@ -5,13 +5,12 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
 import 'package:vm_service/utils.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
-import '../tool/driver/ansi_keys.dart';
-import '../tool/driver/noir_driver.dart';
 import 'helpers/published_package.dart';
 
 void main() {

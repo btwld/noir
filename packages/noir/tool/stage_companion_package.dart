@@ -1,10 +1,13 @@
 #!/usr/bin/env dart
 
-/// Stages `packages/noir_signals/` outside this checkout as a standalone
+/// Stages a sibling companion package outside this checkout as a standalone
 /// package.
 ///
-/// The companion publishes in place from its own directory. The staged copy is
-/// what an application outside this Pub workspace resolves, so the
+/// Defaults to `packages/noir_signals/`; pass another repository-relative path
+/// to stage `packages/noir_driver/` instead.
+///
+/// A companion publishes in place from its own directory. The staged copy is
+/// what an application outside this Pub workspace resolves, so each
 /// companion's consumer check and pre-release verification run against it.
 ///
 /// The staged copy drops `resolution: workspace`, which only resolves inside
@@ -16,6 +19,7 @@
 ///
 ///     dart run tool/stage_companion_package.dart [--output <dir>]
 ///     dart run tool/stage_companion_package.dart --verify
+///     dart run tool/stage_companion_package.dart --verify ../noir_driver
 ///
 /// `--verify` runs `dart pub get` and `dart pub publish --dry-run` in the
 /// staged copy and fails when the dry-run reports a warning.
@@ -36,7 +40,7 @@ const _skippedRootEntries = <String>{
 };
 const _usage =
     'Usage: dart run tool/stage_companion_package.dart '
-    '[--output <dir>] [--verify]';
+    '[--output <dir>] [--verify] [<companion-path>]';
 
 Future<void> main(List<String> arguments) async {
   exitCode = await _stage(arguments);
@@ -45,6 +49,8 @@ Future<void> main(List<String> arguments) async {
 Future<int> _stage(List<String> arguments) async {
   String? output;
   var verify = false;
+  var companionPath = _companionPath;
+  var sawCompanionPath = false;
   for (var index = 0; index < arguments.length; index++) {
     final argument = arguments[index];
     if (argument == '--verify') {
@@ -56,17 +62,23 @@ Future<int> _stage(List<String> arguments) async {
         return 64;
       }
       output = arguments[index];
-    } else {
+    } else if (argument.startsWith('-')) {
       stderr.writeln('Unknown argument: $argument\n$_usage');
       return 64;
+    } else if (sawCompanionPath) {
+      stderr.writeln('Stage one companion at a time.\n$_usage');
+      return 64;
+    } else {
+      companionPath = argument;
+      sawCompanionPath = true;
     }
   }
 
   final noirRoot = Directory.current.absolute;
-  final companion = Directory('${noirRoot.path}/$_companionPath');
+  final companion = Directory('${noirRoot.path}/$companionPath');
   if (!companion.existsSync()) {
     stderr.writeln(
-      'Run this from packages/noir: $_companionPath is '
+      'Run this from packages/noir: $companionPath is '
       'missing.',
     );
     return 66;
@@ -74,7 +86,8 @@ Future<int> _stage(List<String> arguments) async {
 
   final Directory destination;
   if (output == null) {
-    destination = Directory.systemTemp.createTempSync('noir_signals_stage_');
+    final label = companionPath.split('/').last;
+    destination = Directory.systemTemp.createTempSync('${label}_stage_');
   } else {
     if (File(output).existsSync()) {
       stderr.writeln('Refusing to stage over a file: $output');
@@ -93,7 +106,7 @@ Future<int> _stage(List<String> arguments) async {
   _rewritePubspec(destination);
   _writeNoirOverride(destination, noirRoot);
 
-  stdout.writeln('Staged $_companionPath at ${destination.path}');
+  stdout.writeln('Staged $companionPath at ${destination.path}');
   if (!verify) {
     return 0;
   }

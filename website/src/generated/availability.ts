@@ -14,6 +14,7 @@ export interface PackageAvailability {
 
 export const availability: {
   readonly noir: PackageAvailability;
+  readonly driver: PackageAvailability;
   readonly companion: PackageAvailability;
 } = {
   noir: {
@@ -23,6 +24,14 @@ export const availability: {
     isPublished: true,
     installCommand: 'dart pub add noir',
     label: 'Published version · 0.0.2',
+  },
+  driver: {
+    name: 'noir_driver',
+    manifest: '0.0.1-alpha.0',
+    published: '0.0.1-alpha.0',
+    isPublished: true,
+    installCommand: 'dart pub add --dev noir_driver',
+    label: 'Published version · 0.0.1-alpha.0',
   },
   companion: {
     name: 'noir_signals',

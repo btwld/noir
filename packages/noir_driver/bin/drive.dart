@@ -1,8 +1,8 @@
 #!/usr/bin/env dart
 // Drive a Noir app from the command line, interactively or from a pipe.
 //
-//     dart run tool/noir_drive.dart example/counter.dart [--size 100x30]
-//                                      [--json] [-- app arguments...]
+//     dart run noir_driver:drive example/counter.dart [--size 100x30]
+//                                     [--json] [-- app arguments...]
 //
 // The app starts in drive mode (`NOIR_DRIVE=1`): headless, painting into
 // OpenTUI's non-terminal testing renderer, controlled only over the VM
@@ -32,18 +32,17 @@
 // stdout, which otherwise lands in front of the first captured row.
 //
 //     printf 'capture --ansi\nkey up\ncapture --ansi\nquit\n' | \
-//       dart run --verbosity=error tool/noir_drive.dart example/counter.dart
+//       dart run --verbosity=error noir_driver:drive example/counter.dart
 //
 // The exit code is the driven app's own, or 65 when a command failed.
 
 import 'dart:convert';
 import 'dart:io';
 
-import 'driver/ansi_keys.dart';
-import 'driver/noir_driver.dart';
+import 'package:noir_driver/noir_driver.dart';
 
 const _usage =
-    'Usage: dart run tool/noir_drive.dart <entry-point.dart> '
+    'Usage: dart run noir_driver:drive <entry-point.dart> '
     '[--size WxH] [--json] [-- app arguments...]';
 
 const _commands =
@@ -137,10 +136,10 @@ class _Session {
         case 'wait':
           await _find(rest.trim(), wait: true);
         case 'key':
-          await _driver.sendKey(rest.trim());
+          _reportSettle(await _driver.sendKey(rest.trim()), 'key');
           await _afterAction();
         case 'type':
-          await _driver.typeText(rest);
+          _reportSettle(await _driver.typeText(rest), 'type');
           await _afterAction();
         case 'click':
           await _click(rest.trim());
@@ -223,13 +222,13 @@ class _Session {
     if (locatorClick) {
       final locator = _parseLocator(arguments, 'click');
       if (locator == null) return;
-      await _driver.clickLocator(locator);
+      _reportSettle(await _driver.clickLocator(locator), 'click');
       await _afterAction();
       return;
     }
     final point = _parsePoint(parts, 'click <x> <y>');
     if (point == null) return;
-    await _driver.click(point.x, point.y);
+    _reportSettle(await _driver.click(point.x, point.y), 'click');
     await _afterAction();
   }
 
@@ -275,7 +274,7 @@ class _Session {
     if (point == null) {
       return;
     }
-    await _driver.scroll(point.x, point.y, direction);
+    _reportSettle(await _driver.scroll(point.x, point.y, direction), 'scroll');
     await _afterAction();
   }
 
@@ -379,6 +378,15 @@ class _Session {
       return null;
     }
     return (x: x, y: y);
+  }
+
+  /// Notes on stderr when input produced no frame inside the settle window.
+  ///
+  /// A following `capture` then shows the frame from before the input, which
+  /// is otherwise a confusing thing to read in a piped session.
+  void _reportSettle(bool painted, String command) {
+    if (painted) return;
+    _log('$command did not repaint within the settle window');
   }
 
   void _log(String message) {

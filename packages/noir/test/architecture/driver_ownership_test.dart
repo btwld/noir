@@ -57,25 +57,14 @@ void main() {
     }
   });
 
-  test('strict locator misses teach exact types and source-only text', () {
-    final source = File('tool/driver/driver_tree.dart').readAsStringSync();
-
-    expect(source, contains('runtimeType exactly'));
-    expect(source, contains('Text and RichText source, not painted cells'));
-    expect(source, contains('Keys in this tree:'));
-    expect(source, contains('Types in this tree:'));
-    expect(source, contains('No node in this tree has primary focus.'));
-    expect(source, contains('Intentionally not an ancestor walk'));
-  });
-
   test('as-built driver guidance rejects leftover locator specs', () {
     const paths = <String>[
       '../../CONTRIBUTING.md',
       '../../skills/noir/SKILL.md',
       'example/README.md',
       'lib/src/app/driver.dart',
-      'tool/driver/driver_tree.dart',
-      'tool/driver/noir_driver.dart',
+      '../noir_driver/lib/src/driver_tree.dart',
+      '../noir_driver/lib/src/noir_driver.dart',
     ];
     for (final path in paths) {
       final source = File(path).readAsStringSync();
@@ -86,7 +75,9 @@ void main() {
     final contributing = File('../../CONTRIBUTING.md').readAsStringSync();
     final skill = File('../../skills/noir/SKILL.md').readAsStringSync();
     final exampleGuide = File('example/README.md').readAsStringSync();
-    final client = File('tool/driver/noir_driver.dart').readAsStringSync();
+    final client = File(
+      '../noir_driver/lib/src/noir_driver.dart',
+    ).readAsStringSync();
     final host = File('lib/src/app/driver.dart').readAsStringSync();
 
     expect(contributing, contains('own visible pointer route'));
@@ -140,7 +131,7 @@ void main() {
 
   test('the driver control channel stays out of the shipped package', () {
     // `vm_service` is a runtime dependency of the packaged hot-reload runner.
-    // The drive client and CLI still live under `scripts/` so ordinary
+    // The drive client and its CLI live in `packages/noir_driver` so ordinary
     // widgets never import that control channel.
     const allowed = <String>{
       'lib/src/devtools/hot_reload_runner.dart',

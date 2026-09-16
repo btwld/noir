@@ -5,10 +5,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
-
-import '../../tool/driver/noir_driver.dart';
-import '../helpers/tool_json_output.dart';
 
 const _wideExamples = <String>{
   'chat_demo.dart',
@@ -73,14 +71,14 @@ void main() {
         await driver.waitFor(composer);
         await driver.clickLocator(composer);
         await driver.typeText('drive-mode draft');
-        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+        expect(await driver.capture(), _paints('drive-mode draft'));
 
         expect(await driver.resize(64, 18), (width: 64, height: 18));
         expect((await driver.find(composer)).hasFocusedDescendant, isTrue);
-        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+        expect(await driver.capture(), _paints('drive-mode draft'));
 
         expect(await driver.resize(120, 30), (width: 120, height: 30));
-        expect((await driver.capture()).contains('drive-mode draft'), isTrue);
+        expect(await driver.capture(), _paints('drive-mode draft'));
 
         await driver.sendKey('esc');
         expect(
@@ -106,9 +104,9 @@ void main() {
       );
       addTearDown(driver.quit);
 
-      expect((await driver.capture()).contains('Count: 0'), isTrue);
+      expect(await driver.capture(), _paints('Count: 0'));
       await driver.clickLocator(const DriverLocator.byKey('add-one'));
-      expect((await driver.capture()).contains('Count: 1'), isTrue);
+      expect(await driver.capture(), _paints('Count: 1'));
     });
 
     test('select fruit key click changes the highlight', () async {
@@ -116,13 +114,9 @@ void main() {
       addTearDown(driver.quit);
 
       await driver.clickLocator(const DriverLocator.byKey('fruit'));
-      final frame = await driver.capture();
       expect(
-        frame.lines.any(
-          (line) => line.contains('Highlight:') || line.contains('You picked:'),
-        ),
-        isTrue,
-        reason: frame.lines.join('\n'),
+        await driver.capture(),
+        anyOf(_paints('Highlight:'), _paints('You picked:')),
       );
     });
 
@@ -130,9 +124,9 @@ void main() {
       final driver = await NoirDriver.launch('example/components_demo.dart');
       addTearDown(driver.quit);
 
-      expect((await driver.capture()).contains('3/10'), isTrue);
+      expect(await driver.capture(), _paints('3/10'));
       await driver.clickLocator(const DriverLocator.byKey('step'));
-      expect((await driver.capture()).contains('4/10'), isTrue);
+      expect(await driver.capture(), _paints('4/10'));
     });
 
     test('components modal locators confirm the overlay specimen', () async {
@@ -145,13 +139,13 @@ void main() {
       await driver.waitFor(const DriverLocator.byKey('open-modal'));
 
       await driver.clickLocator(const DriverLocator.byKey('open-modal'));
-      expect((await driver.capture()).contains('Review changes'), isTrue);
+      expect(await driver.capture(), _paints('Review changes'));
 
       await driver.clickLocator(const DriverLocator.byKey('modal-confirm'));
       final frame = await driver.capture();
-      expect(frame.contains('Review changes'), isFalse);
-      expect(frame.contains('Result: approved'), isTrue);
-      expect(frame.contains('Transitions: 1 open / 1 close'), isTrue);
+      expect(frame, isNot(_paints('Review changes')));
+      expect(frame, _paints('Result: approved'));
+      expect(frame, _paints('Transitions: 1 open / 1 close'));
     });
 
     test('components data category exposes both public data widgets', () async {
@@ -177,7 +171,7 @@ void main() {
         'noir.dart / selected',
         'archive / collapsed',
       ]) {
-        expect(frame.contains(text), isTrue, reason: text);
+        expect(frame, _paints(text));
       }
     });
 
@@ -189,12 +183,12 @@ void main() {
       expect(await driver.waitStable(), isTrue);
       await driver.clickLocator(const DriverLocator.byKey('save'));
       final frame = await driver.capture();
-      expect(frame.contains('Name error: Enter your name.'), isTrue);
+      expect(frame, _paints('Name error: Enter your name.'));
       expect(
-        frame.contains('Email error: Enter an email like name@example.com.'),
-        isTrue,
+        frame,
+        _paints('Email error: Enter an email like name@example.com.'),
       );
-      expect(frame.contains('Saved:'), isFalse);
+      expect(frame, isNot(_paints('Saved:')));
     });
 
     test('dialog locators confirm a deployment through the modal', () async {
@@ -202,12 +196,12 @@ void main() {
       addTearDown(driver.quit);
 
       await driver.clickLocator(const DriverLocator.byKey('open-dialog'));
-      expect((await driver.capture()).contains('Confirm deployment'), isTrue);
+      expect(await driver.capture(), _paints('Confirm deployment'));
 
       await driver.clickLocator(const DriverLocator.byKey('confirm-deploy'));
       final frame = await driver.capture();
-      expect(frame.contains('Confirm deployment'), isFalse);
-      expect(frame.contains('Deployment scheduled for noir 0.0.2.'), isTrue);
+      expect(frame, isNot(_paints('Confirm deployment')));
+      expect(frame, _paints('Deployment scheduled for noir 0.0.2.'));
     });
 
     test(
@@ -223,7 +217,7 @@ void main() {
         await driver.sendKey('down');
         await driver.sendKey('enter');
 
-        expect((await driver.capture()).contains('Selected  noir_cli'), isTrue);
+        expect(await driver.capture(), _paints('Selected  noir_cli'));
       },
     );
 
@@ -248,12 +242,16 @@ void main() {
         await driver.sendKey('enter');
 
         final frame = await driver.capture();
-        expect(frame.contains('Open file'), isFalse);
-        expect(frame.contains('Opened lib/src/widgets/overlay.dart'), isTrue);
+        expect(frame, isNot(_paints('Open file')));
+        expect(frame, _paints('Opened lib/src/widgets/overlay.dart'));
       },
     );
   });
 }
+
+/// Short local alias; every drive assertion in this file wants the captured
+/// frame printed when it fails.
+Matcher _paints(String text) => DriverFrameMatchers.containsText(text);
 
 bool Function(String) _isCountLine(String count) =>
     (line) => line.trim() == count;
@@ -271,7 +269,7 @@ _driveCli(String name, {String size = '80x24'}) async {
   final process = await Process.start(Platform.resolvedExecutable, <String>[
     'run',
     '--verbosity=error',
-    'tool/noir_drive.dart',
+    'noir_driver:drive',
     'example/$name',
     '--size',
     size,

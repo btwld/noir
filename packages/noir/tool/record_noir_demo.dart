@@ -5,9 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:noir/noir.dart' show Attr;
-
-import 'driver/ansi_keys.dart';
-import 'driver/noir_driver.dart';
+import 'package:noir_driver/noir_driver.dart';
 
 const _usage =
     'Usage: dart run tool/record_noir_demo.dart '

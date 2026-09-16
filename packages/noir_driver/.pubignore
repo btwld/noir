@@ -1,0 +1,17 @@
+# noir_driver package - pub ignore rules
+# Excludes checkout-only development files from the published package.
+
+# Local workspace state
+.dart_tool/
+build/
+*.log
+
+# Checkout-only tests and fixtures. Several launch Noir entry points by
+# repository-relative path and only resolve inside this checkout.
+test/
+dart_test.yaml
+
+# IDE and editor files
+.vscode/
+.idea/
+.DS_Store

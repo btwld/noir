@@ -5,9 +5,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
-
-import 'helpers/tool_json_output.dart';
 
 void main() {
   test('JSON decoding retains output after Dart build-hook progress', () {
@@ -29,7 +28,7 @@ void main() {
       final process = await Process.start(Platform.resolvedExecutable, <String>[
         'run',
         '--verbosity=error',
-        'tool/noir_drive.dart',
+        'noir_driver:drive',
         'test/fixtures/noir_drive_cli_probe.dart',
         '--size',
         '16x3',
