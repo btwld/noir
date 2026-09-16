@@ -1,0 +1,315 @@
+<!doctype html>
+<!--
+  Noir social frame — a reusable HyperFrames template.
+
+  RETARGET THE RATIO by editing only the root's data-width/data-height:
+     16:9  1920 x 1080   (X / LinkedIn timeline)
+     4:5   1080 x 1350   (best feed real estate)
+     1:1   1080 x 1080
+     9:16  1080 x 1920   (Reels / Shorts / TikTok)
+  Everything below sizes itself from the frame, so no other edit is needed.
+  `--resolution` on the CLI only changes DPR; it cannot change the ratio.
+
+  THE CONTAINER LAW: #frame sets `container-type: size`, and every frame-relative
+  length is cqw against it — never vw, never a hardcoded px. Hairlines and radii
+  stay in px on purpose; they are chrome, not layout.
+
+  SWAP THE CONTENT at the three <section> slots. Keep one accent moment per
+  frame: `.hit` is the scarce voltage and should appear once.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('assets/fonts/JetBrainsMono-400.woff2') format('woff2');
+        font-weight: 400;
+        font-display: block;
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('assets/fonts/JetBrainsMono-700.woff2') format('woff2');
+        font-weight: 700;
+        font-display: block;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      /* ---------- tokens ---------- */
+      /* #frame is the query container; it cannot restyle itself from inside a
+         @container rule, so every token lives on .stage, one level down. */
+      #frame {
+        container-type: size;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: #08090b;
+      }
+
+      .stage {
+        position: absolute;
+        inset: 0;
+        /* ground + ink */
+        --ground: #08090b;
+        --surface: #0c0d10;
+        --hairline: #24252a;
+        --ink: #e4e4e7;
+        --muted: #9a9aa2;
+        --gutter: #85858c;
+        /* scarce voltage — one moment per frame */
+        --hit: #fde047;
+        --fail: #fca5a5;
+        /* code voice */
+        --kw: #c4b5fd;
+        --str: #86efac;
+        --fn: #93c5fd;
+
+        /* type ramp, landscape. The container query re-steps these. */
+        --t-display: 3.96cqw;
+        --t-sub: 1.98cqw;
+        --t-label: 1.15cqw;
+        --t-code: 1.61cqw;
+        --t-frame: 1.41cqw;
+        --t-caption: 1.61cqw;
+
+        --pad: 4.2cqw;
+        --gap: 2.1cqw;
+        --panes: 1fr 1fr;
+        --stack-gap: 1.4cqw;
+
+        background: var(--ground);
+        color: var(--ink);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* Portrait and square: the panes stack, so type steps up to hold the
+         same relative legibility on a narrower frame. */
+      @container (max-aspect-ratio: 1/1) {
+        .stage {
+          --t-display: 7.4cqw;
+          --t-sub: 3.5cqw;
+          --t-label: 2.1cqw;
+          --t-code: 2.65cqw;
+          --t-frame: 2.35cqw;
+          --t-caption: 2.8cqw;
+          --pad: 5.4cqw;
+          --gap: 3cqw;
+          --panes: 1fr;
+          --stack-gap: 2.6cqw;
+        }
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--stack-gap);
+        padding: 0 var(--pad);
+      }
+
+      /* ---------- slot 1: the premise ---------- */
+      .lede {
+        font-size: var(--t-display);
+        line-height: 1.14;
+        letter-spacing: -0.02em;
+        color: #fafafa;
+        text-align: center;
+      }
+      .sub {
+        font-size: var(--t-sub);
+        line-height: 1.4;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      /* ---------- slot 2: the panes ---------- */
+      .panes {
+        position: absolute;
+        inset: var(--pad) var(--pad) calc(var(--pad) * 1.9);
+        display: grid;
+        grid-template-columns: var(--panes);
+        align-content: center;
+        align-items: center;
+        gap: var(--gap);
+      }
+      .pane {
+        position: relative;
+        border: 1px solid var(--hairline);
+        border-radius: 12px;
+        background: var(--surface);
+        padding: calc(var(--gap) * 0.85) var(--gap) var(--gap);
+        overflow: hidden;
+      }
+      .pane-label {
+        font-size: var(--t-label);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gutter);
+        margin-bottom: calc(var(--gap) * 0.6);
+      }
+      .line {
+        font-size: var(--t-code);
+        line-height: 1.6;
+        white-space: pre;
+        color: var(--ink);
+      }
+      .frame-line {
+        font-size: var(--t-frame);
+        line-height: 1.5;
+        white-space: pre;
+        color: var(--muted);
+      }
+      .kw {
+        color: var(--kw);
+      }
+      .str {
+        color: var(--str);
+      }
+      .fn {
+        color: var(--fn);
+      }
+      .dim {
+        color: var(--gutter);
+      }
+      .gutter {
+        color: var(--gutter);
+      }
+      .fail {
+        color: var(--fail);
+      }
+      .hit {
+        color: var(--hit);
+      }
+
+      /* ---------- slot 3: the payoff ---------- */
+      .payoff {
+        font-size: var(--t-display);
+        line-height: 1.16;
+        letter-spacing: -0.025em;
+        color: #fafafa;
+        text-align: center;
+      }
+      .pkg {
+        font-size: var(--t-sub);
+        color: var(--muted);
+        text-align: center;
+      }
+      .pkg b {
+        color: #fafafa;
+        font-weight: 700;
+      }
+
+      .caption {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--pad) * 0.9);
+        text-align: center;
+        font-size: var(--t-caption);
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="frame"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="13"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="stage">
+      <!-- SLOT 1 — the premise -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.2" data-track-index="0">
+        <div id="s1a" class="lede">Testing a terminal UI</div>
+        <div id="s1b" class="sub">a TTY, raw mode, and a human squinting at the screen</div>
+      </section>
+
+      <!-- SLOT 2 — code beside its result -->
+      <section id="s2" class="scene clip" data-start="3.2" data-duration="6.6" data-track-index="0">
+        <div class="panes">
+          <div id="pane-code" class="pane">
+            <div class="pane-label">the test</div>
+            <div class="line code-line"><span class="kw">final</span> driver = <span class="kw">await</span> NoirDriver.<span class="fn">launch</span>(</div>
+            <div class="line code-line">  <span class="str">'bin/app.dart'</span>,</div>
+            <div class="line code-line">);</div>
+            <div class="line code-line"><span class="fn">addTearDown</span>(driver.quit);</div>
+            <div class="line code-line"> </div>
+            <div class="line code-line"><span class="kw">await</span> driver.<span class="fn">clickLocator</span>(</div>
+            <div class="line code-line">  <span class="kw">const</span> DriverLocator.<span class="fn">byKey</span>(<span class="str">'increment'</span>),</div>
+            <div class="line code-line">);</div>
+            <div class="line code-line"> </div>
+            <div class="line code-line"><span class="fn">expect</span>(</div>
+            <div class="line code-line">  <span class="kw">await</span> driver.<span class="fn">capture</span>(),</div>
+            <div class="line code-line">  DriverFrameMatchers.<span class="fn">containsText</span>(<span class="str">'2'</span>),</div>
+            <div class="line code-line">);</div>
+          </div>
+
+          <div id="pane-out" class="pane">
+            <div class="pane-label">the failure</div>
+            <div class="frame-line out-line"><span class="fail">Expected: a frame painting "2"</span></div>
+            <div class="frame-line out-line dim">  Actual: &lt;Instance of 'DriverFrame'&gt;</div>
+            <div class="frame-line out-line"><span class="fail">   Which: no row contains it.</span></div>
+            <div class="frame-line out-line dim">  captured 44x11 frame:</div>
+            <div class="frame-line out-line"><span class="gutter">  1 | </span>  Noir Counter</div>
+            <div class="frame-line out-line"><span class="gutter">  3 | </span>         You have pushed the button</div>
+            <div class="frame-line out-line"><span class="gutter">  4 | </span>              this many times:</div>
+            <div class="frame-line out-line"><span class="gutter">  6 | </span>                      <span class="hit">1</span></div>
+            <div class="frame-line out-line"><span class="gutter">  8 | </span>  Up/+ add | Down/- subtract | Ent    +</div>
+          </div>
+        </div>
+        <div id="s2cap" class="caption">no TTY · no raw mode · no change to your main()</div>
+      </section>
+
+      <!-- SLOT 3 — the payoff -->
+      <section id="s3" class="scene clip" data-start="9.8" data-duration="3.2" data-track-index="0">
+        <div id="s3a" class="payoff">The assertion failed.<br />So it showed me the screen.</div>
+        <div id="s3b" class="pkg"><b>noir_driver</b> · drive a Noir app, read back what it painted</div>
+      </section>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // Slot 1 — the premise lands, then clears.
+      tl.fromTo('#s1a', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0.25);
+      tl.fromTo('#s1b', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.85);
+      tl.to('#s1a, #s1b', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 2.7);
+
+      // Slot 2 — the test writes itself, then the run fails beside it.
+      tl.fromTo('#pane-code', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.35);
+      tl.fromTo('.code-line', { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.24, stagger: 0.06, ease: 'power1.out' }, 3.6);
+      tl.fromTo('#pane-out', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 5.5);
+      tl.fromTo('.out-line', { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.11, ease: 'none' }, 5.8);
+
+      // The scarce accent: the count that should have been 2. Finite repeat.
+      tl.fromTo('.hit', { scale: 1 }, { scale: 1.45, duration: 0.3, yoyo: true, repeat: 3, ease: 'power1.inOut', transformOrigin: '50% 50%' }, 7.5);
+
+      tl.fromTo('#s2cap', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.out' }, 7.2);
+      tl.to('.panes, #s2cap', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 9.35);
+
+      // Slot 3 — the payoff.
+      tl.fromTo('#s3a', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 9.95);
+      tl.fromTo('#s3b', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 10.6);
+
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

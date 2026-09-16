@@ -23,3 +23,8 @@ test/failures/
 
 # FVM Version Cache
 .fvm/
+
+# HyperFrames render output and local state (regenerate with `npm run render`)
+media/social-video/renders/
+media/social-video/snapshots/
+media/social-video/hyperframes.lock.json
