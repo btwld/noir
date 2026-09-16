@@ -5,7 +5,7 @@ import { availability } from '../generated/availability';
 
 interface AvailabilityProps {
   /** Which package this reader is about to depend on. */
-  of: 'noir' | 'companion';
+  of: 'noir' | 'driver' | 'companion';
   /** Replaces the default consequence sentence when a page needs its own. */
   children?: ReactNode;
   /** Set false on the installation page itself, which owns the detail. */
@@ -14,6 +14,9 @@ interface AvailabilityProps {
 
 const defaults = {
   noir: 'Noir is an alpha prerelease. Its APIs and platform guarantees can change before 1.0.',
+  driver: availability.driver.isPublished
+    ? 'The optional driver package runs your app headlessly so a test can assert on what it painted.'
+    : 'The optional driver package is not on pub.dev yet. Resolve it from a Noir repository checkout.',
   companion: availability.companion.isPublished
     ? 'The optional companion package adds lifecycle hooks and Signals integration.'
     : 'The optional companion package is not on pub.dev yet. Resolve it from a Noir repository checkout.',

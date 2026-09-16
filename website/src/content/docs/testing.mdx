@@ -102,7 +102,11 @@ mode: with `NOIR_DRIVE=1` in its environment, `runTuiApp` mounts the app into a
 headless binding that paints into OpenTUI's non-terminal testing renderer and
 publishes a VM-service surface. Nothing in your `main()` changes.
 
-[`noir_driver`](https://pub.dev/packages/noir_driver) is the client:
+`noir_driver` is the client:
+
+<Availability of="driver" setup={false}>
+  `noir_driver` requires Noir 0.0.2.
+</Availability>
 
 ```sh
 dart pub add --dev noir_driver

@@ -38,6 +38,7 @@ const generatedRoot = join(websiteRoot, 'src/generated');
 const blobBase = 'https://github.com/conceptadev/noir/blob/main';
 const treeBase = 'https://github.com/conceptadev/noir/tree/main';
 
+const driverRoot = 'packages/noir_driver';
 const companionRoot = 'packages/noir_signals';
 const taskListRoute = '/docs/signals-task-list';
 const arguments_ = process.argv.slice(2);
@@ -175,6 +176,10 @@ async function readAvailability() {
       await readRepositoryFile('packages/noir/pubspec.yaml'),
       'packages/noir/pubspec.yaml',
     ),
+    noir_driver: parseManifestVersion(
+      await readRepositoryFile(`${driverRoot}/pubspec.yaml`),
+      `${driverRoot}/pubspec.yaml`,
+    ),
     noir_signals: parseManifestVersion(
       await readRepositoryFile(`${companionRoot}/pubspec.yaml`),
       `${companionRoot}/pubspec.yaml`,
@@ -202,6 +207,7 @@ async function readAvailability() {
   }
 
   const noir = packages.noir;
+  const driver = packages.noir_driver;
   const companion = packages.noir_signals;
   return {
     noir: {
@@ -212,6 +218,15 @@ async function readAvailability() {
         noir.published === 'none'
           ? 'Not published yet · repository checkout only'
           : `Published version · ${noir.published}`,
+    },
+    driver: {
+      ...driver,
+      isPublished: driver.published !== 'none',
+      installCommand: 'dart pub add --dev noir_driver',
+      label:
+        driver.published === 'none'
+          ? 'Not published yet · repository checkout only'
+          : `Published version · ${driver.published}`,
     },
     companion: {
       ...companion,
@@ -242,6 +257,7 @@ export interface PackageAvailability {
 
 export const availability: {
   readonly noir: PackageAvailability;
+  readonly driver: PackageAvailability;
   readonly companion: PackageAvailability;
 } = ${JSON.stringify(availability, null, 2)} as const;
 `;
@@ -919,6 +935,7 @@ await checkReleaseClaims(availability);
 
 console.log(
   `${checkOnly ? 'Checked' : 'Synced'} availability (noir ${availability.noir.published}, ` +
+    `noir_driver ${availability.driver.published}, ` +
     `noir_signals ${availability.companion.published}), ` +
     `${Object.keys(frames.frames).length} captured frames, ` +
     `${taskList.pages} task-list lessons, and ${taskList.images} screenshots.`,
