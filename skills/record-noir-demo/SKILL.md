@@ -55,7 +55,7 @@ TTY or raw mode.
   replay cannot be mistaken for a real shell or terminal-emulator capture.
 - It does not prove Kitty, Sixel, OSC52, tmux, or Screen behavior.
 - Do not import repository test helpers or invent another harness. Compose the
-  existing `tool/driver/noir_driver.dart` client.
+  existing `package:noir_driver` client.
 - Do not include secrets, personal data, shell history, or unrelated output.
 - Keep autoplay off in documentation. Provide a static poster and honor reduced
   motion.

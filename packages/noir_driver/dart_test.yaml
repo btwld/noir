@@ -1,0 +1,14 @@
+# The driver launches real Dart processes, so every test is a VM test and
+# several spawn children. `safe-process-spawning` matches the noir package's
+# tag so a repository-wide run keeps one meaning for it.
+
+test_on: vm
+
+timeout: 30s
+
+add_tags:
+  - vm
+
+tags:
+  safe-process-spawning:
+    skip: false

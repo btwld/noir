@@ -6,10 +6,9 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-
-import '../../tool/driver/noir_driver.dart';
 
 /// Drives the MCP inspector against its own fixture servers.
 ///

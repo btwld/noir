@@ -10,6 +10,7 @@ work lives in GitHub issues and pull requests.
 
 - `packages/noir/`: the `noir` package, with its tests, examples, bundled
   native artifacts, and development tooling in `tool/`.
+- `packages/noir_driver/`: the optional drive-mode client package.
 - `packages/noir_signals/`: the optional companion package.
 - `website/`: the documentation site.
 - `skills/`: agent skills for building with Noir and maintaining this
@@ -46,6 +47,10 @@ methods remain the primary resource owner.
 - `package:noir/noir_low_level.dart`: supported advanced hosting and custom
   render-object protocols.
 - `package:noir/noir_ffi.dart`: guarded but ABI-unstable raw bindings.
+- `package:noir_driver/noir_driver.dart`: the optional drive-mode client
+  under `packages/noir_driver/`. Applications add it as a `dev_dependency` to
+  drive a Noir app as a live process and assert on painted frames. Noir ships
+  the app half of drive mode; this package is the client.
 - `package:noir_signals/noir_signals.dart`: the optional companion package
   under `packages/noir_signals/`. It owns the widget lifecycle hooks and the
   Signals integration, and is built only on Noir's high-level public surface.
@@ -106,6 +111,13 @@ Run these from `packages/noir/`, for the `noir` package:
 headless drive mode and compares the result with the committed frames the
 website publishes. `--check` never writes; omit it to refresh them.
 
+Run these from `packages/noir_driver/`, for the drive-mode client:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ bin/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
+    dart pub publish --dry-run
+
 Run these from `packages/noir_signals/`, for the companion package:
 
     dart format --output=none --set-exit-if-changed lib/ test/ example/
@@ -120,7 +132,8 @@ from `packages/noir/`:
     dart run tool/stage_companion_package.dart --verify
 
 The script stages a standalone copy outside the checkout, points its `noir`
-dependency at `packages/noir`, and runs the dry-run there.
+dependency at `packages/noir`, and runs the dry-run there. Pass a companion
+path to stage another member: `--verify ../noir_driver`.
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.
@@ -171,7 +184,14 @@ deliberately exercise a restricted behavior.
   integration. Do not invent a fifth harness.
 - Prefer `BufferMatchers` for cell-level assertions.
 
-## Companion package boundary
+## Companion package boundaries
+
+`packages/noir_driver/` is an optional client package, not part of Noir's
+archive. It depends on `package:noir/noir.dart` plus `vm_service` and
+`matcher`, and never on Noir private libraries, the low-level or FFI barrels,
+or native access. Noir's manifest carries it as a `dev_dependency` only, used
+by the two checkout-only documentation tools under `packages/noir/tool/`, and
+never as a runtime dependency. No shipped Noir source imports it.
 
 `packages/noir_signals/` is an optional companion package, not part of Noir's
 archive. Its production code imports only `package:noir/noir.dart` and the

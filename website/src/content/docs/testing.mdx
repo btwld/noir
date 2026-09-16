@@ -16,11 +16,12 @@ dart test
 
 ## Choose the boundary
 
-| What you need to prove                             | Use                              |
-| -------------------------------------------------- | -------------------------------- |
-| A rule, command, controller, or state transition   | A plain Dart unit test           |
-| The public app tree can mount and dispose          | `runTuiApp(..., headless: true)` |
-| A terminal accepts raw input or an escape protocol | A check in the target terminal   |
+| What you need to prove                             | Use                                   |
+| -------------------------------------------------- | ------------------------------------- |
+| A rule, command, controller, or state transition   | A plain Dart unit test                |
+| The public app tree can mount and dispose          | `runTuiApp(..., headless: true)`      |
+| What the running app actually paints               | [`noir_driver`](#drive-the-whole-app) |
+| A terminal accepts raw input or an escape protocol | A check in the target terminal        |
 
 This split keeps application tests fast and independent of terminal rendering.
 
@@ -93,6 +94,59 @@ them.
   [Platform support](/docs/platform-limitations).
 - Terminal images, OSC52 clipboard behavior, and enhanced keyboard reporting
   depend on the reader's terminal. Check those in the terminal you target.
+
+## Drive the whole app
+
+When what you need to prove is what the app paints, run it. Noir ships drive
+mode: with `NOIR_DRIVE=1` in its environment, `runTuiApp` mounts the app into a
+headless binding that paints into OpenTUI's non-terminal testing renderer and
+publishes a VM-service surface. Nothing in your `main()` changes.
+
+[`noir_driver`](https://pub.dev/packages/noir_driver) is the client:
+
+```sh
+dart pub add --dev noir_driver
+```
+
+```dart
+import 'package:noir_driver/noir_driver.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('the counter counts', () async {
+    final driver = await NoirDriver.launch('bin/app.dart');
+    addTearDown(driver.quit);
+
+    await driver.clickLocator(const DriverLocator.byKey('increment'));
+
+    expect(await driver.capture(), DriverFrameMatchers.containsText('Count: 1'));
+  });
+}
+```
+
+Keys and mouse reports are encoded to escape bytes and injected through the
+app's production ANSI parser, and locator clicks resolve through the production
+render tree's hit testing, so a driven interaction takes the path a real
+terminal would. A failed frame assertion prints the captured rows.
+
+It needs no TTY and no raw mode, which also makes it the way to check painted
+output in CI. The same client drives an app from the command line:
+
+```sh
+dart run noir_driver:drive bin/app.dart --size 100x30
+```
+
+This drives a live app process rather than mounting widgets, so reach for it
+when the rendered result is the thing under test, and keep unit tests for the
+logic underneath. Its output is real Noir rendering, but it is not evidence of
+raw-mode cleanup or of any particular terminal emulator — see
+[Platform support](/docs/platform-limitations).
+
+Known limits: a continuously animating app never reports `stable: true`, and
+capture keeps working anyway; an app whose own quit path calls `exit` ends the
+session; `reload` inherits `reassemble()`'s limits, so `main()` and `initState`
+bodies still need a restart; and `DriverFrame.lines` is right-trimmed, so
+trailing-space bugs need `captureCells`.
 
 ## Contributing to Noir itself
 

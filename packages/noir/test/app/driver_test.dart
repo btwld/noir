@@ -5,9 +5,9 @@ import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/app.dart' show mountTuiAppForTesting;
 import 'package:noir/src/app/driver.dart';
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
 
-import '../../tool/driver/driver_tree.dart';
 import '../helpers/buffer_capture.dart';
 
 void main() {

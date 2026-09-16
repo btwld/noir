@@ -290,7 +290,7 @@ commands from its own stdin — interactively, or piped for scripted checks:
 
 ```sh
 printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
-  dart run --verbosity=error tool/noir_drive.dart example/counter.dart
+  dart run --verbosity=error noir_driver:drive example/counter.dart
 ```
 
 `capture --ansi` prints the frame in true color ("see the design");

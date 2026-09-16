@@ -15,13 +15,11 @@
 /// [waitForText] polls painted capture rows for a substring. Locator
 /// [DriverLocator.byText] matches `Text` / `RichText` source, not those cells.
 ///
-/// `DriverFrameMatchers`, exported here, asserts on a captured frame and
-/// prints it on failure.
+/// `DriverFrameMatchers` asserts on a captured frame and prints it on failure.
 ///
-/// This lives under `tool/` to keep the driver control channel out of the
-/// shipped package, so ordinary widgets never import it. `vm_service` itself
-/// is already a runtime dependency of `noir`, because `bin/run.dart` ships the
-/// hot-reload runner; the boundary here is surface area, not dependencies.
+/// This is a separate package from `noir` so an app never carries a
+/// process-control channel in its production dependencies: add `noir_driver`
+/// under `dev_dependencies`.
 library;
 
 import 'dart:async';
@@ -34,9 +32,6 @@ import 'package:vm_service/vm_service_io.dart';
 
 import 'ansi_keys.dart';
 import 'driver_tree.dart';
-
-export 'driver_matchers.dart';
-export 'driver_tree.dart';
 
 /// Polls [frames] until it is greater than [before], or [cap] expires.
 ///

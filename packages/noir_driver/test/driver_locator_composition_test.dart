@@ -1,9 +1,8 @@
 @TestOn('vm')
 library;
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
-
-import '../tool/driver/noir_driver.dart';
 
 /// Two dialogs owning the same key is the case a flat locator cannot express.
 ///

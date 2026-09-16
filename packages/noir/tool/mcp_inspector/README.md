@@ -151,7 +151,7 @@ Look at the screen at three sizes from `packages/noir/`:
 
 ```sh
 printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick key run\ncapture --plain\nresize 80x24\ncapture --plain\nresize 60x18\ncapture --plain\nquit\n' | \
-  dart run --verbosity=error tool/noir_drive.dart \
+  dart run --verbosity=error noir_driver:drive \
     "$PWD/tool/mcp_inspector/bin/mcp_inspector.dart" --size 100x30 -- \
     -- "$PWD/tool/mcp_fixtures/.dart_tool/calculate_server"
 ```

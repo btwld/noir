@@ -35,7 +35,12 @@ void main() {
     expect(workspace, contains('publish_to: none'));
     expect(
       workspace,
-      contains('workspace:\n  - packages/noir\n  - packages/noir_signals'),
+      contains(
+        'workspace:\n'
+        '  - packages/noir\n'
+        '  - packages/noir_driver\n'
+        '  - packages/noir_signals',
+      ),
     );
     expect(rootPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('resolution: workspace'));

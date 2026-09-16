@@ -26,9 +26,11 @@ The submodule and bundled libraries are read-only under ordinary contribution
 work. See [`AGENTS.md`](AGENTS.md#opentui-reference-and-ownership).
 
 The repository is one Pub workspace. `dart pub get` at the root resolves the
-`noir` package under `packages/noir/` and the optional companion package under
-`packages/noir_signals/`, which owns the widget lifecycle hooks and the
-Signals integration. The root `pubspec.yaml` only defines the workspace.
+`noir` package under `packages/noir/` and two optional companions:
+`packages/noir_driver/`, the drive-mode client applications use to test a Noir
+app as a live process, and `packages/noir_signals/`, which owns the widget
+lifecycle hooks and the Signals integration. The root `pubspec.yaml` only
+defines the workspace.
 
 ## Required checks
 
@@ -39,6 +41,13 @@ Run focused tests while developing, then, from `packages/noir/`:
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run tool/fetch_opentui_binaries.dart --verify-only
+
+When a change touches the driver package, also run, from
+`packages/noir_driver/`:
+
+    dart format --output=none --set-exit-if-changed lib/ test/ bin/
+    dart analyze --fatal-infos
+    dart test --concurrency=1
 
 When a change touches the companion package, also run, from
 `packages/noir_signals/`:
@@ -95,11 +104,12 @@ For behavior changes:
 
 `NOIR_DRIVE=1` mounts any Noir entry point headlessly, painting into OpenTUI's
 non-terminal testing renderer and publishing `ext.noir.driver.*` over the VM
-service. Nothing in the app changes. `tool/noir_drive.dart` in `packages/noir/`
-launches an app that way and reads commands from its own stdin, interactively
-or from a pipe. Run it from `packages/noir/`:
+service. Nothing in the app changes. `packages/noir_driver/` is the client:
+its `drive` executable launches an app that way and reads commands from its
+own stdin, interactively or from a pipe. Run it from `packages/noir/`, which
+dev-depends on it, or from `packages/noir_driver/`:
 
-    dart run tool/noir_drive.dart example/counter.dart [--size 100x30] [--json]
+    dart run noir_driver:drive example/counter.dart [--size 100x30] [--json]
 
     capture [--ansi|--plain|--cells]
     tree [depth]
@@ -119,14 +129,14 @@ stderr. Use Dart 3.11 or later to keep build-hook progress out of scripted
 captures:
 
     printf 'tree 10\nfind key increment\nclick key increment\ncapture --plain\nquit\n' | \
-      dart run --verbosity=error tool/noir_drive.dart example/counter.dart
+      dart run --verbosity=error noir_driver:drive example/counter.dart
 
 On Dart 3.11 or later, pass `--verbosity=error` whenever frames are piped or
 redirected. Dart 3.10 may still write build-hook progress to stdout despite
 this flag, prepending it to the first captured row.
 
-`tool/driver/noir_driver.dart` exposes the same surface as a Dart client for
-scripts that assert against captures. `tree()` returns structured `DriverNode`
+`package:noir_driver` exposes the same surface as a Dart client for scripts
+and tests that assert against captures. `tree()` returns structured `DriverNode`
 snapshots, and `DriverLocator.byKey`, `.byType`, `.byText`, and `.focused`
 resolve exactly and case-sensitively on the client. Only `ValueKey<String>` is
 a stable key locator; text comes directly from `Text` and `RichText` source
@@ -231,10 +241,13 @@ Publish in this order, each package from its own directory:
 
 1. `noir`, from `packages/noir/`, at the exact reviewed commit, after its
    merge-commit CI passed.
-2. `noir_signals`, from `packages/noir_signals/`. First run
+2. `noir_driver`, from `packages/noir_driver/`. First run
+   `dart run tool/stage_companion_package.dart --verify ../noir_driver` from
+   `packages/noir/`.
+3. `noir_signals`, from `packages/noir_signals/`. First run
    `dart run tool/stage_companion_package.dart --verify` from `packages/noir/`
    to check the archive as an application outside this workspace resolves it.
-3. A consumer that depends on both published versions with no local
+4. A consumer that depends on the published versions with no local
    override, to confirm the hosted packages resolve together.
 
 Tags, GitHub releases, repository visibility, and native artifact refreshes

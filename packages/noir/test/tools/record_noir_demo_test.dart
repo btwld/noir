@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:noir/noir.dart' show Attr;
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
 
-import '../../tool/driver/noir_driver.dart';
 import '../../tool/record_noir_demo.dart';
 
 void main() {

@@ -37,7 +37,8 @@ Use one JSON object per recording:
 
 Each action has `atMs` plus exactly one operation:
 
-- `key`: any name accepted by `tool/driver/ansi_keys.dart`, except `ctrl-c`.
+- `key`: any name accepted by `package:noir_driver`'s `encodeKey`, except
+  `ctrl-c`.
 - `type`: UTF-8 text sent through Noir's production input parser.
 - `clickKey`: exact `ValueKey<String>` resolved through render-tree hit testing.
 

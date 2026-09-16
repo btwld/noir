@@ -2,9 +2,9 @@
 @Tags(['safe-process-spawning'])
 library;
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
 
-import '../tool/driver/noir_driver.dart';
 import 'fixtures/driver_slow_repaint_probe.dart' show repaintDelay;
 
 /// Input settling is reported, not silently raced.

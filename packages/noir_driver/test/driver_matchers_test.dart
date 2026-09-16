@@ -1,9 +1,8 @@
 @TestOn('vm')
 library;
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
-
-import '../tool/driver/noir_driver.dart';
 
 /// A text-only frame, the shape `NoirDriver.capture` returns.
 DriverFrame _textFrame() => DriverFrame.fromJson(<String, dynamic>{

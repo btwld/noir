@@ -53,7 +53,7 @@ void main() {
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('    timeout-minutes: 15\n'));
+    expect(analyze, contains('    timeout-minutes: 21\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
     expect(
       analyze,
@@ -64,7 +64,7 @@ void main() {
     expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('    timeout-minutes: 24\n'));
+    expect(ubuntu, contains('    timeout-minutes: 32\n'));
     expect(
       ubuntu,
       contains(
@@ -80,7 +80,7 @@ void main() {
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('    timeout-minutes: 29\n'));
+    expect(desktop, contains('    timeout-minutes: 37\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
@@ -154,6 +154,36 @@ void main() {
     );
   });
 
+  test('every platform job also checks the driver package', () {
+    const driverTest =
+        'timeout-minutes: 8\n'
+        '        working-directory: packages/noir_driver\n'
+        '        run: dart test --concurrency=1';
+
+    expect(driverTest.allMatches(workflow), hasLength(2));
+    expect(_job(workflow, 'ubuntu-test'), contains(driverTest));
+    expect(_job(workflow, 'desktop-test'), contains(driverTest));
+
+    final analyze = _job(workflow, 'analyze');
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 2\n'
+        '        working-directory: packages/noir_driver\n'
+        '        run: dart format --output=none --set-exit-if-changed '
+        'lib/ test/ bin/',
+      ),
+    );
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 4\n'
+        '        working-directory: packages/noir_driver\n'
+        '        run: dart analyze --fatal-infos',
+      ),
+    );
+  });
+
   test('each CI job caches only the isolated pub cache and always resolves', () {
     expect('actions/cache@'.allMatches(workflow), hasLength(3));
     expect(
@@ -162,6 +192,7 @@ void main() {
     );
     expect(
       r"key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', "
+              "'packages/noir_driver/pubspec.yaml', "
               "'packages/noir_signals/pubspec.yaml') }}"
           .allMatches(workflow),
       hasLength(3),

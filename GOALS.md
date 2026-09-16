@@ -158,6 +158,28 @@ match stay. Example chrome stays example-local.
 | `framework_primitives` | Scaffold only. |
 | Exempt | listed above. |
 
+## Drive mode
+
+Drive mode is Noir's headless hosting path, not a test harness. With
+`NOIR_DRIVE=1`, `runTuiApp` mounts an app into a headless binding that paints
+into OpenTUI's non-terminal testing renderer and publishes an
+`ext.noir.driver.*` VM-service surface. It reuses the composition the
+integration harness already builds — headless binding, injected testing
+renderer, and an unstarted `StdinInputDriver` used purely as a byte funnel into
+the production ANSI parser — so a driven interaction takes the path a real
+terminal would, with no TTY and no raw mode and no change to the app's `main()`.
+
+The app half belongs to the app layer and ships in `noir`. The client half is
+`packages/noir_driver/`, outside Noir's archive, so a process-control channel
+never reaches an application's runtime dependencies. The extension surface
+stays a small set of stateless queries: a driver composes its own waits on top
+rather than growing the app-side protocol.
+
+It drives a live app process rather than mounting widgets, so it does not
+replace the four framework test compositions and must not become a fifth. Its
+output is real Noir rendering; it is not evidence of raw-mode cleanup or of a
+named terminal emulator.
+
 ## Dependency boundary
 
 `external/opentui` and the six checked-in native libraries are read-only under

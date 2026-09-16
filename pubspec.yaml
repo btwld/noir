@@ -8,4 +8,5 @@ environment:
 
 workspace:
   - packages/noir
+  - packages/noir_driver
   - packages/noir_signals

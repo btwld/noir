@@ -5,10 +5,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:noir_driver/noir_driver.dart';
 import 'package:test/test.dart';
-
-import '../../tool/driver/noir_driver.dart';
-import '../helpers/tool_json_output.dart';
 
 const _wideExamples = <String>{
   'chat_demo.dart',
@@ -271,7 +269,7 @@ _driveCli(String name, {String size = '80x24'}) async {
   final process = await Process.start(Platform.resolvedExecutable, <String>[
     'run',
     '--verbosity=error',
-    'tool/noir_drive.dart',
+    'noir_driver:drive',
     'example/$name',
     '--size',
     size,

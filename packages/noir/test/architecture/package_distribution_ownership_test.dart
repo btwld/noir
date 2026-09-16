@@ -1015,7 +1015,7 @@ void main() {
     final stateSource = _read('lib/src/framework/widget.dart');
     final shortcutTests = _read('test/widgets/shortcuts_actions_test.dart');
     final borderSource = _read('lib/src/painting/box_border.dart');
-    final driveCli = _read('tool/noir_drive.dart');
+    final driveCli = _read('../noir_driver/bin/drive.dart');
 
     const expectedSkillAgentMetadata =
         'interface:\n'
