@@ -28,3 +28,4 @@ test/failures/
 media/social-video/renders/
 media/social-video/snapshots/
 media/social-video/hyperframes.lock.json
+media/social-video/.thumbnails/

@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <!--
   Noir social frame — a reusable HyperFrames template.
 
@@ -19,7 +19,7 @@
 -->
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
       @font-face {
@@ -108,6 +108,27 @@
           --panes: 1fr;
           --stack-gap: 2.6cqw;
         }
+      }
+
+      /* Background layer. The cell grid is the subject's own unit — a terminal
+         measures in character cells — so it is thematic rather than decorative
+         wallpaper. Both drift slowly; a static decorative reads as dead. */
+      .bg-grid {
+        position: absolute;
+        inset: -4cqw;
+        background-image:
+          repeating-linear-gradient(to right, #ffffff12 0 1px, transparent 1px 1.05cqw),
+          repeating-linear-gradient(to bottom, #ffffff12 0 1px, transparent 1px 2.1cqw);
+        opacity: 0.5;
+      }
+      .bg-glow {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: 92cqw;
+        height: 92cqw;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(circle, #fde0471c 0%, transparent 62%);
       }
 
       .scene {
@@ -225,91 +246,101 @@
     </style>
   </head>
   <body>
-    <div
-      id="frame"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="13"
-      data-width="1920"
-      data-height="1080"
-    >
-      <div class="stage">
-      <!-- SLOT 1 — the premise -->
-      <section id="s1" class="scene clip" data-start="0" data-duration="3.2" data-track-index="0">
-        <div id="s1a" class="lede">Testing a terminal UI</div>
-        <div id="s1b" class="sub">a TTY, raw mode, and a human squinting at the screen</div>
+    <div data-hf-id="hf-f9d5" id="frame" data-composition-id="main" data-start="0" data-duration="16" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-tan6" class="stage">
+        <div data-hf-id="hf-er9m" class="bg-grid" id="bg-grid"></div>
+        <div data-hf-id="hf-4m88" class="bg-glow" id="bg-glow"></div>
+      <!-- SLOT 1 — hook, in outcome language -->
+      <section data-hf-id="hf-tk7n" id="s1" class="scene clip" data-start="0" data-duration="3" data-track-index="0">
+        <div data-hf-id="hf-cw5i" id="s1a" class="lede">Flutter-like reactive UI,<br data-hf-id="hf-x5px">in your terminal.</div>
+        <div data-hf-id="hf-0v6v" id="s1b" class="sub">Noir · a Dart TUI framework</div>
       </section>
 
-      <!-- SLOT 2 — code beside its result -->
-      <section id="s2" class="scene clip" data-start="3.2" data-duration="6.6" data-track-index="0">
-        <div class="panes">
-          <div id="pane-code" class="pane">
-            <div class="pane-label">the test</div>
-            <div class="line code-line"><span class="kw">final</span> driver = <span class="kw">await</span> NoirDriver.<span class="fn">launch</span>(</div>
-            <div class="line code-line">  <span class="str">'bin/app.dart'</span>,</div>
-            <div class="line code-line">);</div>
-            <div class="line code-line"><span class="fn">addTearDown</span>(driver.quit);</div>
-            <div class="line code-line"> </div>
-            <div class="line code-line"><span class="kw">await</span> driver.<span class="fn">clickLocator</span>(</div>
-            <div class="line code-line">  <span class="kw">const</span> DriverLocator.<span class="fn">byKey</span>(<span class="str">'increment'</span>),</div>
-            <div class="line code-line">);</div>
-            <div class="line code-line"> </div>
-            <div class="line code-line"><span class="fn">expect</span>(</div>
-            <div class="line code-line">  <span class="kw">await</span> driver.<span class="fn">capture</span>(),</div>
-            <div class="line code-line">  DriverFrameMatchers.<span class="fn">containsText</span>(<span class="str">'2'</span>),</div>
-            <div class="line code-line">);</div>
+      <!-- SLOT 2 — the value claim, by beat two -->
+      <section data-hf-id="hf-keya" id="s2" class="scene clip" data-start="3" data-duration="2.8" data-track-index="0">
+        <div data-hf-id="hf-ux44" id="s2a" class="lede">Now test what it paints.</div>
+        <div data-hf-id="hf-62ws" id="s2b" class="sub">drive the real app, assert on the real frame</div>
+      </section>
+
+      <!-- SLOT 3 — the evidence -->
+      <section data-hf-id="hf-xue7" id="s3" class="scene clip" data-start="5.8" data-duration="6.8" data-track-index="0">
+        <div data-hf-id="hf-xkfh" class="panes">
+          <div data-hf-id="hf-ca7c" id="pane-code" class="pane">
+            <div data-hf-id="hf-i46y" class="pane-label">the test</div>
+            <div data-hf-id="hf-h8ot" class="line code-line"><span data-hf-id="hf-35kh" class="kw">final</span> driver = <span data-hf-id="hf-goqb" class="kw">await</span> NoirDriver.<span data-hf-id="hf-78jq" class="fn">launch</span>(</div>
+            <div data-hf-id="hf-elj0" class="line code-line">  <span data-hf-id="hf-aivk" class="str">'bin/app.dart'</span>,</div>
+            <div data-hf-id="hf-6bu0" class="line code-line">);</div>
+            <div data-hf-id="hf-t9iz" class="line code-line"><span data-hf-id="hf-q1wk" class="fn">addTearDown</span>(driver.quit);</div>
+            <div data-hf-id="hf-5e0o" class="line code-line"> </div>
+            <div data-hf-id="hf-i87k" class="line code-line"><span data-hf-id="hf-i6c3" class="kw">await</span> driver.<span data-hf-id="hf-ubdn" class="fn">clickLocator</span>(</div>
+            <div data-hf-id="hf-g03r" class="line code-line">  <span data-hf-id="hf-qjvq" class="kw">const</span> DriverLocator.<span data-hf-id="hf-a4z7" class="fn">byKey</span>(<span data-hf-id="hf-apht" class="str">'increment'</span>),</div>
+            <div data-hf-id="hf-vhi8" class="line code-line">);</div>
+            <div data-hf-id="hf-p4b4" class="line code-line"> </div>
+            <div data-hf-id="hf-g6r4" class="line code-line"><span data-hf-id="hf-h7ug" class="fn">expect</span>(</div>
+            <div data-hf-id="hf-2wmt" class="line code-line">  <span data-hf-id="hf-hs12" class="kw">await</span> driver.<span data-hf-id="hf-ml0h" class="fn">capture</span>(),</div>
+            <div data-hf-id="hf-6hsv" class="line code-line">  DriverFrameMatchers.<span data-hf-id="hf-0x9b" class="fn">containsText</span>(<span data-hf-id="hf-74lk" class="str">'2'</span>),</div>
+            <div data-hf-id="hf-ual5" class="line code-line">);</div>
           </div>
 
-          <div id="pane-out" class="pane">
-            <div class="pane-label">the failure</div>
-            <div class="frame-line out-line"><span class="fail">Expected: a frame painting "2"</span></div>
-            <div class="frame-line out-line dim">  Actual: &lt;Instance of 'DriverFrame'&gt;</div>
-            <div class="frame-line out-line"><span class="fail">   Which: no row contains it.</span></div>
-            <div class="frame-line out-line dim">  captured 44x11 frame:</div>
-            <div class="frame-line out-line"><span class="gutter">  1 | </span>  Noir Counter</div>
-            <div class="frame-line out-line"><span class="gutter">  3 | </span>         You have pushed the button</div>
-            <div class="frame-line out-line"><span class="gutter">  4 | </span>              this many times:</div>
-            <div class="frame-line out-line"><span class="gutter">  6 | </span>                      <span class="hit">1</span></div>
-            <div class="frame-line out-line"><span class="gutter">  8 | </span>  Up/+ add | Down/- subtract | Ent    +</div>
+          <div data-hf-id="hf-n4qx" id="pane-out" class="pane">
+            <div data-hf-id="hf-g0bs" class="pane-label">the failure</div>
+            <div data-hf-id="hf-g5r1" class="frame-line out-line"><span data-hf-id="hf-up33" class="fail">Expected: a frame painting "2"</span></div>
+            <div data-hf-id="hf-bmy0" class="frame-line out-line dim">  Actual: &lt;Instance of 'DriverFrame'&gt;</div>
+            <div data-hf-id="hf-43zl" class="frame-line out-line"><span data-hf-id="hf-0erl" class="fail">   Which: no row contains it.</span></div>
+            <div data-hf-id="hf-knlg" class="frame-line out-line dim">  captured 44x11 frame:</div>
+            <div data-hf-id="hf-43v1" class="frame-line out-line"><span data-hf-id="hf-102b" class="gutter">  1 | </span>  Noir Counter</div>
+            <div data-hf-id="hf-6ic8" class="frame-line out-line"><span data-hf-id="hf-avt5" class="gutter">  3 | </span>         You have pushed the button</div>
+            <div data-hf-id="hf-fsjk" class="frame-line out-line"><span data-hf-id="hf-7fhg" class="gutter">  4 | </span>              this many times:</div>
+            <div data-hf-id="hf-5awo" class="frame-line out-line"><span data-hf-id="hf-so0q" class="gutter">  6 | </span>                      <span data-hf-id="hf-8777" class="hit">1</span></div>
+            <div data-hf-id="hf-oxjx" class="frame-line out-line"><span data-hf-id="hf-7mu8" class="gutter">  8 | </span>  Up/+ add | Down/- subtract | Ent    +</div>
           </div>
         </div>
-        <div id="s2cap" class="caption">no TTY · no raw mode · no change to your main()</div>
+        <div data-hf-id="hf-au5v" id="s3cap" class="caption">no TTY · no raw mode · no change to your main()</div>
       </section>
 
-      <!-- SLOT 3 — the payoff -->
-      <section id="s3" class="scene clip" data-start="9.8" data-duration="3.2" data-track-index="0">
-        <div id="s3a" class="payoff">The assertion failed.<br />So it showed me the screen.</div>
-        <div id="s3b" class="pkg"><b>noir_driver</b> · drive a Noir app, read back what it painted</div>
+      <!-- SLOT 4 — the payoff -->
+      <section data-hf-id="hf-zng1" id="s4" class="scene clip" data-start="12.6" data-duration="3.4" data-track-index="0">
+        <div data-hf-id="hf-0jnp" id="s4a" class="payoff">The assertion failed.<br data-hf-id="hf-rsrt">So it showed me the screen.</div>
+        <div data-hf-id="hf-97t7" id="s4b" class="pkg"><b data-hf-id="hf-nr1d">Noir Driver</b> · drive the app, read back the frame</div>
       </section>
-      </div>
     </div>
 
     <script>
       const tl = gsap.timeline({ paused: true });
 
-      // Slot 1 — the premise lands, then clears.
+      // Ambient background. Finite repeats only — `repeat: -1` is banned
+      // because the render seeks rather than plays.
+      tl.fromTo('#bg-grid', { xPercent: 0, yPercent: 0 }, { xPercent: -1.2, yPercent: -0.8, duration: 8, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
+      tl.fromTo('#bg-glow', { scale: 0.94, opacity: 0.7 }, { scale: 1.06, opacity: 1, duration: 8, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
+
+      // Beat 1 — the hook, in outcome language.
       tl.fromTo('#s1a', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0.25);
-      tl.fromTo('#s1b', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.85);
-      tl.to('#s1a, #s1b', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 2.7);
+      tl.fromTo('#s1b', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.9);
+      tl.to('#s1a, #s1b', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 2.5);
 
-      // Slot 2 — the test writes itself, then the run fails beside it.
-      tl.fromTo('#pane-code', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.35);
-      tl.fromTo('.code-line', { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.24, stagger: 0.06, ease: 'power1.out' }, 3.6);
-      tl.fromTo('#pane-out', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 5.5);
-      tl.fromTo('.out-line', { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.11, ease: 'none' }, 5.8);
+      // Beat 2 — the value claim lands before any evidence.
+      tl.fromTo('#s2a', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 3.15);
+      tl.fromTo('#s2b', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }, 3.7);
+      tl.to('#s2a, #s2b', { opacity: 0, duration: 0.35, ease: 'power1.in' }, 5.4);
 
-      // The scarce accent: the count that should have been 2. Finite repeat.
-      tl.fromTo('.hit', { scale: 1 }, { scale: 1.45, duration: 0.3, yoyo: true, repeat: 3, ease: 'power1.inOut', transformOrigin: '50% 50%' }, 7.5);
+      // Beat 3 — the evidence: the test writes itself, then the run fails.
+      tl.fromTo('#pane-code', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 5.95);
+      tl.fromTo('.code-line', { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.24, stagger: 0.06, ease: 'power1.out' }, 6.2);
+      tl.fromTo('#pane-out', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 8.1);
+      tl.fromTo('.out-line', { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.11, ease: 'none' }, 8.4);
 
-      tl.fromTo('#s2cap', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.out' }, 7.2);
-      tl.to('.panes, #s2cap', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 9.35);
+      // The scarce accent: the count that should have been 2.
+      tl.fromTo('.hit', { scale: 1 }, { scale: 1.45, duration: 0.3, yoyo: true, repeat: 3, ease: 'power1.inOut', transformOrigin: '50% 50%' }, 10.1);
 
-      // Slot 3 — the payoff.
-      tl.fromTo('#s3a', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 9.95);
-      tl.fromTo('#s3b', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 10.6);
+      tl.fromTo('#s3cap', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.out' }, 9.8);
+      tl.to('.panes, #s3cap', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 12.15);
+
+      // Beat 4 — the payoff, and the name.
+      tl.fromTo('#s4a', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 12.75);
+      tl.fromTo('#s4b', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 13.4);
 
       window.__timelines['main'] = tl;
       tl.seek(0);
     </script>
-  </body>
+  </div></body>
 </html>
