@@ -26,15 +26,23 @@ final class MuseNoirSurfaceView extends StatefulWidget {
 
 final class _MuseNoirSurfaceViewState extends State<MuseNoirSurfaceView> {
   var _live = true;
+  final Map<String, _ActionLease> _actions = <String, _ActionLease>{};
 
   @override
   void dispose() {
     _live = false;
+    for (final action in _actions.values) {
+      action.active = false;
+    }
+    _actions.clear();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    for (final action in _actions.values) {
+      action.active = false;
+    }
     final prepared = museNoirPreparedSurfaceOf(widget.surface);
     if (prepared == null) {
       return widget.error(
@@ -61,7 +69,9 @@ final class _MuseNoirSurfaceViewState extends State<MuseNoirSurfaceView> {
         ),
       );
     }
-    return _buildComponent(context, prepared, prepared.rootId);
+    final root = _buildComponent(context, prepared, prepared.rootId);
+    _actions.removeWhere((_, action) => !action.active);
+    return root;
   }
 
   Widget _buildComponent(
@@ -95,6 +105,9 @@ final class _MuseNoirSurfaceViewState extends State<MuseNoirSurfaceView> {
     ];
     final binding = widget.renderer.components[component.type]!;
     final actionName = component.actionName;
+    final action = actionName == null
+        ? null
+        : _actionFor(component, actionName, prepared);
     return _MuseNoirComponentHost(
       key: ValueKey<String>('muse_component:${component.id}'),
       child: binding.builder(
@@ -104,19 +117,10 @@ final class _MuseNoirSurfaceViewState extends State<MuseNoirSurfaceView> {
           properties: properties,
           children: children,
           childWeights: childWeights,
-          activate: actionName == null
-              ? null
-              : () {
-                  if (!_live) return Future.value(_staleActionFailure());
-                  return museNoirDispatch(
-                    widget.activation,
-                    component.id,
-                    actionName,
-                    prepared,
-                  );
-                },
+          activate: action?.activate,
           canActivate: () =>
               _live &&
+              (action == null || action.active) &&
               widget.activation.status.value != MuseActivationStatus.disposed &&
               museNoirActionEnabled(widget.activation, component.id),
           errorText: museNoirComponentErrorText(
@@ -141,12 +145,69 @@ final class _MuseNoirSurfaceViewState extends State<MuseNoirSurfaceView> {
     );
   }
 
+  _ActionLease _actionFor(
+    MuseNoirPreparedComponent component,
+    String actionName,
+    MuseNoirPreparedSurface prepared,
+  ) {
+    final identity = component.actionIdentity;
+    var action = _actions[component.id];
+    if (action == null ||
+        !identical(action.identity, identity) ||
+        action.name != actionName) {
+      action?.active = false;
+      action = _ActionLease(
+        identity: identity,
+        name: actionName,
+        componentId: component.id,
+        dispatch: _dispatch,
+      );
+      _actions[component.id] = action;
+    }
+    action
+      ..prepared = prepared
+      ..active = true;
+    return action;
+  }
+
+  Future<MuseActionResult> _dispatch(_ActionLease action) {
+    if (!_live ||
+        !action.active ||
+        widget.activation.status.value == MuseActivationStatus.disposed) {
+      return Future<MuseActionResult>.value(_staleActionFailure());
+    }
+    return museNoirDispatch(
+      widget.activation,
+      action.componentId,
+      action.name,
+      action.prepared,
+    );
+  }
+
   MuseActionResult _staleActionFailure() => MuseActionResult.failed(
     MuseFailure(
       code: 'stale_surface',
       message: 'The rendered surface is no longer mounted.',
     ),
   );
+}
+
+final class _ActionLease {
+  _ActionLease({
+    required this.identity,
+    required this.name,
+    required this.componentId,
+    required Future<MuseActionResult> Function(_ActionLease action) dispatch,
+  }) {
+    activate = () => dispatch(this);
+  }
+
+  final Object? identity;
+  final String name;
+  final String componentId;
+  late final Future<MuseActionResult> Function() activate;
+  late MuseNoirPreparedSurface prepared;
+  bool active = false;
 }
 
 final class _MuseNoirComponentHost extends StatelessWidget {

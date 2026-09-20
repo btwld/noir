@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `TextInput.readOnly` blocks user insertion, paste, and deletion while
+  preserving focus, caret movement, controller updates, and Enter submission.
+
 ## 0.0.2
 
 This release changes where Noir lives in its repository, not what it does.

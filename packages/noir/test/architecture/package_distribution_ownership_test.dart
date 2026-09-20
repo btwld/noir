@@ -125,7 +125,7 @@ void main() {
     expect(source, contains("'--format=machine'"));
   });
 
-  test('public changelog leads with the current package version', () {
+  test('public changelog leads with unreleased work then current version', () {
     final changelog = _read('CHANGELOG.md');
     final changelogVersions = RegExp(
       r'^##\s+([^\s]+)\s*$',
@@ -134,9 +134,14 @@ void main() {
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
     expect(packageVersion, '0.0.2');
-    expect(changelogVersions, isNotEmpty);
-    expect(changelogVersions.first, packageVersion);
+    expect(changelogVersions, hasLength(greaterThanOrEqualTo(2)));
+    expect(changelogVersions.first, 'Unreleased');
+    expect(changelogVersions[1], packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
+    expect(
+      _changelogSection(changelog, 'Unreleased'),
+      contains('TextInput.readOnly'),
+    );
     expect(changelog, contains('invalidate cached hook output'));
     expect(changelog, contains('Like Reactor'));
     expect(changelog, contains('First public alpha'));
@@ -255,11 +260,13 @@ void main() {
   test('live release records derive the package version in one place', () {
     final changelog = _read('CHANGELOG.md');
     final publication = _read('../../publication.json');
-    expect(changelog, contains('\n## $packageVersion\n'));
+    final unreleasedHeading = changelog.indexOf('\n## Unreleased\n');
+    final currentHeading = changelog.indexOf('\n## $packageVersion\n');
+    expect(unreleasedHeading, changelog.indexOf('\n## '));
     expect(
-      changelog.indexOf('\n## $packageVersion\n'),
-      changelog.indexOf('\n## '),
-      reason: 'the manifest version heads the changelog',
+      changelog.indexOf('\n## ', unreleasedHeading + 1),
+      currentHeading,
+      reason: 'the manifest version follows unreleased work',
     );
     expect(publication, contains('"noir": '));
     expect(publication, contains('"noir_signals": '));

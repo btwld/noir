@@ -27,6 +27,7 @@ final class MuseNoirPreparedComponent {
   String get type => _value.component;
   List<String> get children => _value.children;
   String? get actionName => _value.action?.name;
+  Object? get actionIdentity => _value.action;
   double? get weight => switch (_value.properties['weight']) {
     final num value when value.isFinite && value > 0 => value.toDouble(),
     _ => null,

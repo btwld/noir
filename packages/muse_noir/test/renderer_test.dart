@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:muse_noir/muse_noir.dart';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
+
+import '../../noir/test/helpers/buffer_capture.dart';
+import '../../noir/test/helpers/tui_test_app.dart';
 
 void main() {
   test(
@@ -137,6 +142,67 @@ void main() {
     },
   );
 
+  test('callouts use a clipped-safe marker and neutral body copy', () async {
+    final intent = _intent(museNoirCatalog);
+    final navigator = await _open(intent, <Object>[
+      _create(museNoirCatalogId),
+      _update(<Object?>[
+        _component('root', 'Callout', <String, Object?>{
+          'title': 'Context',
+          'text': 'Plain body copy',
+          'tone': 'info',
+        }),
+      ]),
+    ]);
+    addTearDown(navigator.dispose);
+    final theme = ThemeData.dark.copyWith(text: Color.white, info: Color.blue);
+    final capture = BufferCapture(width: 32, height: 4);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      Theme(
+        data: theme,
+        child: MuseNoirView(navigator: navigator, renderer: museNoirRenderer),
+      ),
+    );
+    final body = frame.findText('Plain body copy').single;
+
+    expect(frame.getForegroundColor(body.x, body.y), theme.text);
+    expect(frame.containsText('› Context'), isTrue);
+    expect(frame.toText(), isNot(contains('│')));
+    expect(frame.toText(), isNot(contains('┌')));
+    expect(frame.toText(), isNot(contains('└')));
+  });
+
+  test('panels group content without closed borders', () async {
+    final intent = _intent(museNoirCatalog);
+    final navigator = await _open(intent, <Object>[
+      _create(museNoirCatalogId),
+      _update(<Object?>[
+        _component('root', 'Panel', <String, Object?>{
+          'title': 'Status',
+          'children': <String>['body'],
+        }),
+        _component('body', 'Text', <String, Object?>{'text': 'Ready'}),
+      ]),
+    ]);
+    addTearDown(navigator.dispose);
+    final capture = BufferCapture(width: 24, height: 4);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      MuseNoirView(navigator: navigator, renderer: museNoirRenderer),
+    );
+    final body = frame.findText('Ready').single;
+
+    expect(body.x, 1);
+    expect(frame.toText(), isNot(contains('┌')));
+    expect(frame.toText(), isNot(contains('┐')));
+    expect(frame.toText(), isNot(contains('└')));
+    expect(frame.toText(), isNot(contains('┘')));
+    expect(frame.toText(), isNot(contains('│')));
+  });
+
   test('hidden component is omitted and cannot expose an action', () async {
     MuseNoirRenderNode? captured;
     final renderer = MuseNoirRenderer(<MuseNoirComponentBinding>[
@@ -228,6 +294,117 @@ void main() {
       final stale = await activate();
       expect(stale.isCompleted, isFalse);
       expect(received, <String>['edited']);
+    },
+  );
+
+  test(
+    'stale callbacks fail closed after replacement, hiding, and disposal',
+    () async {
+      final visible = ValueNotifier<bool>(true);
+      final revision = ValueNotifier<int>(0);
+      final visibleAdapter = MuseValueListenable<bool>(visible);
+      final revisionAdapter = MuseValueListenable<int>(revision);
+      final nodes = <MuseNoirRenderNode>[];
+      var handled = 0;
+      final renderer = MuseNoirRenderer(<MuseNoirComponentBinding>[
+        MuseNoirComponentBinding(
+          name: 'Leaf',
+          description: 'Action leaf.',
+          checkable: true,
+          builder: (_, node) {
+            nodes.add(node);
+            return const Text('leaf');
+          },
+        ),
+      ]);
+      final catalog = renderer.catalog(id: 'stale/v1');
+      final intent = MuseIntent(
+        id: 'stale',
+        description: 'Stale action test.',
+        instructions: 'Show one action leaf.',
+        catalog: catalog,
+        states: <MuseState<Object>>[
+          MuseState<bool>(
+            name: 'visible',
+            description: 'Whether the leaf is visible.',
+            schema: Ack.boolean(),
+            watch: (_) => visibleAdapter,
+          ),
+        ],
+        facts: <MuseFact<Object?>>[
+          MuseFact<int>(
+            name: 'revision',
+            description: 'Surface replacement revision.',
+            watch: (_) => revisionAdapter,
+          ),
+        ],
+        actions: <MuseAction<Object?>>[
+          MuseAction<void>(
+                name: 'run',
+                description: 'Record an invocation.',
+                handler: (_, _) => handled += 1,
+              )
+              as MuseAction<Object?>,
+        ],
+      );
+      final navigator = MuseIntentNavigator(
+        generator: MuseGenerator((request) async* {
+          yield jsonEncode(<Object>[
+            if (!(request.payload['surfaceExists']! as bool))
+              _create(catalog.id),
+            _update(<Object?>[
+              _component('root', 'Leaf', <String, Object?>{
+                'visible': _stateBinding('/visible'),
+                'action': _action('run', const <String, Object?>{}),
+              }),
+            ]),
+          ]);
+        }),
+        routes: <MuseIntentRoute>[MuseIntentRoute(intent)],
+      );
+      addTearDown(() async {
+        await navigator.dispose();
+        visibleAdapter.dispose();
+        revisionAdapter.dispose();
+        visible.dispose();
+        revision.dispose();
+      });
+      expect(await navigator.push(intent), isA<MuseNavigated>());
+      final app = createTuiTestApp(
+        MuseNoirView(navigator: navigator, renderer: renderer),
+      );
+      final replaced = nodes.single.activate!;
+
+      final beforeReplacementRevision = navigator.current!.surface!.revision;
+      revision.value = 1;
+      await _waitFor(
+        () => navigator.current!.surface!.revision > beforeReplacementRevision,
+      );
+      app.pumpFrame();
+      expect(nodes, hasLength(greaterThanOrEqualTo(2)));
+      final hidden = nodes.last.activate!;
+      expect(await replaced(), isA<MuseActionResult>());
+      expect(handled, 0);
+
+      final beforeHideRevision = navigator.current!.surface!.revision;
+      visible.value = false;
+      await _waitFor(
+        () => navigator.current!.surface!.revision > beforeHideRevision,
+      );
+      app.pumpFrame();
+      expect(await hidden(), isA<MuseActionResult>());
+      expect(handled, 0);
+
+      visible.value = true;
+      await _waitFor(
+        () => navigator.current!.surface!.revision > beforeHideRevision + 1,
+      );
+      app.pumpFrame();
+      expect(nodes, hasLength(greaterThanOrEqualTo(3)));
+      final disposed = nodes.last.activate!;
+      app.dispose();
+      expect(await disposed(), isA<MuseActionResult>());
+      expect(handled, 0);
     },
   );
 
@@ -333,3 +510,17 @@ Map<String, Object?> _action(String name, Map<String, Object?> context) =>
     <String, Object?>{
       'event': <String, Object?>{'name': name, 'context': context},
     };
+
+Map<String, Object?> _stateBinding(String path) => <String, Object?>{
+  r'$muse': <String, Object?>{
+    'state': <String, Object?>{'path': path},
+  },
+};
+
+Future<void> _waitFor(bool Function() condition) async {
+  for (var index = 0; index < 100; index += 1) {
+    if (condition()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+  fail('Condition did not become true.');
+}

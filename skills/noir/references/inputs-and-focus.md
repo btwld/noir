@@ -91,6 +91,7 @@ const TextInput({
   CursorStyle cursorStyle = CursorStyle.block,   // block | underline | bar
   bool obscureText = false,             // mask as obscuringCharacter; callbacks still get raw text
   String obscuringCharacter = '*',
+  bool readOnly = false,                 // block user edits while retaining focus and caret movement
   int maxLength = 100,
   ValueChanged<String>? onChanged,      // void Function(String)
   VoidCallback? onSubmit,               // fired on Enter
@@ -99,6 +100,10 @@ const TextInput({
   Key? key,
 })
 ```
+
+`readOnly` blocks typing, paste, Backspace, and Delete. It preserves focus,
+caret movement, controller identity, programmatic controller updates, and the
+ordinary Enter submission callback.
 
 ```dart
 TextInput(

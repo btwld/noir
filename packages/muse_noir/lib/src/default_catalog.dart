@@ -370,13 +370,95 @@ Widget _buildButton(BuildContext context, MuseNoirRenderNode node) {
     'subtle' => (theme.surface, theme.textMuted),
     _ => (theme.accent, theme.accentForeground),
   };
-  return Button(
+  return _MuseNoirButton(
     label: _string(properties['label']) ?? '',
     color: color,
     textColor: textColor,
-    onPressed: enabled && node.canActivate
-        ? () => unawaited(node.activate!())
-        : null,
+    enabled: enabled && node.canActivate,
+    activate: node.activate,
+  );
+}
+
+final class _MuseNoirButton extends StatefulWidget {
+  const _MuseNoirButton({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.enabled,
+    required this.activate,
+  });
+
+  final String label;
+  final Color color;
+  final Color textColor;
+  final bool enabled;
+  final Future<MuseActionResult> Function()? activate;
+
+  @override
+  State<_MuseNoirButton> createState() => _MuseNoirButtonState();
+}
+
+final class _MuseNoirButtonState extends State<_MuseNoirButton> {
+  var _busy = false;
+  var _generation = 0;
+  String? _error;
+
+  @override
+  void didUpdateWidget(_MuseNoirButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.activate, widget.activate)) {
+      _generation += 1;
+      _busy = false;
+      _error = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _generation += 1;
+    super.dispose();
+  }
+
+  Future<void> _activate() async {
+    final activate = widget.activate;
+    if (_busy || !widget.enabled || activate == null) return;
+    final generation = _generation;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await activate();
+      if (!mounted || generation != _generation) return;
+      if (result.failure case final failure?) {
+        setState(() => _error = failure.message);
+      }
+    } on Object {
+      if (mounted && generation == _generation) {
+        setState(() => _error = 'Button action could not complete.');
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: <Widget>[
+      Button(
+        label: _busy ? '${widget.label}…' : widget.label,
+        color: widget.color,
+        textColor: widget.textColor,
+        onPressed: widget.enabled && !_busy
+            ? () => unawaited(_activate())
+            : null,
+      ),
+      if (_error case final error?) Text(error, style: TextStyles.error),
+    ],
   );
 }
 

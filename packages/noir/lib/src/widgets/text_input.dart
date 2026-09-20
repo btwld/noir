@@ -39,6 +39,7 @@ class TextInput extends StatefulWidget {
     this.cursorStyle = CursorStyle.block,
     this.obscureText = false,
     this.obscuringCharacter = '*',
+    this.readOnly = false,
     this.maxLength = 100,
     this.onChanged,
     this.onSubmit,
@@ -82,6 +83,10 @@ class TextInput extends StatefulWidget {
   /// Single grapheme cluster used to replace each visible cluster when
   /// [obscureText] is true. Defaults to `'*'`.
   final String obscuringCharacter;
+
+  /// When true, the field renders text and permits caret movement but rejects
+  /// user insertion, paste, and deletion. Defaults to false.
+  final bool readOnly;
 
   /// Maximum number of characters accepted. Defaults to 100.
   final int maxLength;
@@ -135,6 +140,7 @@ class _TextInputState extends State<TextInput>
     controller: controller,
     allowNewline: false,
     allowTab: false,
+    readOnly: widget.readOnly,
     maxLength: widget.maxLength,
     onChanged: widget.onChanged,
     onSubmit: widget.onSubmit,
