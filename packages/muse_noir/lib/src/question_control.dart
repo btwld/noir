@@ -176,6 +176,7 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
   var _generation = 0;
   String? _interactionError;
   var _synchronizing = false;
+  TextEditingValue? _lockedFreeTextValue;
 
   bool get _isMultiple => widget.mode == 'multiple';
   bool get _showsAnswerButton => _isMultiple || widget.allowFreeText;
@@ -194,8 +195,21 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
   @override
   void initState() {
     super.initState();
-    _freeTextController = TextEditingController();
+    _freeTextController = TextEditingController()
+      ..addListener(_trackLockedSelection);
     _syncAnswer();
+  }
+
+  void _trackLockedSelection() {
+    final lockedValue = _lockedFreeTextValue;
+    final currentValue = _freeTextController.value;
+    if (_busy &&
+        !_synchronizing &&
+        lockedValue != null &&
+        currentValue.text == lockedValue.text &&
+        currentValue.composing == lockedValue.composing) {
+      _lockedFreeTextValue = currentValue;
+    }
   }
 
   @override
@@ -205,6 +219,7 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
       _generation += 1;
       _highlightedIndex = 0;
       _busy = false;
+      _lockedFreeTextValue = null;
       _interactionError = null;
     }
     _syncAnswer();
@@ -232,11 +247,13 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
       _freeTextController.text = text;
       _synchronizing = false;
     }
+    if (_busy) _lockedFreeTextValue = _freeTextController.value;
   }
 
   @override
   void dispose() {
     _generation += 1;
+    _freeTextController.removeListener(_trackLockedSelection);
     _freeTextController.dispose();
     super.dispose();
   }
@@ -274,7 +291,16 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
   }
 
   void _changeFreeText(String value) {
-    if (!_canInteract || _synchronizing) return;
+    if (_synchronizing) return;
+    if (!_canInteract) {
+      final lockedValue = _lockedFreeTextValue;
+      if (lockedValue != null && _freeTextController.value != lockedValue) {
+        _synchronizing = true;
+        _freeTextController.value = lockedValue;
+        _synchronizing = false;
+      }
+      return;
+    }
     setState(() {
       _interactionError = null;
       if (!_isMultiple && value.trim().isNotEmpty) _selectedValues.clear();
@@ -295,11 +321,15 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
       return;
     }
     if (freeText != _freeTextController.text) {
+      _synchronizing = true;
+      _freeTextController.text = freeText;
+      _synchronizing = false;
       widget.onEdit(_answer(freeText: freeText));
     }
     final generation = _generation;
     setState(() {
       _busy = true;
+      _lockedFreeTextValue = _freeTextController.value;
       _interactionError = null;
     });
     try {
@@ -314,7 +344,12 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
         setState(() => _interactionError = 'Question answer could not submit.');
       }
     } finally {
-      if (mounted && generation == _generation) setState(() => _busy = false);
+      if (mounted && generation == _generation) {
+        setState(() {
+          _busy = false;
+          _lockedFreeTextValue = null;
+        });
+      }
     }
   }
 
@@ -377,6 +412,7 @@ final class _MuseNoirQuestionState extends State<_MuseNoirQuestion> {
             placeholder: widget.freeTextPlaceholder,
             maxLength: 2048,
             autofocus: widget.autofocus && widget.options.isEmpty,
+            readOnly: !_canInteract,
             onChanged: _canInteract ? _changeFreeText : null,
             onSubmit: _canInteract ? () => unawaited(_submit()) : null,
           ),

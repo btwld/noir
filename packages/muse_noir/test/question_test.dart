@@ -66,6 +66,61 @@ void main() {
     });
   });
 
+  test('choices plus free text submit the typed answer', () async {
+    final fixture = await _QuestionFixture.open(
+      mode: 'single',
+      allowFreeText: true,
+    );
+    addTearDown(fixture.dispose);
+    final driver = fixture.driver();
+    addTearDown(driver.dispose);
+    await driver.ready();
+    await driver.sendLogicalKey(LogicalKeyboardKey.tab, code: 9);
+    await driver.sendPaste('next week');
+    await driver.sendLogicalKey(LogicalKeyboardKey.enter, code: 13);
+    await _drain();
+    expect(fixture.answers.single['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'next week',
+    });
+  });
+
+  test('disabled free text cannot diverge from the Muse draft', () async {
+    final fixture = await _QuestionFixture.open(
+      mode: 'single',
+      options: const <Object?>[],
+      allowFreeText: true,
+      enabled: false,
+    );
+    addTearDown(fixture.dispose);
+    final app = createTuiTestApp(
+      MuseNoirView(navigator: fixture.navigator, renderer: museNoirRenderer),
+      width: 60,
+      height: 18,
+    );
+    addTearDown(app.dispose);
+    await _drain();
+
+    app.mockInput
+      ..typeText('x')
+      ..paste('locked')
+      ..pressBackspace();
+    app.pumpFrame();
+    expect(app.captureFrame().containsText('xlocke'), isFalse);
+    fixture.enabled!.value = true;
+    await _drain();
+    app.pumpFrame();
+
+    app.mockInput
+      ..paste('ready')
+      ..pressEnter();
+    await _drain();
+    expect(fixture.answers.single['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'ready',
+    });
+  });
+
   test(
     'a failing check permits editing and shows rejected-action feedback',
     () async {
@@ -116,6 +171,49 @@ void main() {
     expect(fixture.answers, hasLength(1));
     completion.complete();
     await _drain();
+  });
+
+  test('busy free text stays aligned with the submitted Muse draft', () async {
+    final completion = Completer<void>();
+    final fixture = await _QuestionFixture.open(
+      mode: 'single',
+      options: const <Object?>[],
+      allowFreeText: true,
+      onAnswer: (_) => completion.future,
+    );
+    addTearDown(fixture.dispose);
+    final app = createTuiTestApp(
+      MuseNoirView(navigator: fixture.navigator, renderer: museNoirRenderer),
+      width: 60,
+      height: 18,
+    );
+    addTearDown(app.dispose);
+    await _drain();
+    app.mockInput
+      ..paste('ready')
+      ..pressEnter()
+      ..pressArrow(ArrowDirection.left)
+      ..typeText('x')
+      ..paste('blocked')
+      ..pressBackspace()
+      ..pressEnter();
+    expect(fixture.answers, hasLength(1));
+
+    completion.complete();
+    await _drainMicrotasks();
+    app.mockInput
+      ..typeText('!')
+      ..pressEnter();
+    await _drain();
+    expect(fixture.answers, hasLength(2));
+    expect(fixture.answers.first['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'ready',
+    });
+    expect(fixture.answers.last['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'read!y',
+    });
   });
 
   test(
@@ -192,13 +290,125 @@ void main() {
       },
     ]);
   });
+
+  test('push and pop retain the Muse-owned Question draft', () async {
+    final answers = <Map<String, Object?>>[];
+    final firstIntent = _questionIntent(answers, (_) {});
+    final secondIntent = MuseIntent(
+      id: 'second',
+      description: 'Second route.',
+      instructions: 'Show a label.',
+      catalog: museNoirCatalog,
+    );
+    final navigator = MuseIntentNavigator(
+      generator: MuseGenerator.scripted(<Object>[
+        <Object>[
+          _create(),
+          _update(<Object?>[
+            _question(
+              'root',
+              'deployment',
+              'single',
+              options: const <Object?>[],
+              allowFreeText: true,
+            ),
+          ]),
+        ],
+        <Object>[
+          _create(),
+          _update(<Object?>[
+            <String, Object?>{
+              'id': 'root',
+              'component': 'Text',
+              'text': 'Second route',
+            },
+          ]),
+        ],
+      ]),
+      routes: <MuseIntentRoute>[
+        MuseIntentRoute(firstIntent),
+        MuseIntentRoute(secondIntent),
+      ],
+    );
+    addTearDown(navigator.dispose);
+    expect(await navigator.push(firstIntent), isA<MuseNavigated>());
+    final app = createTuiTestApp(
+      MuseNoirView(navigator: navigator, renderer: museNoirRenderer),
+      width: 60,
+      height: 18,
+    );
+    addTearDown(app.dispose);
+    await _drain();
+    app.mockInput.paste('retained draft');
+    await _drain();
+
+    expect(await navigator.push(secondIntent), isA<MuseNavigated>());
+    app.pumpFrame();
+    expect(app.captureFrame().containsText('Second route'), isTrue);
+    await navigator.pop();
+    await _drain();
+    app.pumpFrame();
+    final draft = app.captureFrame().findText('retained draft').single;
+    app.mockMouse.click(draft.x, draft.y);
+
+    app.mockInput.pressEnter();
+    await _drain();
+    expect(answers.single['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'retained draft',
+    });
+  });
+
+  test('host updates preserve an unchanged free-text selection', () async {
+    final fixture = await _QuestionFixture.open(
+      mode: 'single',
+      options: const <Object?>[],
+      allowFreeText: true,
+      enabled: true,
+    );
+    addTearDown(fixture.dispose);
+    final app = createTuiTestApp(
+      MuseNoirView(navigator: fixture.navigator, renderer: museNoirRenderer),
+      width: 60,
+      height: 18,
+    );
+    addTearDown(app.dispose);
+    await _drain();
+    app.mockInput
+      ..paste('abcd')
+      ..pressArrow(ArrowDirection.left)
+      ..pressArrow(ArrowDirection.left);
+
+    fixture.enabled!.value = false;
+    await _drain();
+    app.pumpFrame();
+    fixture.enabled!.value = true;
+    await _drain();
+    app.pumpFrame();
+    app.mockInput
+      ..typeText('X')
+      ..pressEnter();
+    await _drain();
+
+    expect(fixture.answers.single['answer'], <String, Object?>{
+      'selectedValues': <String>[],
+      'freeText': 'abXcd',
+    });
+  });
 }
 
 final class _QuestionFixture {
-  _QuestionFixture._(this.navigator, this.answers);
+  _QuestionFixture._(
+    this.navigator,
+    this.answers, {
+    this.enabled,
+    MuseValueListenable<bool>? enabledAdapter,
+  }) : _enabledAdapter = enabledAdapter;
 
   final MuseIntentNavigator navigator;
   final List<Map<String, Object?>> answers;
+  final ValueNotifier<bool>? enabled;
+  final MuseValueListenable<bool>? _enabledAdapter;
 
   static Future<_QuestionFixture> open({
     required String mode,
@@ -207,11 +417,22 @@ final class _QuestionFixture {
       <String, Object?>{'value': 'tomorrow', 'label': 'Tomorrow'},
     ],
     bool allowFreeText = false,
+    bool? enabled,
     List<Object?>? checks,
     FutureOr<void> Function(Map<String, Object?> answer)? onAnswer,
   }) async {
     final answers = <Map<String, Object?>>[];
-    final intent = _questionIntent(answers, onAnswer ?? (_) {});
+    final enabledNotifier = enabled == null
+        ? null
+        : ValueNotifier<bool>(enabled);
+    final enabledAdapter = enabledNotifier == null
+        ? null
+        : MuseValueListenable<bool>(enabledNotifier);
+    final intent = _questionIntent(
+      answers,
+      onAnswer ?? (_) {},
+      enabled: enabledAdapter,
+    );
     final navigator = MuseIntentNavigator(
       generator: MuseGenerator.scripted(<Object>[
         <Object>[
@@ -223,6 +444,9 @@ final class _QuestionFixture {
               mode,
               options: options,
               allowFreeText: allowFreeText,
+              enabled: enabledAdapter == null
+                  ? true
+                  : _stateBinding('/enabled'),
               checks: checks,
             ),
           ]),
@@ -238,7 +462,12 @@ final class _QuestionFixture {
           ? '${result.failure} ${result.failure.issues}'
           : '$result',
     );
-    return _QuestionFixture._(navigator, answers);
+    return _QuestionFixture._(
+      navigator,
+      answers,
+      enabled: enabledNotifier,
+      enabledAdapter: enabledAdapter,
+    );
   }
 
   KeyDriver driver() => KeyDriver(
@@ -247,18 +476,33 @@ final class _QuestionFixture {
     height: 18,
   );
 
-  Future<void> dispose() => navigator.dispose();
+  Future<void> dispose() async {
+    await navigator.dispose();
+    _enabledAdapter?.dispose();
+    enabled?.dispose();
+  }
 }
 
 MuseIntent _questionIntent(
   List<Map<String, Object?>> answers,
-  FutureOr<void> Function(Map<String, Object?> answer) onAnswer,
-) => MuseIntent(
+  FutureOr<void> Function(Map<String, Object?> answer) onAnswer, {
+  MuseListenable<bool>? enabled,
+}) => MuseIntent(
   id: 'question',
   description: 'Question test.',
   instructions: 'Ask bounded questions.',
   catalog: museNoirCatalog,
   constraints: museNoirConstraints,
+  states: <MuseState<Object>>[
+    if (enabled != null)
+      MuseState<bool>(
+            name: 'enabled',
+            description: 'Whether the question accepts input.',
+            schema: Ack.boolean(),
+            watch: (_) => enabled,
+          )
+          as MuseState<Object>,
+  ],
   actions: <MuseAction<Object?>>[
     MuseAction<Map<String, Object?>>(
           name: 'answer',
@@ -304,6 +548,7 @@ Map<String, Object?> _question(
     <String, Object?>{'value': 'tomorrow', 'label': 'Tomorrow'},
   ],
   bool allowFreeText = false,
+  Object? enabled = true,
   bool autofocus = true,
   List<Object?>? checks,
 }) => <String, Object?>{
@@ -314,6 +559,7 @@ Map<String, Object?> _question(
   'mode': mode,
   'options': options,
   'allowFreeText': allowFreeText,
+  'enabled': enabled,
   'autofocus': autofocus,
   'answer': <String, Object?>{'selectedValues': <String>[], 'freeText': ''},
   'checks': ?checks,
@@ -328,7 +574,19 @@ Map<String, Object?> _question(
   },
 };
 
+Map<String, Object?> _stateBinding(String path) => <String, Object?>{
+  r'$muse': <String, Object?>{
+    'state': <String, Object?>{'path': path},
+  },
+};
+
 Future<void> _drain() async {
   await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
+}
+
+Future<void> _drainMicrotasks() async {
+  for (var index = 0; index < 10; index += 1) {
+    await Future<void>.microtask(() {});
+  }
 }

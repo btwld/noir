@@ -5,6 +5,8 @@ import 'package:muse_noir/muse_noir.dart';
 import 'package:noir/noir.dart';
 import 'package:test/test.dart';
 
+import '../../noir/test/helpers/tui_test_app.dart';
+
 void main() {
   test('mounting shows loading but never starts generation', () async {
     var calls = 0;
@@ -60,6 +62,84 @@ void main() {
       expect(fixture.navigator.current!.surface, isNotNull);
     },
   );
+
+  test('navigator replacement detaches old presentation listeners', () async {
+    final revision = ValueNotifier<int>(0);
+    final revisionAdapter = MuseValueListenable<int>(revision);
+    var builds = 0;
+    final renderer = MuseNoirRenderer(<MuseNoirComponentBinding>[
+      MuseNoirComponentBinding(
+        name: 'Leaf',
+        description: 'Leaf.',
+        builder: (_, node) {
+          builds += 1;
+          return const Text('ready');
+        },
+      ),
+    ]);
+    final catalog = renderer.catalog(id: 'view/v1');
+    final oldIntent = MuseIntent(
+      id: 'old',
+      description: 'Old view.',
+      instructions: 'Show a leaf.',
+      catalog: catalog,
+      facts: <MuseFact<Object?>>[
+        MuseFact<int>(
+          name: 'revision',
+          description: 'Old regeneration revision.',
+          watch: (_) => revisionAdapter,
+        ),
+      ],
+    );
+    final newIntent = MuseIntent(
+      id: 'new',
+      description: 'New view.',
+      instructions: 'Show a leaf.',
+      catalog: catalog,
+    );
+    final oldNavigator = MuseIntentNavigator(
+      generator: MuseGenerator((request) async* {
+        final composition = _composition();
+        yield jsonEncode(<Object>[
+          if (!(request.payload['surfaceExists']! as bool)) composition.first,
+          composition.last,
+        ]);
+      }),
+      routes: <MuseIntentRoute>[MuseIntentRoute(oldIntent)],
+    );
+    final newNavigator = MuseIntentNavigator(
+      generator: MuseGenerator.scripted(<Object>[_composition()]),
+      routes: <MuseIntentRoute>[MuseIntentRoute(newIntent)],
+    );
+    addTearDown(() async {
+      await oldNavigator.dispose();
+      await newNavigator.dispose();
+      revisionAdapter.dispose();
+      revision.dispose();
+    });
+    expect(await oldNavigator.push(oldIntent), isA<MuseNavigated>());
+    expect(await newNavigator.push(newIntent), isA<MuseNavigated>());
+    final key = GlobalKey<_NavigatorHostState>();
+    final app = createTuiTestApp(
+      _NavigatorHost(key: key, navigator: oldNavigator, renderer: renderer),
+    );
+    addTearDown(app.dispose);
+    expect(builds, 1);
+
+    key.currentState!.replace(newNavigator);
+    app.pumpFrame();
+    expect(builds, 2);
+    final afterReplacement = builds;
+
+    final oldSurfaceRevision = oldNavigator.current!.surface!.revision;
+    revision.value = 1;
+    await _waitFor(
+      () => oldNavigator.current!.surface!.revision > oldSurfaceRevision,
+    );
+    await oldNavigator.pop();
+    app.pumpFrame();
+    expect(builds, afterReplacement);
+  });
 
   test('not-found changes render and recover through navigation', () async {
     final fixture = _Fixture(MuseGenerator.scripted(<Object>[_composition()]));
@@ -312,6 +392,32 @@ final class _RendererHostState extends State<_RendererHost> {
       return Text('error:${failure.code}');
     },
   );
+}
+
+final class _NavigatorHost extends StatefulWidget {
+  const _NavigatorHost({
+    required this.navigator,
+    required this.renderer,
+    super.key,
+  });
+
+  final MuseIntentNavigator navigator;
+  final MuseNoirRenderer renderer;
+
+  @override
+  State<_NavigatorHost> createState() => _NavigatorHostState();
+}
+
+final class _NavigatorHostState extends State<_NavigatorHost> {
+  late MuseIntentNavigator _navigator = widget.navigator;
+
+  void replace(MuseIntentNavigator navigator) {
+    setState(() => _navigator = navigator);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      MuseNoirView(navigator: _navigator, renderer: widget.renderer);
 }
 
 List<Object> _composition() => <Object>[

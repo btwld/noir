@@ -1,7 +1,6 @@
 # muse_noir architecture
 
-Status: **implemented and locally verified; independent behavior and full-diff
-review is pending**.
+Status: **implemented, locally verified, and independently reviewed**.
 
 ## Dependency boundary
 
@@ -35,12 +34,20 @@ component identity. It omits invisible subtrees, scopes component keys to the
 shown activation, reads draft-aware properties and check feedback, reads
 action parameters at gesture time, and dispatches with the rendered surface's
 provenance. Stale, hidden, disabled, disposed, or forged gestures fail closed.
+Per-component action leases preserve callback identity for an unchanged
+rendered action and invalidate callbacks when the action is replaced, hidden,
+or disposed.
 
 `MuseNoirView` retains a live accepted surface while a replacement activation
 generates. It also retains the surface after failed regeneration of the same
 activation. A disposed or never-accepted activation clears the view. Replacing
 the navigator resets retained state, and replacing the renderer reruns
 compatibility checks.
+
+The dashboard distinguishes a retained regeneration failure from an initial
+failure. It keeps the accepted surface mounted, presents a redacted failure
+description beside it, hides obsolete feedback while a retry is generating,
+and clears it after success.
 
 `MuseValueListenable` and `MuseNotifierListenable` remove forwarded listeners
 without disposing the borrowed Noir sources.
@@ -67,6 +74,17 @@ In-flight submission suppresses duplicates. Check and rejected-action feedback
 remain visible without replacing the accepted surface. A failed check blocks
 submission but leaves draft editing enabled.
 
+Inactive and in-flight free-text controls use Noir's reusable
+`TextInput.readOnly` policy. Typing, paste, and deletion are blocked while
+focus, caret movement, controller identity, programmatic updates, and general
+TextInput submission semantics remain intact. Question itself separately
+disables submission while disabled, busy, misconfigured, or actionless.
+
+Default Button controls await validated activation, suppress duplicate pending
+gestures, clear local feedback on retry, and show a returned failure below the
+button. Application confirmation remains inside the declared Muse handler;
+the adapter does not add a second policy or dispatch layer.
+
 Muse 1.0 has no unique-component-property constraint, so the adapter cannot
 locally assure cross-component `questionId` uniqueness. Applications must use
 stable IDs and action constraints.
@@ -91,10 +109,18 @@ Question forms, private-state bindings, and component-local drafts.
 
 ## Verification boundary
 
-The package tests cover catalog compatibility, visibility, stale gestures,
-immediate draft reads, forged parameters, navigation, retained surfaces,
-listener cleanup, all eleven components, all four Question forms, request
-privacy, same-text retry, the 15-node gallery, and an 80x24 headless frame.
+The package tests cover catalog compatibility, visibility, replacement and
+disposal of stale gestures, immediate draft reads, forged parameters,
+navigator replacement, push/pop draft retention, controller selection,
+same-turn busy-input rejection, retained surfaces and regeneration feedback,
+listener cleanup, Button pending, same-activation replacement, and failure
+behavior, application confirmation, all eleven components, all four Question
+forms, panel/callout presentation, request privacy, same-text retry, the
+15-node gallery, and parsed keyboard plus clipped scrolling at 80x24.
+
+The correction slice passes nested format and fatal-info analysis, all 50
+nested tests, root format and fatal-info analysis, all 232 architecture tests,
+all 2,316 serial root tests, and `git diff --check` on 2026-09-20.
 
 The pre-refresh implementation passed nested format and fatal-info analysis,
 all 37 nested tests, root format and fatal-info analysis, all 194 architecture

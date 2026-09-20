@@ -33,7 +33,7 @@ The v2 catalog id is
 | `Column`, `Row`, `Panel` | integer-cell layout and grouping |
 | `Text`, `Badge`, `Callout`, `Divider` | bounded semantic content |
 | `Progress`, `Spinner` | progress and activity |
-| `Button` | validated action gesture |
+| `Button` | awaited validated action with pending and failure feedback |
 | `Question` | single choice, multiple choice, free text, or choices plus text |
 
 `museNoirRenderer` and `museNoirCatalog` derive from the same eleven bindings.
@@ -95,6 +95,14 @@ The component action reads the component-local draft:
 Edits stay local until activation. Activation reads the current draft even
 before the next frame and dispatches through Muse's validated renderer door.
 Stale, disposed, hidden, disabled, or forged gestures fail closed.
+Disabled and in-flight Questions remain mounted and focusable, but their
+single-line field is read-only so visible text cannot diverge from the Muse
+draft. A failed check remains editable so the user can correct the answer.
+
+Button activation is awaited locally. A pending Button suppresses duplicate
+gestures, and a failed result appears below the retained accepted surface until
+the user retries. Replacing or disposing the rendered action invalidates its
+late completion.
 
 ## Prompt-driven example
 
@@ -102,6 +110,11 @@ The example makes no request at launch. It creates the first activation only
 after submission and watches an explicitly disclosed prompt fact for later
 regeneration. A revision field makes same-text retry observable. Private
 progress and answer values never enter model facts.
+
+A failed regeneration keeps the previous accepted dashboard visible and shows
+`Regeneration failed; showing previous output` with the same redacted failure
+description used for first-generation errors. Starting a retry clears that
+feedback; success leaves only the replacement output.
 
 ```sh
 cd packages/muse_noir

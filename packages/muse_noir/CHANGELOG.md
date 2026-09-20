@@ -16,6 +16,14 @@
   `MuseGenerator`, preserving credential-free scripted mode.
 - Add real assurance, renderer, navigation, draft, privacy, constraint, and
   80x24 headless tests plus root adapter-boundary checks.
+- Keep disabled and in-flight Question fields read-only without losing their
+  mounted controller, focus, selection, or failed-check editability.
+- Await Button actions, suppress pending duplicates, show local failures, and
+  invalidate late completions when the rendered action changes.
+- Keep accepted output visible after failed regeneration with explicit,
+  redacted feedback that clears on retry and recovery.
+- Restore navigation, stale-callback, confirmation, panel/callout, clipping,
+  and parsed 80x24 interaction regressions from the pre-replacement baseline.
 
 ## 0.0.1-dev.1
 

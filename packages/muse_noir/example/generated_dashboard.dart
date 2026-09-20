@@ -348,6 +348,8 @@ final class _GeneratedDashboardAppState extends State<GeneratedDashboardApp> {
 
   @override
   Widget build(BuildContext context) {
+    final activation = _activation;
+    final regenerationFailure = _retainedRegenerationFailure(activation);
     final muted = TextStyle(
       color: _theme.textMuted,
       fontWeight: FontWeight.dim,
@@ -419,7 +421,7 @@ final class _GeneratedDashboardAppState extends State<GeneratedDashboardApp> {
             Expanded(
               child: ScrollBox(
                 canRequestFocus: false,
-                child: _activation == null
+                child: activation == null
                     ? Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,31 +436,50 @@ final class _GeneratedDashboardAppState extends State<GeneratedDashboardApp> {
                           ),
                         ],
                       )
-                    : MuseNoirView(
-                        key: const ValueKey<String>('generated_surface'),
-                        navigator: widget.dashboard.navigator,
-                        renderer: museNoirRenderer,
-                        loadingBuilder: (_) => const Row(
-                          spacing: 1,
-                          children: <Widget>[
-                            Spinner(),
-                            Text('Generating dashboard…'),
-                          ],
-                        ),
-                        errorBuilder: (context, failure) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          if (regenerationFailure != null) ...<Widget>[
                             const Text(
-                              'No dashboard was accepted.',
+                              'Regeneration failed; showing previous output',
                               style: TextStyles.error,
                             ),
                             Text(
-                              widget.dashboard.describeFailure(failure),
+                              widget.dashboard.describeFailure(
+                                regenerationFailure,
+                              ),
                               style: muted,
                             ),
+                            const SizedBox(height: 1),
                           ],
-                        ),
+                          MuseNoirView(
+                            key: const ValueKey<String>('generated_surface'),
+                            navigator: widget.dashboard.navigator,
+                            renderer: museNoirRenderer,
+                            loadingBuilder: (_) => const Row(
+                              spacing: 1,
+                              children: <Widget>[
+                                Spinner(),
+                                Text('Generating dashboard…'),
+                              ],
+                            ),
+                            errorBuilder: (context, failure) => Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                const Text(
+                                  'No dashboard was accepted.',
+                                  style: TextStyles.error,
+                                ),
+                                Text(
+                                  widget.dashboard.describeFailure(failure),
+                                  style: muted,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -478,6 +499,9 @@ String _statusLabel(MuseActivation? activation) =>
       null => 'Ready for a prompt',
       MuseActivationStatus.generating =>
         'Generating · previous output stays visible',
+      MuseActivationStatus.ready
+          when _retainedRegenerationFailure(activation) != null =>
+        'Regeneration failed · previous output shown',
       MuseActivationStatus.ready => 'Ready · assured by Muse',
       MuseActivationStatus.failed => 'Generation failed',
       MuseActivationStatus.disposed => 'Closed',
@@ -487,10 +511,22 @@ Color _statusColor(MuseActivation? activation, ThemeData theme) =>
     switch (activation?.status.value) {
       null => theme.textMuted,
       MuseActivationStatus.generating => theme.info,
+      MuseActivationStatus.ready
+          when _retainedRegenerationFailure(activation) != null =>
+        theme.danger,
       MuseActivationStatus.ready => theme.success,
       MuseActivationStatus.failed => theme.danger,
       MuseActivationStatus.disposed => theme.textMuted,
     };
+
+MuseFailure? _retainedRegenerationFailure(MuseActivation? activation) {
+  if (activation == null ||
+      activation.status.value != MuseActivationStatus.ready ||
+      activation.surface == null) {
+    return null;
+  }
+  return activation.failure;
+}
 
 String _providerHeaderLabel(GeneratedDashboardSession dashboard) {
   if (!dashboard.isLive) return 'OFFLINE · scripted';
