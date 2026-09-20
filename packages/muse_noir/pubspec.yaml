@@ -1,0 +1,24 @@
+name: muse_noir
+description: A trusted Muse A2UI renderer and navigator view for Noir terminal applications.
+version: 0.0.1-dev.1
+publish_to: none
+repository: https://github.com/leoafarias/noir/tree/main/packages/muse_noir
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  ack: ^1.2.0
+  muse:
+    git:
+      url: https://github.com/conceptadev/muse.git
+      ref: b7a7dff9ccd7f241465933f84a6d3537dcd017c1
+      path: packages/muse
+  noir:
+    path: ../noir
+
+dev_dependencies:
+  dartantic_ai: '>=3.4.0 <3.5.0'
+  lints: ^6.0.0
+  test: ^1.25.0

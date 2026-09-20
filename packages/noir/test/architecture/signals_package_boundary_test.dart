@@ -39,6 +39,7 @@ void main() {
         'workspace:\n'
         '  - packages/noir\n'
         '  - packages/noir_driver\n'
+        '  - packages/muse_noir\n'
         '  - packages/noir_signals',
       ),
     );

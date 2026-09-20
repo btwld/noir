@@ -815,6 +815,43 @@ void main() {
     expect(pubignoreLines, contains('/doc/api/'));
   });
 
+  test('muse_noir keeps one private Muse adapter door', () {
+    final libraryRoot = Directory('../muse_noir/lib');
+    final dartFiles = libraryRoot
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))
+        .toList();
+    final internalImports = <String>[
+      for (final file in dartFiles)
+        if (file.readAsStringSync().contains('package:muse/src/')) file.path,
+    ];
+
+    expect(internalImports, <String>['../muse_noir/lib/src/muse_bridge.dart']);
+    final barrel = _read('../muse_noir/lib/muse_noir.dart');
+    expect(barrel, isNot(contains('muse_bridge.dart')));
+    expect(barrel, isNot(contains('surface_view.dart')));
+  });
+
+  test('muse_noir production stays on Muse and Noir public surfaces', () {
+    final sources = Directory('../muse_noir/lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))
+        .where((file) => !file.path.endsWith('muse_bridge.dart'))
+        .map((file) => file.readAsStringSync())
+        .join('\n');
+
+    expect(sources, isNot(contains('package:flutter/')));
+    expect(sources, isNot(contains('package:noir/src/')));
+    expect(sources, isNot(contains('package:noir/noir_ffi.dart')));
+    expect(
+      sources,
+      isNot(contains('MusePreparedSurface')),
+      reason: 'Prepared types stay confined to the private bridge.',
+    );
+  });
+
   test(
     'repository-only code stays in scripts and large examples share one layout',
     () {
