@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
+import 'driver_polling.dart';
+
 /// One zero-based terminal cell.
 @immutable
 final class DriverPoint {
@@ -361,59 +363,64 @@ final class DriverTree {
 }
 
 /// Polls fresh snapshots until [locator] has exactly one match.
+///
+/// [timeout] bounds the whole wait, a pending [fetchTree] response included:
+/// once it runs out no further snapshot is requested and a late one is not
+/// accepted. The first snapshot is always requested. An ambiguous match and a
+/// [fetchTree] error both propagate as themselves rather than as a timeout.
 Future<DriverNode> waitForDriverLocator(
   DriverLocator locator, {
   required Future<DriverTree> Function() fetchTree,
   Duration timeout = const Duration(seconds: 5),
   Duration pollInterval = const Duration(milliseconds: 50),
-}) async {
-  final deadline = DateTime.now().add(timeout);
-  DriverTree? lastTree;
-  while (true) {
-    lastTree = await fetchTree();
-    final resolution = lastTree._resolve(locator);
+}) => pollSnapshots<DriverTree, DriverNode>(
+  fetch: fetchTree,
+  timeout: timeout,
+  pollInterval: pollInterval,
+  resolve: (tree) {
+    final resolution = tree._resolve(locator);
     if (resolution.matches.length > 1) {
-      throw _strictMatchError(
-        locator,
-        resolution,
-        treeNodes: lastTree._nodes(),
-      );
+      throw _strictMatchError(locator, resolution, treeNodes: tree._nodes());
     }
-    if (resolution.matches.length == 1) {
-      return resolution.matches.single;
-    }
-    if (!DateTime.now().isBefore(deadline)) {
-      throw StateError(
-        'Timed out waiting for $locator: 0 matches.'
-        '${_zeroMatchHint(locator, resolution, lastTree._nodes())}',
-      );
-    }
-    await Future<void>.delayed(pollInterval);
-  }
-}
+    return resolution.matches.singleOrNull;
+  },
+  onTimeout: (lastTree) => StateError(
+    lastTree == null
+        ? 'Timed out waiting for $locator: no tree snapshot arrived '
+              'within $timeout.'
+        : 'Timed out waiting for $locator: 0 matches.'
+              '${_zeroMatchHint(locator, lastTree._resolve(locator), lastTree._nodes())}',
+  ),
+);
 
 /// Polls fresh snapshots until [locator] has no matches.
 ///
-/// An ambiguous ancestor throws; it does not establish absence.
+/// An ambiguous ancestor throws; it does not establish absence. [timeout]
+/// bounds the whole wait exactly as it does for [waitForDriverLocator].
 Future<void> waitForAbsentDriverLocator(
   DriverLocator locator, {
   required Future<DriverTree> Function() fetchTree,
   Duration timeout = const Duration(seconds: 5),
   Duration pollInterval = const Duration(milliseconds: 50),
-}) async {
-  final deadline = DateTime.now().add(timeout);
-  while (true) {
-    final matches = (await fetchTree()).findAll(locator);
-    if (matches.isEmpty) return;
-    if (!DateTime.now().isBefore(deadline)) {
-      throw StateError(
-        'Timed out waiting for $locator to be absent: '
-        '${matches.length} matches remain.\n${_describeMatches(matches)}',
+}) => pollSnapshots<DriverTree, DriverTree>(
+  fetch: fetchTree,
+  timeout: timeout,
+  pollInterval: pollInterval,
+  resolve: (tree) => tree.findAll(locator).isEmpty ? tree : null,
+  onTimeout: (lastTree) {
+    if (lastTree == null) {
+      return StateError(
+        'Timed out waiting for $locator to be absent: no tree snapshot '
+        'arrived within $timeout.',
       );
     }
-    await Future<void>.delayed(pollInterval);
-  }
-}
+    final matches = lastTree.findAll(locator);
+    return StateError(
+      'Timed out waiting for $locator to be absent: '
+      '${matches.length} matches remain.\n${_describeMatches(matches)}',
+    );
+  },
+);
 
 /// Resolves [locator] from one fresh snapshot and clicks its actionable point.
 Future<void> clickDriverLocator(
