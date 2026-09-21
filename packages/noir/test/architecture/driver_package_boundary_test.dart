@@ -49,7 +49,14 @@ void main() {
     );
     expect(driverPubspec, contains('resolution: workspace'));
     expect(driverPubspec, contains('name: noir_driver'));
-    expect(driverPubspec, contains('noir: ^0.0.3'));
+    // Derived, not pinned: `melos version noir <next>` cascades this
+    // constraint, and the deliberate tripwire for a version move is the
+    // literal in package_distribution_ownership_test.dart.
+    final candidate = RegExp(
+      r'^version:\s*(\S+)\s*$',
+      multiLine: true,
+    ).firstMatch(rootPubspec)!.group(1)!;
+    expect(driverPubspec, contains('noir: ^$candidate'));
   });
 
   test('Noir depends on the driver for tooling only, never at runtime', () {

@@ -53,14 +53,14 @@ void main() {
   });
 
   test('verified committed assets are packaged then tested cross-platform', () {
-    final verify = workflow.indexOf(
-      'dart run tool/fetch_opentui_binaries.dart --verify-only',
+    // Each stage is a Melos script; melos_workspace_ownership_test pins the
+    // command behind each name.
+    final verify = workflow.indexOf('dart run melos:melos run native:verify');
+    final ordinaryTests = workflow.indexOf(
+      'dart run melos:melos run test:noir',
     );
-    final ordinaryTests = workflow.indexOf('dart test --concurrency=1');
-    final docs = workflow.indexOf(
-      'dart doc --validate-links --output .context/dartdoc',
-    );
-    final dryRun = workflow.indexOf('dart pub publish --dry-run');
+    final docs = workflow.indexOf('dart run melos:melos run docs:api');
+    final dryRun = workflow.indexOf('dart run melos:melos run archive:noir');
     final upload = workflow.indexOf('actions/upload-artifact@');
     final remove = workflow.indexOf('run: rm -rf native native_manifest.json');
     final download = workflow.indexOf('actions/download-artifact@');

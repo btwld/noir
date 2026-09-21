@@ -17,8 +17,10 @@ work lives in GitHub issues and pull requests.
   repository.
 - `external/opentui/`: the read-only OpenTUI submodule.
 
-The root `pubspec.yaml` only defines the Pub workspace and is never
-published.
+The root `pubspec.yaml` defines the Pub workspace and the Melos
+configuration that owns the shared dependency versions and the scripts that
+wrap the checks below. It declares no dependencies of its own beyond Melos,
+and is never published.
 
 ## Purpose and architecture
 
@@ -96,6 +98,14 @@ The repository is one Pub workspace. `dart pub get` at the root resolves both
 packages together, and `dart analyze --fatal-infos` at the root covers every
 package.
 
+Melos is a workspace dev dependency, so `dart run melos:melos run <script>`
+works after that resolve, with no global install. Each script wraps one
+command below, verbatim, and runs it from the directory this section names;
+`dart run melos:melos run --list` prints them. The commands themselves stay
+the source of truth, and an architecture test holds every script to the
+command it wraps. `melos bootstrap` is `dart pub get` plus a shared-constraint
+sync, and must leave the tree clean.
+
 Run these from `packages/noir/`, for the `noir` package:
 
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
@@ -133,7 +143,9 @@ from `packages/noir/`:
 
 The script stages a standalone copy outside the checkout, points its `noir`
 dependency at `packages/noir`, and runs the dry-run there. Pass a companion
-path to stage another member: `--verify ../noir_driver`.
+path to stage another member:
+
+    dart run tool/stage_companion_package.dart --verify ../noir_driver
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.

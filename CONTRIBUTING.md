@@ -29,8 +29,29 @@ The repository is one Pub workspace. `dart pub get` at the root resolves the
 `noir` package under `packages/noir/` and two optional companions:
 `packages/noir_driver/`, the drive-mode client applications use to test a Noir
 app as a live process, and `packages/noir_signals/`, which owns the widget
-lifecycle hooks and the Signals integration. The root `pubspec.yaml` only
-defines the workspace.
+lifecycle hooks and the Signals integration. The root `pubspec.yaml` defines
+the workspace and the Melos configuration.
+
+Melos comes with that resolve. It is a workspace dev dependency, pinned to an
+exact version:
+
+    dev_dependencies:
+      melos: 7.8.1
+
+Run it as `dart run melos:melos <command>`; no global install is needed, and
+a global one would shadow the pinned version. The pin is exact on purpose.
+Melos locates the workspace through this dev dependency, and 7.8.1 is the
+newest release that shares `cli_util ^0.4.x` with `ffigen`, a `noir` dev
+dependency. A Pub workspace resolves once for every member, so a newer Melos
+cannot be added without moving `ffigen` first.
+
+`dart run melos:melos bootstrap` resolves the workspace and aligns the
+constraints more than one package declares — the SDK range, `meta`, `matcher`,
+`vm_service`, `lints`, and `test` — from the `melos` section of the root
+`pubspec.yaml`. It only rewrites a constraint a package already declares in
+the same section, never adds one, and must leave the tree clean:
+
+    dart run melos:melos bootstrap && git diff --exit-code && git status --porcelain
 
 ## Required checks
 
@@ -55,6 +76,21 @@ When a change touches the companion package, also run, from
     dart format --output=none --set-exit-if-changed lib/ test/ example/
     dart analyze --fatal-infos
     dart test --concurrency=1
+
+Every one of those commands is also a Melos script, which runs it from the
+right directory with no `cd`:
+
+    dart run melos:melos run --list
+    dart run melos:melos run verify
+
+`verify` is the ladder above in order. Individual scripts are `format:noir`,
+`format:driver`, `format:signals`, `analyze`, `analyze:driver`,
+`analyze:signals`, `test:noir`, `test:driver`, `test:signals`,
+`test:architecture`, `native:verify`, `docs:frames`, `docs:api`,
+`stage:companion`, `stage:driver`, and `archive:noir`, `archive:driver`,
+`archive:signals` for the publish dry-runs. A script is an alias for the
+documented command, never a second definition of it, and CI runs the same
+scripts.
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.
@@ -236,6 +272,20 @@ of `packages/noir/CHANGELOG.md` describes it. `publication.json` records the
 latest version of each package on pub.dev, or `null`; the website derives
 every availability label from it and both manifests, so update it in the same
 change as a publication.
+
+To open the next candidate, move the version and cascade every cross-package
+constraint in one step, from the repository root:
+
+    dart run melos:melos version --no-changelog --no-git-commit-version --dependent-constraints noir <next-version>
+
+That edits `version:` in `packages/noir/pubspec.yaml` and the `noir:`
+constraints in `packages/noir_driver/pubspec.yaml` and
+`packages/noir_signals/pubspec.yaml`, and nothing else. The flags are not
+optional: a `v*` tag publishes `noir` to pub.dev for real, and the changelog
+sections are hand-written release contracts. The remaining work is
+deliberate — author the new changelog section, move the version the
+architecture test pins, update the version the dialog example shows, and
+change `publication.json` only when a package is actually published.
 
 Publish in this order, each package from its own directory:
 

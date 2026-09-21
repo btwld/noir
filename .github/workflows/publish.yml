@@ -78,28 +78,28 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        run: dart run tool/fetch_opentui_binaries.dart --verify-only
+        run: dart run melos:melos run native:verify
 
       - name: Check formatting
         timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
+        run: dart run melos:melos run format:noir
 
       - name: Run strict analysis
         timeout-minutes: 4
-        run: dart analyze --fatal-infos
+        run: dart run melos:melos run analyze
 
       - name: Run ordinary tests
         # Match Ubuntu CI; a successful run already exceeded eight minutes.
         timeout-minutes: 15
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:noir
 
       - name: Validate documentation links
         timeout-minutes: 5
-        run: dart doc --validate-links --output .context/dartdoc
+        run: dart run melos:melos run docs:api
 
       - name: Validate publish archive
         timeout-minutes: 5
-        run: dart pub publish --dry-run
+        run: dart run melos:melos run archive:noir
 
   publish:
     name: Publish package
@@ -159,7 +159,7 @@ jobs:
 
       - name: Validate publish archive
         timeout-minutes: 5
-        run: dart pub publish --dry-run
+        run: dart run melos:melos run archive:noir
 
       - name: Publish to pub.dev
         if: steps.state.outputs.publish == 'true'

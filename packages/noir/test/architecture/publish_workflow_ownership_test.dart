@@ -128,13 +128,12 @@ void main() {
     expect(preflight, contains('semver='));
     expect(preflight, contains(r'package_version="${BASH_REMATCH[1]}"'));
     expect(preflight, contains(r'"v$package_version"'));
-    expect(
-      preflight,
-      contains('dart run tool/fetch_opentui_binaries.dart --verify-only'),
-    );
-    expect(preflight, contains('dart test --concurrency=1'));
-    expect(preflight, contains('dart doc --validate-links'));
-    expect(preflight, contains('dart pub publish --dry-run'));
+    // The checks run through the workspace's Melos scripts, which own the
+    // commands themselves; melos_workspace_ownership_test pins those bodies.
+    expect(preflight, contains('dart run melos:melos run native:verify'));
+    expect(preflight, contains('dart run melos:melos run test:noir'));
+    expect(preflight, contains('dart run melos:melos run docs:api'));
+    expect(preflight, contains('dart run melos:melos run archive:noir'));
     expect(preflight, isNot(contains('continue-on-error')));
     expect(preflight, isNot(contains('.dart_tool')));
   });
