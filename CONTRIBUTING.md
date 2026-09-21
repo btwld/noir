@@ -62,6 +62,7 @@ Run focused tests while developing, then, from `packages/noir/`:
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run tool/fetch_opentui_binaries.dart --verify-only
+    dart run tool/release.dart check
 
 When a change touches the driver package, also run, from
 `packages/noir_driver/`:
@@ -83,14 +84,17 @@ right directory with no `cd`:
     dart run melos:melos run --list
     dart run melos:melos run verify
 
-`verify` is the ladder above in order. Individual scripts are `format:noir`,
-`format:driver`, `format:signals`, `analyze`, `analyze:driver`,
-`analyze:signals`, `test:noir`, `test:driver`, `test:signals`,
-`test:architecture`, `native:verify`, `docs:frames`, `docs:api`,
-`stage:companion`, `stage:driver`, and `archive:noir`, `archive:driver`,
-`archive:signals` for the publish dry-runs. A script is an alias for the
-documented command, never a second definition of it, and CI runs the same
-scripts.
+`verify` is the ladder above in order, ending with `release:check`.
+Individual scripts are `format:noir`, `format:driver`, `format:signals`,
+`analyze`, `analyze:driver`, `analyze:signals`, `test:noir`, `test:driver`,
+`test:signals`, `test:architecture`, `native:verify`, `docs:frames`,
+`docs:api`, `release:check`, `stage:companion`, `stage:driver`, and
+`archive:noir`, `archive:driver`, `archive:signals` for the publish dry-runs.
+`release:published` and `release:record` exist too, but they belong to a
+release rather than to development: one gates a GitHub release, the other
+rewrites `publication.json` after a publication is confirmed. A script is an
+alias for the documented command, never a second definition of it, and CI
+runs the same scripts.
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.

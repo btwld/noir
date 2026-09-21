@@ -167,32 +167,6 @@ void _resolveTag(io.Directory root, String tag) {
   });
 }
 
-/// How often to re-ask pub.dev while waiting out registry lag.
-const _pollInterval = Duration(seconds: 15);
-
-/// Re-runs [ask] until [settled] accepts its answer or [timeout] runs out.
-///
-/// pub.dev serves a version a short while after the upload that created it
-/// returns, so both questions this tool asks the registry right after a
-/// publish — can this dependent go now, and is this version really out — can
-/// be answered wrongly for reasons that fix themselves.
-Future<T> _untilSettled<T>(
-  Future<T> Function() ask, {
-  required bool Function(T) settled,
-  required Duration timeout,
-  required String waitingFor,
-}) async {
-  final deadline = DateTime.now().add(timeout);
-  while (true) {
-    final answer = await ask();
-    if (settled(answer)) return answer;
-    final left = deadline.difference(DateTime.now());
-    if (left <= Duration.zero) return answer;
-    io.stdout.writeln('waiting for $waitingFor to appear on pub.dev …');
-    await Future<void>.delayed(left < _pollInterval ? left : _pollInterval);
-  }
-}
-
 Future<void> _preflight(
   io.Directory root,
   String name, {
@@ -209,14 +183,16 @@ Future<void> _preflight(
   Future<Set<Version>> lookup(String package) async =>
       cache[package] ??= await fetchPublishedVersions(package);
 
-  final decision = await _untilSettled(
+  final decision = await untilSettled(
     () async {
       cache.clear();
       return decidePublish(name, workspace, lookup: lookup);
     },
     settled: (candidate) => !candidate.isBlocked,
     timeout: timeout,
-    waitingFor: 'a workspace dependency',
+    onWait: () => io.stdout.writeln(
+      'waiting for a workspace dependency to appear on pub.dev …',
+    ),
   );
 
   for (final blocker in decision.blockers) {
@@ -242,11 +218,13 @@ Future<void> _published(
     return;
   }
   final package = workspace.firstWhere((candidate) => candidate.name == name);
-  final published = await _untilSettled(
+  final published = await untilSettled(
     () => isPublished(name, workspace, lookup: fetchPublishedVersions),
     settled: (candidate) => candidate,
     timeout: timeout,
-    waitingFor: '$name ${package.version}',
+    onWait: () => io.stdout.writeln(
+      'waiting for $name ${package.version} to appear on pub.dev …',
+    ),
   );
   if (!published) {
     io.stderr.writeln(

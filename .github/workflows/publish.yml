@@ -107,6 +107,9 @@ jobs:
           dart run tool/release.dart preflight
           "${{ steps.tag.outputs.package }}" --timeout 600
 
+      # Ahead of the ladder on purpose: a bad changelog or a stale constraint
+      # is cheap to find and would otherwise cost thirty minutes first. The
+      # ladder runs it again at the end, along with the native-asset verify.
       - name: Check release readiness
         if: steps.preflight.outputs.publish == 'true'
         timeout-minutes: 2
@@ -118,12 +121,6 @@ jobs:
         if: steps.preflight.outputs.publish == 'true'
         timeout-minutes: 30
         run: dart run melos:melos run verify
-        working-directory: .
-
-      - name: Verify bundled native assets
-        if: steps.preflight.outputs.publish == 'true'
-        timeout-minutes: 2
-        run: dart run melos:melos run native:verify
         working-directory: .
 
       # Checks the archive's shape. It cannot check that a consumer outside

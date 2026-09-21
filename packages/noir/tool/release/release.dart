@@ -350,6 +350,43 @@ Set<Version> parsePublishedVersions(String body) {
 
 Future<void> _sleep(Duration duration) => Future<void>.delayed(duration);
 
+/// How often to re-ask pub.dev while waiting out registry lag.
+const registryPollInterval = Duration(seconds: 15);
+
+/// Re-runs [ask] until [settled] accepts its answer, or [timeout] runs out.
+///
+/// pub.dev serves a version a short while after the upload that created it
+/// returns, so both questions this tool asks the registry right after a
+/// publish — may this dependent go now, and is this version really out — can
+/// be answered wrongly for a reason that fixes itself. Returns the last
+/// answer either way; the caller decides what an unsettled one means.
+///
+/// [elapsed] and [delay] replace the clock in tests.
+Future<T> untilSettled<T>(
+  Future<T> Function() ask, {
+  required bool Function(T answer) settled,
+  required Duration timeout,
+  Duration pollInterval = registryPollInterval,
+  void Function()? onWait,
+  Duration Function()? elapsed,
+  Future<void> Function(Duration duration) delay = _sleep,
+}) async {
+  final since = elapsed ?? _startStopwatch();
+  while (true) {
+    final answer = await ask();
+    if (settled(answer)) return answer;
+    final left = timeout - since();
+    if (left <= Duration.zero) return answer;
+    onWait?.call();
+    await delay(left < pollInterval ? left : pollInterval);
+  }
+}
+
+Duration Function() _startStopwatch() {
+  final stopwatch = Stopwatch()..start();
+  return () => stopwatch.elapsed;
+}
+
 /// Whether pub.dev already serves [name] at the version its manifest names.
 ///
 /// This is the announcement gate, and it is deliberately not the inverse of

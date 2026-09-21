@@ -149,8 +149,14 @@ void main() {
     // A companion ships against the Noir in this same commit, so a release
     // runs the whole ladder rather than one package's slice of it.
     expect(preflight, contains('dart run melos:melos run verify'));
-    expect(preflight, contains('dart run melos:melos run native:verify'));
     expect(preflight, contains('dart pub publish --dry-run'));
+    // The ladder ends with `native:verify`, so running it again afterwards
+    // would only repeat a digest check that cannot have changed.
+    // `melos_workspace_ownership_test` pins what the ladder contains.
+    expect(
+      'dart run melos:melos run native:verify'.allMatches(preflight),
+      isEmpty,
+    );
     expect(preflight, isNot(contains('continue-on-error')));
     expect(preflight, isNot(contains('.dart_tool')));
   });

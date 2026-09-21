@@ -258,6 +258,90 @@ void main() {
     });
   });
 
+  group('waiting out registry lag', () {
+    test('returns as soon as the answer settles, without waiting', () async {
+      var asked = 0;
+      final waits = <Duration>[];
+
+      final answer = await untilSettled(
+        () async => ++asked,
+        settled: (value) => value >= 3,
+        timeout: const Duration(minutes: 10),
+        elapsed: () => Duration.zero,
+        delay: (duration) async => waits.add(duration),
+      );
+
+      expect(answer, 3);
+      expect(asked, 3);
+      expect(waits, hasLength(2), reason: 'one wait between each re-ask');
+    });
+
+    test('gives up at the deadline and returns the last answer', () async {
+      var elapsed = Duration.zero;
+      var asked = 0;
+
+      final answer = await untilSettled(
+        () async {
+          asked++;
+          return 'not yet';
+        },
+        settled: (value) => value == 'published',
+        timeout: const Duration(seconds: 40),
+        // Deliberately not the default, so this also proves the interval is
+        // honoured rather than coincidentally matching it.
+        pollInterval: const Duration(seconds: 10),
+        elapsed: () => elapsed,
+        delay: (duration) async => elapsed += duration,
+      );
+
+      // The caller decides what an unsettled answer means, so this must
+      // return rather than throw — a blocked preflight and an unannounceable
+      // version report different things about the same shape.
+      expect(answer, 'not yet');
+      expect(asked, 5, reason: 'four ten-second waits, then one last ask');
+      expect(elapsed, const Duration(seconds: 40));
+    });
+
+    test('never waits past the deadline', () async {
+      var elapsed = Duration.zero;
+      final waits = <Duration>[];
+
+      await untilSettled(
+        () async => false,
+        settled: (value) => value,
+        timeout: const Duration(seconds: 20),
+        pollInterval: const Duration(seconds: 8),
+        elapsed: () => elapsed,
+        delay: (duration) async {
+          waits.add(duration);
+          elapsed += duration;
+        },
+      );
+
+      expect(waits, const [
+        Duration(seconds: 8),
+        Duration(seconds: 8),
+        Duration(seconds: 4),
+      ]);
+    });
+
+    test('a zero timeout asks once and does not wait', () async {
+      var asked = 0;
+      var waited = false;
+
+      final answer = await untilSettled(
+        () async => ++asked,
+        settled: (value) => false,
+        timeout: Duration.zero,
+        elapsed: () => Duration.zero,
+        delay: (duration) async => waited = true,
+      );
+
+      expect(answer, 1);
+      expect(waited, isFalse);
+    });
+  });
+
   group('the announcement gate', () {
     test('a version pub.dev serves may be announced', () async {
       expect(
