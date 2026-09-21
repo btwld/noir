@@ -115,14 +115,29 @@ void main() {
     expect(workspacePubspec, contains('workspaceChangelog: false'));
     expect(workspacePubspec, contains('fetchTags: false'));
 
+    // Indented command blocks only: the surrounding prose names the forms
+    // this repository must not use.
     final documented = RegExp(
-      r'melos version [^\n]*',
+      r'^    dart run melos:melos version [^\n]*$',
+      multiLine: true,
     ).allMatches(contributorGuide).map((match) => match.group(0)!).toList();
     expect(documented, isNotEmpty, reason: 'the guide must show the command');
     for (final command in documented) {
       expect(command, contains('--no-changelog'), reason: command);
+      // Implies --no-git-tag-version, which is the guarantee that matters.
       expect(command, contains('--no-git-commit-version'), reason: command);
       expect(command, contains('--dependent-constraints'), reason: command);
+      // A dependent's own version is a release decision, not a side effect.
+      expect(command, contains('--no-dependent-versions'), reason: command);
+      // Without an empty commit range Melos also versions the companions
+      // from their Conventional Commit history, which is their whole history
+      // because they are published by hand and carry no release tag.
+      expect(command, contains('--diff=HEAD...HEAD'), reason: command);
+      // The `melos version <package> <version>` positional form scopes the
+      // run, which turns the other members into ignored packages with
+      // pending changes; Melos then skips every package that depends on one
+      // and exits 0 having changed nothing.
+      expect(command, contains('-V '), reason: command);
     }
   });
 

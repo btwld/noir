@@ -276,16 +276,37 @@ change as a publication.
 To open the next candidate, move the version and cascade every cross-package
 constraint in one step, from the repository root:
 
-    dart run melos:melos version --no-changelog --no-git-commit-version --dependent-constraints noir <next-version>
+    dart run melos:melos version -V noir:<next-version> --diff=HEAD...HEAD --no-changelog --no-git-commit-version --dependent-constraints --no-dependent-versions
 
 That edits `version:` in `packages/noir/pubspec.yaml` and the `noir:`
 constraints in `packages/noir_driver/pubspec.yaml` and
-`packages/noir_signals/pubspec.yaml`, and nothing else. The flags are not
-optional: a `v*` tag publishes `noir` to pub.dev for real, and the changelog
-sections are hand-written release contracts. The remaining work is
-deliberate — author the new changelog section, move the version the
-architecture test pins, update the version the dialog example shows, and
-change `publication.json` only when a package is actually published.
+`packages/noir_signals/pubspec.yaml`, and nothing else. Confirm at the
+prompt; do not pass `--yes`. Substitute any other member for `noir` to move
+it instead — bumping `noir_driver` rewrites Noir's `noir_driver:` dev
+dependency the same way.
+
+Every part of that command is load-bearing:
+
+- `-V <package>:<version>`, not the `melos version <package> <version>`
+  positional form. The positional form scopes the run to that one package,
+  which makes the other two members *ignored packages with pending changes*.
+  Melos then refuses to version anything that depends on one — and `noir`
+  dev-depends on `noir_driver` — so it prints a warning, changes nothing, and
+  still exits `0`. The companions are published by hand and carry no Melos
+  release tags, so that state is permanent, not a one-off.
+- `--diff=HEAD...HEAD` reduces the commit range Melos reads to nothing.
+  Without it, Melos also versions `noir_driver` and `noir_signals` from their
+  Conventional Commit history, which with no release tag is the whole history.
+- `--no-dependent-versions` keeps the cascade to constraints. A dependent's
+  own `version:` is a release decision, never a side effect of this command.
+- `--no-changelog` and `--no-git-commit-version`: the changelog sections are
+  hand-written release contracts, and `--no-git-commit-version` also implies
+  `--no-git-tag-version`. A `v*` tag publishes `noir` to pub.dev for real.
+
+The remaining work is deliberate — author the new changelog section, move the
+version the architecture test pins, update the version the dialog example
+shows, and change `publication.json` only when a package is actually
+published.
 
 Publish in this order, each package from its own directory:
 

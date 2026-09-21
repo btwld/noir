@@ -19,10 +19,9 @@ workspace:
 dev_dependencies:
   melos: 7.8.1
 
-# Melos configuration. Melos is installed globally and pinned, never as a
-# workspace dependency: it needs `cli_util >=0.5.0` while `ffigen`, a `noir`
-# dev dependency, needs `cli_util ^0.4.0`, and a Pub workspace resolves once
-# for every member. CONTRIBUTING.md carries the install command.
+# Melos configuration, read from this file by the dev dependency above. Run
+# every command as `dart run melos:melos <command>`; a global install would
+# shadow the pinned version. CONTRIBUTING.md carries the release command.
 melos:
   # Bootstrap generates IntelliJ project files by default, which would drop a
   # `melos_noir.iml` inside `packages/noir`, where `.pubignore` does not
@@ -56,10 +55,12 @@ melos:
       # No implicit `git fetch --tags`. Remote Git operations stay explicit.
       fetchTags: false
       # The remaining guarantees this repository needs from `melos version` —
-      # no changelog, no commit, no tag — are flags rather than settings in
-      # this Melos release, so the documented command carries them and an
-      # architecture test asserts it still does. A `v*` tag publishes `noir`
-      # to pub.dev for real, so an accidental tag is not a small mistake.
+      # no changelog, no commit, no tag, no sibling version bump, and no
+      # Conventional Commit versioning of the packages it was not asked to
+      # move — are flags rather than settings in this Melos release, so the
+      # command CONTRIBUTING.md documents carries them and an architecture
+      # test asserts it still does. A `v*` tag publishes `noir` to pub.dev
+      # for real, so an accidental tag is not a small mistake.
 
   # Every script wraps, verbatim, a command the contributor guide documents,
   # prefixed with the directory that guide says to run it from. They are plain
