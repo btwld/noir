@@ -44,5 +44,5 @@ For hot reload, replace `dart run` with `dart run noir:run`, for example
 `dart run noir:run example/task_list.dart`. Ctrl+C exits each app through
 Noir's cleanup. These examples keep their data in memory.
 
-The companion requires Noir 0.0.2. The commands above use the repository's Pub
+The companion requires Noir 0.0.3. The commands above use the repository's Pub
 workspace to resolve both packages.

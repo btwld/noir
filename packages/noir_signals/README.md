@@ -13,7 +13,7 @@ user actions in one runnable app.
 
 ## Install
 
-Add the companion beside Noir. It requires Noir 0.0.2:
+Add the companion beside Noir. It requires Noir 0.0.3:
 
 ```sh
 dart pub add noir noir_signals
@@ -21,8 +21,8 @@ dart pub add noir noir_signals
 
 ```yaml
 dependencies:
-  noir: ^0.0.2
-  noir_signals: ^0.0.1-alpha.0
+  noir: ^0.0.3
+  noir_signals: ^0.0.1-alpha.1
 ```
 
 ### Inside the Noir repository
@@ -38,7 +38,7 @@ pin an exact commit or tag, and resolve both packages from that revision:
 
 ```yaml
 dependencies:
-  noir: ^0.0.2
+  noir: ^0.0.3
   noir_signals:
     path: ../noir/packages/noir_signals
 dependency_overrides:

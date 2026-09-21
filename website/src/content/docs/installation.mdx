@@ -43,7 +43,7 @@ surfaces and the generated symbol reference, see [API](/api).
 ## Add the noir_signals companion
 
 <Availability of="companion" setup={false}>
-  `noir_signals` requires Noir 0.0.2.
+  `noir_signals` requires Noir 0.0.3.
 </Availability>
 
 The companion adds `SignalWidget`, reusable lifecycle hooks, and the Signals
@@ -60,8 +60,8 @@ That declares both hosted packages:
 
 ```yaml
 dependencies:
-  noir: ^0.0.2
-  noir_signals: ^0.0.1-alpha.0
+  noir: ^0.0.3
+  noir_signals: ^0.0.1-alpha.1
 ```
 
 Files that use hooks import both libraries:
@@ -77,7 +77,7 @@ application, pin an exact commit or tag, and resolve both from that revision:
 
 ```yaml
 dependencies:
-  noir: ^0.0.2
+  noir: ^0.0.3
   noir_signals:
     path: ../noir/packages/noir_signals
 dependency_overrides:
@@ -108,8 +108,8 @@ published surface, or pin and evaluate one repository revision as a unit.
 
 | Symptom                                                     | What to check                                                                                            |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `dart pub get` cannot find `noir_signals`                   | It is a prerelease. Declare `^0.0.1-alpha.0`, or run `dart pub add`.                                     |
-| `dart pub get` reports a version conflict on `noir`         | The companion needs Noir 0.0.2. Use that version or the checkout override shown above.                   |
+| `dart pub get` cannot find `noir_signals`                   | It is a prerelease. Declare `^0.0.1-alpha.1`, or run `dart pub add`.                                     |
+| `dart pub get` reports a version conflict on `noir`         | The companion needs Noir 0.0.3. Use that version or the checkout override shown above.                   |
 | The app builds, then fails while loading the native library | Check the OS floor above. A macOS 12 machine can build and still fail to load Noir's macOS 13 libraries. |
 | `dart run noir:health_check` fails                          | Report the output with your OS and architecture. Do not rebuild or replace the bundled artifacts.        |
 | The terminal draws nothing after `runTuiApp`                | Run from a real terminal, not a captured pipe, and confirm the process stays in the foreground.          |
