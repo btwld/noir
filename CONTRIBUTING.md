@@ -383,16 +383,20 @@ Each push runs `.github/workflows/publish.yml`, which:
 
 1. resolves the tag to a package and checks it against that package's
    manifest;
-2. runs `release:check`, the whole `verify` ladder, the native-asset verify,
-   and that package's `dart pub publish --dry-run`;
-3. asks pub.dev whether every workspace dependency is already served at a
+2. asks pub.dev whether every workspace dependency is already served at a
    version this package's constraint admits, waiting up to ten minutes for a
    Noir published moments earlier to surface, and **fails** rather than
    publishing a package no consumer could resolve;
-4. skips silently when the version is already on pub.dev, so re-pushing a tag
-   after a half-finished release is safe;
+3. skips the rest when the version is already on pub.dev, so re-pushing a tag
+   after a half-finished release costs a minute rather than the whole ladder;
+4. otherwise runs `release:check`, the whole `verify` ladder, the
+   native-asset verify, and that package's `dart pub publish --dry-run`;
 5. stops at the `pub.dev` environment until a required reviewer approves;
 6. publishes with `dart pub publish --force`, authenticated by OIDC.
+
+Step 2 comes before step 4 on purpose: both of its answers make verification
+pointless, and a re-pushed tag should not pay for a thirty-minute ladder to
+discover it had nothing to do.
 
 `noir-v*` additionally runs `.github/workflows/release.yml`, which verifies
 the tagged commit, tests the packaged native assets on all three platforms,

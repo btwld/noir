@@ -215,6 +215,20 @@ void main() {
     );
   });
 
+  test('the record survives a skipped publish but not a failed one', () {
+    // A skipped `needs` skips its dependents, and `publish` is skipped
+    // whenever the version is already on pub.dev — the re-run after a
+    // half-finished release, which is exactly when the record is the thing
+    // still missing. Without an explicit condition this job would silently
+    // never run in that case, and the run would still be green.
+    final recordJob = _job(publish, 'record');
+
+    expect(recordJob, contains('always()'));
+    expect(recordJob, contains("needs.preflight.result == 'success'"));
+    expect(recordJob, contains("needs.publish.result != 'failure'"));
+    expect(recordJob, contains("needs.publish.result != 'cancelled'"));
+  });
+
   test('publication itself never goes through Melos', () {
     // `melos publish` sorts `dependencies` and `dev_dependencies` into one
     // graph. Noir dev-depends on noir_driver and noir_driver depends on Noir,

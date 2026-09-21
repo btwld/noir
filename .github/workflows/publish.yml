@@ -88,40 +88,53 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
 
-      - name: Check release readiness
-        timeout-minutes: 2
-        run: dart run tool/release.dart check
-
-      # A companion release is not independent of Noir's health: it ships
-      # against the Noir in this same commit. The whole ladder runs.
-      - name: Verify the workspace
-        timeout-minutes: 30
-        run: dart run melos:melos run verify
-        working-directory: .
-
-      - name: Verify bundled native assets
-        timeout-minutes: 2
-        run: dart run melos:melos run native:verify
-        working-directory: .
-
-      - name: Validate publish archive
-        timeout-minutes: 5
-        run: dart pub publish --dry-run
-        working-directory: ${{ steps.tag.outputs.directory }}
-
-      # Decides three things the workflow must not decide for itself: whether
-      # every workspace dependency is already served at a version this
-      # package's constraint admits, whether this version is already
-      # published, and how long to wait for pub.dev to surface a dependency
-      # published moments ago. `dart pub publish` resolves dependencies as
-      # part of its own validation, so a companion really can fail purely on
-      # that lag.
+      # First, because the two answers it can give both make the rest of this
+      # job pointless: a version already on pub.dev needs no verification, and
+      # a package whose dependency is not served yet must not be published no
+      # matter how green it is. Putting it last would make a re-pushed tag pay
+      # the whole ladder to conclude it had nothing to do.
+      #
+      # It decides what the workflow must not decide for itself: whether every
+      # workspace dependency is already served at a version this package's
+      # constraint admits, whether this version is already published, and how
+      # long to wait for pub.dev to surface a dependency published moments
+      # ago. `dart pub publish` resolves dependencies as part of its own
+      # validation, so a companion really can fail purely on that lag.
       - name: Decide whether this version still needs publishing
         id: preflight
         timeout-minutes: 15
         run: >-
           dart run tool/release.dart preflight
           "${{ steps.tag.outputs.package }}" --timeout 600
+
+      - name: Check release readiness
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 2
+        run: dart run tool/release.dart check
+
+      # A companion release is not independent of Noir's health: it ships
+      # against the Noir in this same commit. The whole ladder runs.
+      - name: Verify the workspace
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 30
+        run: dart run melos:melos run verify
+        working-directory: .
+
+      - name: Verify bundled native assets
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 2
+        run: dart run melos:melos run native:verify
+        working-directory: .
+
+      # Checks the archive's shape. It cannot check that a consumer outside
+      # this workspace can resolve it, because inside the workspace pub binds
+      # a sibling to the local checkout whatever the declared source says.
+      # That is what the preflight gate above is for.
+      - name: Validate publish archive
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 5
+        run: dart pub publish --dry-run
+        working-directory: ${{ steps.tag.outputs.directory }}
 
   publish:
     name: Publish ${{ needs.preflight.outputs.package }}
@@ -175,6 +188,15 @@ jobs:
   record:
     name: Record the publication
     needs: [preflight, publish]
+    # A skipped `needs` skips its dependents too, and `publish` is skipped
+    # whenever preflight found the version already on pub.dev. That is exactly
+    # the re-run after a half-finished release, when the record is most likely
+    # to be the thing still missing — so this job must survive a skip and stop
+    # only for a failure. Recording is a no-op when nothing drifted.
+    if: >-
+      always() && needs.preflight.result == 'success'
+      && needs.publish.result != 'failure'
+      && needs.publish.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -239,7 +261,14 @@ jobs:
           git checkout -b "$branch"
           git add publication.json website/src/generated/availability.ts
           git commit -m "chore(release): record $RECORDED on pub.dev"
-          git push origin "$branch"
+          # Force, because a re-run of a job that pushed the branch and then
+          # failed must not die on a non-fast-forward. The branch holds one
+          # regenerated commit and nothing anyone else owns.
+          git push --force origin "$branch"
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            echo "::notice::pull request for $branch already open; updated it"
+            exit 0
+          fi
           gh pr create --base main --head "$branch" \
             --title "chore(release): record $RECORDED on pub.dev" \
             --body "Recorded from pub.dev after $RELEASE_TAG published. \
