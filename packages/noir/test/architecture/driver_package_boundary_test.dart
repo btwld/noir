@@ -49,7 +49,7 @@ void main() {
     );
     expect(driverPubspec, contains('resolution: workspace'));
     expect(driverPubspec, contains('name: noir_driver'));
-    expect(driverPubspec, contains('noir: ^0.0.2'));
+    expect(driverPubspec, contains('noir: ^0.0.3'));
   });
 
   test('Noir depends on the driver for tooling only, never at runtime', () {

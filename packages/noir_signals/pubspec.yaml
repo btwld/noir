@@ -1,6 +1,6 @@
 name: noir_signals
 description: Reusable lifecycle hooks and Signals reactive state for Noir, the Flutter-like terminal UI framework for Dart.
-version: 0.0.1-alpha.0
+version: 0.0.1-alpha.1
 repository: https://github.com/conceptadev/noir/tree/main/packages/noir_signals
 issue_tracker: https://github.com/conceptadev/noir/issues
 
@@ -25,7 +25,7 @@ platforms:
 
 dependencies:
   meta: ^1.12.0
-  noir: ^0.0.2
+  noir: ^0.0.3
   signals_core: ^7.0.0
 
 dev_dependencies:

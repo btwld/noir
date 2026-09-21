@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.0.3
+
+This release fixes two failure paths and changes no public API. The native
+ABI and the bundled native artifacts are unchanged from 0.0.2.
+
+### Fixed
+
+- A build that throws no longer strands the rebuilds queued behind it.
+  `BuildOwner.buildScope()` restores every element the failed pass had not
+  reached yet, in its original order, requests a frame for that work, and
+  then rethrows the original error unchanged. The element that threw is not
+  retried. A host that survives the error, such as a guarded zone or a test,
+  paints the other elements' updates on the next frame instead of losing them
+  for the rest of the session.
+- `TuiApp.exit` and `TuiApp.requestExit` report the exit code even when
+  application cleanup throws. Disposal and the exit notification are both
+  attempted, the requested code reaches the exit sink unchanged, and the first
+  failure is rethrown afterwards. A drive-mode host whose cleanup fails now
+  still shuts down instead of waiting on an exit that never arrives.
+
 ## 0.0.2
 
 This release changes where Noir lives in its repository, not what it does.

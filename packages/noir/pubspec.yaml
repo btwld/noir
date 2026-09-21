@@ -1,6 +1,6 @@
 name: noir
 description: A Flutter-like reactive terminal UI framework for Dart, powered by OpenTUI.
-version: 0.0.2
+version: 0.0.3
 homepage: https://conceptadev.github.io/noir/
 documentation: https://conceptadev.github.io/noir/docs/
 repository: https://github.com/conceptadev/noir/tree/main/packages/noir
@@ -46,7 +46,7 @@ dev_dependencies:
   # Checkout-only: `tool/capture_doc_frames.dart` and
   # `tool/record_noir_demo.dart` drive Noir's own examples. `tool/` is
   # excluded from the archive, and `noir` carries no runtime dependency on it.
-  noir_driver: ^0.0.1-alpha.0
+  noir_driver: ^0.0.1-alpha.1
   path: ^1.9.0
   pub_api_client: ^4.0.0
   test: ^1.25.0

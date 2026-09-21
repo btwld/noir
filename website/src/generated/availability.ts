@@ -19,7 +19,7 @@ export const availability: {
 } = {
   noir: {
     name: 'noir',
-    manifest: '0.0.2',
+    manifest: '0.0.3',
     published: '0.0.2',
     isPublished: true,
     installCommand: 'dart pub add noir',
@@ -27,7 +27,7 @@ export const availability: {
   },
   driver: {
     name: 'noir_driver',
-    manifest: '0.0.1-alpha.0',
+    manifest: '0.0.1-alpha.1',
     published: '0.0.1-alpha.0',
     isPublished: true,
     installCommand: 'dart pub add --dev noir_driver',
@@ -35,7 +35,7 @@ export const availability: {
   },
   companion: {
     name: 'noir_signals',
-    manifest: '0.0.1-alpha.0',
+    manifest: '0.0.1-alpha.1',
     published: '0.0.1-alpha.0',
     isPublished: true,
     installCommand: 'dart pub add noir_signals',

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.0.1-alpha.1
+
+### Fixed
+
+- A client-side wait now ends at its own deadline even when the app stops
+  answering. `pollFrameAdvance`, `waitForText`, `waitFor`, and `waitForAbsent`
+  spend one budget across every request and every pause, so a response that
+  never arrives can no longer keep a wait running indefinitely. Once the
+  budget is spent no further request goes out and a late response is ignored,
+  though the abandoned request itself is not cancelled. Outcomes are
+  unchanged: a settle returns `false`, the locator and text waits throw
+  `StateError`, `awaitDriverReady` throws `TimeoutException`, and a service
+  error still propagates as itself.
+- A wait whose first capture or tree never arrives now says so, instead of
+  reporting a "last frame" it never saw.
+
+### Changed
+
+- A zero timeout sends one request and accepts only a response that is
+  already available, so it returns immediately rather than blocking until
+  that request answers.
+- `noir: ^0.0.3`, which is where the drive-mode app half this client talks to
+  now lives.
+
+### Added
+
+- `waitForDriverText`, the text wait behind `NoirDriver.waitForText`, exported
+  beside `waitForDriverLocator` so it can be exercised against a supplied
+  capture function without launching a process.
+
 ## 0.0.1-alpha.0
 
 First release of the drive-mode client as its own package.

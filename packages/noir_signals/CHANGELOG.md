@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.1-alpha.1
+
+This release pairs the companion with the next Noir candidate. The library,
+its public API, and its behavior are unchanged from 0.0.1-alpha.0.
+
+### Changed
+
+- `noir: ^0.0.3`. A caret constraint on a `0.0.x` version ends at the next
+  patch, so the previous `^0.0.2` excluded Noir 0.0.3 and an application could
+  not resolve the two together.
+
 ## 0.0.1-alpha.0
 
 First prerelease of the optional companion package for
