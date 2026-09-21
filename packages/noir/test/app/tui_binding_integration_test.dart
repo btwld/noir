@@ -568,6 +568,66 @@ void main() {
     expect(platform.stdinEchoModeSets, 0);
     expect(() => renderer!.nextBuffer, throwsStateError);
   });
+
+  test('a sibling update survives a frame whose build threw', () {
+    final failing = GlobalKey<_LabelState>();
+    final surviving = GlobalKey<_LabelState>();
+    final app = createTuiTestApp(
+      Column(
+        children: [
+          _Label(key: failing, initial: 'first'),
+          _Label(key: surviving, initial: 'before'),
+        ],
+      ),
+      width: 12,
+      height: 3,
+    );
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    expect(app.captureFrame(), BufferMatchers.containsText('before'));
+
+    final failure = StateError('build failed');
+    failing.currentState!.failWith(failure);
+    surviving.currentState!.show('after');
+    expect(app.pumpFrame, throwsA(same(failure)));
+    expect(app.binding.debugHasScheduledFrame, isTrue);
+
+    app.pumpFrame();
+    expect(app.captureFrame(), BufferMatchers.containsText('after'));
+
+    // The stranded-reservation defect also swallowed every later update.
+    surviving.currentState!.show('again');
+    app.pumpFrame();
+    expect(app.captureFrame(), BufferMatchers.containsText('again'));
+  });
+}
+
+class _Label extends StatefulWidget {
+  const _Label({required this.initial, super.key});
+
+  final String initial;
+
+  @override
+  State<_Label> createState() => _LabelState();
+}
+
+class _LabelState extends State<_Label> {
+  late String _text = widget.initial;
+  Error? _failure;
+
+  void show(String text) => setState(() => _text = text);
+
+  void failWith(Error failure) => setState(() => _failure = failure);
+
+  @override
+  Widget build(BuildContext context) {
+    final failure = _failure;
+    if (failure != null) {
+      _failure = null;
+      throw failure;
+    }
+    return Text(_text);
+  }
 }
 
 class _CounterApp extends StatefulWidget {

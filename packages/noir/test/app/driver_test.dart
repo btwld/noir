@@ -612,6 +612,32 @@ void main() {
     expect(host.info, throwsStateError, reason: 'the host is disposed too');
   });
 
+  test(
+    'an in-app exit whose cleanup throws still shuts the host down',
+    () async {
+      final exits = <int>[];
+      final host = DriverHost.create(
+        width: 20,
+        height: 4,
+        exitProcess: exits.add,
+      );
+      addTearDown(host.dispose);
+      final disposeError = StateError('state dispose failed');
+      final app = mountTuiAppForTesting(
+        host.binding,
+        _ThrowOnDispose(disposeError),
+        exitCodeSink: host.handleAppExit,
+      );
+      host.start(app);
+
+      expect(() => app.requestExit(5), throwsA(same(disposeError)));
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      expect(exits, [5], reason: 'the keep-alive must not outlive the app');
+      expect(host.info, throwsStateError, reason: 'the host is disposed too');
+    },
+  );
+
   test('runTuiApp wires a driven in-app exit to the host', () {
     // The test above mounts through the host directly; this asserts the
     // runTuiApp wiring.
@@ -1021,6 +1047,26 @@ class _RepainterState extends State<_Repainter>
 
   @override
   Widget build(BuildContext context) => const Text('animating');
+}
+
+class _ThrowOnDispose extends StatefulWidget {
+  const _ThrowOnDispose(this.error);
+
+  final Error error;
+
+  @override
+  State<_ThrowOnDispose> createState() => _ThrowOnDisposeState();
+}
+
+class _ThrowOnDisposeState extends State<_ThrowOnDispose> {
+  @override
+  void dispose() {
+    super.dispose();
+    throw widget.error;
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('q');
 }
 
 class _QuitOnQ extends StatelessWidget {

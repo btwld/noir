@@ -193,6 +193,10 @@ final class TuiApp implements Disposable {
   ///
   /// Safe to call from an event handler. A second call is a no-op. Throws
   /// [StateError] if called while the tree is building.
+  ///
+  /// A cleanup step that throws does not stop the exit: the remaining cleanup
+  /// still runs, [code] is still recorded unchanged, and the first failure is
+  /// rethrown afterwards.
   static void exit(BuildContext context, {int code = 0}) {
     of(context).requestExit(code);
   }
@@ -208,8 +212,12 @@ final class TuiApp implements Disposable {
         'Call it from an event handler instead.',
       );
     }
-    dispose();
-    _exitCodeSink(code);
+    // A failing cleanup must not leave the host uninformed: this app is
+    // already marked disposed, so no later request could deliver the code.
+    FirstErrorRecorder()
+      ..attempt(dispose)
+      ..attempt(() => _exitCodeSink(code))
+      ..rethrowFirst();
   }
 
   /// Registers an app-priority key handler and returns an idempotent canceler.

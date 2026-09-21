@@ -2,6 +2,8 @@ import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/app/app.dart' show mountTuiAppForTesting;
+import 'package:noir/src/app/tui_binding.dart' show createTuiBindingForTesting;
 import 'package:test/test.dart';
 
 import '../helpers/tui_test_app.dart';
@@ -144,6 +146,70 @@ void main() {
     );
   });
 
+  group('exit after a cleanup failure', () {
+    test('still notifies the sink once and rethrows the cleanup error', () {
+      final disposeError = StateError('state dispose failed');
+      final disposeStack = StackTrace.fromString('original dispose stack');
+      final exits = <int>[];
+      var disposals = 0;
+      final app = _mountForExit(
+        _DisposeProbe(
+          onDispose: () {
+            disposals++;
+            Error.throwWithStackTrace(disposeError, disposeStack);
+          },
+        ),
+        exitCodeSink: exits.add,
+      );
+
+      Object? caught;
+      StackTrace? caughtStack;
+      try {
+        app.requestExit(7);
+      } on Object catch (error, stackTrace) {
+        caught = error;
+        caughtStack = stackTrace;
+      }
+
+      expect(caught, same(disposeError));
+      expect(caughtStack.toString(), disposeStack.toString());
+      expect(exits, [7], reason: 'the host still learns the requested code');
+      expect(disposals, 1);
+
+      expect(() => app.requestExit(9), returnsNormally);
+      expect(exits, [7], reason: 'a second request notifies nobody');
+      expect(disposals, 1);
+    });
+
+    test('keeps the cleanup error primary when the sink also throws', () {
+      final disposeError = StateError('state dispose failed');
+      var notifications = 0;
+      final app = _mountForExit(
+        _DisposeProbe(onDispose: () => throw disposeError),
+        exitCodeSink: (_) {
+          notifications++;
+          throw StateError('sink failed');
+        },
+      );
+
+      expect(app.requestExit, throwsA(same(disposeError)));
+      expect(notifications, 1);
+    });
+
+    test('propagates a sink failure after a clean disposal', () {
+      final sinkError = StateError('sink failed');
+      var disposals = 0;
+      final app = _mountForExit(
+        _DisposeProbe(onDispose: () => disposals++),
+        exitCodeSink: (_) => throw sinkError,
+      );
+
+      expect(app.requestExit, throwsA(same(sinkError)));
+      expect(disposals, 1);
+      expect(app.requestExit, returnsNormally);
+    });
+  });
+
   test('enableMouse on a rendererless headless app fails loudly', () {
     expect(
       () =>
@@ -151,6 +217,22 @@ void main() {
       throwsA(isA<StateError>()),
     );
   });
+}
+
+/// Mounts [widget] under a caller-owned exit sink and returns the app handle.
+TuiApp _mountForExit(
+  Widget widget, {
+  required void Function(int exitCode) exitCodeSink,
+}) {
+  final renderer = Renderer.create(8, 2, testing: true)..setAutoFlush(false);
+  addTearDown(renderer.dispose);
+  final binding = createTuiBindingForTesting(
+    width: 8,
+    height: 2,
+    headless: true,
+    renderer: renderer,
+  );
+  return mountTuiAppForTesting(binding, widget, exitCodeSink: exitCodeSink);
 }
 
 Future<void> _settle(TuiTestApp app) async {
@@ -177,6 +259,29 @@ class _ExitOnKey extends StatelessWidget {
     },
     child: const Text('press q'),
   );
+}
+
+class _DisposeProbe extends StatefulWidget {
+  const _DisposeProbe({required this.onDispose});
+
+  final void Function() onDispose;
+
+  @override
+  State<_DisposeProbe> createState() => _DisposeProbeState();
+}
+
+class _DisposeProbeState extends State<_DisposeProbe> {
+  @override
+  void dispose() {
+    try {
+      widget.onDispose();
+    } finally {
+      super.dispose();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// Calls [TuiApp.exit] from `build()`, which must fail.

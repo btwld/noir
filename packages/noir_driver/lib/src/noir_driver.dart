@@ -31,31 +31,47 @@ import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
 import 'ansi_keys.dart';
+import 'driver_polling.dart';
 import 'driver_tree.dart';
 
 /// Polls [frames] until it is greater than [before], or [cap] expires.
 ///
 /// Used after injected input so a continuously animating app does not pay
 /// the full `waitStable` timeout. Returns whether a later frame arrived.
+///
+/// [cap] bounds the whole wait, a pending [frames] response included: once it
+/// runs out no further request is issued, and a count that arrives late is
+/// not a success. The first probe always goes out, so a zero [cap] still
+/// reports a count that is already available. An error from [frames]
+/// propagates rather than reading as "no frame".
 Future<bool> pollFrameAdvance({
   required Future<int> Function() frames,
   required int before,
   Duration cap = defaultSettle,
-  Future<void> Function(Duration duration) delay = _pollDelay,
+  Future<void> Function(Duration duration) delay = pollDelay,
 }) async {
-  final deadline = DateTime.now().add(cap);
+  final deadline = PollDeadline(cap);
   while (true) {
-    if (await frames() > before) {
+    var abandoned = false;
+    final count = await deadline.bound(
+      frames(),
+      onExpired: () {
+        abandoned = true;
+        return before;
+      },
+    );
+    if (count > before) {
       return true;
     }
-    if (!DateTime.now().isBefore(deadline)) {
+    if (abandoned || deadline.isExpired) {
       return false;
     }
-    await delay(const Duration(milliseconds: 10));
+    await deadline.pause(const Duration(milliseconds: 10), delay: delay);
+    if (deadline.isExpired) {
+      return false;
+    }
   }
 }
-
-Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
 
 /// Waits for the driven app's extensions and its first painted frame.
 ///
@@ -65,38 +81,56 @@ Future<void> _pollDelay(Duration duration) => Future<void>.delayed(duration);
 Future<void> awaitDriverReady({
   required Future<int> Function() frames,
   required Duration timeout,
-  Future<void> Function(Duration duration) delay = _pollDelay,
+  Future<void> Function(Duration duration) delay = pollDelay,
 }) async {
-  final deadline = DateTime.now().add(timeout);
+  final deadline = PollDeadline(timeout);
+  Never timedOut() => throw TimeoutException(
+    'The driven app did not paint its first frame',
+    timeout,
+  );
   while (true) {
     try {
-      final remaining = deadline.difference(DateTime.now());
-      final count = await frames().timeout(
-        remaining.isNegative ? Duration.zero : remaining,
-        onTimeout: () => throw TimeoutException(
-          'The driven app did not paint its first frame',
-          timeout,
-        ),
-      );
+      final count = await deadline.bound(frames(), onExpired: timedOut);
       if (count > 0) return;
-      if (!DateTime.now().isBefore(deadline)) {
-        throw TimeoutException(
-          'The driven app did not paint its first frame',
-          timeout,
-        );
+      if (deadline.isExpired) {
+        timedOut();
       }
     } on RPCError catch (error) {
-      if (error.code != _methodNotFound || !DateTime.now().isBefore(deadline)) {
+      if (error.code != _methodNotFound || deadline.isExpired) {
         rethrow;
       }
     }
-    final remaining = deadline.difference(DateTime.now());
-    if (remaining > Duration.zero) {
-      const pollInterval = Duration(milliseconds: 50);
-      await delay(remaining < pollInterval ? remaining : pollInterval);
+    if (!deadline.isExpired) {
+      await deadline.pause(const Duration(milliseconds: 50), delay: delay);
     }
   }
 }
+
+/// Polls [capture] until a painted row contains [text], then returns that
+/// frame.
+///
+/// [timeout] bounds the whole wait, a pending [capture] response included:
+/// once it runs out no further capture is requested and a late one is not
+/// accepted. The first capture is always requested. A [capture] error
+/// propagates as itself rather than as a timeout.
+Future<DriverFrame> waitForDriverText(
+  String text, {
+  required Future<DriverFrame> Function() capture,
+  Duration timeout = const Duration(seconds: 5),
+  Duration pollInterval = const Duration(milliseconds: 50),
+}) => pollSnapshots<DriverFrame, DriverFrame>(
+  fetch: capture,
+  timeout: timeout,
+  pollInterval: pollInterval,
+  resolve: (frame) => frame.contains(text) ? frame : null,
+  onTimeout: (lastFrame) => StateError(
+    lastFrame == null
+        ? 'Timed out waiting for "$text": no frame was captured within '
+              '$timeout.'
+        : 'Timed out waiting for "$text". Last frame:\n'
+              '${lastFrame.lines.join('\n')}',
+  ),
+);
 
 /// Whether [error] is the VM service disappearing with the driven isolate.
 ///
@@ -290,21 +324,7 @@ class NoirDriver {
   Future<DriverFrame> waitForText(
     String text, {
     Duration timeout = const Duration(seconds: 5),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
-    var frame = await capture();
-    while (!frame.contains(text)) {
-      if (!DateTime.now().isBefore(deadline)) {
-        throw StateError(
-          'Timed out waiting for "$text". Last frame:\n'
-          '${frame.lines.join('\n')}',
-        );
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      frame = await capture();
-    }
-    return frame;
-  }
+  }) => waitForDriverText(text, capture: capture, timeout: timeout);
 
   /// Sends the key [name] and waits up to [settle] for the resulting frame.
   ///

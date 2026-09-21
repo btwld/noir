@@ -94,6 +94,16 @@ input and one the app is still working on — so a following `capture` may show
 the pre-input frame. When an app can be slow, raise `settle` or assert through
 `waitForText` or `waitFor`.
 
+A settle window and the `timeout` of `waitForText`, `waitFor`, and
+`waitForAbsent` each bound the whole wait, including a response the app never
+sends. When one runs out the driver stops polling and ignores a late reply; it
+does not cancel the request it gave up on. A timeout stays distinguishable: a
+settle returns `false`, the waits throw `StateError` naming the last frame or
+tree they saw (or that none arrived), and a service error propagates as
+itself. The first probe always goes out, so a zero timeout accepts only a
+response that is already available. Launching, the input request itself, and
+`quit` are not covered by these budgets.
+
 ## From the command line
 
 ```sh

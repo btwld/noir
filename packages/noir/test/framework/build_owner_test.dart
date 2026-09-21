@@ -126,6 +126,246 @@ void main() {
     });
   });
 
+  group('BuildOwner failed build pass recovery', () {
+    test('a throwing rebuild leaves unvisited elements drainable', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final first = _ProbeWidget('first', log);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', log).createElement()
+        ..mount(null, owner);
+      final thirdElement = _ProbeWidget('third', log).createElement()
+        ..mount(null, owner);
+      final failure = StateError('first failed');
+      first.onRebuild = () => throw failure;
+      log.clear();
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement)
+        ..scheduleBuild(thirdElement);
+      expect(owner.buildScope, throwsA(same(failure)));
+      expect(log, ['first']);
+
+      first.onRebuild = null;
+      owner.buildScope();
+
+      expect(
+        log,
+        ['first', 'second', 'third'],
+        reason: 'the failed element is not retried; the rest keep their order',
+      );
+      firstElement.unmount();
+      secondElement.unmount();
+      thirdElement.unmount();
+      owner.dispose();
+    });
+
+    test('a recovered element schedules normally afterwards', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final first = _ProbeWidget('first', log);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', log).createElement()
+        ..mount(null, owner);
+      first.onRebuild = () => throw StateError('first failed');
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      expect(owner.buildScope, throwsStateError);
+      first.onRebuild = null;
+      log.clear();
+
+      // A second schedule of the stranded element must not be swallowed by a
+      // reservation that has no executable queue entry behind it.
+      owner
+        ..scheduleBuild(secondElement)
+        ..buildScope();
+      expect(log, ['second']);
+
+      owner
+        ..scheduleBuild(secondElement)
+        ..scheduleBuild(firstElement)
+        ..buildScope();
+      expect(log, ['second', 'second', 'first']);
+      firstElement.unmount();
+      secondElement.unmount();
+      owner.dispose();
+    });
+
+    test('a throwing middle element keeps only the unvisited tail', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final middle = _ProbeWidget('middle', log);
+      final firstElement = _ProbeWidget('first', log).createElement()
+        ..mount(null, owner);
+      final middleElement = middle.createElement()..mount(null, owner);
+      final lastElement = _ProbeWidget('last', log).createElement()
+        ..mount(null, owner);
+      middle.onRebuild = () => throw StateError('middle failed');
+      log.clear();
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(middleElement)
+        ..scheduleBuild(lastElement);
+      expect(owner.buildScope, throwsStateError);
+      middle.onRebuild = null;
+      owner.buildScope();
+
+      expect(log, ['first', 'middle', 'last']);
+      firstElement.unmount();
+      middleElement.unmount();
+      lastElement.unmount();
+      owner.dispose();
+    });
+
+    test('work scheduled by the failing rebuild survives once', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final first = _ProbeWidget('first', log);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', log).createElement()
+        ..mount(null, owner);
+      final newElement = _ProbeWidget('new', log).createElement()
+        ..mount(null, owner);
+      first.onRebuild = () {
+        owner
+          ..scheduleBuild(newElement)
+          ..scheduleBuild(secondElement);
+        throw StateError('first failed');
+      };
+      log.clear();
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      expect(owner.buildScope, throwsStateError);
+      first.onRebuild = null;
+      owner.buildScope();
+
+      expect(log, ['first', 'second', 'new']);
+      firstElement.unmount();
+      secondElement.unmount();
+      newElement.unmount();
+      owner.dispose();
+    });
+
+    test('a reservation cleared during the failed pass stays cleared', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final first = _ProbeWidget('first', log);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', log).createElement()
+        ..mount(null, owner);
+      first.onRebuild = () {
+        // A direct cascade rebuild consumes the reservation.
+        secondElement.rebuild();
+        throw StateError('first failed');
+      };
+      log.clear();
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      expect(owner.buildScope, throwsStateError);
+      first.onRebuild = null;
+      owner.buildScope();
+
+      expect(log, ['first', 'second']);
+      firstElement.unmount();
+      secondElement.unmount();
+      owner.dispose();
+    });
+
+    test('an element unmounted after the failure is not rebuilt', () {
+      final owner = BuildOwner();
+      final log = <String>[];
+      final first = _ProbeWidget('first', log);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', log).createElement()
+        ..mount(null, owner);
+      first.onRebuild = () => throw StateError('first failed');
+      log.clear();
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      expect(owner.buildScope, throwsStateError);
+      secondElement.unmount();
+      owner.buildScope();
+
+      expect(log, ['first']);
+      firstElement.unmount();
+      owner.dispose();
+    });
+
+    test('the original error and stack trace propagate', () {
+      final owner = BuildOwner();
+      final first = _ProbeWidget('first', <String>[]);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', <String>[]).createElement()
+        ..mount(null, owner);
+      final failure = StateError('first failed');
+      final failureStack = StackTrace.fromString('original build stack');
+      first.onRebuild = () => Error.throwWithStackTrace(failure, failureStack);
+      // A frame request that fails during recovery must not replace it.
+      var frameRequests = 0;
+      owner.setFrameCallback(() {
+        frameRequests++;
+        if (frameRequests > 2) throw StateError('frame request failed');
+      });
+
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      Object? caught;
+      StackTrace? caughtStack;
+      try {
+        owner.buildScope();
+      } on Object catch (error, stackTrace) {
+        caught = error;
+        caughtStack = stackTrace;
+      }
+
+      expect(caught, same(failure));
+      expect(caughtStack.toString(), failureStack.toString());
+      owner.setFrameCallback(() {});
+      firstElement.unmount();
+      secondElement.unmount();
+      owner.dispose();
+    });
+
+    test('recovered work requests a frame', () {
+      final owner = BuildOwner();
+      final first = _ProbeWidget('first', <String>[]);
+      final firstElement = first.createElement()..mount(null, owner);
+      final secondElement = _ProbeWidget('second', <String>[]).createElement()
+        ..mount(null, owner);
+      first.onRebuild = () => throw StateError('first failed');
+      owner
+        ..scheduleBuild(firstElement)
+        ..scheduleBuild(secondElement);
+      var frameRequests = 0;
+      owner.setFrameCallback(() => frameRequests++);
+
+      expect(owner.buildScope, throwsStateError);
+      expect(frameRequests, 1);
+
+      // Nothing was left behind, so a lone failure requests nothing.
+      owner.buildScope();
+      frameRequests = 0;
+      owner.scheduleBuild(firstElement);
+      frameRequests = 0;
+      expect(owner.buildScope, throwsStateError);
+      expect(frameRequests, 0);
+      firstElement.unmount();
+      secondElement.unmount();
+      owner.dispose();
+    });
+  });
+
   group('BuildOwner.dispose finalization', () {
     test('dispose() unmounts elements still pending in the inactive set '
         '(no lost dispose)', () {

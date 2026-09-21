@@ -235,6 +235,11 @@ class BuildOwner {
 
   /// Rebuilds all dirty elements in maintained-depth order under a reentrancy
   /// guard. Performs zero Element parent walks.
+  ///
+  /// A throwing rebuild ends the pass and propagates unchanged. The failed
+  /// element is not retried, but every element the pass had not reached yet
+  /// stays queued in its original order, and a frame is requested for it, so
+  /// a host that survives the error drains that work on its next pass.
   void buildScope() {
     if (_building) {
       throw StateError('BuildOwner.buildScope cannot be re-entered');
@@ -244,24 +249,59 @@ class BuildOwner {
       while (!_pendingBuckets.isEmpty) {
         final batch = _pendingBuckets;
         _pendingBuckets = _DirtyBuckets();
-        for (final dirty in batch.entriesInOrder()) {
-          final element = dirty.element;
-          final reservation = _dirtyReservations[element];
-          if (reservation == null ||
-              reservation.generation != dirty.generation) {
-            // Stale: cascade rebuild, rebucket, or clearDirty already won.
-            continue;
+        final entries = batch.entriesInOrder().iterator;
+        try {
+          while (entries.moveNext()) {
+            final dirty = entries.current;
+            final element = dirty.element;
+            if (!_holdsLiveReservation(dirty)) {
+              // Stale: cascade rebuild, rebucket, or clearDirty already won.
+              continue;
+            }
+            _dirtyReservations.remove(element);
+            if (!element.active) {
+              continue;
+            }
+            element.rebuild();
           }
-          _dirtyReservations.remove(element);
-          if (!element.active) {
-            continue;
-          }
-          element.rebuild();
+        } on Object {
+          _restoreUnvisited(entries);
+          rethrow;
         }
       }
       finalizeTree();
     } finally {
       _building = false;
+    }
+  }
+
+  bool _holdsLiveReservation(_DirtyElement dirty) =>
+      _dirtyReservations[dirty.element]?.generation == dirty.generation;
+
+  /// Requeues what a failed pass left in [remaining], so no live reservation
+  /// is stranded without an executable entry behind it.
+  ///
+  /// Entries keep their generation and ordinal, which keeps their order and
+  /// merges them with work scheduled during the failed pass. A stale entry is
+  /// dropped here exactly as the pass would have skipped it; a live one can
+  /// have no pending twin, because only a missing reservation or a rebucket
+  /// under a new generation creates a pending entry.
+  void _restoreUnvisited(Iterator<_DirtyElement> remaining) {
+    var restored = false;
+    while (remaining.moveNext()) {
+      final dirty = remaining.current;
+      if (_holdsLiveReservation(dirty)) {
+        _pendingBuckets.insert(dirty);
+        restored = true;
+      }
+    }
+    if (!restored) {
+      return;
+    }
+    try {
+      _onFrame?.call();
+    } on Object {
+      // The build failure remains primary after the frame request is attempted.
     }
   }
 
