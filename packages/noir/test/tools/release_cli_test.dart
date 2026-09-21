@@ -40,6 +40,20 @@ void main() {
       expect(() => parseReleaseTag('v0.0.2'), throwsFormatException);
     });
 
+    test('a prerelease is decided by the version, never by the tag text', () {
+      // Every release tag carries a `-` between the package and the version,
+      // so the historical `contains(tag, '-')` rule would call every release
+      // a prerelease, and a rule looking for `alpha`/`beta`/`dev` would miss
+      // `1.0.0-rc.1` and would wrongly flag stable `0.0.3`.
+      expect(parseReleaseTag('noir-v0.0.3').version.isPreRelease, isFalse);
+      expect(parseReleaseTag('noir-v1.0.0').version.isPreRelease, isFalse);
+      expect(parseReleaseTag('noir-v1.0.0-rc.1').version.isPreRelease, isTrue);
+      expect(
+        parseReleaseTag('noir_driver-v0.0.1-alpha.1').version.isPreRelease,
+        isTrue,
+      );
+    });
+
     test('a tag with no usable version is rejected', () {
       expect(() => parseReleaseTag('noir-vlatest'), throwsFormatException);
       expect(() => parseReleaseTag('noir'), throwsFormatException);

@@ -369,10 +369,15 @@ Push the tags **one at a time, Noir first**, and wait for each run to finish:
     git tag noir_driver-v0.0.1-alpha.2 && git push origin noir_driver-v0.0.1-alpha.2
     git tag noir_signals-v0.0.1-alpha.2 && git push origin noir_signals-v0.0.1-alpha.2
 
-One at a time for two reasons. GitHub creates no tag events at all when more
-than three tags arrive in one push, and `dart pub publish` resolves
-dependencies as part of its own validation, so a companion cannot validate
-until the Noir it requires is actually being served.
+One at a time for three reasons. GitHub creates no tag events at all when more
+than three tags arrive in one push. `dart pub publish` resolves dependencies
+as part of its own validation, so a companion cannot validate until the Noir
+it requires is actually being served. And a companion run started before Noir
+finishes spends its wait budget and then fails — correctly, but for nothing.
+
+That last case is a wasted run, never a wrong publication: the ordering gate
+is what enforces the order, not the queue. Each tag gets its own concurrency
+group so one release can never cancel another.
 
 Each push runs `.github/workflows/publish.yml`, which:
 

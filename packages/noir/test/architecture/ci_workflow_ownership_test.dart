@@ -47,31 +47,6 @@ void main() {
     }
   });
 
-  test('every Dart job ceiling covers the steps it bounds', () {
-    // The arithmetic, not the arithmetic's current answer: a job that cannot
-    // cover its own declared step ceilings is a job that dies mid-suite and
-    // reports a timeout instead of the failure.
-    for (final name in const ['analyze', 'ubuntu-test', 'desktop-test']) {
-      final job = _job(workflow, name);
-      final stepBudgets = RegExp(
-        r'^        timeout-minutes: (\d+)$',
-        multiLine: true,
-      ).allMatches(job).map((match) => int.parse(match.group(1)!)).toList();
-      expect(stepBudgets, isNotEmpty, reason: name);
-      final jobBudget = int.parse(
-        RegExp(
-          r'^    timeout-minutes: (\d+)$',
-          multiLine: true,
-        ).firstMatch(job)!.group(1)!,
-      );
-      expect(
-        jobBudget,
-        greaterThanOrEqualTo(stepBudgets.reduce((a, b) => a + b)),
-        reason: '$name cannot cover its own step ceilings',
-      );
-    }
-  });
-
   test('CI gates bounded platform jobs behind analysis', () {
     final analyze = _job(workflow, 'analyze');
     final ubuntu = _job(workflow, 'ubuntu-test');

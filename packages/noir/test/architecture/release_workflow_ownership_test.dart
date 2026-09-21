@@ -199,12 +199,18 @@ void main() {
     expect(workflow, contains('fail_on_unmatched_files: true'));
     expect(workflow, contains(r'tag_name: ${{ env.RELEASE_TAG }}'));
     // Every release tag carries a `-` between the package and the version, so
-    // a prerelease cannot be detected by looking for one.
+    // no rule that reads the tag text can answer this. It comes from the
+    // parsed version, via the same tool the publish workflow uses;
+    // `test/tools/release_cli_test.dart` covers the rule itself.
     expect(
       workflow,
-      isNot(contains(r"prerelease: ${{ contains(inputs.tag, '-') }}")),
+      contains(r'prerelease: ${{ needs.verify.outputs.prerelease }}'),
     );
-    expect(workflow, contains('alpha'));
+    expect(
+      workflow,
+      isNot(contains('contains(env.RELEASE_TAG')),
+      reason: 'a substring test cannot decide what a prerelease is',
+    );
     expect(workflow, contains('generate_release_notes: true'));
     expect(workflow, contains('macOS 13.0 or later (x64, arm64)'));
     expect(workflow, isNot(contains('dart run example/')));

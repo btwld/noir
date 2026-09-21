@@ -176,6 +176,18 @@ void main() {
     );
   });
 
+  test('a release run never cancels another release run', () {
+    // GitHub keeps one pending run per concurrency group and cancels the one
+    // it displaces. A group shared across tags would drop a companion release
+    // queued behind Noir without saying so.
+    expect(publish, contains('cancel-in-progress: false'));
+    expect(
+      publish,
+      contains(r'group: publish-${{ github.ref }}'),
+      reason: 'the group must be per tag, not per repository',
+    );
+  });
+
   test('publication waits for an approval a workflow edit cannot skip', () {
     final publishJob = _job(publish, 'publish');
 

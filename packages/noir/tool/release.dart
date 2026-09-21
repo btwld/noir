@@ -145,8 +145,15 @@ void _resolveTag(io.Directory root, String tag) {
     'package': package.name,
     'version': package.version.toString(),
     'directory': package.directory,
+    // The one place that decides what a prerelease is. A GitHub release marks
+    // itself prerelease from this, rather than from a second rule that reads
+    // the tag text and can disagree.
+    'prerelease': package.version.isPreRelease.toString(),
   });
 }
+
+/// How often preflight re-asks pub.dev while waiting out registry lag.
+const _pollInterval = Duration(seconds: 15);
 
 Future<void> _preflight(
   io.Directory root,
@@ -169,14 +176,16 @@ Future<void> _preflight(
   while (true) {
     cache.clear();
     decision = await decidePublish(name, workspace, lookup: lookup);
-    if (!decision.isBlocked || !DateTime.now().isBefore(deadline)) break;
+    if (!decision.isBlocked) break;
     // pub.dev serves a new version a short while after the upload returns, so
     // a dependent package released in the same sequence can be blocked purely
     // by that lag rather than by a real ordering mistake.
+    final left = deadline.difference(DateTime.now());
+    if (left <= Duration.zero) break;
     io.stdout.writeln(
       'waiting for a workspace dependency to appear on pub.dev …',
     );
-    await Future<void>.delayed(const Duration(seconds: 15));
+    await Future<void>.delayed(left < _pollInterval ? left : _pollInterval);
   }
 
   for (final blocker in decision.blockers) {

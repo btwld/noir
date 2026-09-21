@@ -33,10 +33,13 @@ permissions:
   contents: read
 
 concurrency:
-  # Every release run in the repository shares one queue rather than one per
-  # tag: a companion tagged alongside Noir must wait for Noir to finish, not
-  # race it. Nothing is cancelled, so a queued companion still runs.
-  group: publish-to-pub-dev
+  # One group per tag, never one for the whole repository. GitHub keeps only a
+  # single *pending* run per concurrency group and cancels the one it
+  # replaces, so a shared group would silently drop a companion release queued
+  # behind Noir. Ordering is not this queue's job anyway: the preflight gate
+  # refuses to publish a package whose workspace dependency pub.dev does not
+  # serve yet, which fails loudly instead of quietly.
+  group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

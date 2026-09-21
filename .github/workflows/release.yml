@@ -32,6 +32,8 @@ jobs:
     defaults:
       run:
         working-directory: packages/noir
+    outputs:
+      prerelease: ${{ steps.tag.outputs.prerelease }}
 
     steps:
       - name: Checkout repository
@@ -66,6 +68,7 @@ jobs:
       # The same tag rule the publish workflow uses, from the same tool: the
       # tag names a workspace member and carries that member's version.
       - name: Resolve the release tag
+        id: tag
         timeout-minutes: 2
         run: dart run tool/release.dart resolve-tag "$RELEASE_TAG"
 
@@ -200,9 +203,10 @@ jobs:
           files: opentui-binaries-*.tar.gz
           fail_on_unmatched_files: true
           tag_name: ${{ env.RELEASE_TAG }}
-          # A release tag always contains `-` between the package name and the
-          # version, so a prerelease is decided by what follows the `v`.
-          prerelease: ${{ contains(env.RELEASE_TAG, '-v0.') || contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'dev') }}
+          # Decided by `tool/release.dart`, from the parsed version. A release
+          # tag always contains a `-` between the package name and the
+          # version, so the tag text cannot answer this question.
+          prerelease: ${{ needs.verify.outputs.prerelease }}
           generate_release_notes: true
           body: |
             Bundled OpenTUI targets:
