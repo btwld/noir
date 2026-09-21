@@ -447,10 +447,18 @@ exactly where it is.
 | preflight, test-package, or the dry run | Nothing shipped. Fix it on `main`, then cut the *next* version. Do not move the tag. |
 | the reviewer declined, or the run was cancelled | Nothing shipped. Same as above. |
 | `dart pub publish` itself | Nothing shipped. Re-run the failed jobs from the run page once the cause is fixed. |
-| the upload succeeded but the run failed afterwards | Re-run failed jobs. `preflight` now finds the version published and skips, `announce` and `record` still run. |
+| the upload succeeded but a later job failed | **Re-run failed jobs** from the run page. That reuses the successful `publish`, so the failed job runs again against it. |
 | the announcement failed, or was never cut | Run `release.yml` by **workflow_dispatch** with the tag. It asks pub.dev first, so it refuses if the version is not actually there. |
 | the wrong content was published | Publish a corrected higher version. Within seven days of publication you may also retract the bad one on pub.dev, which hides it from new consumers without deleting it. |
 | `publication.json` drifted | `dart run melos:melos run release:record`, then `npm run sync` in `website/`. |
+
+Re-running the *whole* run, or re-pushing the tag, is not the same thing and
+is usually not what you want: `preflight` then finds the version already
+published and skips `publish`, which skips `announce` with it. You get a
+green run and no GitHub release. `record` is the one job that survives a
+skipped publish, deliberately, because reconciling the record is exactly what
+a re-run is often for. To cut a release for a version that is already out,
+use the `workflow_dispatch` row above.
 
 Re-pushing a deleted tag is never the recovery path. pub.dev matches the tag
 that triggered a run against the version being published, and a moved tag
@@ -477,14 +485,27 @@ enforces the rule against pub.dev instead of trusting a sorted list.
 
 ### One-time settings
 
-These live outside the repository and are not part of any pull request. On
-pub.dev, under `pub.dev/packages/<package>/admin`, each of `noir`,
+These live outside the repository and are not part of any pull request.
+
+On GitHub, create an environment named `pub.dev` with required reviewers and
+**Prevent self-review**. Do this *before* the first tag: GitHub silently
+creates an environment the first time a workflow names one, with no
+protection rules at all, so an unconfigured `pub.dev` environment is an
+approval gate that approves everything.
+
+On pub.dev, under `pub.dev/packages/<package>/admin`, each of `noir`,
 `noir_driver`, and `noir_signals` needs automated publishing enabled for
 repository `conceptadev/noir`, the tag pattern `<package>-v{{version}}`, and
-the required GitHub Actions environment `pub.dev`. On GitHub, the `pub.dev`
-environment needs required reviewers, which is the approval boundary: pub.dev
-puts the environment in the OIDC subject claim, so it cannot be bypassed by
-editing a workflow file.
+Require GitHub Actions environment set to `pub.dev`. The two settings work
+together: GitHub decides whether a human approved, and pub.dev refuses a
+token whose claim does not carry that environment — so the boundary cannot be
+moved by editing a workflow file.
+
+pub.dev's own guidance suggests one workflow file per package. This
+repository uses one file that derives the package from the tag instead.
+Everything pub.dev actually checks — repository, tag pattern, environment —
+still holds, because a tag names exactly one package and only that package is
+published; three near-identical files would be three places to drift.
 
 Repository visibility and native artifact refreshes remain separate explicit
 decisions and are never part of an ordinary change.

@@ -30,7 +30,8 @@ Usage: dart run tool/release.dart <command> [options]
 
   published <package>    Succeed only when pub.dev already serves the version
                          this package's manifest names. The gate a GitHub
-                         release passes before it announces anything.
+                         release passes before it announces anything. Waits up
+                         to --timeout for an upload that has not surfaced yet.
 
   record                 Rewrite publication.json from what pub.dev serves.
                          Run only after a publication is confirmed; the
@@ -84,7 +85,11 @@ Future<void> main(List<String> args) async {
         _fail('published takes exactly one package name.', parser);
         return;
       }
-      await _published(root, rest.single);
+      await _published(
+        root,
+        rest.single,
+        timeout: Duration(seconds: int.parse(options['timeout'] as String)),
+      );
     case 'record':
       await _record(root);
     case 'preflight':
@@ -162,8 +167,31 @@ void _resolveTag(io.Directory root, String tag) {
   });
 }
 
-/// How often preflight re-asks pub.dev while waiting out registry lag.
+/// How often to re-ask pub.dev while waiting out registry lag.
 const _pollInterval = Duration(seconds: 15);
+
+/// Re-runs [ask] until [settled] accepts its answer or [timeout] runs out.
+///
+/// pub.dev serves a version a short while after the upload that created it
+/// returns, so both questions this tool asks the registry right after a
+/// publish — can this dependent go now, and is this version really out — can
+/// be answered wrongly for reasons that fix themselves.
+Future<T> _untilSettled<T>(
+  Future<T> Function() ask, {
+  required bool Function(T) settled,
+  required Duration timeout,
+  required String waitingFor,
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (true) {
+    final answer = await ask();
+    if (settled(answer)) return answer;
+    final left = deadline.difference(DateTime.now());
+    if (left <= Duration.zero) return answer;
+    io.stdout.writeln('waiting for $waitingFor to appear on pub.dev …');
+    await Future<void>.delayed(left < _pollInterval ? left : _pollInterval);
+  }
+}
 
 Future<void> _preflight(
   io.Directory root,
@@ -181,22 +209,15 @@ Future<void> _preflight(
   Future<Set<Version>> lookup(String package) async =>
       cache[package] ??= await fetchPublishedVersions(package);
 
-  final deadline = DateTime.now().add(timeout);
-  PublishDecision decision;
-  while (true) {
-    cache.clear();
-    decision = await decidePublish(name, workspace, lookup: lookup);
-    if (!decision.isBlocked) break;
-    // pub.dev serves a new version a short while after the upload returns, so
-    // a dependent package released in the same sequence can be blocked purely
-    // by that lag rather than by a real ordering mistake.
-    final left = deadline.difference(DateTime.now());
-    if (left <= Duration.zero) break;
-    io.stdout.writeln(
-      'waiting for a workspace dependency to appear on pub.dev …',
-    );
-    await Future<void>.delayed(left < _pollInterval ? left : _pollInterval);
-  }
+  final decision = await _untilSettled(
+    () async {
+      cache.clear();
+      return decidePublish(name, workspace, lookup: lookup);
+    },
+    settled: (candidate) => !candidate.isBlocked,
+    timeout: timeout,
+    waitingFor: 'a workspace dependency',
+  );
 
   for (final blocker in decision.blockers) {
     io.stderr.writeln('error: $blocker');
@@ -209,7 +230,11 @@ Future<void> _preflight(
   if (decision.isBlocked) io.exitCode = 1;
 }
 
-Future<void> _published(io.Directory root, String name) async {
+Future<void> _published(
+  io.Directory root,
+  String name, {
+  required Duration timeout,
+}) async {
   final workspace = loadWorkspace(root);
   if (!workspace.any((candidate) => candidate.name == name)) {
     io.stderr.writeln('error: $name is not a workspace member.');
@@ -217,10 +242,11 @@ Future<void> _published(io.Directory root, String name) async {
     return;
   }
   final package = workspace.firstWhere((candidate) => candidate.name == name);
-  final published = await isPublished(
-    name,
-    workspace,
-    lookup: fetchPublishedVersions,
+  final published = await _untilSettled(
+    () => isPublished(name, workspace, lookup: fetchPublishedVersions),
+    settled: (candidate) => candidate,
+    timeout: timeout,
+    waitingFor: '$name ${package.version}',
   );
   if (!published) {
     io.stderr.writeln(

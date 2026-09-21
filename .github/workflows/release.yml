@@ -83,10 +83,16 @@ jobs:
       # The second gate, independent of how this job was reached. `needs:
       # publish` orders the chained path; this asks the registry itself, which
       # is what also protects a manual dispatch.
+      # Waits, rather than asking once. pub.dev serves a version a short while
+      # after the upload that created it returns, and this runs moments after
+      # that upload — so a single point-in-time question would fail the happy
+      # path for a reason that fixes itself. `preflight` waits out the same
+      # lag for the same reason.
       - name: Require the version to be on pub.dev
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: >-
-          dart run tool/release.dart published "${{ steps.tag.outputs.package }}"
+          dart run tool/release.dart published
+          "${{ steps.tag.outputs.package }}" --timeout 300
 
       # Rebuilt from the tagged checkout rather than carried between jobs:
       # these files are committed, `native:verify` has already matched them
