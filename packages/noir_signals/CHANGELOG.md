@@ -7,9 +7,11 @@ its public API, and its behavior are unchanged from 0.0.1-alpha.0.
 
 ### Changed
 
-- `noir: ^0.0.3`. A caret constraint on a `0.0.x` version ends at the next
-  patch, so the previous `^0.0.2` excluded Noir 0.0.3 and an application could
-  not resolve the two together.
+- `noir: ^0.0.3`, narrowed from `^0.0.2` to name the Noir this release is
+  built and tested against. The previous constraint still resolved — Dart's
+  caret raises the minor for a `0.0.x` version, so `^0.0.2` means
+  `>=0.0.2 <0.1.0` — but it also claimed support for a Noir this companion
+  was never verified against.
 
 ## 0.0.1-alpha.0
 
