@@ -48,7 +48,7 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
 
   void _deploy() {
     setState(() {
-      _status = 'Deployment scheduled for noir 0.0.2.';
+      _status = 'Deployment scheduled for noir 0.0.3.';
     });
     _closeDialog();
   }
@@ -72,7 +72,7 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
               children: [
                 const Expanded(
                   child: Text(
-                    'noir 0.0.2 · ready for review',
+                    'noir 0.0.3 · ready for review',
                     maxLines: 1,
                     softWrap: false,
                     overflow: TextOverflow.ellipsis,
@@ -115,7 +115,7 @@ class _DialogDemoAppState extends State<DialogDemoApp> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Deploy noir 0.0.2 to production?',
+            'Deploy noir 0.0.3 to production?',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           Text(

@@ -133,7 +133,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    expect(packageVersion, '0.0.2');
+    expect(packageVersion, '0.0.3');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -150,7 +150,28 @@ void main() {
 
     expect(currentRelease, isNotEmpty);
     expect(
-      RegExp(r'^### Changed$', multiLine: true).allMatches(currentRelease),
+      RegExp(r'^### Fixed$', multiLine: true).allMatches(currentRelease),
+      hasLength(1),
+    );
+    for (final contract in const [
+      'BuildOwner.buildScope()',
+      'in its original order',
+      'requests a frame',
+      'TuiApp.requestExit',
+      'reaches the exit sink unchanged',
+      'bundled native artifacts are unchanged from 0.0.2',
+    ]) {
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
+    }
+  });
+
+  test('published 0.0.2 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedRelease = _changelogSection(changelog, '0.0.2');
+
+    expect(publishedRelease, isNotEmpty);
+    expect(
+      RegExp(r'^### Changed$', multiLine: true).allMatches(publishedRelease),
       hasLength(1),
     );
     for (final contract in const [
@@ -158,7 +179,11 @@ void main() {
       'The package `repository` field',
       'bundled native artifacts are unchanged from 0.0.1',
     ]) {
-      expect(_normalized(currentRelease), contains(contract), reason: contract);
+      expect(
+        _normalized(publishedRelease),
+        contains(contract),
+        reason: contract,
+      );
     }
   });
 
