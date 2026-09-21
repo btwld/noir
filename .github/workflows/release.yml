@@ -1,10 +1,15 @@
 name: Create GitHub release
 
 on:
+  push:
+    # Only Noir carries the bundled native artifacts this release attaches, so
+    # only Noir's release tag opens a GitHub release. A companion's tag
+    # publishes to pub.dev and stops there.
+    tags: ['noir-v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag to verify and release (for example, v1.2.3)
+        description: Existing release tag to verify and release (for example, noir-v1.2.3)
         required: true
         type: string
 
@@ -12,14 +17,18 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
+
+env:
+  # One name for the tag whether the run came from a push or a dispatch.
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   verify:
     name: Verify and package native assets
     runs-on: ubuntu-latest
-    timeout-minutes: 36
+    timeout-minutes: 38
     defaults:
       run:
         working-directory: packages/noir
@@ -28,27 +37,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ inputs.tag }}
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           submodules: recursive
 
-      - name: Verify release tag
+      - name: Confirm the tag exists
         shell: bash
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-        run: |
-          set -euo pipefail
-          git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
-          version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
-          semver='[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?([+][0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?'
-          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+($semver)[[:space:]]*$ ]]; then
-            echo "::error::pubspec.yaml must contain exactly one valid semantic version"
-            exit 1
-          fi
-          package_version="${BASH_REMATCH[1]}"
-          if [[ "$RELEASE_TAG" != "v$package_version" ]]; then
-            echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
-            exit 1
-          fi
+        run: git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
@@ -68,6 +62,12 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 3
         run: dart pub get
+
+      # The same tag rule the publish workflow uses, from the same tool: the
+      # tag names a workspace member and carries that member's version.
+      - name: Resolve the release tag
+        timeout-minutes: 2
+        run: dart run tool/release.dart resolve-tag "$RELEASE_TAG"
 
       - name: Verify bundled native assets
         timeout-minutes: 2
@@ -96,8 +96,6 @@ jobs:
 
       - name: Package tracked native assets
         shell: bash
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
         run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
 
       - name: Upload package-test assets
@@ -135,7 +133,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ inputs.tag }}
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
@@ -201,8 +199,10 @@ jobs:
         with:
           files: opentui-binaries-*.tar.gz
           fail_on_unmatched_files: true
-          tag_name: ${{ inputs.tag }}
-          prerelease: ${{ contains(inputs.tag, '-') }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          # A release tag always contains `-` between the package name and the
+          # version, so a prerelease is decided by what follows the `v`.
+          prerelease: ${{ contains(env.RELEASE_TAG, '-v0.') || contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'dev') }}
           generate_release_notes: true
           body: |
             Bundled OpenTUI targets:

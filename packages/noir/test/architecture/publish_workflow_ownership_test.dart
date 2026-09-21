@@ -16,32 +16,33 @@ void main() {
     ('release', 'verify'),
     ('publish', 'preflight'),
   ]) {
-    test('$name preflight budgets cover CI tests and each bounded stage', () {
+    test('$name validation is bounded step by step and as a whole', () {
+      // Not which steps exist — that is the workflow's business — but that
+      // every step it does declare is bounded, and that the job ceiling
+      // covers the sum. An unbounded release step is a release that can hang
+      // holding the publish queue.
       final job = _job(workflows[name]!, jobName);
-      final ordinaryBudget = _stepBudget(job, 'Run ordinary tests');
-      expect(
-        ordinaryBudget,
-        greaterThanOrEqualTo(
-          _stepBudget(
-            _job(workflows['ci']!, 'ubuntu-test'),
-            'Run ordinary tests',
-          ),
-        ),
-        reason: 'release validation runs the same ordinary suite as Ubuntu CI',
-      );
-      final checkBudgets = [
-        for (final name in [
-          'Install dependencies',
-          'Verify bundled native assets',
-          'Check formatting',
-          'Run strict analysis',
-          'Run ordinary tests',
-          'Validate documentation links',
-          'Validate publish archive',
-        ])
-          _stepBudget(job, name),
-      ];
-      expect(checkBudgets, everyElement(greaterThan(0)));
+      final steps = RegExp(
+        r'^      - name: (.+)$',
+        multiLine: true,
+      ).allMatches(job).map((match) => match.group(1)!).toList();
+      expect(steps, isNotEmpty);
+
+      final budgets = <int>[];
+      for (final step in steps) {
+        final budget = _optionalStepBudget(job, step);
+        if (budget != null) budgets.add(budget);
+        // Every step that runs work of its own carries its own ceiling.
+        // Checkout, SDK setup, cache restore and artifact upload are bounded
+        // by the action itself; a `dart`, `melos` or `npm` invocation is not.
+        if (_runsAToolchain(job, step)) {
+          expect(
+            budget,
+            isNotNull,
+            reason: '$name/$jobName step "$step" has no ceiling',
+          );
+        }
+      }
       final jobBudget = int.parse(
         RegExp(
           r'^    timeout-minutes: (\d+)',
@@ -50,7 +51,7 @@ void main() {
       );
       expect(
         jobBudget,
-        greaterThanOrEqualTo(checkBudgets.reduce((a, b) => a + b)),
+        greaterThanOrEqualTo(budgets.reduce((a, b) => a + b)),
         reason: 'the job must cover its individual validation ceilings',
       );
     });
@@ -90,7 +91,12 @@ void main() {
   test('publish configuration names Noir and immutable actions', () {
     expect(publish, contains('repository: conceptadev/noir'));
     expect(publish, isNot(contains('leoafarias/cli_ui')));
-    expect(publish, contains("tags: ['v*']"));
+    // Only a Melos release tag publishes. `v*` would match the unprefixed
+    // tags used before 0.0.3, which name no package, and a branch trigger
+    // would publish on an ordinary merge.
+    expect(publish, contains("tags: ['*-v*']"));
+    expect(publish, isNot(contains('branches:')));
+    expect(publish, isNot(contains('workflow_dispatch:')));
 
     for (final line
         in publish
@@ -106,12 +112,7 @@ void main() {
   });
 
   test('publish preflight validates exact semantic version and package', () {
-    final preflightStart = publish.indexOf('  preflight:');
-    final publishStart = publish.indexOf('  publish:', preflightStart + 1);
-    expect(preflightStart, greaterThan(-1));
-    expect(publishStart, greaterThan(preflightStart));
-
-    final preflight = publish.substring(preflightStart, publishStart);
+    final preflight = _job(publish, 'preflight');
     expect(
       preflight,
       contains(
@@ -125,21 +126,33 @@ void main() {
     );
     expect(preflight, contains('actions/cache@'));
     expect(preflight, contains(r'path: ${{ runner.temp }}/pub-cache'));
-    expect(preflight, contains('semver='));
-    expect(preflight, contains(r'package_version="${BASH_REMATCH[1]}"'));
-    expect(preflight, contains(r'"v$package_version"'));
-    // The checks run through the workspace's Melos scripts, which own the
-    // commands themselves; melos_workspace_ownership_test pins those bodies.
+    // Every release rule lives in `tool/release.dart`, which
+    // `test/tools/release_cli_test.dart` exercises on ordinary CI. The
+    // workflow calls it and must not grow a second copy in shell.
+    expect(preflight, contains('tool/release.dart resolve-tag'));
+    expect(preflight, contains('tool/release.dart check'));
+    expect(preflight, contains('tool/release.dart preflight'));
+    expect(
+      preflight,
+      isNot(contains('curl')),
+      reason: 'the registry query belongs to the tool, not to the workflow',
+    );
+    expect(
+      preflight,
+      isNot(contains('semver=')),
+      reason: 'version parsing belongs to the tool, not to the workflow',
+    );
+    // A companion ships against the Noir in this same commit, so a release
+    // runs the whole ladder rather than one package's slice of it.
+    expect(preflight, contains('dart run melos:melos run verify'));
     expect(preflight, contains('dart run melos:melos run native:verify'));
-    expect(preflight, contains('dart run melos:melos run test:noir'));
-    expect(preflight, contains('dart run melos:melos run docs:api'));
-    expect(preflight, contains('dart run melos:melos run archive:noir'));
+    expect(preflight, contains('dart pub publish --dry-run'));
     expect(preflight, isNot(contains('continue-on-error')));
     expect(preflight, isNot(contains('.dart_tool')));
   });
 
   test('publish job owns pinned steps instead of a reusable workflow', () {
-    final publishJob = publish.substring(publish.indexOf('  publish:'));
+    final publishJob = _job(publish, 'publish');
 
     // A pinned reference to a reusable workflow is not enough. The previous
     // call pinned dart-lang/setup-dart's publish workflow, whose own steps
@@ -155,15 +168,60 @@ void main() {
     expect(publishJob, contains('dart pub publish --force'));
 
     // Republishing an existing version is a hard error on pub.dev, so a
-    // re-run or a retagged commit must skip rather than fail.
-    expect(publishJob, contains('publish=false'));
-    expect(publishJob, contains(r'>> "$GITHUB_OUTPUT"'));
-    expect(publishJob, contains("if: steps.state.outputs.publish == 'true'"));
+    // re-run or a retagged commit must skip rather than fail. The decision is
+    // the preflight job's, so the publish job is simply conditional on it.
+    expect(
+      publishJob,
+      contains("if: needs.preflight.outputs.publish == 'true'"),
+    );
+  });
+
+  test('publication waits for an approval a workflow edit cannot skip', () {
+    final publishJob = _job(publish, 'publish');
+
+    // pub.dev reflects the environment in the OIDC subject claim, so
+    // requiring one here is the release approval boundary rather than a
+    // decoration: someone who can push to the repository still cannot
+    // publish by editing this file.
+    expect(publishJob, contains('environment:'));
+    expect(publishJob, contains('name: pub.dev'));
+  });
+
+  test('the publication record is proposed, never pushed to main', () {
+    final recordJob = _job(publish, 'record');
+
+    // publication.json caches pub.dev and the availability labels derive from
+    // it, so it is regenerated rather than hand-written — but it is still
+    // website content, and it goes through review.
+    expect(recordJob, contains('needs: [preflight, publish]'));
+    expect(recordJob, contains('tool/release.dart record'));
+    expect(recordJob, contains('gh pr create'));
+    expect(
+      recordJob,
+      isNot(contains('git push origin main')),
+      reason: 'the record must not land without review',
+    );
+  });
+
+  test('publication itself never goes through Melos', () {
+    // `melos publish` sorts `dependencies` and `dev_dependencies` into one
+    // graph. Noir dev-depends on noir_driver and noir_driver depends on Noir,
+    // so it sees a cycle, falls back to name length, and offers noir_driver
+    // first — before the Noir it requires exists.
+    final invocations = RegExp(
+      r'^\s*run: (.+)$',
+      multiLine: true,
+    ).allMatches(publish).map((match) => match.group(1)!);
+    for (final invocation in invocations) {
+      expect(invocation, isNot(contains('melos publish')), reason: invocation);
+      expect(invocation, isNot(contains('melos version')), reason: invocation);
+    }
+    expect(publish, contains('dart pub publish --force'));
   });
 
   test('OIDC publication depends on preflight with least privilege', () {
     expect(publish, contains('permissions:\n  contents: read'));
-    final publishJob = publish.substring(publish.indexOf('  publish:'));
+    final publishJob = _job(publish, 'publish');
     expect(publishJob, contains('needs: preflight'));
     expect(publishJob, contains('id-token: write'));
     expect(publishJob, contains('contents: read'));
@@ -176,7 +234,9 @@ String _read(String path) =>
     File(path).readAsStringSync().replaceAll('\r\n', '\n');
 
 String _job(String workflow, String name) {
-  final start = workflow.indexOf('  $name:');
+  // Anchored: `publish` is also a job output key at deeper indentation, and
+  // an unanchored search finds that first.
+  final start = workflow.indexOf(RegExp('^  $name:', multiLine: true));
   expect(start, isNonNegative, reason: 'missing job $name');
   final end = workflow.indexOf(
     RegExp('^  [a-z][a-z-]+:', multiLine: true),
@@ -185,15 +245,38 @@ String _job(String workflow, String name) {
   return workflow.substring(start, end < 0 ? workflow.length : end);
 }
 
-int _stepBudget(String job, String name) {
+/// The body of one named step, or null when the job has no such step.
+String? _step(String job, String name) {
   final start = job.indexOf('      - name: $name\n');
-  expect(start, isNonNegative, reason: 'missing step $name');
+  if (start < 0) return null;
+  final end = job.indexOf('      - name:', start + 7);
+  return job.substring(start, end < 0 ? job.length : end);
+}
+
+/// Whether [name] runs a Dart, Melos or Node command rather than an action.
+bool _runsAToolchain(String job, String name) {
+  final step = _step(job, name);
+  if (step == null) return false;
+  final commands = RegExp(
+    r'^\s*run: (.+)$',
+    multiLine: true,
+  ).allMatches(step).map((match) => match.group(1)!);
+  return commands.any(
+    (command) =>
+        command.startsWith('dart ') ||
+        command.startsWith('npm ') ||
+        command.contains('melos:melos'),
+  );
+}
+
+int? _optionalStepBudget(String job, String name) {
+  final start = job.indexOf('      - name: $name\n');
+  if (start < 0) return null;
   final end = job.indexOf('      - name:', start + 7);
   final step = job.substring(start, end < 0 ? job.length : end);
   final timeout = RegExp(
     r'^        timeout-minutes: (\d+)',
     multiLine: true,
   ).firstMatch(step);
-  expect(timeout, isNotNull, reason: '$name must have an explicit ceiling');
-  return int.parse(timeout!.group(1)!);
+  return timeout == null ? null : int.parse(timeout.group(1)!);
 }

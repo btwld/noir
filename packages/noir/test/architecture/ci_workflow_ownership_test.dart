@@ -47,13 +47,37 @@ void main() {
     }
   });
 
+  test('every Dart job ceiling covers the steps it bounds', () {
+    // The arithmetic, not the arithmetic's current answer: a job that cannot
+    // cover its own declared step ceilings is a job that dies mid-suite and
+    // reports a timeout instead of the failure.
+    for (final name in const ['analyze', 'ubuntu-test', 'desktop-test']) {
+      final job = _job(workflow, name);
+      final stepBudgets = RegExp(
+        r'^        timeout-minutes: (\d+)$',
+        multiLine: true,
+      ).allMatches(job).map((match) => int.parse(match.group(1)!)).toList();
+      expect(stepBudgets, isNotEmpty, reason: name);
+      final jobBudget = int.parse(
+        RegExp(
+          r'^    timeout-minutes: (\d+)$',
+          multiLine: true,
+        ).firstMatch(job)!.group(1)!,
+      );
+      expect(
+        jobBudget,
+        greaterThanOrEqualTo(stepBudgets.reduce((a, b) => a + b)),
+        reason: '$name cannot cover its own step ceilings',
+      );
+    }
+  });
+
   test('CI gates bounded platform jobs behind analysis', () {
     final analyze = _job(workflow, 'analyze');
     final ubuntu = _job(workflow, 'ubuntu-test');
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('    timeout-minutes: 21\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
     expect(
       analyze,
@@ -69,7 +93,6 @@ void main() {
     );
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('    timeout-minutes: 32\n'));
     expect(
       ubuntu,
       contains(
@@ -85,7 +108,6 @@ void main() {
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('    timeout-minutes: 37\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,

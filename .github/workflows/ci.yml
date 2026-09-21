@@ -16,7 +16,7 @@ jobs:
   analyze:
     name: Format and analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 21
+    timeout-minutes: 23
 
     steps:
       - name: Checkout repository
@@ -66,6 +66,13 @@ jobs:
       - name: Run strict companion analysis
         timeout-minutes: 4
         run: dart run melos:melos run analyze:signals
+
+      # A release is prepared by an ordinary pull request, so the gate that
+      # reads the manifests and changelogs runs on every pull request rather
+      # than first running when a tag is pushed.
+      - name: Check release readiness
+        timeout-minutes: 2
+        run: dart run melos:melos run release:check
 
   website:
     name: Validate website

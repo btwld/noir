@@ -54,12 +54,11 @@ melos:
       workspaceChangelog: false
       # No implicit `git fetch --tags`. Remote Git operations stay explicit.
       fetchTags: false
-      # The remaining guarantees this repository needs from `melos version` —
-      # no changelog, no commit, no tag, no sibling version bump, and no
-      # Conventional Commit versioning of the packages it was not asked to
-      # move — are flags rather than settings in this Melos release, so the
-      # command CONTRIBUTING.md documents carries them and an architecture
-      # test asserts it still does. A `v*` tag publishes `noir` to pub.dev
+      # The remaining guarantees — no changelog, no commit, no tag, and no
+      # sibling version bump — are flags rather than settings in this Melos
+      # release, so the command CONTRIBUTING.md documents carries them and an
+      # architecture test asserts it still does. Melos tags releases
+      # `<package>-v<version>`, and a tag in that shape publishes to pub.dev
       # for real, so an accidental tag is not a small mistake.
 
   # Every script wraps, verbatim, a command the contributor guide documents,
@@ -120,6 +119,14 @@ melos:
       description: Validate the generated API documentation links.
       run: cd packages/noir && dart doc --validate-links --output .context/dartdoc
 
+    release:check:
+      description: Check that every package is ready to be tagged and published.
+      run: cd packages/noir && dart run tool/release.dart check
+
+    release:record:
+      description: Rewrite publication.json from what pub.dev serves. Run only after publishing.
+      run: cd packages/noir && dart run tool/release.dart record
+
     stage:companion:
       description: Check the companion archive the way an outside application resolves it.
       run: cd packages/noir && dart run tool/stage_companion_package.dart --verify
@@ -156,4 +163,5 @@ melos:
         dart run melos:melos run test:noir &&
         dart run melos:melos run test:driver &&
         dart run melos:melos run test:signals &&
-        dart run melos:melos run native:verify
+        dart run melos:melos run native:verify &&
+        dart run melos:melos run release:check

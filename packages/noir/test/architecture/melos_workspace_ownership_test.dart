@@ -17,6 +17,8 @@ const _scriptDirectories = <String, String>{
   'native:verify': 'packages/noir',
   'docs:frames': 'packages/noir',
   'docs:api': 'packages/noir',
+  'release:check': 'packages/noir',
+  'release:record': 'packages/noir',
   'stage:companion': 'packages/noir',
   'stage:driver': 'packages/noir',
   'archive:noir': 'packages/noir',
@@ -45,6 +47,8 @@ const _scriptCommands = <String, String>{
   'native:verify': 'dart run tool/fetch_opentui_binaries.dart --verify-only',
   'docs:frames': 'dart run tool/capture_doc_frames.dart --check',
   'docs:api': 'dart doc --validate-links --output .context/dartdoc',
+  'release:check': 'dart run tool/release.dart check',
+  'release:record': 'dart run tool/release.dart record',
   'stage:companion': 'dart run tool/stage_companion_package.dart --verify',
   'stage:driver':
       'dart run tool/stage_companion_package.dart --verify ../noir_driver',
@@ -64,6 +68,7 @@ const _guidedScripts = <String>[
   'test:architecture',
   'native:verify',
   'docs:frames',
+  'release:check',
   'stage:companion',
   'stage:driver',
 ];
@@ -129,15 +134,16 @@ void main() {
       expect(command, contains('--dependent-constraints'), reason: command);
       // A dependent's own version is a release decision, not a side effect.
       expect(command, contains('--no-dependent-versions'), reason: command);
-      // Without an empty commit range Melos also versions the companions
-      // from their Conventional Commit history, which is their whole history
-      // because they are published by hand and carry no release tag.
-      expect(command, contains('--diff=HEAD...HEAD'), reason: command);
       // The `melos version <package> <version>` positional form scopes the
       // run, which turns the other members into ignored packages with
       // pending changes; Melos then skips every package that depends on one
-      // and exits 0 having changed nothing.
-      expect(command, contains('-V '), reason: command);
+      // and exits 0 having changed nothing. Naming every member with `-V`
+      // leaves nothing ignored and nothing to auto-version, so no `--diff`
+      // workaround is needed either.
+      for (final member in const ['noir', 'noir_driver', 'noir_signals']) {
+        expect(command, contains('-V $member:'), reason: command);
+      }
+      expect(command, isNot(contains('--diff')), reason: command);
     }
   });
 
@@ -175,6 +181,9 @@ void main() {
       'test:driver',
       'test:signals',
       'native:verify',
+      // A release is prepared by an ordinary pull request, so the gate that
+      // reads the manifests and changelogs belongs in ordinary verification.
+      'release:check',
     ];
 
     final verify = scripts['verify'];

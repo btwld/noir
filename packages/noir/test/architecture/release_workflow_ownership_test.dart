@@ -13,23 +13,29 @@ void main() {
     '../../.github/workflows/release.yml',
   ).readAsStringSync().replaceAll('\r\n', '\n');
 
-  test('release is manual for one explicit existing tag', () {
+  test('a release is cut from one existing tag, never from a branch', () {
+    // Only Noir's tag opens a GitHub release: Noir owns the bundled native
+    // artifacts the release attaches, and a companion tag has none.
+    expect(workflow, contains("tags: ['noir-v*']"));
+    expect(workflow, isNot(contains('branches:')));
+    // Dispatch stays so a failed release can be re-cut without retagging.
     expect(workflow, contains('workflow_dispatch:'));
-    expect(workflow, contains('inputs:'));
-    expect(workflow, contains('tag:'));
     expect(
-      RegExp(r'ref: refs/tags/\$\{\{ inputs\.tag \}\}').allMatches(workflow),
+      workflow,
+      contains(r'RELEASE_TAG: ${{ inputs.tag || github.ref_name }}'),
+    );
+    expect(
+      RegExp(
+        r'ref: refs/tags/\$\{\{ env\.RELEASE_TAG \}\}',
+      ).allMatches(workflow),
       hasLength(2),
+      reason: 'both checkouts pin the tag, not a branch',
     );
     expect(
       workflow,
       contains(r'git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"'),
     );
-    expect(workflow, isNot(contains('push:')));
-    expect(workflow, isNot(contains('tags:')));
-    expect(workflow, isNot(contains('branches:')));
     expect(workflow, contains('cancel-in-progress: false'));
-    expect(workflow, contains('for example, v1.2.3'));
     expect(workflow, isNot(contains('pull_request:')));
   });
 
@@ -177,20 +183,28 @@ void main() {
     },
   );
 
-  test('tag releases require an exact semantic-version/package match', () {
-    expect(workflow, contains('name: Verify release tag'));
-    expect(workflow, contains(r'RELEASE_TAG: ${{ inputs.tag }}'));
-    expect(workflow, contains("semver='[0-9]+[.][0-9]+[.][0-9]+"));
+  test('the tag is checked against the manifest by the shared tool', () {
+    // The same rule the publish workflow applies, from the same place, so a
+    // GitHub release cannot be cut for a tag pub.dev would have refused.
+    // `test/tools/release_cli_test.dart` covers the rule itself.
+    expect(workflow, contains('dart run tool/release.dart resolve-tag'));
     expect(
       workflow,
-      contains(r'if [[ "$RELEASE_TAG" != "v$package_version" ]]'),
+      isNot(contains("semver='[0-9]+")),
+      reason: 'version parsing belongs to the tool, not to the workflow',
     );
   });
 
   test('release metadata is strict and states the macOS deployment floor', () {
     expect(workflow, contains('fail_on_unmatched_files: true'));
-    expect(workflow, contains(r"prerelease: ${{ contains(inputs.tag, '-') }}"));
-    expect(workflow, contains(r'tag_name: ${{ inputs.tag }}'));
+    expect(workflow, contains(r'tag_name: ${{ env.RELEASE_TAG }}'));
+    // Every release tag carries a `-` between the package and the version, so
+    // a prerelease cannot be detected by looking for one.
+    expect(
+      workflow,
+      isNot(contains(r"prerelease: ${{ contains(inputs.tag, '-') }}")),
+    );
+    expect(workflow, contains('alpha'));
     expect(workflow, contains('generate_release_notes: true'));
     expect(workflow, contains('macOS 13.0 or later (x64, arm64)'));
     expect(workflow, isNot(contains('dart run example/')));

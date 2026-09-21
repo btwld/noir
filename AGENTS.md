@@ -115,11 +115,22 @@ Run these from `packages/noir/`, for the `noir` package:
     dart test --concurrency=1
     dart run tool/fetch_opentui_binaries.dart --verify-only
     dart run tool/capture_doc_frames.dart --check
+    dart run tool/release.dart check
     dart pub publish --dry-run
 
 `capture_doc_frames.dart` drives the documented tutorial checkpoints in
 headless drive mode and compares the result with the committed frames the
 website publishes. `--check` never writes; omit it to refresh them.
+
+`release.dart` owns the release rules the publish and release workflows
+apply, so those workflows stay thin callers and the rules are covered by
+`test/tools/release_cli_test.dart` on every ordinary run. `check` is part of
+the `verify` ladder and reads only local files. Its other commands —
+`resolve-tag`, `preflight`, and `record` — read pub.dev, and `record` is the
+only one that writes anything; run it only after a publication is confirmed.
+Publishing itself is never a local step: it happens when a maintainer pushes
+a `<package>-v<version>` tag and a required reviewer approves the `pub.dev`
+environment. [`CONTRIBUTING.md`](CONTRIBUTING.md) owns that procedure.
 
 Run these from `packages/noir_driver/`, for the drive-mode client:
 
