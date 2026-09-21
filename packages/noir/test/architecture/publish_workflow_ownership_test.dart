@@ -13,8 +13,9 @@ void main() {
   final publish = workflows['publish']!;
 
   for (final (name, jobName) in [
-    ('release', 'verify'),
+    ('release', 'announce'),
     ('publish', 'preflight'),
+    ('publish', 'test-package'),
   ]) {
     test('$name validation is bounded step by step and as a whole', () {
       // Not which steps exist — that is the workflow's business — but that
@@ -103,6 +104,9 @@ void main() {
             .split('\n')
             .map((line) => line.trim())
             .where((line) => line.startsWith('uses:'))) {
+      // A workflow in this repository is checked out at the same commit, so
+      // it has no SHA of its own to pin. Everything else must be immutable.
+      if (line.startsWith('uses: ./.github/workflows/')) continue;
       expect(
         line,
         matches(RegExp(r'^uses: [^@ ]+@[0-9a-f]{40}(?: # v[^ ]+)?$')),
@@ -170,10 +174,26 @@ void main() {
     // Republishing an existing version is a hard error on pub.dev, so a
     // re-run or a retagged commit must skip rather than fail. The decision is
     // the preflight job's, so the publish job is simply conditional on it.
-    expect(
-      publishJob,
-      contains("if: needs.preflight.outputs.publish == 'true'"),
-    );
+    expect(publishJob, contains("needs.preflight.outputs.publish == 'true'"));
+  });
+
+  test('nothing is uploaded until the packaged assets load everywhere', () {
+    final publishJob = _job(publish, 'publish');
+    final packaged = _job(publish, 'test-package');
+
+    // Publication is irreversible, so the cross-platform check on the bytes
+    // being shipped runs before the upload, not after it.
+    expect(publishJob, contains('needs: [preflight, test-package]'));
+    expect(packaged, contains('dart run noir:health_check'));
+    expect(packaged, contains('rm -rf native native_manifest.json'));
+    expect(packaged, contains('ubuntu-latest'));
+    expect(packaged, contains('macos-latest'));
+    expect(packaged, contains('windows-latest'));
+    // Skipped for a companion tag, and a skipped `needs` skips its
+    // dependents, so the publish job must name the result rather than
+    // silently inherit a skip.
+    expect(publishJob, contains("needs.test-package.result != 'failure'"));
+    expect(publishJob, contains("needs.test-package.result != 'cancelled'"));
   });
 
   test('a release run never cancels another release run', () {
@@ -197,6 +217,39 @@ void main() {
     // publish by editing this file.
     expect(publishJob, contains('environment:'));
     expect(publishJob, contains('name: pub.dev'));
+  });
+
+  test('the announcement is reachable only through a successful publish', () {
+    final announce = _job(publish, 'announce');
+
+    // The defect: release.yml used to trigger on `noir-v*` itself, so the
+    // GitHub release raced the upload and could go public while approval was
+    // pending or after publication failed. It is now a called workflow with
+    // no trigger of its own, and ordinary `needs` semantics skip it unless
+    // `publish` actually succeeded.
+    expect(announce, contains('uses: ./.github/workflows/release.yml'));
+    expect(announce, contains('needs: [preflight, publish]'));
+    expect(
+      announce,
+      isNot(contains('always()')),
+      reason: 'a skipped or failed publish must skip the announcement',
+    );
+    // Only Noir carries the bundled native artifacts a release attaches.
+    expect(announce, contains("needs.preflight.outputs.package == 'noir'"));
+    // Permissions only flow down a reusable-workflow chain, so the caller
+    // grants what the announcement needs and nothing else.
+    expect(announce, contains('contents: write'));
+    expect(
+      announce,
+      isNot(contains('id-token')),
+      reason: 'announcing needs no publish credential',
+    );
+
+    expect(
+      workflows['release'],
+      isNot(contains('push:')),
+      reason: 'release.yml must not start itself on a tag',
+    );
   });
 
   test('the publication record is proposed, never pushed to main', () {
@@ -248,7 +301,7 @@ void main() {
   test('OIDC publication depends on preflight with least privilege', () {
     expect(publish, contains('permissions:\n  contents: read'));
     final publishJob = _job(publish, 'publish');
-    expect(publishJob, contains('needs: preflight'));
+    expect(publishJob, contains('needs: [preflight, test-package]'));
     expect(publishJob, contains('id-token: write'));
     expect(publishJob, contains('contents: read'));
     expect(publishJob, isNot(contains('secrets.')));

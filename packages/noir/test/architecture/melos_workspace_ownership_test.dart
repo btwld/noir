@@ -18,6 +18,7 @@ const _scriptDirectories = <String, String>{
   'docs:frames': 'packages/noir',
   'docs:api': 'packages/noir',
   'release:check': 'packages/noir',
+  'release:published': 'packages/noir',
   'release:record': 'packages/noir',
   'stage:companion': 'packages/noir',
   'stage:driver': 'packages/noir',
@@ -48,6 +49,7 @@ const _scriptCommands = <String, String>{
   'docs:frames': 'dart run tool/capture_doc_frames.dart --check',
   'docs:api': 'dart doc --validate-links --output .context/dartdoc',
   'release:check': 'dart run tool/release.dart check',
+  'release:published': 'dart run tool/release.dart published noir',
   'release:record': 'dart run tool/release.dart record',
   'stage:companion': 'dart run tool/stage_companion_package.dart --verify',
   'stage:driver':

@@ -123,6 +123,10 @@ melos:
       description: Check that every package is ready to be tagged and published.
       run: cd packages/noir && dart run tool/release.dart check
 
+    release:published:
+      description: Succeed only when pub.dev already serves Noir's manifest version.
+      run: cd packages/noir && dart run tool/release.dart published noir
+
     release:record:
       description: Rewrite publication.json from what pub.dev serves. Run only after publishing.
       run: cd packages/noir && dart run tool/release.dart record

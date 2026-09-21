@@ -350,6 +350,25 @@ Set<Version> parsePublishedVersions(String body) {
 
 Future<void> _sleep(Duration duration) => Future<void>.delayed(duration);
 
+/// Whether pub.dev already serves [name] at the version its manifest names.
+///
+/// This is the announcement gate, and it is deliberately not the inverse of
+/// [decidePublish]: that one answers "may this be published", which is false
+/// both when the version is already out and when a dependency is missing.
+/// Announcing needs the narrower fact that the version a release is about to
+/// advertise is one a reader can actually install.
+Future<bool> isPublished(
+  String name,
+  List<ReleasePackage> workspace, {
+  required RegistryLookup lookup,
+}) async {
+  final package = workspace.firstWhere(
+    (candidate) => candidate.name == name,
+    orElse: () => throw ArgumentError('$name is not a workspace member'),
+  );
+  return (await lookup(name)).contains(package.version);
+}
+
 /// Rewrites [publicationFile] from what pub.dev actually serves.
 ///
 /// pub.dev is the source of truth for "what is published"; `publication.json`

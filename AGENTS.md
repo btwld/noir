@@ -126,8 +126,10 @@ website publishes. `--check` never writes; omit it to refresh them.
 apply, so those workflows stay thin callers and the rules are covered by
 `test/tools/release_cli_test.dart` on every ordinary run. `check` is part of
 the `verify` ladder and reads only local files. Its other commands —
-`resolve-tag`, `preflight`, and `record` — read pub.dev, and `record` is the
-only one that writes anything; run it only after a publication is confirmed.
+`resolve-tag`, `preflight`, `published`, and `record` — read pub.dev, and
+`record` is the only one that writes anything; run it only after a
+publication is confirmed. `published` is the gate a GitHub release passes
+before it announces a version, so an announcement cannot outrun the upload.
 Publishing itself is never a local step: it happens when a maintainer pushes
 a `<package>-v<version>` tag and a required reviewer approves the `pub.dev`
 environment. [`CONTRIBUTING.md`](CONTRIBUTING.md) owns that procedure.

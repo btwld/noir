@@ -379,28 +379,43 @@ That last case is a wasted run, never a wrong publication: the ordering gate
 is what enforces the order, not the queue. Each tag gets its own concurrency
 group so one release can never cancel another.
 
-Each push runs `.github/workflows/publish.yml`, which:
+Each push runs `.github/workflows/publish.yml`, one ordered chain:
 
-1. resolves the tag to a package and checks it against that package's
-   manifest;
-2. asks pub.dev whether every workspace dependency is already served at a
-   version this package's constraint admits, waiting up to ten minutes for a
-   Noir published moments earlier to surface, and **fails** rather than
-   publishing a package no consumer could resolve;
-3. skips the rest when the version is already on pub.dev, so re-pushing a tag
-   after a half-finished release costs a minute rather than the whole ladder;
-4. otherwise runs `release:check`, the whole `verify` ladder, the
-   native-asset verify, and that package's `dart pub publish --dry-run`;
-5. stops at the `pub.dev` environment until a required reviewer approves;
-6. publishes with `dart pub publish --force`, authenticated by OIDC.
+1. **preflight** resolves the tag to a package and checks it against that
+   package's manifest; asks pub.dev whether every workspace dependency is
+   already served at a version this package's constraint admits, waiting up to
+   ten minutes for a Noir published moments earlier to surface, and **fails**
+   rather than publishing a package no consumer could resolve; skips the rest
+   when the version is already on pub.dev; and otherwise runs `release:check`,
+   the whole `verify` ladder, the native-asset verify, and that package's
+   `dart pub publish --dry-run`.
+2. **test-package** (Noir only) deletes the checkout's native assets, restores
+   the packaged copy, and runs the health check and a CLI bundle on Linux,
+   macOS and Windows. Publication cannot be undone, so the last proof that the
+   shipped bytes load runs before the upload, not after it.
+3. **publish** stops at the `pub.dev` environment until a required reviewer
+   approves, then publishes with `dart pub publish --force` over OIDC.
+4. **announce** (Noir only) calls `release.yml` to cut the GitHub release with
+   the bundled-artifact archive attached.
+5. **record** proposes the `publication.json` update.
 
-Step 2 comes before step 4 on purpose: both of its answers make verification
-pointless, and a re-pushed tag should not pay for a thirty-minute ladder to
-discover it had nothing to do.
+The decision in step 1 comes before the work in steps 1–2 on purpose: both of
+its answers make verification pointless, and a re-pushed tag should not pay
+for a thirty-minute ladder to discover it had nothing to do.
 
-`noir-v*` additionally runs `.github/workflows/release.yml`, which verifies
-the tagged commit, tests the packaged native assets on all three platforms,
-and opens the GitHub release with the bundled-artifact archive attached.
+### The announcement never races the publication
+
+`release.yml` has no trigger of its own. It used to run on `noir-v*` in
+parallel with `publish.yml`, which meant a GitHub release could go public
+while a reviewer had not yet approved the `pub.dev` environment, or after the
+upload failed outright — announcing a version nobody could install.
+
+It is now a reusable workflow that `publish.yml` calls with
+`needs: [preflight, publish]` and no `always()`, so ordinary skip semantics
+stop it unless the upload actually succeeded. It also asks pub.dev directly,
+through `dart run tool/release.dart published <package>`, before it writes
+anything. The second gate is not redundant: it is what protects the
+`workflow_dispatch` path, which has no `needs` to inherit.
 
 ### Record the publication
 
@@ -414,9 +429,32 @@ version nobody can install. To do it by hand:
     dart run melos:melos run release:record
     cd website && npm run sync
 
-Because a pull request opened with `GITHUB_TOKEN` does not start a workflow
-run, that pull request arrives without checks. Push an empty commit to it, or
-close and reopen it, to run CI before merging.
+The workflow opens that pull request with `GITHUB_TOKEN`, not an app or
+personal token. Its checks are created but held: GitHub puts workflow runs
+from a pull request a token opened into an approval-required state, and a
+maintainer releases them with **Approve and run** on the pull request. Nothing
+needs pushing to it, and no extra credential exists to leak — the same rule
+that holds those runs is what stops this job from re-triggering itself.
+
+### When something fails
+
+A published version is permanent and a pushed release tag is a public
+reference, so recovery never moves either. In every case below the tag stays
+exactly where it is.
+
+| What failed | What to do |
+| --- | --- |
+| preflight, test-package, or the dry run | Nothing shipped. Fix it on `main`, then cut the *next* version. Do not move the tag. |
+| the reviewer declined, or the run was cancelled | Nothing shipped. Same as above. |
+| `dart pub publish` itself | Nothing shipped. Re-run the failed jobs from the run page once the cause is fixed. |
+| the upload succeeded but the run failed afterwards | Re-run failed jobs. `preflight` now finds the version published and skips, `announce` and `record` still run. |
+| the announcement failed, or was never cut | Run `release.yml` by **workflow_dispatch** with the tag. It asks pub.dev first, so it refuses if the version is not actually there. |
+| the wrong content was published | Publish a corrected higher version. Within seven days of publication you may also retract the bad one on pub.dev, which hides it from new consumers without deleting it. |
+| `publication.json` drifted | `dart run melos:melos run release:record`, then `npm run sync` in `website/`. |
+
+Re-pushing a deleted tag is never the recovery path. pub.dev matches the tag
+that triggered a run against the version being published, and a moved tag
+makes every earlier reference to it a lie.
 
 ### Why publication is not `melos publish`
 

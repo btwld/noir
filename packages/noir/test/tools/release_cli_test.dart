@@ -258,6 +258,103 @@ void main() {
     });
   });
 
+  group('the announcement gate', () {
+    test('a version pub.dev serves may be announced', () async {
+      expect(
+        await isPublished(
+          'noir',
+          _workspace(_fixture()),
+          lookup: _registry({
+            'noir': ['0.0.2', '0.0.3'],
+          }),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a version pub.dev does not serve may not be announced', () async {
+      // The case the split workflows allowed: a GitHub release going public
+      // while approval was still pending, or after the upload failed.
+      expect(
+        await isPublished(
+          'noir',
+          _workspace(_fixture()),
+          lookup: _registry({
+            'noir': ['0.0.2'],
+          }),
+        ),
+        isFalse,
+      );
+    });
+
+    test('another version being served is not this version', () async {
+      // A newer release must not vouch for an older tag, or the reverse.
+      expect(
+        await isPublished(
+          'noir',
+          _workspace(_fixture()),
+          lookup: _registry({
+            'noir': ['0.0.2', '0.0.4'],
+          }),
+        ),
+        isFalse,
+      );
+    });
+
+    test('a companion is judged on its own version', () async {
+      final workspace = _workspace(_fixture());
+      final lookup = _registry({
+        'noir': ['0.0.3'],
+        'noir_driver': ['0.0.1-alpha.1'],
+        'noir_signals': ['0.0.1-alpha.0'],
+      });
+
+      expect(
+        await isPublished('noir_driver', workspace, lookup: lookup),
+        isTrue,
+      );
+      expect(
+        await isPublished('noir_signals', workspace, lookup: lookup),
+        isFalse,
+        reason: 'noir_signals 0.0.1-alpha.1 is not the alpha.0 on pub.dev',
+      );
+    });
+
+    test('an empty registry announces nothing', () async {
+      expect(
+        await isPublished(
+          'noir',
+          _workspace(_fixture()),
+          lookup: _registry(const {}),
+        ),
+        isFalse,
+      );
+    });
+
+    test('the gate is not the inverse of the publish decision', () async {
+      // Both are false for a blocked companion, so a workflow that reused the
+      // publish decision would refuse to announce for the wrong reason — and
+      // would announce whenever publishing was merely already done.
+      final workspace = _workspace(_fixture());
+      final lookup = _registry({
+        'noir': ['0.0.2'],
+        'noir_driver': ['0.0.1-alpha.1'],
+      });
+
+      final decision = await decidePublish(
+        'noir_driver',
+        workspace,
+        lookup: lookup,
+      );
+      expect(decision.shouldPublish, isFalse, reason: 'blocked on noir');
+      expect(
+        await isPublished('noir_driver', workspace, lookup: lookup),
+        isTrue,
+        reason: 'yet this version is genuinely installable',
+      );
+    });
+  });
+
   group('recording a publication', () {
     test('records what pub.dev serves, not what the manifests claim', () async {
       // A half-finished release leaves the manifests ahead of the registry.

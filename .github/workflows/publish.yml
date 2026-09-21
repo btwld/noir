@@ -46,7 +46,7 @@ jobs:
   preflight:
     name: Validate release
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 62
     defaults:
       run:
         working-directory: packages/noir
@@ -136,10 +136,111 @@ jobs:
         run: dart pub publish --dry-run
         working-directory: ${{ steps.tag.outputs.directory }}
 
+      # Only Noir carries bundled native binaries. They are committed, not
+      # built, so this is a repackaging — but the next job proves the packaged
+      # copy actually loads, and it does so while the upload can still be
+      # stopped.
+      - name: Package tracked native assets
+        if: >-
+          steps.preflight.outputs.publish == 'true'
+          && steps.tag.outputs.package == 'noir'
+        timeout-minutes: 2
+        shell: bash
+        run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Upload package-test assets
+        if: >-
+          steps.preflight.outputs.publish == 'true'
+          && steps.tag.outputs.package == 'noir'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: opentui-binaries
+          path: |
+            packages/noir/native/
+            packages/noir/native_manifest.json
+          retention-days: 7
+          if-no-files-found: error
+
+  test-package:
+    name: Test packaged assets (${{ matrix.os }})
+    needs: preflight
+    # Companion tags have no native assets to test, and there is nothing to
+    # prove when preflight already found the version published.
+    if: >-
+      needs.preflight.outputs.publish == 'true'
+      && needs.preflight.outputs.package == 'noir'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: packages/noir
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Remove checkout asset copy
+        shell: bash
+        run: rm -rf native native_manifest.json
+
+      - name: Download packaged assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: opentui-binaries
+          path: packages/noir
+
+      - name: Cache pub packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Run packaged health check
+        timeout-minutes: 4
+        run: dart run noir:health_check
+
+      - name: Build and run CLI bundle
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          dart build cli -t bin/health_check.dart --output build/health-check
+          cp -R build/health-check/bundle "$RUNNER_TEMP/health-check-bundle"
+          rm -rf build/health-check
+          case "${{ runner.os }}" in
+            Windows) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check.exe" ;;
+            *) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check" ;;
+          esac
+          "$bundle"
+
   publish:
     name: Publish ${{ needs.preflight.outputs.package }}
-    needs: preflight
-    if: needs.preflight.outputs.publish == 'true'
+    needs: [preflight, test-package]
+    # `test-package` is skipped for a companion tag, and a skipped `needs`
+    # skips its dependents, so the result is named rather than assumed.
+    if: >-
+      always() && needs.preflight.result == 'success'
+      && needs.preflight.outputs.publish == 'true'
+      && needs.test-package.result != 'failure'
+      && needs.test-package.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Protection rules on this environment gate the job before it reaches a
@@ -184,6 +285,19 @@ jobs:
         timeout-minutes: 10
         run: dart pub publish --force
         working-directory: ${{ needs.preflight.outputs.directory }}
+
+  # Ordinary `needs` semantics are the point: this is skipped unless `publish`
+  # actually succeeded, so a release cannot appear while approval is pending,
+  # after a failed upload, or for a version that was already out.
+  announce:
+    name: Announce the release
+    needs: [preflight, publish]
+    if: needs.preflight.outputs.package == 'noir'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ github.ref_name }}
 
   record:
     name: Record the publication
@@ -244,9 +358,14 @@ jobs:
         working-directory: website
 
       # A pull request, not a push: the availability labels are website
-      # content and go through review like any other change. GITHUB_TOKEN
-      # cannot trigger a workflow, so this pull request opens without checks
-      # until someone pushes to it — which is also the review prompt.
+      # content and go through review like any other change.
+      #
+      # GITHUB_TOKEN is the right token here, and deliberately not an app or
+      # personal token. A pull request it opens still creates its workflow
+      # runs; GitHub holds them in an approval-required state until someone
+      # with write access approves them from the pull request. That is one
+      # click on a page a human is already reading, and it is also what stops
+      # this job from triggering itself in a loop.
       - name: Open the publication record pull request
         if: steps.record.outputs.changed != ''
         env:

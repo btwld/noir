@@ -28,6 +28,10 @@ Usage: dart run tool/release.dart <command> [options]
                          Waits up to --timeout for a dependency that a just
                          finished publish has not surfaced yet.
 
+  published <package>    Succeed only when pub.dev already serves the version
+                         this package's manifest names. The gate a GitHub
+                         release passes before it announces anything.
+
   record                 Rewrite publication.json from what pub.dev serves.
                          Run only after a publication is confirmed; the
                          website's availability labels derive from it.
@@ -75,6 +79,12 @@ Future<void> main(List<String> args) async {
         return;
       }
       _resolveTag(root, rest.single);
+    case 'published':
+      if (rest.length != 1) {
+        _fail('published takes exactly one package name.', parser);
+        return;
+      }
+      await _published(root, rest.single);
     case 'record':
       await _record(root);
     case 'preflight':
@@ -197,6 +207,30 @@ Future<void> _preflight(
     'reason': decision.reason,
   });
   if (decision.isBlocked) io.exitCode = 1;
+}
+
+Future<void> _published(io.Directory root, String name) async {
+  final workspace = loadWorkspace(root);
+  if (!workspace.any((candidate) => candidate.name == name)) {
+    io.stderr.writeln('error: $name is not a workspace member.');
+    io.exitCode = 1;
+    return;
+  }
+  final package = workspace.firstWhere((candidate) => candidate.name == name);
+  final published = await isPublished(
+    name,
+    workspace,
+    lookup: fetchPublishedVersions,
+  );
+  if (!published) {
+    io.stderr.writeln(
+      'error: pub.dev does not serve $name ${package.version}. A release '
+      'must not announce a version nobody can install.',
+    );
+    io.exitCode = 1;
+    return;
+  }
+  io.stdout.writeln('pub.dev serves $name ${package.version}.');
 }
 
 Future<void> _record(io.Directory root) async {

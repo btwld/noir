@@ -1,15 +1,26 @@
 name: Create GitHub release
 
+# The announcement, and only the announcement. It never runs on a tag push of
+# its own: `publish.yml` calls it after pub.dev has accepted the upload, so a
+# release cannot appear while approval is still pending or after publication
+# failed.
+#
+# `workflow_dispatch` stays for re-cutting a release whose creation failed
+# after a successful publication. That path cannot be used to announce
+# something unpublished either: the job asks pub.dev directly before it writes
+# anything, so the guarantee does not depend on how the job was reached.
+
 on:
-  push:
-    # Only Noir carries the bundled native artifacts this release attaches, so
-    # only Noir's release tag opens a GitHub release. A companion's tag
-    # publishes to pub.dev and stops there.
-    tags: ['noir-v*']
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to announce, for example noir-v1.2.3
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag to verify and release (for example, noir-v1.2.3)
+        description: Existing release tag to announce (for example, noir-v1.2.3)
         required: true
         type: string
 
@@ -17,29 +28,28 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag || github.ref_name }}
+  group: release-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
-  # One name for the tag whether the run came from a push or a dispatch.
-  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
-  verify:
-    name: Verify and package native assets
+  announce:
+    name: Publish GitHub release
     runs-on: ubuntu-latest
-    timeout-minutes: 38
+    timeout-minutes: 20
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: packages/noir
-    outputs:
-      prerelease: ${{ steps.tag.outputs.prerelease }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ env.RELEASE_TAG }}
+          ref: refs/tags/${{ inputs.tag }}
           submodules: recursive
 
       - name: Confirm the tag exists
@@ -59,154 +69,43 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_driver/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
         run: dart pub get
 
-      # The same tag rule the publish workflow uses, from the same tool: the
-      # tag names a workspace member and carries that member's version.
       - name: Resolve the release tag
         id: tag
         timeout-minutes: 2
         run: dart run tool/release.dart resolve-tag "$RELEASE_TAG"
 
-      - name: Verify bundled native assets
-        timeout-minutes: 2
-        run: dart run melos:melos run native:verify
-
-      - name: Check formatting
-        timeout-minutes: 2
-        run: dart run melos:melos run format:noir
-
-      - name: Run strict analysis
-        timeout-minutes: 4
-        run: dart run melos:melos run analyze
-
-      - name: Run ordinary tests
-        # Match Ubuntu CI; a successful run already exceeded eight minutes.
-        timeout-minutes: 15
-        run: dart run melos:melos run test:noir
-
-      - name: Validate documentation links
+      # The second gate, independent of how this job was reached. `needs:
+      # publish` orders the chained path; this asks the registry itself, which
+      # is what also protects a manual dispatch.
+      - name: Require the version to be on pub.dev
         timeout-minutes: 5
-        run: dart run melos:melos run docs:api
+        run: >-
+          dart run tool/release.dart published "${{ steps.tag.outputs.package }}"
 
-      - name: Validate publish archive
-        timeout-minutes: 5
-        run: dart run melos:melos run archive:noir
-
+      # Rebuilt from the tagged checkout rather than carried between jobs:
+      # these files are committed, `native:verify` has already matched them
+      # against their manifest digests, and a dispatch has no earlier job to
+      # inherit an artifact from.
       - name: Package tracked native assets
         shell: bash
         run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
 
-      - name: Upload package-test assets
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentui-binaries
-          path: |
-            packages/noir/native/
-            packages/noir/native_manifest.json
-          retention-days: 7
-          if-no-files-found: error
-
-      - name: Upload release archive
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentui-binaries-release
-          path: packages/noir/opentui-binaries-*.tar.gz
-          retention-days: 7
-          if-no-files-found: error
-
-  test-package:
-    name: Test packaged assets (${{ matrix.os }})
-    needs: verify
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 12
-    defaults:
-      run:
-        working-directory: packages/noir
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: refs/tags/${{ env.RELEASE_TAG }}
-
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
-        with:
-          sdk: '3.10.0'
-
-      - name: Configure pub cache
-        shell: bash
-        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
-
-      - name: Remove checkout asset copy
-        shell: bash
-        run: rm -rf native native_manifest.json
-
-      - name: Download packaged assets
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: opentui-binaries
-          path: packages/noir
-
-      - name: Cache pub packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
-
-      - name: Install dependencies
-        timeout-minutes: 3
-        run: dart pub get
-
-      - name: Run packaged health check
-        run: dart run noir:health_check
-
-      - name: Build and run CLI bundle
-        shell: bash
-        run: |
-          dart build cli -t bin/health_check.dart --output build/health-check
-          cp -R build/health-check/bundle "$RUNNER_TEMP/health-check-bundle"
-          rm -rf build/health-check
-          case "${{ runner.os }}" in
-            Windows) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check.exe" ;;
-            *) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check" ;;
-          esac
-          "$bundle"
-
-  release:
-    name: Publish GitHub release
-    needs: [verify, test-package]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download release archive
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: opentui-binaries-release
-          path: .
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          files: opentui-binaries-*.tar.gz
+          files: packages/noir/opentui-binaries-*.tar.gz
           fail_on_unmatched_files: true
-          tag_name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ inputs.tag }}
           # Decided by `tool/release.dart`, from the parsed version. A release
           # tag always contains a `-` between the package name and the
           # version, so the tag text cannot answer this question.
-          prerelease: ${{ needs.verify.outputs.prerelease }}
+          prerelease: ${{ steps.tag.outputs.prerelease }}
           generate_release_notes: true
           body: |
             Bundled OpenTUI targets:
