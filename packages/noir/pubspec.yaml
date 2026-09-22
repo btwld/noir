@@ -49,4 +49,9 @@ dev_dependencies:
   noir_driver: ^0.0.1-alpha.1
   path: ^1.9.0
   pub_api_client: ^4.0.0
+  # Checkout-only: `tool/release.dart` reads the workspace manifests and
+  # compares constraints against what pub.dev serves. `tool/` is excluded
+  # from the archive.
+  pub_semver: ^2.1.0
   test: ^1.25.0
+  yaml: ^3.1.0

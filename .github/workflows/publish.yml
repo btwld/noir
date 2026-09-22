@@ -1,61 +1,66 @@
 name: Publish to pub.dev
 
-# One-time pub.dev configuration:
-#   package: noir (published from packages/noir)
-#   repository: conceptadev/noir
-#   tag pattern: v{{version}}
-# Automated publishing applies only after the first version is published
-# manually, as required by pub.dev.
+# One-time pub.dev configuration, per package, under
+# `pub.dev/packages/<package>/admin` -> Automated publishing:
 #
-# The publishing job is written inline rather than calling
-# dart-lang/setup-dart's reusable workflow. That workflow's own steps use an
-# unpinned actions/checkout, which this repository's policy rejects, so every
-# tag-triggered run failed before it could publish. Publication authenticates
-# through OIDC; no long-lived pub.dev credential is stored here.
+#   repository: conceptadev/noir
+#   tag pattern:  noir-v{{version}}
+#                 noir_driver-v{{version}}
+#                 noir_signals-v{{version}}
+#   environment:  pub.dev   (Require GitHub Actions environment)
+#
+# The per-package tag prefix is pub.dev's documented monorepo recommendation,
+# and it is byte-identical to the tag Melos itself builds, so one convention
+# serves the registry, the Melos versioning command, and this workflow.
+#
+# The environment is the release approval boundary. pub.dev puts it in the
+# OIDC subject claim, so it cannot be bypassed by editing this file — only a
+# required reviewer on the `pub.dev` environment can let a publish proceed.
+#
+# Publication authenticates through OIDC; no long-lived pub.dev credential is
+# stored here. The publishing job is written inline rather than calling
+# dart-lang/setup-dart's reusable workflow, whose own steps use an unpinned
+# actions/checkout that this repository's policy rejects.
 
 on:
   push:
-    tags: ['v*']
+    # Only a Melos release tag publishes. An ordinary merge to main cannot,
+    # and neither can the unprefixed `v*` tags used before 0.0.3, because
+    # those name no package to publish.
+    tags: ['*-v*']
 
 permissions:
   contents: read
 
 concurrency:
+  # One group per tag, never one for the whole repository. GitHub keeps only a
+  # single *pending* run per concurrency group and cancels the one it
+  # replaces, so a shared group would silently drop a companion release queued
+  # behind Noir. Ordering is not this queue's job anyway: the preflight gate
+  # refuses to publish a package whose workspace dependency pub.dev does not
+  # serve yet, which fails loudly instead of quietly.
   group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   preflight:
-    name: Validate package
+    name: Validate release
     runs-on: ubuntu-latest
-    timeout-minutes: 36
+    timeout-minutes: 62
     defaults:
       run:
         working-directory: packages/noir
+    outputs:
+      package: ${{ steps.tag.outputs.package }}
+      version: ${{ steps.tag.outputs.version }}
+      directory: ${{ steps.tag.outputs.directory }}
+      publish: ${{ steps.preflight.outputs.publish }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
-
-      - name: Verify release tag
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          version_declarations="$(grep -E '^version:' pubspec.yaml || true)"
-          semver='[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?([+][0-9A-Za-z-]+([.][0-9A-Za-z-]+)*)?'
-          if [[ ! "$version_declarations" =~ ^version:[[:space:]]+($semver)[[:space:]]*$ ]]; then
-            echo "::error::pubspec.yaml must contain exactly one valid semantic version"
-            exit 1
-          fi
-          package_version="${BASH_REMATCH[1]}"
-          if [[ "$RELEASE_TAG" != "v$package_version" ]]; then
-            echo "::error::tag $RELEASE_TAG does not match pubspec version $package_version"
-            exit 1
-          fi
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
@@ -70,50 +75,181 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_driver/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      - name: Resolve the release tag
+        id: tag
+        timeout-minutes: 2
+        run: dart run tool/release.dart resolve-tag "$RELEASE_TAG"
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      # First, because the two answers it can give both make the rest of this
+      # job pointless: a version already on pub.dev needs no verification, and
+      # a package whose dependency is not served yet must not be published no
+      # matter how green it is. Putting it last would make a re-pushed tag pay
+      # the whole ladder to conclude it had nothing to do.
+      #
+      # It decides what the workflow must not decide for itself: whether every
+      # workspace dependency is already served at a version this package's
+      # constraint admits, whether this version is already published, and how
+      # long to wait for pub.dev to surface a dependency published moments
+      # ago. `dart pub publish` resolves dependencies as part of its own
+      # validation, so a companion really can fail purely on that lag.
+      - name: Decide whether this version still needs publishing
+        id: preflight
+        timeout-minutes: 15
+        run: >-
+          dart run tool/release.dart preflight
+          "${{ steps.tag.outputs.package }}" --timeout 600
+
+      # Ahead of the ladder on purpose: a bad changelog or a stale constraint
+      # is cheap to find and would otherwise cost thirty minutes first. The
+      # ladder runs it again at the end, along with the native-asset verify.
+      - name: Check release readiness
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 2
+        run: dart run tool/release.dart check
+
+      # A companion release is not independent of Noir's health: it ships
+      # against the Noir in this same commit. The whole ladder runs.
+      - name: Verify the workspace
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 30
+        run: dart run melos:melos run verify
+        working-directory: .
+
+      # Checks the archive's shape. It cannot check that a consumer outside
+      # this workspace can resolve it, because inside the workspace pub binds
+      # a sibling to the local checkout whatever the declared source says.
+      # That is what the preflight gate above is for.
+      - name: Validate publish archive
+        if: steps.preflight.outputs.publish == 'true'
+        timeout-minutes: 5
+        run: dart pub publish --dry-run
+        working-directory: ${{ steps.tag.outputs.directory }}
+
+      # Only Noir carries bundled native binaries. They are committed, not
+      # built, so this is a repackaging — but the next job proves the packaged
+      # copy actually loads, and it does so while the upload can still be
+      # stopped.
+      - name: Package tracked native assets
+        if: >-
+          steps.preflight.outputs.publish == 'true'
+          && steps.tag.outputs.package == 'noir'
+        timeout-minutes: 2
+        shell: bash
+        run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Upload package-test assets
+        if: >-
+          steps.preflight.outputs.publish == 'true'
+          && steps.tag.outputs.package == 'noir'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: opentui-binaries
+          path: |
+            packages/noir/native/
+            packages/noir/native_manifest.json
+          retention-days: 7
+          if-no-files-found: error
+
+  test-package:
+    name: Test packaged assets (${{ matrix.os }})
+    needs: preflight
+    # Companion tags have no native assets to test, and there is nothing to
+    # prove when preflight already found the version published.
+    if: >-
+      needs.preflight.outputs.publish == 'true'
+      && needs.preflight.outputs.package == 'noir'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: packages/noir
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Remove checkout asset copy
+        shell: bash
+        run: rm -rf native native_manifest.json
+
+      - name: Download packaged assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: opentui-binaries
+          path: packages/noir
+
+      - name: Cache pub packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pub-cache
           key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
         run: dart pub get
 
-      - name: Verify bundled native assets
-        timeout-minutes: 2
-        run: dart run tool/fetch_opentui_binaries.dart --verify-only
-
-      - name: Check formatting
-        timeout-minutes: 2
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
-
-      - name: Run strict analysis
+      - name: Run packaged health check
         timeout-minutes: 4
-        run: dart analyze --fatal-infos
+        run: dart run noir:health_check
 
-      - name: Run ordinary tests
-        # Match Ubuntu CI; a successful run already exceeded eight minutes.
-        timeout-minutes: 15
-        run: dart test --concurrency=1
-
-      - name: Validate documentation links
+      - name: Build and run CLI bundle
         timeout-minutes: 5
-        run: dart doc --validate-links --output .context/dartdoc
-
-      - name: Validate publish archive
-        timeout-minutes: 5
-        run: dart pub publish --dry-run
+        shell: bash
+        run: |
+          dart build cli -t bin/health_check.dart --output build/health-check
+          cp -R build/health-check/bundle "$RUNNER_TEMP/health-check-bundle"
+          rm -rf build/health-check
+          case "${{ runner.os }}" in
+            Windows) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check.exe" ;;
+            *) bundle="$RUNNER_TEMP/health-check-bundle/bin/health_check" ;;
+          esac
+          "$bundle"
 
   publish:
-    name: Publish package
-    needs: preflight
+    name: Publish ${{ needs.preflight.outputs.package }}
+    needs: [preflight, test-package]
+    # `test-package` is skipped for a companion tag, and a skipped `needs`
+    # skips its dependents, so the result is named rather than assumed.
+    if: >-
+      always() && needs.preflight.result == 'success'
+      && needs.preflight.outputs.publish == 'true'
+      && needs.test-package.result != 'failure'
+      && needs.test-package.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Protection rules on this environment gate the job before it reaches a
+    # runner, so a required reviewer approves before anything is uploaded.
+    environment:
+      name: pub.dev
+      url: https://pub.dev/packages/${{ needs.preflight.outputs.package }}
     permissions:
       # pub.dev exchanges this OIDC token for a short-lived publish
       # credential. The workflow holds no long-lived secret.
       id-token: write
       contents: read
-    defaults:
-      run:
-        working-directory: packages/noir
 
     steps:
       - name: Checkout repository
@@ -134,34 +270,124 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pub-cache
-          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml') }}
+          key: ${{ runner.os }}-Dart-3.10.0-${{ hashFiles('pubspec.yaml', 'packages/noir/pubspec.yaml', 'packages/noir_driver/pubspec.yaml', 'packages/noir_signals/pubspec.yaml') }}
 
       - name: Install dependencies
         timeout-minutes: 3
         run: dart pub get
 
-      - name: Decide whether this version needs publishing
-        id: state
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
-          published="$(curl -sS --max-time 30 \
-            https://pub.dev/api/packages/noir || true)"
-          if [[ -n "$published" ]] && printf '%s' "$published" \
-            | jq -e --arg v "$version" \
-              '.versions[]? | select(.version == $v)' >/dev/null 2>&1; then
-            echo "::notice::noir $version is already on pub.dev; skipping"
-            echo 'publish=false' >> "$GITHUB_OUTPUT"
-          else
-            echo 'publish=true' >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Validate publish archive
-        timeout-minutes: 5
-        run: dart pub publish --dry-run
-
+      # `--force` skips only the interactive confirmation. Validation still
+      # runs, and errors still stop the upload.
       - name: Publish to pub.dev
-        if: steps.state.outputs.publish == 'true'
         timeout-minutes: 10
         run: dart pub publish --force
+        working-directory: ${{ needs.preflight.outputs.directory }}
+
+  # Ordinary `needs` semantics are the point: this is skipped unless `publish`
+  # actually succeeded, so a release cannot appear while approval is pending,
+  # after a failed upload, or for a version that was already out.
+  announce:
+    name: Announce the release
+    needs: [preflight, publish]
+    if: needs.preflight.outputs.package == 'noir'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ github.ref_name }}
+
+  record:
+    name: Record the publication
+    needs: [preflight, publish]
+    # A skipped `needs` skips its dependents too, and `publish` is skipped
+    # whenever preflight found the version already on pub.dev. That is exactly
+    # the re-run after a half-finished release, when the record is most likely
+    # to be the thing still missing — so this job must survive a skip and stop
+    # only for a failure. Recording is a no-op when nothing drifted.
+    if: >-
+      always() && needs.preflight.result == 'success'
+      && needs.publish.result != 'failure'
+      && needs.publish.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@7654d458321ee25acccccfdb86cd48bd95768ff1 # v1.8.0
+        with:
+          sdk: '3.10.0'
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Configure pub cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: dart pub get
+
+      # Reads pub.dev, never the manifests: a version that a release abandoned
+      # halfway must not be labelled as available.
+      - name: Record what pub.dev now serves
+        id: record
+        timeout-minutes: 5
+        run: dart run tool/release.dart record
+        working-directory: packages/noir
+
+      - name: Regenerate the derived website artifacts
+        if: steps.record.outputs.changed != ''
+        timeout-minutes: 5
+        run: npm ci && npm run sync
+        working-directory: website
+
+      # A pull request, not a push: the availability labels are website
+      # content and go through review like any other change.
+      #
+      # GITHUB_TOKEN is the right token here, and deliberately not an app or
+      # personal token. A pull request it opens still creates its workflow
+      # runs; GitHub holds them in an approval-required state until someone
+      # with write access approves them from the pull request. That is one
+      # click on a page a human is already reading, and it is also what stops
+      # this job from triggering itself in a loop.
+      - name: Open the publication record pull request
+        if: steps.record.outputs.changed != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RECORDED: ${{ steps.record.outputs.changed }}
+        run: |
+          set -euo pipefail
+          branch="chore/record-$RELEASE_TAG"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add publication.json website/src/generated/availability.ts
+          git commit -m "chore(release): record $RECORDED on pub.dev"
+          # Force, because a re-run of a job that pushed the branch and then
+          # failed must not die on a non-fast-forward. The branch holds one
+          # regenerated commit and nothing anyone else owns.
+          git push --force origin "$branch"
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            echo "::notice::pull request for $branch already open; updated it"
+            exit 0
+          fi
+          gh pr create --base main --head "$branch" \
+            --title "chore(release): record $RECORDED on pub.dev" \
+            --body "Recorded from pub.dev after $RELEASE_TAG published. \
+          \`publication.json\` is a cache of the registry and \
+          \`availability.ts\` is derived from it; both were regenerated, not \
+          hand-written."

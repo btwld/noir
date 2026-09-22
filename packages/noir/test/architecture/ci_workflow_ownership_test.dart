@@ -53,45 +53,47 @@ void main() {
     final desktop = _job(workflow, 'desktop-test');
 
     expect(analyze, contains('runs-on: ubuntu-latest'));
-    expect(analyze, contains('    timeout-minutes: 21\n'));
     expect(analyze, contains('timeout-minutes: 3\n        run: dart pub get'));
     expect(
       analyze,
       contains(
-        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart format',
+        'timeout-minutes: 2\n        run: dart run melos:melos run format:noir',
       ),
     );
-    expect(analyze, contains('timeout-minutes: 4\n        run: dart analyze'));
+    expect(
+      analyze,
+      contains(
+        'timeout-minutes: 4\n        run: dart run melos:melos run analyze',
+      ),
+    );
 
     expect(ubuntu, contains('needs: analyze'));
-    expect(ubuntu, contains('    timeout-minutes: 32\n'));
     expect(
       ubuntu,
       contains(
-        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
+        'timeout-minutes: 2\n        run: dart run melos:melos run native:verify',
       ),
     );
     expect(
       ubuntu,
       contains(
-        'timeout-minutes: 15\n        working-directory: packages/noir\n        run: dart test --concurrency=1',
+        'timeout-minutes: 15\n        run: dart run melos:melos run test:noir',
       ),
     );
 
     expect(desktop, contains('needs: analyze'));
     expect(desktop, isNot(contains('needs: ubuntu-test')));
-    expect(desktop, contains('    timeout-minutes: 37\n'));
     expect(desktop, contains('os: [macos-latest, windows-latest]'));
     expect(
       desktop,
       contains(
-        'timeout-minutes: 2\n        working-directory: packages/noir\n        run: dart run tool/fetch_opentui_binaries.dart --verify-only',
+        'timeout-minutes: 2\n        run: dart run melos:melos run native:verify',
       ),
     );
     expect(
       desktop,
       contains(
-        'timeout-minutes: 20\n        working-directory: packages/noir\n        run: dart test --concurrency=1',
+        'timeout-minutes: 20\n        run: dart run melos:melos run test:noir',
       ),
     );
   });
@@ -127,8 +129,7 @@ void main() {
   test('every platform job also checks the companion package', () {
     const companionTest =
         'timeout-minutes: 4\n'
-        '        working-directory: packages/noir_signals\n'
-        '        run: dart test --concurrency=1';
+        '        run: dart run melos:melos run test:signals';
 
     expect(companionTest.allMatches(workflow), hasLength(2));
     expect(_job(workflow, 'ubuntu-test'), contains(companionTest));
@@ -139,17 +140,14 @@ void main() {
       analyze,
       contains(
         'timeout-minutes: 2\n'
-        '        working-directory: packages/noir_signals\n'
-        '        run: dart format --output=none --set-exit-if-changed '
-        'lib/ test/ example/',
+        '        run: dart run melos:melos run format:signals',
       ),
     );
     expect(
       analyze,
       contains(
         'timeout-minutes: 4\n'
-        '        working-directory: packages/noir_signals\n'
-        '        run: dart analyze --fatal-infos',
+        '        run: dart run melos:melos run analyze:signals',
       ),
     );
   });
@@ -157,8 +155,7 @@ void main() {
   test('every platform job also checks the driver package', () {
     const driverTest =
         'timeout-minutes: 8\n'
-        '        working-directory: packages/noir_driver\n'
-        '        run: dart test --concurrency=1';
+        '        run: dart run melos:melos run test:driver';
 
     expect(driverTest.allMatches(workflow), hasLength(2));
     expect(_job(workflow, 'ubuntu-test'), contains(driverTest));
@@ -169,19 +166,49 @@ void main() {
       analyze,
       contains(
         'timeout-minutes: 2\n'
-        '        working-directory: packages/noir_driver\n'
-        '        run: dart format --output=none --set-exit-if-changed '
-        'lib/ test/ bin/',
+        '        run: dart run melos:melos run format:driver',
       ),
     );
     expect(
       analyze,
       contains(
         'timeout-minutes: 4\n'
-        '        working-directory: packages/noir_driver\n'
-        '        run: dart analyze --fatal-infos',
+        '        run: dart run melos:melos run analyze:driver',
       ),
     );
+  });
+
+  test('every Dart job check runs through a workspace Melos script', () {
+    for (final name in const <String>[
+      'analyze',
+      'ubuntu-test',
+      'desktop-test',
+    ]) {
+      final job = _job(workflow, name);
+      expect(
+        job,
+        isNot(contains('working-directory:')),
+        reason:
+            '$name: a Melos script owns the directory its command runs in, '
+            'so the workflow must not name one as well',
+      );
+      final checks = RegExp(
+        r'^        run: (.+)$',
+        multiLine: true,
+      ).allMatches(job).map((match) => match.group(1)!).toList();
+      expect(checks, isNotEmpty, reason: name);
+      for (final check in checks) {
+        expect(
+          check,
+          anyOf(
+            equals('dart pub get'),
+            startsWith('dart run melos:melos run '),
+            startsWith('echo "PUB_CACHE='),
+          ),
+          reason: '$name runs $check outside the Melos scripts',
+        );
+      }
+    }
   });
 
   test('each CI job caches only the isolated pub cache and always resolves', () {

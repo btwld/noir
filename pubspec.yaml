@@ -10,3 +10,162 @@ workspace:
   - packages/noir
   - packages/noir_driver
   - packages/noir_signals
+
+# Melos finds this workspace through its own dev dependency, so the version is
+# pinned here rather than left to whatever a contributor activated globally.
+# 7.8.1 is the newest release that shares `cli_util ^0.4.x` with `ffigen`, a
+# `noir` dev dependency; a Pub workspace resolves once for every member, so a
+# newer Melos cannot be added without moving `ffigen` first.
+dev_dependencies:
+  melos: 7.8.1
+
+# Melos configuration, read from this file by the dev dependency above. Run
+# every command as `dart run melos:melos <command>`; a global install would
+# shadow the pinned version. CONTRIBUTING.md carries the release command.
+melos:
+  # Bootstrap generates IntelliJ project files by default, which would drop a
+  # `melos_noir.iml` inside `packages/noir`, where `.pubignore` does not
+  # exclude it and `dart pub publish` would ship it.
+  ide:
+    intellij: false
+
+  command:
+    bootstrap:
+      # The one place that owns a constraint more than one package declares.
+      # Bootstrap only rewrites a dependency a package already declares in the
+      # same section, so these never add a dependency anywhere. `matcher` is a
+      # dependency of the driver and a dev dependency of Noir, so it appears
+      # in both sections to stay authoritative in both.
+      environment:
+        sdk: '>=3.10.0 <4.0.0'
+      dependencies:
+        matcher: ^0.12.16
+        meta: ^1.12.0
+        vm_service: ^15.2.0
+      dev_dependencies:
+        lints: ^6.0.0
+        matcher: ^0.12.16
+        test: ^1.25.0
+
+    version:
+      # No aggregate changelog. Each package's CHANGELOG.md is a hand-written
+      # release contract that tests assert by content, and published sections
+      # are compared byte for byte.
+      workspaceChangelog: false
+      # No implicit `git fetch --tags`. Remote Git operations stay explicit.
+      fetchTags: false
+      # The remaining guarantees — no changelog, no commit, no tag, and no
+      # sibling version bump — are flags rather than settings in this Melos
+      # release, so the command CONTRIBUTING.md documents carries them and an
+      # architecture test asserts it still does. Melos tags releases
+      # `<package>-v<version>`, and a tag in that shape publishes to pub.dev
+      # for real, so an accidental tag is not a small mistake.
+
+  # Every script wraps, verbatim, a command the contributor guide documents,
+  # prefixed with the directory that guide says to run it from. They are plain
+  # shell commands rather than `exec` scripts because `exec` re-invokes Melos
+  # as a nested `melos` process, which needs the executable on PATH; these run
+  # from the workspace resolution alone.
+  scripts:
+    format:noir:
+      description: Check Noir formatting.
+      run: cd packages/noir && dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
+
+    format:driver:
+      description: Check drive-mode client formatting.
+      run: cd packages/noir_driver && dart format --output=none --set-exit-if-changed lib/ test/ bin/
+
+    format:signals:
+      description: Check companion formatting.
+      run: cd packages/noir_signals && dart format --output=none --set-exit-if-changed lib/ test/ example/
+
+    analyze:
+      description: Run strict analysis from the workspace root, covering every package.
+      run: dart analyze --fatal-infos
+
+    analyze:driver:
+      description: Run strict analysis in the drive-mode client.
+      run: cd packages/noir_driver && dart analyze --fatal-infos
+
+    analyze:signals:
+      description: Run strict analysis in the companion.
+      run: cd packages/noir_signals && dart analyze --fatal-infos
+
+    test:noir:
+      description: Run Noir's ordinary suite.
+      run: cd packages/noir && dart test --concurrency=1
+
+    test:driver:
+      description: Run the drive-mode client suite.
+      run: cd packages/noir_driver && dart test --concurrency=1
+
+    test:signals:
+      description: Run the companion suite.
+      run: cd packages/noir_signals && dart test --concurrency=1
+
+    test:architecture:
+      description: Run Noir's architecture fitness tests.
+      run: cd packages/noir && dart test test/architecture/ --concurrency=1
+
+    native:verify:
+      description: Verify the bundled OpenTUI artifacts without refreshing them.
+      run: cd packages/noir && dart run tool/fetch_opentui_binaries.dart --verify-only
+
+    docs:frames:
+      description: Check the committed documentation frames. Never writes.
+      run: cd packages/noir && dart run tool/capture_doc_frames.dart --check
+
+    docs:api:
+      description: Validate the generated API documentation links.
+      run: cd packages/noir && dart doc --validate-links --output .context/dartdoc
+
+    release:check:
+      description: Check that every package is ready to be tagged and published.
+      run: cd packages/noir && dart run tool/release.dart check
+
+    release:published:
+      description: Succeed only when pub.dev already serves Noir's manifest version.
+      run: cd packages/noir && dart run tool/release.dart published noir
+
+    release:record:
+      description: Rewrite publication.json from what pub.dev serves. Run only after publishing.
+      run: cd packages/noir && dart run tool/release.dart record
+
+    stage:companion:
+      description: Check the companion archive the way an outside application resolves it.
+      run: cd packages/noir && dart run tool/stage_companion_package.dart --verify
+
+    stage:driver:
+      description: Check the drive-mode client archive the same way.
+      run: cd packages/noir && dart run tool/stage_companion_package.dart --verify ../noir_driver
+
+    archive:noir:
+      description: Validate Noir's publish archive.
+      run: cd packages/noir && dart pub publish --dry-run
+
+    archive:driver:
+      description: Validate the drive-mode client's publish archive.
+      run: cd packages/noir_driver && dart pub publish --dry-run
+
+    archive:signals:
+      description: Validate the companion's publish archive.
+      run: cd packages/noir_signals && dart pub publish --dry-run
+
+    verify:
+      description: The authorized local ladder, in the order the guides list it.
+      # Each step re-enters Melos rather than using a `steps` list, because a
+      # step list shells out to a bare `melos`, which only exists when someone
+      # has also installed it globally.
+      run: >-
+        dart run melos:melos run format:noir &&
+        dart run melos:melos run format:driver &&
+        dart run melos:melos run format:signals &&
+        dart run melos:melos run analyze &&
+        dart run melos:melos run analyze:driver &&
+        dart run melos:melos run analyze:signals &&
+        dart run melos:melos run test:architecture &&
+        dart run melos:melos run test:noir &&
+        dart run melos:melos run test:driver &&
+        dart run melos:melos run test:signals &&
+        dart run melos:melos run native:verify &&
+        dart run melos:melos run release:check

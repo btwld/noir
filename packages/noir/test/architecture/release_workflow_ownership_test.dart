@@ -13,24 +13,42 @@ void main() {
     '../../.github/workflows/release.yml',
   ).readAsStringSync().replaceAll('\r\n', '\n');
 
-  test('release is manual for one explicit existing tag', () {
-    expect(workflow, contains('workflow_dispatch:'));
-    expect(workflow, contains('inputs:'));
-    expect(workflow, contains('tag:'));
+  test('a release never starts itself from a tag push', () {
+    // The defect this shape exists to remove: release.yml used to trigger on
+    // `noir-v*` independently of publish.yml, so a GitHub release could go
+    // public while pub.dev approval was still pending, or after the upload
+    // had failed outright.
     expect(
-      RegExp(r'ref: refs/tags/\$\{\{ inputs\.tag \}\}').allMatches(workflow),
-      hasLength(2),
+      workflow,
+      isNot(contains('push:')),
+      reason: 'a tag push must reach this only through publish.yml',
     );
+    expect(workflow, isNot(contains('branches:')));
+    expect(workflow, isNot(contains('pull_request:')));
+    expect(workflow, contains('workflow_call:'));
+    // Dispatch stays so a release whose creation failed after a successful
+    // publication can be re-cut without moving a published tag.
+    expect(workflow, contains('workflow_dispatch:'));
+    expect(workflow, contains(r'ref: refs/tags/${{ inputs.tag }}'));
     expect(
       workflow,
       contains(r'git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"'),
     );
-    expect(workflow, isNot(contains('push:')));
-    expect(workflow, isNot(contains('tags:')));
-    expect(workflow, isNot(contains('branches:')));
     expect(workflow, contains('cancel-in-progress: false'));
-    expect(workflow, contains('for example, v1.2.3'));
-    expect(workflow, isNot(contains('pull_request:')));
+  });
+
+  test('the announcement asks pub.dev before it announces anything', () {
+    // The second, independent gate. `needs: publish` orders the chained path;
+    // this one also covers a manual dispatch, which has no such ordering.
+    expect(workflow, contains('dart run tool/release.dart published'));
+    final gate = workflow.indexOf('tool/release.dart published');
+    final create = workflow.indexOf('softprops/action-gh-release@');
+    expect(gate, greaterThan(-1));
+    expect(
+      create,
+      greaterThan(gate),
+      reason: 'the registry check must precede creating the release',
+    );
   });
 
   test('release uses immutable actions and explicit permissions', () {
@@ -47,52 +65,28 @@ void main() {
     }
 
     expect(workflow, contains('permissions:\n  contents: read'));
-    final release = workflow.substring(workflow.indexOf('  release:'));
-    expect(release, contains('contents: write'));
-    expect(release, isNot(contains('secrets.GITHUB_TOKEN')));
+    final announce = workflow.substring(workflow.indexOf('  announce:'));
+    expect(announce, contains('contents: write'));
+    expect(announce, isNot(contains('secrets.GITHUB_TOKEN')));
   });
 
-  test('verified committed assets are packaged then tested cross-platform', () {
-    final verify = workflow.indexOf(
-      'dart run tool/fetch_opentui_binaries.dart --verify-only',
-    );
-    final ordinaryTests = workflow.indexOf('dart test --concurrency=1');
-    final docs = workflow.indexOf(
-      'dart doc --validate-links --output .context/dartdoc',
-    );
-    final dryRun = workflow.indexOf('dart pub publish --dry-run');
-    final upload = workflow.indexOf('actions/upload-artifact@');
-    final remove = workflow.indexOf('run: rm -rf native native_manifest.json');
-    final download = workflow.indexOf('actions/download-artifact@');
-    final health = workflow.indexOf('run: dart run noir:health_check');
+  test('the release archive is rebuilt from the tagged commit', () {
+    // Not carried between jobs. These files are committed, preflight has
+    // already matched them against their manifest digests, and a manual
+    // dispatch has no earlier job to inherit an artifact from — so the
+    // archive is built here, from this checkout, on both paths.
+    final tar = workflow.indexOf('run: tar -czf');
+    final create = workflow.indexOf('softprops/action-gh-release@');
 
-    expect(verify, greaterThan(-1));
-    expect(workflow, isNot(contains('--verify-urls')));
-    expect(ordinaryTests, greaterThan(verify));
-    expect(docs, greaterThan(ordinaryTests));
-    expect(dryRun, greaterThan(docs));
-    expect(upload, greaterThan(dryRun));
-    expect(remove, greaterThan(upload));
-    expect(download, greaterThan(remove));
-    expect(health, greaterThan(download));
+    expect(tar, greaterThan(-1));
+    expect(create, greaterThan(tar));
     expect(workflow, contains('native_manifest.json'));
-    expect(workflow, contains('ubuntu-latest'));
-    expect(workflow, contains('macos-latest'));
-    expect(workflow, contains('windows-latest'));
-    expect(workflow, contains('dart build cli -t bin/health_check.dart'));
-    expect(workflow, contains('  verify:'));
-    expect(workflow, contains('timeout-minutes: 12'));
-    expect(workflow, contains('timeout-minutes: 5'));
-    expect('actions/cache@'.allMatches(workflow), hasLength(2));
     expect(
-      r'path: ${{ runner.temp }}/pub-cache'.allMatches(workflow),
-      hasLength(2),
+      workflow,
+      isNot(contains('actions/download-artifact@')),
+      reason: 'the archive comes from the checkout, not from another job',
     );
-    expect(
-      r'run: echo "PUB_CACHE=$RUNNER_TEMP/pub-cache" >> "$GITHUB_ENV"'
-          .allMatches(workflow),
-      hasLength(2),
-    );
+    expect(workflow, isNot(contains('--verify-urls')));
     expect(
       workflow,
       isNot(contains(r'PUB_CACHE: ${{ runner.temp }}/pub-cache')),
@@ -177,20 +171,34 @@ void main() {
     },
   );
 
-  test('tag releases require an exact semantic-version/package match', () {
-    expect(workflow, contains('name: Verify release tag'));
-    expect(workflow, contains(r'RELEASE_TAG: ${{ inputs.tag }}'));
-    expect(workflow, contains("semver='[0-9]+[.][0-9]+[.][0-9]+"));
+  test('the tag is checked against the manifest by the shared tool', () {
+    // The same rule the publish workflow applies, from the same place, so a
+    // GitHub release cannot be cut for a tag pub.dev would have refused.
+    // `test/tools/release_cli_test.dart` covers the rule itself.
+    expect(workflow, contains('dart run tool/release.dart resolve-tag'));
     expect(
       workflow,
-      contains(r'if [[ "$RELEASE_TAG" != "v$package_version" ]]'),
+      isNot(contains("semver='[0-9]+")),
+      reason: 'version parsing belongs to the tool, not to the workflow',
     );
   });
 
   test('release metadata is strict and states the macOS deployment floor', () {
     expect(workflow, contains('fail_on_unmatched_files: true'));
-    expect(workflow, contains(r"prerelease: ${{ contains(inputs.tag, '-') }}"));
     expect(workflow, contains(r'tag_name: ${{ inputs.tag }}'));
+    // Every release tag carries a `-` between the package and the version, so
+    // no rule that reads the tag text can answer this. It comes from the
+    // parsed version, via the same tool the publish workflow uses;
+    // `test/tools/release_cli_test.dart` covers the rule itself.
+    expect(
+      workflow,
+      contains(r'prerelease: ${{ steps.tag.outputs.prerelease }}'),
+    );
+    expect(
+      workflow,
+      isNot(contains('contains(env.RELEASE_TAG')),
+      reason: 'a substring test cannot decide what a prerelease is',
+    );
     expect(workflow, contains('generate_release_notes: true'));
     expect(workflow, contains('macOS 13.0 or later (x64, arm64)'));
     expect(workflow, isNot(contains('dart run example/')));

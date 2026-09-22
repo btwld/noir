@@ -17,8 +17,10 @@ work lives in GitHub issues and pull requests.
   repository.
 - `external/opentui/`: the read-only OpenTUI submodule.
 
-The root `pubspec.yaml` only defines the Pub workspace and is never
-published.
+The root `pubspec.yaml` defines the Pub workspace and the Melos
+configuration that owns the shared dependency versions and the scripts that
+wrap the checks below. It declares no dependencies of its own beyond Melos,
+and is never published.
 
 ## Purpose and architecture
 
@@ -96,6 +98,14 @@ The repository is one Pub workspace. `dart pub get` at the root resolves both
 packages together, and `dart analyze --fatal-infos` at the root covers every
 package.
 
+Melos is a workspace dev dependency, so `dart run melos:melos run <script>`
+works after that resolve, with no global install. Each script wraps one
+command below, verbatim, and runs it from the directory this section names;
+`dart run melos:melos run --list` prints them. The commands themselves stay
+the source of truth, and an architecture test holds every script to the
+command it wraps. `melos bootstrap` is `dart pub get` plus a shared-constraint
+sync, and must leave the tree clean.
+
 Run these from `packages/noir/`, for the `noir` package:
 
     dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
@@ -105,11 +115,24 @@ Run these from `packages/noir/`, for the `noir` package:
     dart test --concurrency=1
     dart run tool/fetch_opentui_binaries.dart --verify-only
     dart run tool/capture_doc_frames.dart --check
+    dart run tool/release.dart check
     dart pub publish --dry-run
 
 `capture_doc_frames.dart` drives the documented tutorial checkpoints in
 headless drive mode and compares the result with the committed frames the
 website publishes. `--check` never writes; omit it to refresh them.
+
+`release.dart` owns the release rules the publish and release workflows
+apply, so those workflows stay thin callers and the rules are covered by
+`test/tools/release_cli_test.dart` on every ordinary run. `check` is part of
+the `verify` ladder and reads only local files. Its other commands —
+`resolve-tag`, `preflight`, `published`, and `record` — read pub.dev, and
+`record` is the only one that writes anything; run it only after a
+publication is confirmed. `published` is the gate a GitHub release passes
+before it announces a version, so an announcement cannot outrun the upload.
+Publishing itself is never a local step: it happens when a maintainer pushes
+a `<package>-v<version>` tag and a required reviewer approves the `pub.dev`
+environment. [`CONTRIBUTING.md`](CONTRIBUTING.md) owns that procedure.
 
 Run these from `packages/noir_driver/`, for the drive-mode client:
 
@@ -133,7 +156,9 @@ from `packages/noir/`:
 
 The script stages a standalone copy outside the checkout, points its `noir`
 dependency at `packages/noir`, and runs the dry-run there. Pass a companion
-path to stage another member: `--verify ../noir_driver`.
+path to stage another member:
+
+    dart run tool/stage_companion_package.dart --verify ../noir_driver
 
 `safe-process-spawning` tests are ordinary subprocess checks and run in the
 standard suite.

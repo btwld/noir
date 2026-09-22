@@ -45,7 +45,14 @@ void main() {
     expect(rootPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('resolution: workspace'));
     expect(companionPubspec, contains('name: noir_signals'));
-    expect(companionPubspec, contains('noir: ^0.0.3'));
+    // Derived, not pinned: `melos version noir <next>` cascades this
+    // constraint, and the deliberate tripwire for a version move is the
+    // literal in package_distribution_ownership_test.dart.
+    final candidate = RegExp(
+      r'^version:\s*(\S+)\s*$',
+      multiLine: true,
+    ).firstMatch(rootPubspec)!.group(1)!;
+    expect(companionPubspec, contains('noir: ^$candidate'));
     expect(companionPubspec, contains('signals_core: ^7.0.0'));
   });
 

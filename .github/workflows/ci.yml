@@ -16,7 +16,7 @@ jobs:
   analyze:
     name: Format and analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 21
+    timeout-minutes: 23
 
     steps:
       - name: Checkout repository
@@ -45,32 +45,34 @@ jobs:
 
       - name: Check formatting
         timeout-minutes: 2
-        working-directory: packages/noir
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/ bin/ hook/ tool/
+        run: dart run melos:melos run format:noir
 
       - name: Run strict analysis
         timeout-minutes: 4
-        run: dart analyze --fatal-infos
+        run: dart run melos:melos run analyze
 
       - name: Check driver formatting
         timeout-minutes: 2
-        working-directory: packages/noir_driver
-        run: dart format --output=none --set-exit-if-changed lib/ test/ bin/
+        run: dart run melos:melos run format:driver
 
       - name: Run strict driver analysis
         timeout-minutes: 4
-        working-directory: packages/noir_driver
-        run: dart analyze --fatal-infos
+        run: dart run melos:melos run analyze:driver
 
       - name: Check companion formatting
         timeout-minutes: 2
-        working-directory: packages/noir_signals
-        run: dart format --output=none --set-exit-if-changed lib/ test/ example/
+        run: dart run melos:melos run format:signals
 
       - name: Run strict companion analysis
         timeout-minutes: 4
-        working-directory: packages/noir_signals
-        run: dart analyze --fatal-infos
+        run: dart run melos:melos run analyze:signals
+
+      # A release is prepared by an ordinary pull request, so the gate that
+      # reads the manifests and changelogs runs on every pull request rather
+      # than first running when a tag is pushed.
+      - name: Check release readiness
+        timeout-minutes: 2
+        run: dart run melos:melos run release:check
 
   website:
     name: Validate website
@@ -155,26 +157,22 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        working-directory: packages/noir
-        run: dart run tool/fetch_opentui_binaries.dart --verify-only
+        run: dart run melos:melos run native:verify
 
       - name: Run ordinary tests
         # The serial suite compiles consumer packages and MCP fixture servers.
         # Windows finished in 9m56s under the previous 10-minute ceiling and
         # was killed while the process was still exiting.
         timeout-minutes: 15
-        working-directory: packages/noir
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:noir
 
       - name: Run driver tests
         timeout-minutes: 8
-        working-directory: packages/noir_driver
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:driver
 
       - name: Run companion tests
         timeout-minutes: 4
-        working-directory: packages/noir_signals
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:signals
 
   desktop-test:
     name: Test (${{ matrix.os }})
@@ -213,21 +211,17 @@ jobs:
 
       - name: Verify bundled native assets
         timeout-minutes: 2
-        working-directory: packages/noir
-        run: dart run tool/fetch_opentui_binaries.dart --verify-only
+        run: dart run melos:melos run native:verify
 
       - name: Run ordinary tests
         # A loaded macOS runner exceeded 15 minutes without an assertion failure.
         timeout-minutes: 20
-        working-directory: packages/noir
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:noir
 
       - name: Run driver tests
         timeout-minutes: 8
-        working-directory: packages/noir_driver
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:driver
 
       - name: Run companion tests
         timeout-minutes: 4
-        working-directory: packages/noir_signals
-        run: dart test --concurrency=1
+        run: dart run melos:melos run test:signals

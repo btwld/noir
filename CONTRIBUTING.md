@@ -29,8 +29,29 @@ The repository is one Pub workspace. `dart pub get` at the root resolves the
 `noir` package under `packages/noir/` and two optional companions:
 `packages/noir_driver/`, the drive-mode client applications use to test a Noir
 app as a live process, and `packages/noir_signals/`, which owns the widget
-lifecycle hooks and the Signals integration. The root `pubspec.yaml` only
-defines the workspace.
+lifecycle hooks and the Signals integration. The root `pubspec.yaml` defines
+the workspace and the Melos configuration.
+
+Melos comes with that resolve. It is a workspace dev dependency, pinned to an
+exact version:
+
+    dev_dependencies:
+      melos: 7.8.1
+
+Run it as `dart run melos:melos <command>`; no global install is needed, and
+a global one would shadow the pinned version. The pin is exact on purpose.
+Melos locates the workspace through this dev dependency, and 7.8.1 is the
+newest release that shares `cli_util ^0.4.x` with `ffigen`, a `noir` dev
+dependency. A Pub workspace resolves once for every member, so a newer Melos
+cannot be added without moving `ffigen` first.
+
+`dart run melos:melos bootstrap` resolves the workspace and aligns the
+constraints more than one package declares — the SDK range, `meta`, `matcher`,
+`vm_service`, `lints`, and `test` — from the `melos` section of the root
+`pubspec.yaml`. It only rewrites a constraint a package already declares in
+the same section, never adds one, and must leave the tree clean:
+
+    dart run melos:melos bootstrap && git diff --exit-code && git status --porcelain
 
 ## Required checks
 
@@ -41,6 +62,7 @@ Run focused tests while developing, then, from `packages/noir/`:
     dart test test/architecture/ --concurrency=1
     dart test --concurrency=1
     dart run tool/fetch_opentui_binaries.dart --verify-only
+    dart run tool/release.dart check
 
 When a change touches the driver package, also run, from
 `packages/noir_driver/`:
@@ -55,6 +77,24 @@ When a change touches the companion package, also run, from
     dart format --output=none --set-exit-if-changed lib/ test/ example/
     dart analyze --fatal-infos
     dart test --concurrency=1
+
+Every one of those commands is also a Melos script, which runs it from the
+right directory with no `cd`:
+
+    dart run melos:melos run --list
+    dart run melos:melos run verify
+
+`verify` is the ladder above in order, ending with `release:check`.
+Individual scripts are `format:noir`, `format:driver`, `format:signals`,
+`analyze`, `analyze:driver`, `analyze:signals`, `test:noir`, `test:driver`,
+`test:signals`, `test:architecture`, `native:verify`, `docs:frames`,
+`docs:api`, `release:check`, `stage:companion`, `stage:driver`, and
+`archive:noir`, `archive:driver`, `archive:signals` for the publish dry-runs.
+`release:published` and `release:record` exist too, but they belong to a
+release rather than to development: one gates a GitHub release, the other
+rewrites `publication.json` after a publication is confirmed. A script is an
+alias for the documented command, never a second definition of it, and CI
+runs the same scripts.
 
 The `safe-process-spawning` tag covers ordinary isolated-process tests and is
 included in the standard suite.
@@ -231,24 +271,245 @@ decision and review.
 
 ## Releasing
 
-`packages/noir/pubspec.yaml` carries the candidate version and the top section
-of `packages/noir/CHANGELOG.md` describes it. `publication.json` records the
-latest version of each package on pub.dev, or `null`; the website derives
-every availability label from it and both manifests, so update it in the same
-change as a publication.
+A release is prepared by an ordinary reviewed pull request and performed by
+pushing a tag. Nothing publishes on a merge to `main`; nothing publishes
+without a required reviewer approving the `pub.dev` environment.
 
-Publish in this order, each package from its own directory:
+### What each tool owns
 
-1. `noir`, from `packages/noir/`, at the exact reviewed commit, after its
-   merge-commit CI passed.
-2. `noir_driver`, from `packages/noir_driver/`. First run
-   `dart run tool/stage_companion_package.dart --verify ../noir_driver` from
-   `packages/noir/`.
-3. `noir_signals`, from `packages/noir_signals/`. First run
-   `dart run tool/stage_companion_package.dart --verify` from `packages/noir/`
-   to check the archive as an application outside this workspace resolves it.
-4. A consumer that depends on the published versions with no local
-   override, to confirm the hosted packages resolve together.
+Pub owns resolution. The root `pubspec.yaml` declares the workspace, and one
+`dart pub get` anywhere writes the single root `pubspec.lock` and the single
+shared `.dart_tool/package_config.json` for every member. Melos never resolves
+anything and never writes a lockfile.
 
-Tags, GitHub releases, repository visibility, and native artifact refreshes
-are separate explicit decisions and are never part of an ordinary change.
+Melos owns the parts Pub has no opinion about: cascading one version across
+every sibling constraint, and running a documented command in the right member
+directory. Publication does not go through Melos — see *Why publication is not
+`melos publish`* below.
+
+`tool/release.dart` owns the release rules themselves, so the workflows stay
+thin callers and every rule is covered by `test/tools/release_cli_test.dart`
+on ordinary CI rather than first running against a real tag.
+
+### Coordinated versioning, while Noir is 0.0.x
+
+All three packages move together today. That follows from the contracts, not
+from taste: `noir_driver` and `noir_signals` each depend on `noir`, and both
+are built and tested against exactly the Noir in the same commit. Releasing a
+companion without restating which Noir it was verified against would ship a
+claim nobody checked.
+
+This is a narrower rule than it looks, and it has an end. Dart's caret is not
+npm's: `pub_semver` raises the *minor* for a `0.y.z` version, so `^0.0.2`
+means `>=0.0.2 <0.1.0` and already admits `0.0.3`. A companion is therefore
+never *stranded* by a Noir patch. Once Noir reaches `0.1.0`, `^0.1.0` spans
+every `0.1.x`, a companion can sit out a Noir patch release, and versioning
+becomes independent. Revisit this section at that bump.
+
+### Prepare the release
+
+From the repository root, move every member in one step:
+
+    dart run melos:melos version -V noir:<next> -V noir_driver:<next> -V noir_signals:<next> --no-changelog --no-git-commit-version --dependent-constraints --no-dependent-versions
+
+That rewrites the three `version:` fields, both `noir:` constraints, and
+Noir's `noir_driver:` dev dependency — six lines in three files — and nothing
+else. Confirm at the prompt; do not pass `--yes`.
+
+Each flag is load-bearing:
+
+- `-V <package>:<version>` for **every** member, not the
+  `melos version <package> <version>` positional form. The positional form
+  scopes the run to one package, which makes the others *ignored packages with
+  pending changes*; Melos then refuses to version anything that depends on
+  one, and `noir` dev-depends on `noir_driver`. It prints a warning, changes
+  nothing, and still exits `0`. Naming every member leaves nothing ignored,
+  which is also why no `--diff` workaround is needed.
+- `--no-dependent-versions` keeps the cascade to constraints. A dependent's
+  own `version:` is a release decision, never a side effect.
+- `--no-changelog`, because each `CHANGELOG.md` is a hand-written release
+  contract that tests assert by content.
+- `--no-git-commit-version`, which also implies `--no-git-tag-version`. A
+  release tag publishes to pub.dev for real.
+
+Then do the deliberate half by hand: author each changelog section, move the
+version the architecture test pins, and update the version the dialog example
+shows. `publication.json` does not move here — it records pub.dev, and
+nothing is published yet.
+
+Before opening the pull request:
+
+    dart run melos:melos run release:check
+
+It reports any package whose constraint on a sibling excludes the sibling it
+ships beside, and any changelog that does not lead with its own manifest
+version. Nothing else reports either: inside a workspace Pub binds siblings to
+the local checkout without ruling on the declared constraint, and
+`stage_companion_package.dart --verify` replaces the `noir` dependency with a
+path override before its dry-run. `release:check` is part of `verify`, so CI
+runs it on the release pull request.
+
+### Tag conventions
+
+Every release tag is `<package>-v<version>`:
+
+    noir-v0.0.4
+    noir_driver-v0.0.1-alpha.2
+    noir_signals-v0.0.1-alpha.2
+
+One convention serves three consumers. It is pub.dev's documented
+recommendation for a repository that publishes more than one package, it is
+byte-identical to the tag `melos version` and `melos publish` build, and it
+tells the publish workflow which package a tag is asking for. The unprefixed
+`v0.0.2`-style tags used before 0.0.3 name no package and no longer trigger
+anything.
+
+### Publish
+
+Push the tags **one at a time, Noir first**, and wait for each run to finish:
+
+    git tag noir-v0.0.4 && git push origin noir-v0.0.4
+    # wait for the run to publish, then:
+    git tag noir_driver-v0.0.1-alpha.2 && git push origin noir_driver-v0.0.1-alpha.2
+    git tag noir_signals-v0.0.1-alpha.2 && git push origin noir_signals-v0.0.1-alpha.2
+
+One at a time for three reasons. GitHub creates no tag events at all when more
+than three tags arrive in one push. `dart pub publish` resolves dependencies
+as part of its own validation, so a companion cannot validate until the Noir
+it requires is actually being served. And a companion run started before Noir
+finishes spends its wait budget and then fails — correctly, but for nothing.
+
+That last case is a wasted run, never a wrong publication: the ordering gate
+is what enforces the order, not the queue. Each tag gets its own concurrency
+group so one release can never cancel another.
+
+Each push runs `.github/workflows/publish.yml`, one ordered chain:
+
+1. **preflight** resolves the tag to a package and checks it against that
+   package's manifest; asks pub.dev whether every workspace dependency is
+   already served at a version this package's constraint admits, waiting up to
+   ten minutes for a Noir published moments earlier to surface, and **fails**
+   rather than publishing a package no consumer could resolve; skips the rest
+   when the version is already on pub.dev; and otherwise runs `release:check`,
+   the whole `verify` ladder, the native-asset verify, and that package's
+   `dart pub publish --dry-run`.
+2. **test-package** (Noir only) deletes the checkout's native assets, restores
+   the packaged copy, and runs the health check and a CLI bundle on Linux,
+   macOS and Windows. Publication cannot be undone, so the last proof that the
+   shipped bytes load runs before the upload, not after it.
+3. **publish** stops at the `pub.dev` environment until a required reviewer
+   approves, then publishes with `dart pub publish --force` over OIDC.
+4. **announce** (Noir only) calls `release.yml` to cut the GitHub release with
+   the bundled-artifact archive attached.
+5. **record** proposes the `publication.json` update.
+
+The decision in step 1 comes before the work in steps 1–2 on purpose: both of
+its answers make verification pointless, and a re-pushed tag should not pay
+for a thirty-minute ladder to discover it had nothing to do.
+
+### The announcement never races the publication
+
+`release.yml` has no trigger of its own. It used to run on `noir-v*` in
+parallel with `publish.yml`, which meant a GitHub release could go public
+while a reviewer had not yet approved the `pub.dev` environment, or after the
+upload failed outright — announcing a version nobody could install.
+
+It is now a reusable workflow that `publish.yml` calls with
+`needs: [preflight, publish]` and no `always()`, so ordinary skip semantics
+stop it unless the upload actually succeeded. It also asks pub.dev directly,
+through `dart run tool/release.dart published <package>`, before it writes
+anything. The second gate is not redundant: it is what protects the
+`workflow_dispatch` path, which has no `needs` to inherit.
+
+### Record the publication
+
+After the publish job succeeds, the workflow opens a pull request that rewrites
+`publication.json` from what pub.dev serves and regenerates
+`website/src/generated/availability.ts` from it. pub.dev is the source of
+truth, `publication.json` caches it, and the availability labels derive from
+that cache — so a release abandoned halfway can never leave a label claiming a
+version nobody can install. To do it by hand:
+
+    dart run melos:melos run release:record
+    cd website && npm run sync
+
+The workflow opens that pull request with `GITHUB_TOKEN`, not an app or
+personal token. Its checks are created but held: GitHub puts workflow runs
+from a pull request a token opened into an approval-required state, and a
+maintainer releases them with **Approve and run** on the pull request. Nothing
+needs pushing to it, and no extra credential exists to leak — the same rule
+that holds those runs is what stops this job from re-triggering itself.
+
+### When something fails
+
+A published version is permanent and a pushed release tag is a public
+reference, so recovery never moves either. In every case below the tag stays
+exactly where it is.
+
+| What failed | What to do |
+| --- | --- |
+| preflight, test-package, or the dry run | Nothing shipped. Fix it on `main`, then cut the *next* version. Do not move the tag. |
+| the reviewer declined, or the run was cancelled | Nothing shipped. Same as above. |
+| `dart pub publish` itself | Nothing shipped. Re-run the failed jobs from the run page once the cause is fixed. |
+| the upload succeeded but a later job failed | **Re-run failed jobs** from the run page. That reuses the successful `publish`, so the failed job runs again against it. |
+| the announcement failed, or was never cut | Run `release.yml` by **workflow_dispatch** with the tag. It asks pub.dev first, so it refuses if the version is not actually there. |
+| the wrong content was published | Publish a corrected higher version. Within seven days of publication you may also retract the bad one on pub.dev, which hides it from new consumers without deleting it. |
+| `publication.json` drifted | `dart run melos:melos run release:record`, then `npm run sync` in `website/`. |
+
+Re-running the *whole* run, or re-pushing the tag, is not the same thing and
+is usually not what you want: `preflight` then finds the version already
+published and skips `publish`, which skips `announce` with it. You get a
+green run and no GitHub release. `record` is the one job that survives a
+skipped publish, deliberately, because reconciling the record is exactly what
+a re-run is often for. To cut a release for a version that is already out,
+use the `workflow_dispatch` row above.
+
+Re-pushing a deleted tag is never the recovery path. pub.dev matches the tag
+that triggered a run against the version being published, and a moved tag
+makes every earlier reference to it a lie.
+
+### Why publication is not `melos publish`
+
+`melos publish` picks its own order, and for this workspace it picks the wrong
+one. `sortPackagesForPublishing` feeds both `dependencies` and
+`dev_dependencies` into one graph. Noir dev-depends on `noir_driver` for two
+checkout-only tools and `noir_driver` depends on Noir, so that graph has a
+cycle; Melos falls back to sorting the cycle by name length, and offers to
+publish `noir_driver` before `noir`. A dry run shows it plainly:
+
+    Package Name    Registry         Local
+    noir_driver     0.0.1-alpha.0    0.0.1-alpha.1
+    noir            0.0.2            0.0.3
+    noir_signals    0.0.1-alpha.0    0.0.1-alpha.1
+
+Publishing in that order ships a `noir_driver` that requires a Noir nobody can
+get yet. `tool/release.dart` treats only runtime dependencies as ordering
+edges, so a checkout-only dev dependency cannot invert the order, and it
+enforces the rule against pub.dev instead of trusting a sorted list.
+
+### One-time settings
+
+These live outside the repository and are not part of any pull request.
+
+On GitHub, create an environment named `pub.dev` with required reviewers and
+**Prevent self-review**. Do this *before* the first tag: GitHub silently
+creates an environment the first time a workflow names one, with no
+protection rules at all, so an unconfigured `pub.dev` environment is an
+approval gate that approves everything.
+
+On pub.dev, under `pub.dev/packages/<package>/admin`, each of `noir`,
+`noir_driver`, and `noir_signals` needs automated publishing enabled for
+repository `conceptadev/noir`, the tag pattern `<package>-v{{version}}`, and
+Require GitHub Actions environment set to `pub.dev`. The two settings work
+together: GitHub decides whether a human approved, and pub.dev refuses a
+token whose claim does not carry that environment — so the boundary cannot be
+moved by editing a workflow file.
+
+pub.dev's own guidance suggests one workflow file per package. This
+repository uses one file that derives the package from the tag instead.
+Everything pub.dev actually checks — repository, tag pattern, environment —
+still holds, because a tag names exactly one package and only that package is
+published; three near-identical files would be three places to drift.
+
+Repository visibility and native artifact refreshes remain separate explicit
+decisions and are never part of an ordinary change.
