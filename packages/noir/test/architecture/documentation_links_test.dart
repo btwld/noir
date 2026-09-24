@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 /// The website, the package guides, and the example catalogs all publish
 /// canonical GitHub links. A renamed or deleted file turns one of them into a
 /// dead end that nothing else reports.
-const _blobPrefix = 'https://github.com/conceptadev/noir/blob/main/';
-const _treePrefix = 'https://github.com/conceptadev/noir/tree/main/';
+const _blobPrefix = 'https://github.com/btwld/noir/blob/main/';
+const _treePrefix = 'https://github.com/btwld/noir/tree/main/';
 
 const _documentationRoots = <String>[
   '../../website/src',

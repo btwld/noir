@@ -133,7 +133,7 @@ diff --git a/lib/status.dart b/lib/status.dart
 ## Declarative terminal UI
 
 - **Widgets** declare configuration.
-- [Links](https://github.com/conceptadev/noir) stay semantic.
+- [Links](https://github.com/btwld/noir) stay semantic.
 
 ```dart
 const Text('Hello, terminal!')

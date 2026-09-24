@@ -14,7 +14,7 @@ Prerequisites:
 
 Clone the pinned OpenTUI reference with the repository:
 
-    git clone --recurse-submodules https://github.com/conceptadev/noir.git
+    git clone --recurse-submodules https://github.com/btwld/noir.git
     cd noir
     dart pub get
 

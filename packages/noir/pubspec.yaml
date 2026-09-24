@@ -1,10 +1,10 @@
 name: noir
 description: A Flutter-like reactive terminal UI framework for Dart, powered by OpenTUI.
 version: 0.0.3
-homepage: https://conceptadev.github.io/noir/
-documentation: https://conceptadev.github.io/noir/docs/
-repository: https://github.com/conceptadev/noir/tree/main/packages/noir
-issue_tracker: https://github.com/conceptadev/noir/issues
+homepage: https://btwld.github.io/noir/
+documentation: https://btwld.github.io/noir/docs/
+repository: https://github.com/btwld/noir/tree/main/packages/noir
+issue_tracker: https://github.com/btwld/noir/issues
 
 topics:
   - tui

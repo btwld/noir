@@ -90,7 +90,7 @@ void main() {
   });
 
   test('publish configuration names Noir and immutable actions', () {
-    expect(publish, contains('repository: conceptadev/noir'));
+    expect(publish, contains('repository: btwld/noir'));
     expect(publish, isNot(contains('leoafarias/cli_ui')));
     // Only a Melos release tag publishes. `v*` would match the unprefixed
     // tags used before 0.0.3, which name no package, and a branch trigger

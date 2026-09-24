@@ -84,7 +84,7 @@ void main() {
   test('website records the Pages URL and deployment boundary', () {
     final readme = _read('../../website/README.md');
 
-    expect(readme, contains('https://conceptadev.github.io/noir/'));
+    expect(readme, contains('https://btwld.github.io/noir/'));
     expect(readme, contains('Source: GitHub Actions'));
     expect(readme, contains('website/out'));
     expect(readme, contains('NOIR_WEBSITE_BASE_PATH=/noir'));

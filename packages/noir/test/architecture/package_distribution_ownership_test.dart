@@ -543,12 +543,12 @@ void main() {
     expect(
       readme,
       contains(
-        '[example catalog](https://github.com/conceptadev/noir/blob/main/packages/noir/example/README.md)',
+        '[example catalog](https://github.com/btwld/noir/blob/main/packages/noir/example/README.md)',
       ),
     );
     expect(
       RegExp(
-        r'\[example catalog\]\(https://github\.com/conceptadev/noir/blob/main/packages/noir/example/README\.md\)',
+        r'\[example catalog\]\(https://github\.com/btwld/noir/blob/main/packages/noir/example/README\.md\)',
       ).allMatches(readme),
       hasLength(1),
     );
@@ -1388,7 +1388,7 @@ const _publishedAlpha0 = '''
 - Canonical OpenTUI v0.5.1 source and unchanged official release assets.
 - macOS bundles require macOS 13.0 or later.
 - See
-  [Known Limitations](https://github.com/conceptadev/noir#known-limitations)
+  [Known Limitations](https://github.com/btwld/noir#known-limitations)
   for current platform and rendering constraints.''';
 
 String _read(String path) => File(path).readAsStringSync();

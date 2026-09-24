@@ -2,7 +2,7 @@
 
 A Flutter-like reactive terminal UI framework for Dart, powered by OpenTUI.
 
-- Website and documentation: <https://conceptadev.github.io/noir/>
+- Website and documentation: <https://btwld.github.io/noir/>
 - Package: [`noir` on pub.dev](https://pub.dev/packages/noir)
 
 ```sh
@@ -22,7 +22,7 @@ dart pub add noir
 The repository is one Pub workspace:
 
 ```sh
-git clone --recurse-submodules https://github.com/conceptadev/noir.git
+git clone --recurse-submodules https://github.com/btwld/noir.git
 cd noir
 dart pub get
 cd packages/noir
