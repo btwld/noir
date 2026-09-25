@@ -594,10 +594,7 @@ async function runSmoke() {
         href.endsWith('.dart'),
         `an example entry must point at a file, not a page: ${href}`,
       );
-      const path = href.replace(
-        'https://github.com/btwld/noir/blob/main/',
-        '',
-      );
+      const path = href.replace('https://github.com/btwld/noir/blob/main/', '');
       assert.ok(
         existsSync(join(repositoryRoot, path)),
         `the examples index links a missing file: ${path}`,
