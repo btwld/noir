@@ -9,6 +9,7 @@ environment:
 workspace:
   - packages/noir
   - packages/noir_driver
+  - packages/muse_noir
   - packages/noir_signals
 
 # Melos finds this workspace through its own dev dependency, so the version is
