@@ -594,10 +594,7 @@ async function runSmoke() {
         href.endsWith('.dart'),
         `an example entry must point at a file, not a page: ${href}`,
       );
-      const path = href.replace(
-        'https://github.com/conceptadev/noir/blob/main/',
-        '',
-      );
+      const path = href.replace('https://github.com/btwld/noir/blob/main/', '');
       assert.ok(
         existsSync(join(repositoryRoot, path)),
         `the examples index links a missing file: ${path}`,
@@ -664,7 +661,7 @@ async function runSmoke() {
           includeHidden: true,
         })
         .getAttribute('href'),
-      'https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/getting-started.md',
+      'https://github.com/btwld/noir/blob/main/packages/noir_signals/doc/getting-started.md',
       'the source link must open the canonical guide, not the generated page',
     );
 

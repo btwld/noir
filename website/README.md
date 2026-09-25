@@ -86,7 +86,7 @@ sessions loop after that explicit action; reduced-motion sessions play once.
 
 ## GitHub Pages
 
-The public documentation site is <https://conceptadev.github.io/noir/>. The
+The public documentation site is <https://btwld.github.io/noir/>. The
 `.github/workflows/pages.yml` workflow builds `main` and deploys only the
 generated `website/out` artifact. In the repository settings, Pages uses
 **Source: GitHub Actions**.

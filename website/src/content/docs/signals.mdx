@@ -91,7 +91,7 @@ TextInput(
 ```
 
 The complete program is the
-[file-search example](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/example/file_search.dart).
+[file-search example](https://github.com/btwld/noir/blob/main/packages/noir_signals/example/file_search.dart).
 It retains the model with `useMemoized`, registers `useOnDispose(model.dispose)`,
 and observes each derived source with `SignalValueBuilder`.
 
@@ -132,7 +132,7 @@ widget tree, layout, painting, and native resources.
 | A child reads a disposed signal after its parent replaced it | Hand the retired source to `deferDispose` instead of disposing it during the update.                             |
 
 The
-[Signals contract](https://github.com/conceptadev/noir/blob/main/packages/noir_signals/doc/signals.md)
+[Signals contract](https://github.com/btwld/noir/blob/main/packages/noir_signals/doc/signals.md)
 is the canonical reference for keys, effect timing, replacement, and deferred
 disposal. [Manage state and resources](/docs/hooks) covers the hook rules the
 signal hooks share.

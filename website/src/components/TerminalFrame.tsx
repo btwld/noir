@@ -6,7 +6,7 @@ import {
   type TerminalRun,
 } from '../generated/frames';
 
-const repository = 'https://github.com/conceptadev/noir/blob/main';
+const repository = 'https://github.com/btwld/noir/blob/main';
 
 // OpenTUI attribute bits, as `packages/noir/tool/capture_doc_frames.dart`
 // records them.

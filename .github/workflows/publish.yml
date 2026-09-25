@@ -3,7 +3,7 @@ name: Publish to pub.dev
 # One-time pub.dev configuration, per package, under
 # `pub.dev/packages/<package>/admin` -> Automated publishing:
 #
-#   repository: conceptadev/noir
+#   repository: btwld/noir
 #   tag pattern:  noir-v{{version}}
 #                 noir_driver-v{{version}}
 #                 noir_signals-v{{version}}

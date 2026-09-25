@@ -1,8 +1,8 @@
 name: noir_driver
 description: A flutter_driver-style client for driving a Noir terminal app headlessly, over its drive-mode VM service surface.
 version: 0.0.1-alpha.1
-repository: https://github.com/conceptadev/noir/tree/main/packages/noir_driver
-issue_tracker: https://github.com/conceptadev/noir/issues
+repository: https://github.com/btwld/noir/tree/main/packages/noir_driver
+issue_tracker: https://github.com/btwld/noir/issues
 
 topics:
   - tui

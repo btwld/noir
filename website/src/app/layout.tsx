@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
 };
 
-const repository = 'https://github.com/conceptadev/noir';
+const repository = 'https://github.com/btwld/noir';
 
 const navbar = (
   <Navbar logo={<span className="wordmark">Noir</span>}>

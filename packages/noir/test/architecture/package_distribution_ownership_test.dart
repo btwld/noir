@@ -543,12 +543,12 @@ void main() {
     expect(
       readme,
       contains(
-        '[example catalog](https://github.com/conceptadev/noir/blob/main/packages/noir/example/README.md)',
+        '[example catalog](https://github.com/btwld/noir/blob/main/packages/noir/example/README.md)',
       ),
     );
     expect(
       RegExp(
-        r'\[example catalog\]\(https://github\.com/conceptadev/noir/blob/main/packages/noir/example/README\.md\)',
+        r'\[example catalog\]\(https://github\.com/btwld/noir/blob/main/packages/noir/example/README\.md\)',
       ).allMatches(readme),
       hasLength(1),
     );

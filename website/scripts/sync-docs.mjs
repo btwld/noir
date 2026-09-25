@@ -35,8 +35,8 @@ const prettierConfig = await resolveConfig(
 );
 const repositoryRoot = resolve(websiteRoot, '..');
 const generatedRoot = join(websiteRoot, 'src/generated');
-const blobBase = 'https://github.com/conceptadev/noir/blob/main';
-const treeBase = 'https://github.com/conceptadev/noir/tree/main';
+const blobBase = 'https://github.com/btwld/noir/blob/main';
+const treeBase = 'https://github.com/btwld/noir/tree/main';
 
 const driverRoot = 'packages/noir_driver';
 const companionRoot = 'packages/noir_signals';
