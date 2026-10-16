@@ -1,8 +1,57 @@
+import 'dart:async';
+import 'dart:io' as io;
+
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('runTuiApp forwards parsed Ctrl+C to caller-owned cleanup', () async {
+    final input = _SyntheticStdin();
+    addTearDown(input.close);
+    // This adapter borrows stdout; it does not own or close the process sink.
+    // ignore: close_sinks
+    final output = _NonTerminalStdout(io.stdout);
+    await io.IOOverrides.runZoned(
+      () async {
+        final requested = <int>[];
+        final disposals = <String>[];
+        final cleanup = Completer<void>();
+        final finished = Completer<void>();
+        late final TuiApp app;
+        app = runTuiApp(
+          _DisposeProbe(onDispose: () => disposals.add('dispose')),
+          onExitRequested: (code) {
+            requested.add(code);
+            unawaited(
+              cleanup.future.then((_) {
+                app.dispose();
+                finished.complete();
+              }),
+            );
+          },
+        );
+        addTearDown(app.dispose);
+
+        input.add([3, 3]);
+
+        expect(requested, [130]);
+        expect(disposals, isEmpty);
+        expect(input.lineMode, isFalse);
+        expect(input.echoMode, isFalse);
+        expect(input.cancellations, 0);
+        cleanup.complete();
+        await finished.future;
+        expect(disposals, ['dispose']);
+        expect(input.lineMode, isTrue);
+        expect(input.echoMode, isTrue);
+        expect(input.cancellations, 1);
+      },
+      stdin: () => input,
+      stdout: () => output,
+    );
+  });
+
   test(
     'runTuiApp mounts widget, schedules first frame, and returns facade',
     () {
@@ -162,6 +211,61 @@ class _CounterApp extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => _CounterAppState();
+}
+
+// Synthetic stdin and a non-terminal stdout exercise runTuiApp's public
+// forwarding without acquiring a real terminal or raw-mode lease.
+class _SyntheticStdin implements io.Stdin {
+  _SyntheticStdin() {
+    _controller = StreamController<List<int>>(
+      sync: true,
+      onCancel: () => cancellations++,
+    );
+  }
+
+  late final StreamController<List<int>> _controller;
+  int cancellations = 0;
+
+  @override
+  bool get hasTerminal => true;
+  @override
+  bool lineMode = true;
+  @override
+  bool echoMode = true;
+
+  void add(List<int> bytes) => _controller.add(bytes);
+  Future<void> close() => _controller.close();
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int>)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => _controller.stream.listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NonTerminalStdout implements io.Stdout {
+  _NonTerminalStdout(this.delegate);
+
+  final io.Stdout delegate;
+
+  @override
+  bool get hasTerminal => false;
+
+  @override
+  void write(Object? object) => delegate.write(object);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _CounterAppState extends State<_CounterApp> {

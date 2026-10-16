@@ -35,6 +35,7 @@ TuiBinding createTuiBindingForTesting({
   RendererFactory? rendererFactory,
   TerminalInputDriverFactory? inputDriverFactory,
   void Function(int exitCode)? exitProcess,
+  void Function(int exitCode)? onExitRequested,
 }) => TuiBinding._(
   width: width,
   height: height,
@@ -45,6 +46,7 @@ TuiBinding createTuiBindingForTesting({
   rendererFactory: rendererFactory,
   inputDriverFactory: inputDriverFactory,
   exitProcess: exitProcess,
+  onExitRequested: onExitRequested,
 );
 
 /// Runs [app] through a [TuiBinding] with injectable terminal seams for tests.
@@ -60,6 +62,7 @@ TuiBinding runTuiAppForTesting(
   RendererFactory? rendererFactory,
   TerminalInputDriverFactory? inputDriverFactory,
   void Function(int exitCode)? exitProcess,
+  void Function(int exitCode)? onExitRequested,
 }) => createTuiBindingForTesting(
   width: width,
   height: height,
@@ -70,24 +73,33 @@ TuiBinding runTuiAppForTesting(
   rendererFactory: rendererFactory,
   inputDriverFactory: inputDriverFactory,
   exitProcess: exitProcess,
+  onExitRequested: onExitRequested,
 )..runApp(app);
 
 /// Owns the app lifecycle graph for an OpenTUI widget tree.
 final class TuiBinding {
   /// Builds the lifecycle graph; an injected [renderer] remains borrowed,
   /// including when this advanced binding is headless.
+  ///
+  /// With [onExitRequested], the first termination signal or unhandled Ctrl+C
+  /// reports its exit code instead of disposing or exiting. The caller must
+  /// finish its asynchronous cleanup, call [dispose], and set its exit code.
+  /// A synchronously throwing callback still disposes the binding before its
+  /// error propagates. A headless binding acquires no input or signal handlers.
   TuiBinding({
     int width = 80,
     int height = 24,
     bool headless = false,
     InputManager? inputManager,
     Renderer? renderer,
+    void Function(int exitCode)? onExitRequested,
   }) : this._(
          width: width,
          height: height,
          headless: headless,
          inputManager: inputManager,
          renderer: renderer,
+         onExitRequested: onExitRequested,
        );
 
   TuiBinding._({
@@ -100,6 +112,7 @@ final class TuiBinding {
     RendererFactory? rendererFactory,
     TerminalInputDriverFactory? inputDriverFactory,
     void Function(int exitCode)? exitProcess,
+    void Function(int exitCode)? onExitRequested,
   }) {
     SchedulerBinding? scheduler;
     BuildOwner? owner;
@@ -132,6 +145,7 @@ final class TuiBinding {
         // Render invalidation also schedules the frame through PipelineOwner.
         scheduleFrame: renderView.markNeedsPaint,
         onExitSignal: dispose,
+        onExitRequested: onExitRequested,
         platform: terminalPlatform,
         rendererFactory: rendererFactory,
         inputDriverFactory: inputDriverFactory,

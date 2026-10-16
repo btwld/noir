@@ -364,6 +364,89 @@ void main() {
     }
   });
 
+  test(
+    'delegated parsed Ctrl+C leaves binding alive until caller cleanup',
+    () async {
+      final requested = <int>[];
+      final exits = <int>[];
+      final disposals = <String>[];
+      final inputDriver = _ProbeInputDriver();
+      final cleanup = Completer<void>();
+      final finished = Completer<void>();
+      late final TuiBinding binding;
+      binding = runTuiAppForTesting(
+        _DisposeProbe(onDispose: () => disposals.add('dispose')),
+        terminalPlatform: _RecordingTerminalPlatform(),
+        rendererFactory: (w, h) => Renderer.create(w, h, testing: true),
+        inputDriverFactory: (_) => inputDriver,
+        exitProcess: exits.add,
+        onExitRequested: (code) {
+          requested.add(code);
+          unawaited(
+            cleanup.future.then((_) {
+              binding.dispose();
+              finished.complete();
+            }),
+          );
+        },
+      );
+      addTearDown(binding.dispose);
+      final renderer = binding.renderer!;
+      final parser = StdinInputDriver(binding.inputManager.dispatcher);
+
+      parser.debugFeedBytes([3, 3]);
+
+      expect(requested, [130]);
+      expect(disposals, isEmpty);
+      expect(inputDriver.stops, 0);
+      expect(exits, isEmpty);
+      expect(() => binding.debugFlushFrame(), returnsNormally);
+      expect(() => renderer.nextBuffer, returnsNormally);
+      cleanup.complete();
+      await finished.future;
+      expect(disposals, ['dispose']);
+      expect(inputDriver.stops, 1);
+      expect(() => renderer.nextBuffer, throwsStateError);
+      expect(exits, isEmpty);
+    },
+  );
+
+  test('throwing exit request still unmounts the binding before rethrow', () {
+    final callbackError = StateError('exit callback failed');
+    final disposeError = StateError('widget cleanup failed');
+    final exits = <int>[];
+    final inputDriver = _ProbeInputDriver();
+    var disposals = 0;
+    final binding = runTuiAppForTesting(
+      _DisposeProbe(
+        onDispose: () {
+          disposals++;
+          throw disposeError;
+        },
+      ),
+      terminalPlatform: _RecordingTerminalPlatform(),
+      rendererFactory: (w, h) => Renderer.create(w, h, testing: true),
+      inputDriverFactory: (_) => inputDriver,
+      exitProcess: exits.add,
+      onExitRequested: (_) => throw callbackError,
+    );
+    addTearDown(binding.dispose);
+    final renderer = binding.renderer!;
+
+    expect(
+      () =>
+          StdinInputDriver(binding.inputManager.dispatcher).debugFeedBytes([3]),
+      throwsA(same(callbackError)),
+    );
+
+    expect(disposals, 1);
+    expect(inputDriver.stops, 1);
+    expect(() => renderer.nextBuffer, throwsStateError);
+    expect(exits, isEmpty);
+    expect(binding.dispose, returnsNormally);
+    expect(disposals, 1);
+  });
+
   test('parser-roundtrip key dispatch preserves priority ordering', () {
     final app = createTuiTestApp(const Text('priority'));
     final order = <String>[];
