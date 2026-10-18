@@ -271,6 +271,23 @@ SIGHUP. In raw input mode, an unconsumed Ctrl+C key follows the same interrupt
 cleanup path and exits with status 130; an app or focused widget can consume it
 first to override that default.
 
+Hosts with asynchronous work to cancel can pass `onExitRequested` to
+`runTuiApp`. The first SIGINT, SIGTERM, SIGHUP, or unconsumed Ctrl+C notifies
+the callback with 130, 143, 129, or 130 respectively. Later requests are
+ignored. Noir does not dispose the app or exit on this path: the host owns
+cancellation, awaiting outstanding work, and eventual disposal and exit code.
+One pattern is to create a `Completer<int>`, pass `requested.complete` as
+the callback, and await `requested.future` in `main()`. Cancel and await the
+host's work inside a `try` block, then call `app.requestExit(code)` in
+`finally` to dispose and record the requested status while the event loop drains.
+
+The callback is synchronous; start asynchronous work without expecting Noir
+to await it. A callback that throws synchronously still triggers best-effort
+disposal and rethrows its original error, without a forced process exit.
+Explicit `TuiApp.exit` / `requestExit` calls still dispose immediately rather
+than notifying this callback. Headless and drive-mode sessions do not install
+the terminal input or signal handlers; drive-mode keys remain caller-owned.
+
 `headless: true` creates no owned terminal renderer and is exposed through
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
 are unavailable in that mode, so `enableMouse: true` fails loudly there.

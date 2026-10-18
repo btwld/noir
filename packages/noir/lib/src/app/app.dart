@@ -31,6 +31,15 @@ import 'tui_binding.dart';
 /// for hover pointers; `enableMouse(enableMovement: false)` opts out. Hot reload
 /// is registered automatically, so an edited `build()` shows up without extra wiring.
 ///
+/// When [onExitRequested] is supplied, OS termination signals and unhandled
+/// Ctrl+C notify it once with 130 (interrupt), 143 (terminate), or 129 (hangup).
+/// Noir does not dispose or exit on this path. The application owns cancellation,
+/// awaiting outstanding work, disposing the returned handle, and setting its
+/// final exit code. This keeps asynchronous cleanup from being cut short.
+/// A synchronously throwing callback still restores the terminal and propagates
+/// its error. Drive mode has no OS signal subscriptions; handle its keys through
+/// the returned handle's app-priority key registration.
+///
 /// With `NOIR_DRIVE=1` in the environment the app mounts in drive mode
 /// instead: a headless binding painting into a non-terminal renderer, with the
 /// `ext.noir.driver.*` service extensions published for an external driver.
@@ -41,6 +50,7 @@ TuiApp runTuiApp(
   Widget app, {
   bool headless = false,
   bool enableMouse = false,
+  void Function(int exitCode)? onExitRequested,
 }) {
   final host = createDriveModeHost(io.Platform.environment);
   if (host != null) {
@@ -67,7 +77,7 @@ TuiApp runTuiApp(
     throw StateError('Mouse support requires a renderer');
   }
   return _mount(
-    TuiBinding(headless: headless),
+    TuiBinding(headless: headless, onExitRequested: onExitRequested),
     app,
     enableMouse: enableMouse,
     onMounted: registerHotReloadExtension,
