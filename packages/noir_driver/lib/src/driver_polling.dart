@@ -57,7 +57,16 @@ final class PollDeadline {
 }
 
 /// The default pause between two probes of a client-side wait.
-Future<void> pollDelay(Duration duration) => Future<void>.delayed(duration);
+Future<void> pollDelay(Duration duration) {
+  // VM timers truncate fractional milliseconds. Round up so a pause clamped
+  // to the remaining budget cannot wake early and issue extra probes.
+  final milliseconds = duration.inMilliseconds;
+  final rounded = duration > Duration(milliseconds: milliseconds)
+      ? Duration(milliseconds: milliseconds + 1)
+      : duration;
+  // Preserve durations too large to represent the next whole millisecond.
+  return Future<void>.delayed(rounded < duration ? duration : rounded);
+}
 
 /// Polls [fetch] until [resolve] accepts a snapshot, and returns its result.
 ///
