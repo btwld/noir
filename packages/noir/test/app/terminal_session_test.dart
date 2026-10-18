@@ -600,6 +600,111 @@ void main() {
     expect(scheduledFrames, 0);
   });
 
+  for (final (signal, code) in [
+    (TerminalSignal.interrupt, 130),
+    (TerminalSignal.terminate, 143),
+    (TerminalSignal.hangup, 129),
+  ]) {
+    test('delegated $signal waits for application cleanup', () async {
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      final driver = _FakeTerminalInputDriver();
+      final exits = <int>[];
+      final requested = <int>[];
+      final cleanup = Completer<void>();
+      final finished = Completer<void>();
+      final dispatcher = _dispatcher();
+      late final TerminalSession session;
+      session = TerminalSession(
+        width: 6,
+        height: 2,
+        headless: false,
+        inputDispatcher: dispatcher,
+        scheduleFrame: () {},
+        platform: platform,
+        inputDriverFactory: (_) => driver,
+        rendererFactory: (w, h) => Renderer.create(w, h, testing: true),
+        exitProcess: exits.add,
+        onExitRequested: (code) {
+          requested.add(code);
+          unawaited(
+            cleanup.future.then((_) {
+              session.close();
+              finished.complete();
+            }),
+          );
+        },
+      );
+      addTearDown(session.close);
+      platform.emit(signal);
+      for (final repeated in [
+        TerminalSignal.interrupt,
+        TerminalSignal.terminate,
+        TerminalSignal.hangup,
+      ]) {
+        platform.emit(repeated);
+      }
+      dispatcher.dispatchKeyEvent(_ctrlC());
+      expect(requested, [code]);
+      expect(driver.stops, 0);
+      expect(platform.canceledSignals, isEmpty);
+      expect(platform.writes, isNot(contains('\x1b[?1049l\x1b[?25h\x1b[0m')));
+      expect(exits, isEmpty);
+      cleanup.complete();
+      await finished.future;
+      expect(driver.stops, 1);
+      expect(platform.writes.join(), contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
+      expect(exits, isEmpty);
+    });
+  }
+
+  for (final cleanupThrows in [false, true]) {
+    test('throwing delegated Ctrl+C restores terminal and preserves callback '
+        'error when cleanupThrows=$cleanupThrows', () {
+      final dispatcher = _dispatcher();
+      final platform = _FakeTerminalPlatform(stdoutHasTerminal: true);
+      final callbackError = StateError('exit callback failed');
+      final cleanupError = StateError('input cleanup failed');
+      final driver = _FakeTerminalInputDriver(
+        onStop: cleanupThrows ? () => throw cleanupError : null,
+      );
+      final exits = <int>[];
+      final requested = <int>[];
+      final session = TerminalSession(
+        width: 6,
+        height: 2,
+        headless: false,
+        inputDispatcher: dispatcher,
+        scheduleFrame: () {},
+        platform: platform,
+        inputDriverFactory: (_) => driver,
+        rendererFactory: (w, h) => Renderer.create(w, h, testing: true),
+        exitProcess: exits.add,
+        onExitRequested: (code) {
+          requested.add(code);
+          throw callbackError;
+        },
+      );
+      addTearDown(session.close);
+      final renderer = session.renderer!;
+      final event = _ctrlC();
+
+      expect(
+        () => dispatcher.dispatchKeyEvent(event),
+        throwsA(same(callbackError)),
+      );
+
+      expect(event.isConsumed, isTrue);
+      expect(requested, [130]);
+      expect(driver.stops, 1);
+      expect(platform.canceledSignals, containsAll(platform.watchedSignals));
+      expect(platform.writes, contains('\x1b[?1049l\x1b[?25h\x1b[0m'));
+      expect(() => renderer.nextBuffer, throwsStateError);
+      expect(exits, isEmpty);
+      dispatcher.dispatchKeyEvent(_ctrlC());
+      expect(requested, [130]);
+    });
+  }
+
   test(
     'signal handler closes session, restores terminal, and records exit code',
     () {

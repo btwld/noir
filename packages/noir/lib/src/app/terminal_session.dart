@@ -94,6 +94,7 @@ class TerminalSession {
     required void Function() scheduleFrame,
     Renderer? renderer,
     void Function()? onExitSignal,
+    void Function(int exitCode)? onExitRequested,
     @visibleForTesting TerminalPlatform? platform,
     @visibleForTesting RendererFactory? rendererFactory,
     @visibleForTesting TerminalInputDriverFactory? inputDriverFactory,
@@ -103,6 +104,7 @@ class TerminalSession {
        _isHeadless = headless,
        _scheduleFrame = scheduleFrame,
        _onExitSignal = onExitSignal,
+       _onExitRequested = onExitRequested,
        _platform = platform ?? _IoTerminalPlatform(),
        _rendererFactory = rendererFactory ?? Renderer.create,
        _inputDriverFactory =
@@ -177,6 +179,7 @@ class TerminalSession {
   final bool _isHeadless;
   final void Function() _scheduleFrame;
   final void Function()? _onExitSignal;
+  final void Function(int exitCode)? _onExitRequested;
   final TerminalPlatform _platform;
   final RendererFactory _rendererFactory;
   final TerminalInputDriverFactory _inputDriverFactory;
@@ -435,6 +438,33 @@ class TerminalSession {
       return;
     }
     _handlingExitSignal = true;
+    // Exit codes follow the 128 + signal-number convention.
+    final code = switch (signal) {
+      TerminalSignal.interrupt => 130,
+      TerminalSignal.hangup => 129,
+      TerminalSignal.terminate || TerminalSignal.resize => 143,
+    };
+    final requested = _onExitRequested;
+    if (requested != null) {
+      try {
+        requested(code);
+      } on Object {
+        // A broken callback must not leave terminal ownership stranded. Do not
+        // hard-exit: the caller may still have outstanding asynchronous work.
+        try {
+          final cleanup = _onExitSignal;
+          if (cleanup == null) {
+            close();
+          } else {
+            cleanup();
+          }
+        } on Object {
+          // Preserve the callback failure after best-effort restoration.
+        }
+        rethrow;
+      }
+      return;
+    }
     try {
       final onExitSignal = _onExitSignal;
       if (onExitSignal == null) {
@@ -443,13 +473,7 @@ class TerminalSession {
         onExitSignal();
       }
     } finally {
-      // Exit codes follow the 128 + signal-number convention.
-      _exitProcess(switch (signal) {
-        TerminalSignal.interrupt => 130, // SIGINT (2)
-        TerminalSignal.hangup => 129, // SIGHUP (1)
-        TerminalSignal.terminate => 143, // SIGTERM (15)
-        TerminalSignal.resize => 143, // never an exit signal; defensive default
-      });
+      _exitProcess(code);
     }
   }
 

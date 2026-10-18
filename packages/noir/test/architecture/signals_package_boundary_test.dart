@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 const _companionRoot = '../noir_signals';
