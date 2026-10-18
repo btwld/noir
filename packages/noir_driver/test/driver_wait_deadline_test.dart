@@ -294,6 +294,34 @@ void main() {
     });
   });
 
+  test('pollDelay never truncates a positive fractional millisecond', () async {
+    for (final (duration, expected) in const [
+      (Duration(microseconds: 1), Duration(milliseconds: 1)),
+      (Duration(microseconds: 999), Duration(milliseconds: 1)),
+      (Duration(microseconds: 1500), Duration(milliseconds: 2)),
+      (Duration(milliseconds: 2), Duration(milliseconds: 2)),
+      (Duration.zero, Duration.zero),
+      (Duration(milliseconds: -1), Duration(milliseconds: -1)),
+      (
+        Duration(microseconds: 9223372036854775807),
+        Duration(microseconds: 9223372036854775807),
+      ),
+    ]) {
+      Duration? scheduled;
+      await runZoned(
+        () => pollDelay(duration),
+        zoneSpecification: ZoneSpecification(
+          createTimer: (self, parent, zone, delay, callback) {
+            scheduled = delay;
+            return parent.createTimer(zone, Duration.zero, callback);
+          },
+        ),
+      );
+
+      expect(scheduled, expected, reason: 'requested pause: $duration');
+    }
+  });
+
   group('waitForAbsentDriverLocator', () {
     final locator = DriverLocator.byKey('save');
 
