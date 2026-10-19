@@ -84,8 +84,10 @@ final class TuiBinding {
   /// With [onExitRequested], the first termination signal or unhandled Ctrl+C
   /// reports its exit code instead of disposing or exiting. The caller must
   /// finish its asynchronous cleanup, call [dispose], and set its exit code.
-  /// A synchronously throwing callback still disposes the binding before its
-  /// error propagates. A headless binding acquires no input or signal handlers.
+  /// The callback is invoked synchronously; Noir does not await asynchronous work
+  /// it starts. If it throws synchronously, Noir attempts best-effort cleanup and
+  /// propagates the original error. A headless binding acquires no input or signal
+  /// handlers.
   TuiBinding({
     int width = 80,
     int height = 24,
