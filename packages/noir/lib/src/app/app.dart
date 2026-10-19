@@ -36,9 +36,10 @@ import 'tui_binding.dart';
 /// Noir does not dispose or exit on this path. The application owns cancellation,
 /// awaiting outstanding work, disposing the returned handle, and setting its
 /// final exit code. This keeps asynchronous cleanup from being cut short.
-/// A synchronously throwing callback still restores the terminal and propagates
-/// its error. Drive mode has no OS signal subscriptions; handle its keys through
-/// the returned handle's app-priority key registration.
+/// The callback is invoked synchronously; Noir does not await asynchronous work
+/// it starts. If it throws synchronously, Noir attempts best-effort terminal
+/// cleanup and propagates the original error. Drive mode has no OS signal
+/// subscriptions; handle its keys through [TuiApp.onKey] at app priority.
 ///
 /// With `NOIR_DRIVE=1` in the environment the app mounts in drive mode
 /// instead: a headless binding painting into a non-terminal renderer, with the
