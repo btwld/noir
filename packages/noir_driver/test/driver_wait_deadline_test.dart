@@ -14,6 +14,55 @@ import 'package:vm_service/vm_service.dart';
 void main() {
   const budget = Duration(milliseconds: 40);
 
+  group('awaitDriverReady', () {
+    for (final registered in [true, false]) {
+      test(
+        'does not retry after its final pause (${registered ? 'registered' : 'unregistered'})',
+        () async {
+          var requests = 0;
+          await expectLater(
+            _watchdog(
+              awaitDriverReady(
+                frames: () async {
+                  requests++;
+                  if (requests > 1) return 1;
+                  if (!registered) throw RPCError('info', -32601);
+                  return 0;
+                },
+                timeout: budget,
+              ),
+            ),
+            throwsA(isA<TimeoutException>()),
+          );
+
+          expect(
+            requests,
+            1,
+            reason: 'no probe starts once the budget is spent',
+          );
+        },
+      );
+    }
+
+    test(
+      'a zero timeout still probes once and accepts a ready response',
+      () async {
+        var requests = 0;
+        await _watchdog(
+          awaitDriverReady(
+            frames: () async {
+              requests++;
+              return 1;
+            },
+            timeout: Duration.zero,
+          ),
+        );
+
+        expect(requests, 1);
+      },
+    );
+  });
+
   group('pollFrameAdvance', () {
     test('reports no frame when the response never completes', () async {
       final advanced = await _watchdog(
@@ -292,6 +341,34 @@ void main() {
         Duration(milliseconds: 4),
       ]);
     });
+  });
+
+  test('pollDelay never truncates a positive fractional millisecond', () async {
+    for (final (duration, expected) in const [
+      (Duration(microseconds: 1), Duration(milliseconds: 1)),
+      (Duration(microseconds: 999), Duration(milliseconds: 1)),
+      (Duration(microseconds: 1500), Duration(milliseconds: 2)),
+      (Duration(milliseconds: 2), Duration(milliseconds: 2)),
+      (Duration.zero, Duration.zero),
+      (Duration(milliseconds: -1), Duration(milliseconds: -1)),
+      (
+        Duration(microseconds: 9223372036854775807),
+        Duration(microseconds: 9223372036854775807),
+      ),
+    ]) {
+      Duration? scheduled;
+      await runZoned(
+        () => pollDelay(duration),
+        zoneSpecification: ZoneSpecification(
+          createTimer: (self, parent, zone, delay, callback) {
+            scheduled = delay;
+            return parent.createTimer(zone, Duration.zero, callback);
+          },
+        ),
+      );
+
+      expect(scheduled, expected, reason: 'requested pause: $duration');
+    }
   });
 
   group('waitForAbsentDriverLocator', () {
