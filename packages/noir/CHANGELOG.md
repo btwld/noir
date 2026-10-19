@@ -2,19 +2,19 @@
 
 ## 0.0.4
 
-This release adds opt-in caller-owned terminal shutdown. The native ABI and
-the bundled native artifacts are unchanged from 0.0.3.
+Adds opt-in caller-owned shutdown. The native ABI and bundled native artifacts
+are unchanged from 0.0.3.
 
 ### Added
 
-- `runTuiApp(onExitRequested: ...)` lets a host cancel and await outstanding
-  work before disposing the terminal and choosing its final exit status.
-  The first termination signal or unhandled Ctrl+C notifies the callback
-  once, synchronously, with the conventional exit code. Noir does not await
-  asynchronous work the callback starts or dispose the terminal on this path.
-  A synchronous callback failure still attempts best-effort terminal cleanup
-  and propagates the original error. Omitting the callback preserves the
-  default shutdown behavior. Drive mode does not install this signal hook.
+- `runTuiApp(onExitRequested: ...)` notifies the host once, synchronously,
+  on the first termination signal or unhandled Ctrl+C with its conventional
+  exit code. The host owns cancellation, awaiting outstanding work, terminal
+  disposal, and final exit status; Noir does not await callback work or dispose
+  the terminal. A synchronous callback failure propagates the original error
+  after best-effort cleanup.
+  Omitting the callback preserves default shutdown behavior. Drive mode does
+  not install this signal hook.
 
 ## 0.0.3
 

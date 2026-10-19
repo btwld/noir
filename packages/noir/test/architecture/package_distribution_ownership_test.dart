@@ -155,10 +155,10 @@ void main() {
     );
     for (final contract in const [
       'runTuiApp(onExitRequested: ...)',
-      'cancel and await outstanding work',
+      'awaiting outstanding work',
       'once, synchronously',
-      'does not await asynchronous work',
-      'propagates the original error',
+      'does not await callback work or dispose the terminal',
+      'propagates the original error after best-effort cleanup',
       'default shutdown behavior',
       'Drive mode does not install this signal hook',
       'bundled native artifacts are unchanged from 0.0.3',

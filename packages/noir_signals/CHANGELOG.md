@@ -2,13 +2,8 @@
 
 ## 0.0.1-alpha.2
 
-The library, its public API, and its behavior are unchanged from
-0.0.1-alpha.1.
-
-### Changed
-
-- `noir: ^0.0.4`, naming the Noir revision this companion is built and tested
-  against, as required by the coordinated 0.0.x release policy.
+- Requires `noir: ^0.0.4`, the version this companion is built and tested
+  against. The library, public API, and behavior are unchanged.
 
 ## 0.0.1-alpha.1
 
