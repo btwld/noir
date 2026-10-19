@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.1-alpha.2
+
+- Requires `noir: ^0.0.4`, the version this companion is built and tested
+  against. The library, public API, and behavior are unchanged.
+
 ## 0.0.1-alpha.1
 
 This release pairs the companion with the next Noir candidate. The library,

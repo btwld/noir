@@ -499,7 +499,7 @@ approval gate that approves everything.
 
 On pub.dev, under `pub.dev/packages/<package>/admin`, each of `noir`,
 `noir_driver`, and `noir_signals` needs automated publishing enabled for
-repository `conceptadev/noir`, the tag pattern `<package>-v{{version}}`, and
+repository `btwld/noir`, the tag pattern `<package>-v{{version}}`, and
 Require GitHub Actions environment set to `pub.dev`. The two settings work
 together: GitHub decides whether a human approved, and pub.dev refuses a
 token whose claim does not carry that environment — so the boundary cannot be

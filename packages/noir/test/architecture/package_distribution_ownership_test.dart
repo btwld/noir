@@ -133,7 +133,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    expect(packageVersion, '0.0.3');
+    expect(packageVersion, '0.0.4');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -150,7 +150,30 @@ void main() {
 
     expect(currentRelease, isNotEmpty);
     expect(
-      RegExp(r'^### Fixed$', multiLine: true).allMatches(currentRelease),
+      RegExp(r'^### Added$', multiLine: true).allMatches(currentRelease),
+      hasLength(1),
+    );
+    for (final contract in const [
+      'runTuiApp(onExitRequested: ...)',
+      'awaiting outstanding work',
+      'once, synchronously',
+      'does not await callback work or dispose the terminal',
+      'propagates the original error after best-effort cleanup',
+      'default shutdown behavior',
+      'Drive mode does not install this signal hook',
+      'bundled native artifacts are unchanged from 0.0.3',
+    ]) {
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
+    }
+  });
+
+  test('published 0.0.3 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedRelease = _changelogSection(changelog, '0.0.3');
+
+    expect(publishedRelease, isNotEmpty);
+    expect(
+      RegExp(r'^### Fixed$', multiLine: true).allMatches(publishedRelease),
       hasLength(1),
     );
     for (final contract in const [
@@ -161,7 +184,11 @@ void main() {
       'reaches the exit sink unchanged',
       'bundled native artifacts are unchanged from 0.0.2',
     ]) {
-      expect(_normalized(currentRelease), contains(contract), reason: contract);
+      expect(
+        _normalized(publishedRelease),
+        contains(contract),
+        reason: contract,
+      );
     }
   });
 

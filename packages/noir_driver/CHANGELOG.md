@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.1-alpha.2
+
+### Fixed
+
+- Polling rounds positive fractional-millisecond pauses up to avoid waking
+  early; other delays and durations too large to round safely are unchanged.
+- `awaitDriverReady` stops probing when its deadline expires. A zero timeout
+  still makes the initial probe and accepts an already-ready response.
+  Timeout and service-error outcomes are unchanged.
+
+### Changed
+
+- Requires `noir: ^0.0.4`, the version this client is built and tested against.
+
 ## 0.0.1-alpha.1
 
 ### Fixed

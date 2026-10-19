@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
 const _companionRoot = '../noir_signals';
@@ -336,7 +338,62 @@ void main() {
     expect(readme, isNot(contains('package:noir/hooks.dart')));
   });
 
-  test('companion install guidance matches its own manifest', () {
+  test(
+    'published companion install guidance resolves against the publication record',
+    () {
+      final published =
+          jsonDecode(File('../../publication.json').readAsStringSync())
+              as Map<String, Object?>;
+      for (final path in <String>[
+        '$_companionRoot/README.md',
+        '$_companionRoot/doc/hooks.md',
+        '$_companionRoot/doc/signals.md',
+        '../../website/src/content/docs/installation.mdx',
+      ]) {
+        final source = File(path).readAsStringSync();
+        expect(
+          _hostedCompanionConstraintsResolve(source, published),
+          isTrue,
+          reason: '$path must show resolvable published versions',
+        );
+      }
+    },
+  );
+
+  test('hosted install guidance survives ordered publication records', () {
+    const source = '''
+dependencies:
+  noir: ^0.0.3
+  noir_signals: ^0.0.1-alpha.1
+''';
+    for (final published in const [
+      {'noir': '0.0.3', 'noir_signals': '0.0.1-alpha.1'},
+      {'noir': '0.0.4', 'noir_signals': '0.0.1-alpha.1'},
+      {'noir': '0.0.4', 'noir_signals': '0.0.1-alpha.2'},
+    ]) {
+      expect(
+        _hostedCompanionConstraintsResolve(source, published),
+        isTrue,
+        reason: '$published still satisfies the published install snippet',
+      );
+    }
+    for (final unpublished in [
+      source.replaceFirst('^0.0.3', '^0.0.4'),
+      source.replaceFirst('^0.0.1-alpha.1', '^0.0.1-alpha.2'),
+    ]) {
+      expect(
+        _hostedCompanionConstraintsResolve(unpublished, const {
+          'noir': '0.0.3',
+          'noir_signals': '0.0.1-alpha.1',
+        }),
+        isFalse,
+        reason:
+            'an unpublished minimum must not be offered as a hosted install',
+      );
+    }
+  });
+
+  test('companion checkout guidance and changelog match its own manifest', () {
     final version = RegExp(
       r'^version: (.+)$',
       multiLine: true,
@@ -347,22 +404,23 @@ void main() {
     ).firstMatch(companionPubspec)!.group(1)!.trim();
     final companionConstraint = '^${version.split('+').first}';
 
-    // One website destination owns dependency instructions. Ordinary guides
-    // must not repeat a hosted block that cannot resolve yet.
     for (final path in <String>[
       '$_companionRoot/README.md',
-      '$_companionRoot/doc/hooks.md',
-      '$_companionRoot/doc/signals.md',
       '../../website/src/content/docs/installation.mdx',
     ]) {
       final source = File(path).readAsStringSync();
-      expect(source, contains('noir: $noirConstraint'), reason: path);
       expect(
         source,
-        contains('noir_signals: $companionConstraint'),
+        contains(
+          '  noir: $noirConstraint\n'
+          '  noir_signals:\n'
+          '    path: ../noir/packages/noir_signals',
+        ),
         reason: path,
       );
     }
+    // Ordinary guides link the installation page instead of repeating a
+    // candidate hosted constraint that cannot resolve before publication.
     for (final path in <String>[
       '../../website/src/content/docs/hooks.mdx',
       '../../website/src/content/docs/signals.mdx',
@@ -448,6 +506,27 @@ void main() {
       reason: 'agent skills are shared from skills/, not per-tool folders',
     );
   });
+}
+
+bool _hostedCompanionConstraintsResolve(
+  String source,
+  Map<String, Object?> published,
+) {
+  final hosted = RegExp(
+    r'^dependencies:\n  noir: (\S+)\n  noir_signals: (\S+)$',
+    multiLine: true,
+  ).firstMatch(source.replaceAll('\r\n', '\n'));
+  if (hosted == null) return false;
+  for (final (name, group) in const [('noir', 1), ('noir_signals', 2)]) {
+    final version = published[name];
+    if (version is! String ||
+        !VersionConstraint.parse(
+          hosted.group(group)!,
+        ).allows(Version.parse(version))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 List<String> _dartFilesUnder(String directory) =>
