@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.1-alpha.2
+
+The library, its public API, and its behavior are unchanged from
+0.0.1-alpha.1.
+
+### Changed
+
+- `noir: ^0.0.4`, naming the Noir revision this companion is built and tested
+  against, as required by the coordinated 0.0.x release policy.
+
 ## 0.0.1-alpha.1
 
 This release pairs the companion with the next Noir candidate. The library,

@@ -14,7 +14,8 @@ building an app, start with [Build a task list](getting-started.md).
 
 ## Install and import
 
-The companion requires Noir 0.0.3. An application declares both packages; the
+The published 0.0.1-alpha.1 companion requires Noir 0.0.3. An application
+declares both packages; the
 [package overview](../README.md) also covers a repository checkout:
 
 ```yaml

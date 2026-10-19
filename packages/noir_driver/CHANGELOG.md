@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.1-alpha.2
+
+### Fixed
+
+- Polling pauses round positive fractional milliseconds up at the VM timer
+  boundary, so a clipped pause cannot wake early because of timer truncation.
+  Whole-millisecond and nonpositive delays are unchanged; durations too large
+  to round safely are preserved.
+- `awaitDriverReady` does not issue another probe after its final pause spends
+  the deadline, or accept a ready response from that extra probe. A zero
+  timeout still makes the initial probe and accepts an already-ready response.
+  Existing timeout and service-error outcomes are unchanged.
+
+### Changed
+
+- `noir: ^0.0.4`, naming the Noir revision this client is built and tested
+  against.
+
 ## 0.0.1-alpha.1
 
 ### Fixed
