@@ -103,6 +103,9 @@ Future<void> awaitDriverReady({
     if (!deadline.isExpired) {
       await deadline.pause(const Duration(milliseconds: 50), delay: delay);
     }
+    if (deadline.isExpired) {
+      timedOut();
+    }
   }
 }
 
