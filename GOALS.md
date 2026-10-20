@@ -1,7 +1,7 @@
 # Noir quality standard
 
 This document is the durable standard for Noir. The current candidate is
-described at the top of [`CHANGELOG.md`](CHANGELOG.md); open work lives in
+described at the top of [`CHANGELOG.md`](packages/noir/CHANGELOG.md); open work lives in
 GitHub issues and pull requests.
 
 ## Architectural invariant

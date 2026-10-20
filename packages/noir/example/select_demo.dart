@@ -1,5 +1,3 @@
-// Run with: dart run example/select_demo.dart
-//
 // Use ↑/↓ (or j/k) to move the highlight, Enter to confirm. Press q to quit.
 // Demonstrates Select<T> rendering, focus, keyboard navigation, and the
 // onChanged vs onSelect callback split.

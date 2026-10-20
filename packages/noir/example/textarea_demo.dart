@@ -1,5 +1,3 @@
-// Run with: dart run example/textarea_demo.dart
-//
 // Type to insert text. Enter inserts a newline. Ctrl+D submits. Ctrl+Enter
 // also submits when the terminal reports modified Enter keys.
 // Backspace, arrows, Home/End, PgUp/PgDn, Ctrl+Home/End all work.

@@ -1,5 +1,3 @@
-// Run with: dart run example/framework_primitives.dart
-//
 // Press Enter or Space, or click Activate, to increment. Press q to quit.
 
 import 'package:noir/noir.dart';
@@ -56,51 +54,54 @@ class _FrameworkPrimitivesAppState extends State<FrameworkPrimitivesApp> {
   }
 
   @override
-  Widget build(BuildContext context) => Shortcuts(
-    shortcuts: const <ShortcutActivator, Intent>{
-      SingleActivator(LogicalKeyboardKey.enter): _IncrementIntent(),
-      SingleActivator(LogicalKeyboardKey.space): _IncrementIntent(),
-    },
-    child: Actions(
-      actions: <Type, Action<Intent>>{
-        _IncrementIntent: CallbackAction<_IncrementIntent>((intent, context) {
-          _activationKey.currentState?.activate('keyboard');
-          return KeyEventResult.handled;
-        }),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.enter): _IncrementIntent(),
+        SingleActivator(LogicalKeyboardKey.space): _IncrementIntent(),
       },
-      child: Focus(
-        autofocus: true,
-        onKeyEvent: _handleQuit,
-        child: DemoScaffold(
-          title: 'Framework primitives',
-          hint: 'Enter/Space/click increments. q quits.',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 1,
-            children: [
-              RichText(
-                text: TextSpan(
-                  text: 'Count: ',
-                  style: const TextStyle(color: Color.lightGray),
-                  children: [
-                    TextSpan(
-                      text: '${_count.value}',
-                      style: const TextStyle(
-                        color: Color.yellow,
-                        fontWeight: FontWeight.bold,
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _IncrementIntent: CallbackAction<_IncrementIntent>((intent, context) {
+            _activationKey.currentState?.activate('keyboard');
+            return KeyEventResult.handled;
+          }),
+        },
+        child: Focus(
+          autofocus: true,
+          onKeyEvent: _handleQuit,
+          child: DemoScaffold(
+            title: 'Framework primitives',
+            hint: 'Enter/Space/click increments. q quits.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 1,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    text: 'Count: ',
+                    style: TextStyle(color: theme.textMuted),
+                    children: [
+                      TextSpan(
+                        text: '${_count.value}',
+                        style: TextStyle(
+                          color: theme.text,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              _ActivationSurface(key: _activationKey, onActivate: _activate),
-              Text('Last activation: $_lastActivation'),
-            ],
+                _ActivationSurface(key: _activationKey, onActivate: _activate),
+                Text('Last activation: $_lastActivation'),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ActivationSurface extends StatefulWidget {

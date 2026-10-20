@@ -34,5 +34,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the required checks and
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and
+BSD 3-Clause. See [LICENSE](LICENSE) and
 [the third-party notices](packages/noir/THIRD_PARTY_NOTICES.md).

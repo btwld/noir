@@ -19,114 +19,6 @@ The inspector imports only `package:noir/noir.dart` and
 
 ## Noir framework gaps
 
-### 1. An application could not measure the terminal — fixed
-
-`ListView` occupies exactly its `height` rows
-(`lib/src/widgets/list_view.dart`), and the application surface exposed no
-viewport size: there was no `LayoutBuilder`, no `MediaQuery`, and no size on
-the `TuiApp` handle. An application that wanted a list to fill its pane had to
-hard-code a row budget for the smallest grid it supports.
-
-*Original reproduction.* `lib/src/ui/primitives_pane.dart` set
-`primitiveListRows` to 12, chosen for a 60x18 grid. At 100x30 the list left
-unused rows in the pane.
-
-*Fix.* `package:noir/noir.dart` exports `LayoutBuilder` and
-`LayoutWidgetBuilder`. The builder runs during layout and its child is laid out
-in the same frame, so the constraints it reads are the constraints its child
-receives. `ListView` also follows its highlight when its own height changes, so
-a resized list keeps the selected row on screen.
-
-*Effect on this tool.* The primitives pane derives its list height and its
-scroll indicator from the rows the pane actually offers.
-`primitiveListFallbackRows` remains only for an unbounded host. The inspector's
-forms still use bounded scroll viewports, so their field count does not push
-Run or the modal actions outside the pane.
-
-*Layer.* Widgets and layout.
-
-*Classification.* Noir framework gap, now closed.
-
-### 2. A keyed `ListView` row resolved to two driver nodes — fixed
-
-`ListView._buildRow` used to copy the row's own `LocalKey` onto the `SizedBox`
-it wraps the row in, so the key existed twice in the element tree. A strict
-driver locator then failed.
-
-*Original reproduction.* Give a row `key: ValueKey('primitive:calculate')` and
-run `wait key primitive:calculate` through `noir_driver:drive`:
-
-```
-Bad state: Strict locator key "primitive:calculate" resolved to 2 matches.
-  - SizedBox(key: primitive:calculate, ...)
-  - Text(key: primitive:calculate, ...)
-```
-
-*Fix.* `ListView` now derives a private `_ListRowKey` from the row's key for
-the wrapper, so the wrapper still reconciles by row identity and the row's own
-key names exactly one element. `test/widgets/list_view_test.dart`, group
-*ListView row identity*, covers the single match, state preservation across
-scrolling and reordering, and disposal of a row that leaves the window.
-
-*Effect on this tool.* The row builder puts the key on the `Align` it already
-needed for the full-width highlight. No extra wrapper remains.
-
-*Layer.* Widgets and the drive-mode tree.
-
-*Classification.* Noir framework gap, now closed.
-
-### 3. Losing the focused node silently disabled every `Shortcuts` binding — fixed
-
-`Shortcuts.handleKeyEvent` walks ancestors starting at the focused element
-(`lib/src/widgets/shortcuts.dart:110-124`). When nothing owns primary focus
-there is no starting point, so no binding fired and no error was reported.
-Noir repaired escaped focus inside a `Modal`, but the root scope did not
-repair it.
-
-Two ordinary application actions left the tree unfocused:
-
-- Disabling the focused control. `Button(onPressed: null)` while a request is
-  in flight dropped focus. `find focused` then reported *No node in this tree
-  has primary focus*, and Ctrl+N stopped switching tabs until the user clicked
-  or pressed Tab.
-- Removing the region that owns focus. Switching from a tab whose detail pane
-  holds focus to one that does not build that pane left the focused node
-  detached.
-
-*Fix.* `FocusManager` now schedules focus recovery when disabling or removing
-the focused control leaves no primary focus. It records the enclosing scopes at
-the loss, while the chain is still whole, then runs after the synchronous tree
-updates finish. Recovery takes the nearest recorded scope that survived and can
-hold focus, otherwise the first node in traversal order, and leaves focus empty
-when nothing is eligible. A deliberate focus decision supersedes a queued
-recovery: `FocusNode.requestFocus()` and `FocusNode.unfocus()` both drop it, so
-an incoming `autofocus` wins and an intentional clear stays cleared even when
-an earlier involuntary loss is still queued. `test/widgets/focus_recovery_test.dart` covers each case.
-
-*Effect on this tool.* The Run button is disabled while a request is in
-flight, which is what a user expects to see; `InspectorController.run` keeps
-its second-call guard. `_syncTabFocus` still hands focus to the primitives
-list on a tab change, but only when that list is attached: an empty tab builds
-no list at all. `test/tools/mcp_inspector_drive_test.dart`, *shortcuts keep
-working while a request is in flight*, drives the disabled-Run case against a
-fixture that answers slowly.
-
-*Layer.* Focus manager and `Shortcuts`.
-
-*Classification.* Noir framework gap, now closed.
-
-The schema view (originally Ctrl+O, now Ctrl+G) reproduced this twice more.
-Swapping the form out for the schema removes whatever field owned focus, and
-every binding stopped, including Ctrl+O itself, Ctrl+N, and Ctrl+Q, leaving
-only Ctrl+C. Enter on a list row
-then threw `FocusNode is not attached to a FocusManager`, because the code
-still focused the first field awaiting input after that field left the tree.
-
-The inspector keeps the pattern `_syncTabFocus` uses: the incoming region
-takes focus through `autofocus`, and the outgoing swap hands focus to a widget
-that is mounted in both states. Recovery is the backstop for what an
-application misses, not a replacement for a deliberate focus target.
-
 ### 4. Disposing an attached `FocusNode` throws on the next dispatch
 
 An application that generates one field per selection wants to dispose the
@@ -259,19 +151,6 @@ the text and reports `not a number` or `not an integer` next to the field
 name. That is enough for a form, but every numeric tool argument needs the
 same application-side coercion.
 
-## Real-terminal observations
-
-### 15. The screen holds up in iTerm2 at three grids
-
-The original authorized iTerm2 run at 100x40, 80x24, and 60x18 confirmed the
-layout, the generated form, the paired protocol log, the console, and the elicitation
-modal. Before the form-scroll fix, the result region lost every row at
-60x18. Every session closed cleanly on Ctrl+C with no cursor or mode
-damage, so the documented iTerm cursor restoration limitation did not
-appear. Evidence and the side-by-side comparison with the official MCP
-Inspector TUI live in an untracked run folder under
-`.context/terminal-evidence/`.
-
 ## mcp_dart and Dart tooling observations
 
 ### 16. `dart run` writes build-hook progress to stdout
@@ -300,13 +179,13 @@ hooks: *'dart compile' does not support build hooks, use 'dart build' instead*.
 `dart build cli` only accepts a target inside `bin/`, so neither command
 reaches a fixture that inherits the hook.
 
-*Fix in this package.* The fixtures moved to `tools/mcp_fixtures`, which
+*Fix in this package.* The fixtures moved to `tool/mcp_fixtures`, which
 depends on `package:mcp_dart` alone and therefore has no build hook. `lib/`
 builds each server without a transport for the in-process tests, and `bin/`
 starts it on stdio. Tests compile the entry point with `dart compile exe`,
 which that package permits, and start the executable, so its stdout carries
 only what the server writes on every supported SDK.
-`tools/mcp_inspector/test/compiled_fixture.dart` and the matching helper in
+`tool/mcp_inspector/test/compiled_fixture.dart` and the matching helper in
 `test/tools/mcp_inspector_drive_test.dart` own that step, and
 `test/tools/mcp_inspector_package_test.dart` asserts that the fixture package
 keeps its single dependency.
@@ -436,18 +315,6 @@ but the pinned MCP SDK rejects it before delivery to the inspector. Custom
 retain the value as text and the schema view explains that JSON display is
 unavailable. This guard is covered with a fake session, not a live wire claim.
 
-### 25. Lifecycle tests used to count unrelated inspector processes
-
-`test/stdio_lifecycle_test.dart` asserts that `close()` leaves no child, and
-counts with `pgrep -f fixtures/calculate_server.dart`. The pattern matches
-every process on the machine, so an interactive
-`dart run bin/mcp_inspector.dart -- dart run ... fixtures/calculate_server.dart`
-session running beside the suite failed the test. Both lifetime checks now
-count a unique process argument generated per run. The package test also keeps
-a second live fixture connected, closes the tested session, and successfully
-calls the second fixture afterward. This proves isolation without requiring
-the user to close an interactive session.
-
 ### 26. Default macOS terminal modes consume Ctrl+O and Ctrl+Q
 
 The authorized follow-up in iTerm2 reproduced two shortcuts that headless drive
@@ -466,9 +333,7 @@ were scrollable, all eight modal values were accepted, and the greeting flow
 handled Accept, Cancel, and Decline. The lifecycle test passed while a separate
 interactive inspector stayed open. The footer also fits every shortcut at the
 60x18 floor. Every owned window closed through Ctrl+X and existing sessions
-were preserved. Screenshots and route logs remain under
-`.context/terminal-evidence/20260904T223955Z-0bdf554/`.
-
+were preserved.
 
 ### 27. Row activation can precede the new field's attachment
 

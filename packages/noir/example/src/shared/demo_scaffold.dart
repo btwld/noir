@@ -1,17 +1,4 @@
-/// Shared chrome for the Noir example apps.
-///
-/// Every demo used to hand-roll the same padded surface with a bold title and
-/// muted hint. This file keeps that application-specific page frame in one
-/// place; reusable bordered regions use Noir's public [Panel]. All chrome
-/// colors come from `Theme.of(context)`, so the demos render on
-/// `ThemeData.dark` by default and re-skin together under any `Theme`.
-///
-/// The card is content-sized vertically. Horizontal room comes from the
-/// scaffold owning the terminal (`alignment: topLeft`) and a 2-cell side
-/// inset so the page title is not glued to the edge.
-///
-/// Content colors (chat speakers, layout blocks, particles) stay in each demo:
-/// there the color is the subject, not the frame.
+/// Example-local page chrome, with colors from `Theme.of`.
 library;
 
 import 'package:noir/noir.dart';

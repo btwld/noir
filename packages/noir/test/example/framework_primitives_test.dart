@@ -23,7 +23,7 @@ void main() {
 
       final count = frame.findText('Count: 0').single;
       final digitX = count.x + 'Count: '.length;
-      expect(frame.getForegroundColor(digitX, count.y), Color.yellow);
+      expect(frame.getForegroundColor(digitX, count.y), ThemeData.dark.text);
       expect(frame.getCell(digitX, count.y).isBold, isTrue);
     } finally {
       app.dispose();

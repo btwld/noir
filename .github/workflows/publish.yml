@@ -133,20 +133,6 @@ jobs:
         run: dart pub publish --dry-run
         working-directory: ${{ steps.tag.outputs.directory }}
 
-      # Only Noir carries bundled native binaries. They are committed, not
-      # built, so this is a repackaging — but the next job proves the packaged
-      # copy actually loads, and it does so while the upload can still be
-      # stopped.
-      - name: Package tracked native assets
-        if: >-
-          steps.preflight.outputs.publish == 'true'
-          && steps.tag.outputs.package == 'noir'
-        timeout-minutes: 2
-        shell: bash
-        run: tar -czf "opentui-binaries-$RELEASE_TAG.tar.gz" native native_manifest.json LICENSE THIRD_PARTY_NOTICES.md third_party
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-
       - name: Upload package-test assets
         if: >-
           steps.preflight.outputs.publish == 'true'

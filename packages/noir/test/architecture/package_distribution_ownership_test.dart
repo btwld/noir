@@ -886,7 +886,6 @@ void main() {
       for (final path in const <String>[
         'tool/patch_manager.dart',
         'tool/patch_manager/patch_manager.dart',
-        'tool/snapshot_scenes.dart',
         'example/src/chat/app.dart',
         'example/src/chat/protocol.dart',
         'example/src/chat/session_controller.dart',

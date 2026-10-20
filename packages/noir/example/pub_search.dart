@@ -1,4 +1,3 @@
-// Run with: dart run example/pub_search.dart
 // Requires network access. Type at least three characters for completion;
 // Enter searches or opens the selected package. Tab crosses the query, sort,
 // filter, and results. Sort and filter open with Enter, Space, or a click. From

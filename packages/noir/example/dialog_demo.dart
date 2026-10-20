@@ -1,4 +1,3 @@
-// Run with: dart run example/dialog_demo.dart
 // Activate `Review deploy` to open the dialog. Tab and Shift+Tab remain inside
 // it; Escape or Cancel closes it, and Deploy confirms. The full-screen pointer
 // barrier keeps the underlying screen visible without letting it receive

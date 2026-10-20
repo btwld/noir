@@ -1,5 +1,3 @@
-// Run with: dart run example/parity_components_demo.dart
-//
 // Left/Right or [/] changes the active document tab. Arrow keys adjust the
 // slider when it has focus. Document text supports pointer/Shift selection,
 // Ctrl+A, Escape, and explicit Ctrl+C OSC52 copy. Press q to quit.

@@ -10,7 +10,7 @@ import 'dart:io';
 /// protocol channel, so that text corrupts the server's first JSON-RPC line
 /// and the handshake times out.
 ///
-/// The fixtures therefore live in `tools/mcp_fixtures`, which depends only on
+/// The fixtures therefore live in `tool/mcp_fixtures`, which depends only on
 /// `package:mcp_dart` and so has no build hook at all. That also lets
 /// `dart compile exe` run: the same SDK rejects it for a package graph that
 /// does have hooks. A compiled executable then carries only what the server

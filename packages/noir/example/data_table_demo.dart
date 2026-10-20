@@ -1,5 +1,3 @@
-// Run with: dart run example/data_table_demo.dart
-//
 // Use ↑/↓ (or j/k), PageUp/PageDown, Home/End to move the highlight and Enter
 // to open a row. Press s to cycle sortable columns, or click a `package` or
 // `state` header; repeating either action reverses the direction. Press q to
