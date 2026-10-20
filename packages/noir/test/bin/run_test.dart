@@ -81,6 +81,21 @@ class Probe extends StatelessWidget {
   }
 }
 ''');
+
+    await File('${consumer.path}/bin/ignore_sigint.dart').writeAsString(r'''
+import 'dart:io';
+
+void main() {
+  var interrupts = 0;
+  ProcessSignal.sigint.watch().listen((_) {
+    interrupts++;
+    stdout.writeln('SIGINT:$interrupts');
+    stdout.flush();
+  });
+  stdout.writeln('READY');
+  stdout.flush();
+}
+''');
   });
 
   tearDownAll(() async {
@@ -290,6 +305,48 @@ class Probe extends StatelessWidget {
     },
     timeout: const Timeout(Duration(seconds: 90)),
   );
+
+  test(
+    'packaged run command kills a child that ignores the first interrupt',
+    () async {
+      final runner = await _RunningProbe.start(
+        consumer,
+        script: 'bin/ignore_sigint.dart',
+      );
+      addTearDown(runner.stop);
+
+      await _waitUntil(
+        () => runner.output.toString().contains('READY'),
+        what: 'the child to install its interrupt handler',
+        timeout: const Duration(seconds: 45),
+        diagnostics: runner.output,
+      );
+
+      runner.process.kill(ProcessSignal.sigint);
+      await _waitUntil(
+        () => runner.output.toString().contains('SIGINT:1'),
+        what: 'the child to ignore the first interrupt',
+        diagnostics: runner.output,
+      );
+      expect(runner.hasExited, isFalse, reason: runner.output.toString());
+
+      runner.process.kill(ProcessSignal.sigint);
+      await _waitUntil(
+        () => runner.hasExited,
+        what: 'the runner to exit after the second interrupt',
+        timeout: const Duration(seconds: 5),
+        diagnostics: runner.output,
+      );
+      // SIGKILL is status -9. The runner returns that status and the VM
+      // reports the unsigned 8-bit value.
+      expect(await runner.exitCode, 247, reason: runner.output.toString());
+      expect(runner.output.toString(), isNot(contains('SIGINT:2')));
+    },
+    skip: Platform.isWindows
+        ? 'Process.kill terminates the process and ignores the signal'
+        : false,
+    timeout: const Timeout(Duration(seconds: 90)),
+  );
 }
 
 Future<void> _replaceWithTimestamp(
@@ -327,11 +384,14 @@ class _RunningProbe {
         .listen(output.writeln);
   }
 
-  static Future<_RunningProbe> start(Directory consumer) async {
+  static Future<_RunningProbe> start(
+    Directory consumer, {
+    String script = 'bin/reload_probe.dart',
+  }) async {
     final process = await Process.start(Platform.resolvedExecutable, [
       'run',
       'noir:run',
-      'bin/reload_probe.dart',
+      script,
     ], workingDirectory: consumer.path);
     return _RunningProbe._(process);
   }
