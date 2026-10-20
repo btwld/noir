@@ -1,8 +1,8 @@
 0,0:#ffffffff|#000000ff|0 * 60
 0,1:#ffffffff|#000000ff|0 * 60
-0,2:#ffffffff|#000000ff|0 * 27
-27,2:#ffffffff|#000000ff|1 * 5
-32,2:#ffffffff|#000000ff|0 * 28
+0,2:#ffffffff|#000000ff|0 * 28
+28,2:#ffffffff|#000000ff|1 * 5
+33,2:#ffffffff|#000000ff|0 * 27
 0,3:#ffffffff|#000000ff|0 * 60
 0,4:#ffffffff|#000000ff|0 * 60
 0,5:#ffffffff|#000000ff|0 * 3
