@@ -76,7 +76,7 @@ export 'src/core/terminal_style.dart'
 export 'src/foundation/change_notifier.dart' show ChangeNotifier;
 export 'src/foundation/disposable.dart' show Disposable;
 export 'src/foundation/listenable.dart'
-    show Listenable, ValueListenable, VoidCallback;
+    show Listenable, ValueChanged, ValueListenable, VoidCallback;
 export 'src/foundation/selected_text.dart' show SelectedText;
 export 'src/foundation/text_editing_controller.dart' show TextEditingController;
 export 'src/foundation/text_editing_value.dart' show TextEditingValue;
@@ -112,7 +112,6 @@ export 'src/render/geometry.dart'
         Alignment,
         Axis,
         BoxConstraints,
-        BoxShape,
         Constraints,
         EdgeInsets,
         Offset,
@@ -234,7 +233,7 @@ export 'src/widgets/switch.dart' show Switch;
 export 'src/widgets/tab_select.dart' show TabSelect;
 export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
-export 'src/widgets/text_input.dart' show TextInput, ValueChanged;
+export 'src/widgets/text_input.dart' show TextInput;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
 export 'src/widgets/text_layout.dart'
     show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;

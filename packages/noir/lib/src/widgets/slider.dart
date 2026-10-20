@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import '../core/color.dart';
 import '../core/input.dart';
 import '../core/mouse_cursor.dart';
+import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -19,7 +20,6 @@ import 'focus_node_owner_mixin.dart';
 import 'intents.dart';
 import 'pointer_listener.dart';
 import 'shortcuts.dart';
-import 'text_input.dart' show ValueChanged;
 import 'theme.dart';
 
 /// A controlled horizontal or vertical value slider.

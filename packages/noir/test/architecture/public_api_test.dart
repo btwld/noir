@@ -69,6 +69,7 @@ void main() {
       'src/foundation/disposable.dart': {'Disposable'},
       'src/foundation/listenable.dart': {
         'Listenable',
+        'ValueChanged',
         'ValueListenable',
         'VoidCallback',
       },
@@ -110,7 +111,6 @@ void main() {
         'Alignment',
         'Axis',
         'BoxConstraints',
-        'BoxShape',
         'Constraints',
         'EdgeInsets',
         'Offset',
@@ -176,7 +176,7 @@ void main() {
         'ImageLoadingBuilder',
       },
       'src/widgets/icons.dart': {'Icons'},
-      'src/widgets/text_input.dart': {'TextInput', 'ValueChanged'},
+      'src/widgets/text_input.dart': {'TextInput'},
       'src/widgets/intents.dart': {
         'ActivateIntent',
         'DeleteBackwardIntent',
@@ -391,8 +391,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(252),
-      reason: 'The high-level surface is locked at exactly 252 symbols.',
+      hasLength(251),
+      reason: 'The high-level surface is locked at exactly 251 symbols.',
     );
   });
 }

@@ -1,6 +1,9 @@
 /// Callback with no arguments and no return value.
 typedef VoidCallback = void Function();
 
+/// Signature for callbacks that receive a changed value of type [T].
+typedef ValueChanged<T> = void Function(T value);
+
 /// Object that can notify listeners when its observable state changes.
 abstract interface class Listenable {
   /// Register [listener] for future notifications.

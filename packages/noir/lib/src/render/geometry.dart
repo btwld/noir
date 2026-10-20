@@ -511,12 +511,3 @@ class Alignment {
   @override
   String toString() => 'Alignment($x, $y)';
 }
-
-/// The shape used when rendering a [BoxDecoration].
-enum BoxShape {
-  /// An axis-aligned rectangle.
-  rectangle,
-
-  /// Suppresses the body fill; borders and hit testing remain rectangular.
-  circle,
-}

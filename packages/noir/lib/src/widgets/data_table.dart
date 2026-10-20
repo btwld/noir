@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import '../core/color.dart';
 import '../core/input.dart';
+import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
@@ -19,7 +20,6 @@ import 'pointer_listener.dart';
 import 'row_column.dart';
 import 'sized_box.dart';
 import 'text.dart';
-import 'text_input.dart';
 import 'text_layout.dart';
 import 'text_style.dart';
 import 'theme.dart';

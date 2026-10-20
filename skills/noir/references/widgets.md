@@ -688,7 +688,6 @@ Color.fromHex('#1e90ff')   // hex
 const BoxDecoration({
   Color? color,
   BoxBorder? border,
-  BoxShape shape = BoxShape.rectangle, // or BoxShape.circle
 })
 ```
 
