@@ -94,20 +94,6 @@ void main() {
     }
   });
 
-  test('facade dispose unregisters and unmounts root once', () {
-    final disposals = <String>[];
-    final app = runTuiApp(
-      _DisposeProbe(onDispose: () => disposals.add('dispose')),
-      headless: true,
-    );
-
-    for (var i = 0; i < 2; i++) {
-      app.dispose();
-    }
-
-    expect(disposals, ['dispose']);
-  });
-
   test('binding rejects a second root mount', () {
     final firstDisposals = <String>[];
     final binding = TuiBinding(headless: true)

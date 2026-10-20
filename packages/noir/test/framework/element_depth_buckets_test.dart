@@ -9,20 +9,7 @@ void main() {
     test('mount assigns root depth 0 and child depth parent+1', () {
       final host = TestElementHost()
         ..mount(const Column(children: [Text('a'), Text('b')]));
-      final root = host.root!;
-      expect(root.depth, 0);
-      final depths = <int>[];
-      void walk(Element e) {
-        depths.add(e.depth);
-        e.visitChildren(walk);
-      }
-
-      walk(root);
-      expect(depths.first, 0);
-      expect(depths.where((d) => d > 0), isNotEmpty);
-      for (final d in depths) {
-        expect(d, greaterThanOrEqualTo(0));
-      }
+      _expectConsistentDepths(host.root!);
       host.dispose();
     });
 

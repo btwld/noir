@@ -7,9 +7,6 @@ import '../helpers/buffer_capture.dart';
 void main() {
   group('ThemeData', () {
     test('dark tokens match the literals the built-in widgets already use', () {
-      // Phase D retrofits Select/TextInput/TextArea/ScrollBox onto these
-      // tokens. Byte-identical defaults are what make that retrofit invisible
-      // for apps that opt into ThemeData.dark.
       const theme = ThemeData.dark;
       expect(theme.text, Color.white);
       expect(theme.textMuted, const Color(0.6, 0.6, 0.6));

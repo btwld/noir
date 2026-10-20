@@ -55,8 +55,6 @@ void main() {
       });
 
       test('vertical Column with MainAxisSize.min respects minHeight', () {
-        // This test verifies that vertical flex uses minHeight, not minWidth
-        // for the min main axis constraint
         const widget = ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: 40,
@@ -71,16 +69,10 @@ void main() {
 
         tester.pumpWidget(widget);
 
-        // The Column should respect the minHeight of 10, not collapse to content height
-        expect(
-          tester.height,
-          greaterThanOrEqualTo(10),
-          reason: 'Column should respect minHeight constraint from parent',
-        );
+        expect(tester.height, 10);
       });
 
       test('horizontal Row with MainAxisSize.min respects minWidth', () {
-        // Control test - horizontal should use minWidth correctly
         const widget = ConstrainedBox(
           constraints: BoxConstraints(
             minWidth: 20,
@@ -95,12 +87,7 @@ void main() {
 
         tester.pumpWidget(widget);
 
-        // The Row should respect the minWidth of 20
-        expect(
-          tester.width,
-          greaterThanOrEqualTo(20),
-          reason: 'Row should respect minWidth constraint from parent',
-        );
+        expect(tester.width, 20);
       });
     });
 
@@ -117,10 +104,6 @@ void main() {
       });
 
       test('Row spacing does not double-count total spacing', () {
-        // This test verifies that spacing is not subtracted twice when
-        // calculating available space for non-flexible children.
-        // With double-counting, the second child would be constrained too tightly
-        // and its text would wrap/truncate.
         const widget = Row(
           spacing: 2,
           children: [
@@ -132,13 +115,10 @@ void main() {
         final result = capture.capture(widget);
         final lines = result.toLines();
 
-        // With 2-char spacing between 3 items, we expect:
-        // AAAA__BBBB (where __ is 2 spaces) -> exactly 10 chars.
         expect(lines[0], equals('AAAA  BBBB'));
       });
 
       test('Column spacing does not double-count total spacing', () {
-        // Same test for vertical direction
         const widget = Column(
           spacing: 1,
           children: [Text('Line 1'), Text('Line 2'), Text('Line 3')],

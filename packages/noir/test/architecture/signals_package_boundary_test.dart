@@ -101,44 +101,6 @@ void main() {
     }
   });
 
-  test('the companion barrel exports the hook families', () {
-    // Exact membership, not a substring search: `contains('useSignal')` is
-    // satisfied by `useSignalValue`, and `contains('SignalWidget')` by a
-    // mention in the library doc comment.
-    final exported = _shownSymbols(companionBarrel);
-    for (final symbol in <String>[
-      'SignalWidget',
-      'SignalBuilder',
-      'HookState',
-      'useState',
-      'useEffect',
-      'useListenableSelector',
-      'useFuture',
-      'useStream',
-      'useAnimationController',
-      'useTextEditingController',
-      'useFocusNode',
-      'useScrollController',
-      'useViewportController',
-    ]) {
-      expect(exported, contains(symbol), reason: symbol);
-    }
-  });
-
-  test('the companion barrel exports the signal families', () {
-    final exported = _shownSymbols(companionBarrel);
-    for (final symbol in <String>[
-      'useSignal',
-      'useComputed',
-      'useSignalValue',
-      'useSignalEffect',
-      'SignalValueBuilder',
-      'SignalValueWidgetBuilder',
-    ]) {
-      expect(exported, contains(symbol), reason: symbol);
-    }
-  });
-
   test('the companion barrel exports nothing but the approved surface', () {
     // `_shownSymbols` can only read a `show` clause, so a bare `export`
     // would slip past the frozen set entirely. Require the clause first,
@@ -157,8 +119,11 @@ void main() {
       );
     }
 
-    // The whole export set is frozen, so a new public name has to be an
-    // intentional edit here rather than an accidental re-export.
+    // Exact membership, not a substring search: `contains('useSignal')` is
+    // satisfied by `useSignalValue`, and `contains('SignalWidget')` by a
+    // mention in the library doc comment. The whole export set is frozen, so
+    // a new public name has to be an intentional edit here rather than an
+    // accidental re-export.
     expect(_shownSymbols(companionBarrel), _companionSurface);
   });
 

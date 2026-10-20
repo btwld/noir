@@ -229,7 +229,6 @@ void main() {
     });
 
     test('drawBox validates signed origins before native span math', () {
-      // Extents keep truncated origins inside native i32 span math during RED.
       void box(int x, int y, int w, int h) =>
           buffer.drawBox(x, y, w, h, _box, _fg, _bg);
       expect(() => box(-0x80000001, 0, 0, 0), throwsA(_rangeNamed('x')));
@@ -409,9 +408,6 @@ void main() {
   });
 
   group('Buffer fixed-width guarded rejections', () {
-    // Written during RED but first executed once production validation
-    // existed: unguarded FFI would truncate these into native out-of-domain
-    // arithmetic.
     late Renderer renderer;
     late Buffer buffer;
 

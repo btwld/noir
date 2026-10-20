@@ -267,6 +267,14 @@ void main() {
     });
 
     test('loose unused quota becomes alignment slack for every mode', () {
+      const expected = <MainAxisAlignment, int>{
+        MainAxisAlignment.start: 0,
+        MainAxisAlignment.end: 8,
+        MainAxisAlignment.center: 4,
+        MainAxisAlignment.spaceBetween: 0,
+        MainAxisAlignment.spaceAround: 4,
+        MainAxisAlignment.spaceEvenly: 4,
+      };
       for (final alignment in MainAxisAlignment.values) {
         final child = _ProbeBox(naturalWidth: 1);
         final flex = RenderFlex(
@@ -277,7 +285,7 @@ void main() {
         flex.layout(const BoxConstraints.tight(width: 9, height: 1));
 
         expect(child.width, 1, reason: '$alignment');
-        expect(child.x, inInclusiveRange(0, 8), reason: '$alignment');
+        expect(child.x, expected[alignment], reason: '$alignment');
       }
     });
 

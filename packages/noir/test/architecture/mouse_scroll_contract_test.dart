@@ -4,23 +4,36 @@ import 'package:test/test.dart';
 
 void main() {
   test('wheel API has one direction/magnitude payload without scalar shim', () {
-    final shippedSources = <String>[
-      ...Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart'))
-          .map((file) => file.path),
-      'README.md',
-      '../../skills/noir/references/inputs-and-focus.md',
-    ];
-    final combined = shippedSources
-        .map((path) => File(path).readAsStringSync())
-        .join('\n');
-
-    expect(combined, isNot(contains('scrollDelta')));
-    expect(combined, isNot(contains('MouseScrollAxis')));
-
     final inputSource = File('lib/src/core/input.dart').readAsStringSync();
+    final mouseScroll = _classBody(inputSource, 'MouseScroll');
+
+    expect(mouseScroll, contains('final MouseScrollDirection direction;'));
+    expect(mouseScroll, contains('final int magnitude;'));
+    expect(inputSource, isNot(contains('scrollDelta')));
+    expect(inputSource, isNot(contains('MouseScrollAxis')));
     expect(inputSource, isNot(contains('get axis')));
   });
+}
+
+String _classBody(String source, String className) {
+  final classIndex = source.indexOf('class $className');
+  if (classIndex < 0) {
+    throw StateError('Class $className not found');
+  }
+  final start = source.indexOf('{', classIndex);
+  if (start < 0) {
+    throw StateError('Class $className has no body');
+  }
+  var depth = 0;
+  for (var i = start; i < source.length; i++) {
+    final code = source.codeUnitAt(i);
+    if (code == 0x7b) depth++;
+    if (code == 0x7d) {
+      depth--;
+      if (depth == 0) {
+        return source.substring(start, i + 1);
+      }
+    }
+  }
+  throw StateError('Class $className body is unterminated');
 }

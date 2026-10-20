@@ -448,13 +448,6 @@ void main() {
         );
         await host.waitStable();
 
-        expect(_CustomHitTarget(onPointerDown: (_) {}), isA<RenderObject>());
-        expect(_CustomHitTarget(onPointerDown: (_) {}), isA<HitTestTarget>());
-        expect(
-          _CustomHitTarget(onPointerDown: (_) {}),
-          isNot(isA<RenderBox>()),
-        );
-
         host.sendBytes(_encodedClick(1, 0));
         await host.waitStable();
         expect(hits, hasLength(1));

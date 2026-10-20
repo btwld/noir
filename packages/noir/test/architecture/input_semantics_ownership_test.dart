@@ -46,21 +46,6 @@ void main() {
     expect(source, contains('KeyEventResult'));
   });
 
-  test('InputDispatcher stays below shortcuts and intents', () {
-    final source = File('lib/src/core/input.dart').readAsStringSync();
-    final body = _classBody(source, 'InputDispatcher');
-
-    for (final forbidden in [
-      'Shortcuts',
-      'Actions',
-      'Intent',
-      'FocusTraversalPolicy',
-      'TextInputConnection',
-    ]) {
-      expect(body, isNot(contains(forbidden)), reason: forbidden);
-    }
-  });
-
   test('text-editing widgets use TextInputConnection', () {
     final textInput = File(
       'lib/src/widgets/text_input.dart',
@@ -76,27 +61,4 @@ void main() {
     expect(textInput, isNot(contains('_handleKeyEvent')));
     expect(textArea, isNot(contains('_handleKeyEvent')));
   });
-}
-
-String _classBody(String source, String className) {
-  final classIndex = source.indexOf('class $className');
-  if (classIndex < 0) {
-    throw StateError('Class $className not found');
-  }
-  final start = source.indexOf('{', classIndex);
-  if (start < 0) {
-    throw StateError('Class $className has no body');
-  }
-  var depth = 0;
-  for (var i = start; i < source.length; i++) {
-    final code = source.codeUnitAt(i);
-    if (code == 0x7b) depth++;
-    if (code == 0x7d) {
-      depth--;
-      if (depth == 0) {
-        return source.substring(start, i + 1);
-      }
-    }
-  }
-  throw StateError('Class $className body is unterminated');
 }

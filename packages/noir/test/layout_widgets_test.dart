@@ -3,6 +3,8 @@ import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/framework/element.dart';
 import 'package:test/test.dart';
 
+import 'helpers/buffer_capture.dart';
+
 Element layoutWidget(Widget widget, {int maxWidth = 100, int maxHeight = 100}) {
   final element = widget.createElement();
   final owner = BuildOwner();
@@ -54,19 +56,6 @@ void main() {
 
         // Text width should be character count, height should be 1
         expect(getElementWidth(element), equals(5));
-        expect(getElementHeight(element), equals(1));
-      });
-
-      test('should support text alignment', () {
-        final textWidget = Text(
-          'Test',
-          style: const TextStyle(),
-          textAlign: TextAlign.center,
-        );
-        final element = layoutWidget(textWidget);
-
-        // Should still work with alignment specified
-        expect(getElementWidth(element), equals(4));
         expect(getElementHeight(element), equals(1));
       });
     });
@@ -123,15 +112,13 @@ void main() {
       });
 
       test('should support color decoration', () {
-        final container = Container(
-          color: Color.red,
-          child: Text('Red Background', style: const TextStyle()),
+        final capture = BufferCapture(width: 20, height: 3);
+        addTearDown(capture.dispose);
+        final frame = capture.capture(
+          Container(color: Color.red, child: const Text('Red Background')),
         );
 
-        final element = layoutWidget(container);
-        // Container with decoration should layout successfully
-        expect(getElementWidth(element), greaterThan(0));
-        expect(getElementHeight(element), greaterThan(0));
+        expect(frame, BufferMatchers.hasBackgroundAt(0, 0, Color.red));
       });
     });
   });
