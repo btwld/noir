@@ -66,6 +66,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
   bool insert(String replacement, {bool allowNewline = true}) {
     if (replacement.isEmpty) return false;
     if (!allowNewline && replacement.contains('\n')) return false;
+    if (!selectionWithinText) return false;
     _replaceSelection(replacement);
     return true;
   }
@@ -75,6 +76,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   /// Deletes the previous grapheme cluster or selected range.
   bool deleteBack() {
+    if (!selectionWithinText) return false;
     final range = _normalizedSelection;
     if (!range.isCollapsed) {
       _replaceRange(range.start, range.end, '');
@@ -88,6 +90,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   /// Deletes the next grapheme cluster or selected range.
   bool deleteForward() {
+    if (!selectionWithinText) return false;
     final range = _normalizedSelection;
     if (!range.isCollapsed) {
       _replaceRange(range.start, range.end, '');
@@ -101,36 +104,42 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   /// Moves the collapsed cursor left by one grapheme cluster.
   void moveCursorLeft() {
+    if (!selectionWithinText) return;
     final offset = _previousGraphemeBoundary(text, selection.extentOffset);
     selection = TextSelection.collapsed(offset: offset);
   }
 
   /// Moves the collapsed cursor right by one grapheme cluster.
   void moveCursorRight() {
+    if (!selectionWithinText) return;
     final offset = _nextGraphemeBoundary(text, selection.extentOffset);
     selection = TextSelection.collapsed(offset: offset);
   }
 
   /// Moves the collapsed cursor up one line, preserving grapheme column.
   void moveCursorUp() {
+    if (!selectionWithinText) return;
     final position = _positionForOffset(text, selection.extentOffset);
     setCursor(position.line - 1, position.column);
   }
 
   /// Moves the collapsed cursor down one line, preserving grapheme column.
   void moveCursorDown() {
+    if (!selectionWithinText) return;
     final position = _positionForOffset(text, selection.extentOffset);
     setCursor(position.line + 1, position.column);
   }
 
   /// Moves the collapsed cursor to the start of its current line.
   void moveLineStart() {
+    if (!selectionWithinText) return;
     final position = _positionForOffset(text, selection.extentOffset);
     setCursor(position.line, 0);
   }
 
   /// Moves the collapsed cursor to the end of its current line.
   void moveLineEnd() {
+    if (!selectionWithinText) return;
     final position = _positionForOffset(text, selection.extentOffset);
     final lineText = lines[position.line];
     setCursor(position.line, TextIndexMap(lineText).graphemeCount);
@@ -138,11 +147,13 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
 
   /// Moves the collapsed cursor to the start of the document.
   void moveDocumentStart() {
+    if (!selectionWithinText) return;
     selection = const TextSelection.collapsed(offset: 0);
   }
 
   /// Moves the collapsed cursor to the end of the document.
   void moveDocumentEnd() {
+    if (!selectionWithinText) return;
     selection = TextSelection.collapsed(offset: text.length);
   }
 

@@ -31,7 +31,7 @@ class RenderParagraph extends RenderBox {
        _maxLines = _validatedMaxLines(maxLines),
        _softWrap = softWrap,
        _overflow = overflow,
-       _selection = selection;
+       _selection = _validatedSelection(selection);
 
   InlineSpan _text;
   TextStyle _style;
@@ -114,11 +114,15 @@ class RenderParagraph extends RenderBox {
   TextHighlight? get selection => _selection;
 
   /// Updates the selection value.
+  ///
+  /// A null highlight clears the span. A reversed or negative range throws
+  /// [ArgumentError] before the previous highlight is replaced.
   set selection(TextHighlight? value) {
-    if (_selection == value) {
+    final validated = _validatedSelection(value);
+    if (_selection == validated) {
       return;
     }
-    _selection = value;
+    _selection = validated;
     markNeedsPaint();
   }
 
@@ -266,6 +270,18 @@ class RenderParagraph extends RenderBox {
       cell += terminalCellWidth(cluster);
     }
   }
+}
+
+/// Validates a highlight span for all modes. Null clears the span.
+TextHighlight? _validatedSelection(TextHighlight? value) {
+  if (value == null || (value.start >= 0 && value.end >= value.start)) {
+    return value;
+  }
+  throw ArgumentError.value(
+    value,
+    'selection',
+    'start must be non-negative and end must be at least start',
+  );
 }
 
 /// Validates the public positive-or-null [maxLines] contract for all modes.

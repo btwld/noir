@@ -79,4 +79,32 @@ void main() {
     expect(keyIds.toSet(), hasLength(keys.length));
     expect(LogicalKeyboardKey.f1, isNot(LogicalKeyboardKey.keyE));
   });
+
+  test('one Unicode scalar is its own id above the named keys', () {
+    final grinning = LogicalKeyboardKey.forCharacter('\u{1F600}');
+    final heart = LogicalKeyboardKey.forCharacter('\u{1F9E1}');
+
+    expect(grinning.keyId, 0x200000000 + 0x1F600);
+    expect(heart.keyId, 0x200000000 + 0x1F9E1);
+    expect(grinning, isNot(heart));
+    expect({grinning, heart}, hasLength(2));
+    expect(LogicalKeyboardKey.forCharacter('!').keyId, 0x200000000 + 0x21);
+    expect(LogicalKeyboardKey.forCharacter('a'), LogicalKeyboardKey.keyA);
+    expect(LogicalKeyboardKey.forCharacter(' '), LogicalKeyboardKey.space);
+  });
+
+  test('multi-scalar strings do not match on a colliding hash', () {
+    // Two distinct pairs of scalars whose UTF-16 polynomial hash collides
+    // in 29 bits. Shortcut identity must follow the text, not that hash.
+    const left = '\u{12613}\u{14160}';
+    const right = '\u{15C61}\u{11A96}';
+    final leftKey = LogicalKeyboardKey.forCharacter(left);
+    final rightKey = LogicalKeyboardKey.forCharacter(right);
+
+    expect(leftKey.keyId, rightKey.keyId);
+    expect(leftKey, isNot(rightKey));
+    expect(leftKey.hashCode, isNot(rightKey.hashCode));
+    expect({leftKey, rightKey}, hasLength(2));
+    expect(LogicalKeyboardKey.forCharacter(left), leftKey);
+  });
 }

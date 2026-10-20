@@ -78,6 +78,37 @@ void main() {
       expect(controller.selection, const TextSelection.collapsed(offset: 2));
     });
 
+    test('cleared selection makes edits and movement no-ops', () {
+      final controller = TextEditingController(text: 'hi');
+      var notifications = 0;
+      controller.addListener(() => notifications++);
+
+      expect(controller.selection, const TextSelection.collapsed(offset: -1));
+      expect(controller.insert('X'), isFalse);
+      expect(controller.newline(), isFalse);
+      expect(controller.deleteForward(), isFalse);
+      expect(controller.deleteBack(), isFalse);
+      controller
+        ..moveCursorLeft()
+        ..moveCursorRight()
+        ..moveCursorUp()
+        ..moveCursorDown()
+        ..moveLineStart()
+        ..moveLineEnd()
+        ..moveDocumentStart()
+        ..moveDocumentEnd();
+
+      expect(controller.text, 'hi');
+      expect(controller.selection, const TextSelection.collapsed(offset: -1));
+      expect(notifications, 0);
+
+      controller.selection = const TextSelection.collapsed(offset: 0);
+      expect(controller.insert('X'), isTrue);
+      expect(controller.text, 'Xhi');
+      controller.moveCursorRight();
+      expect(controller.selection, const TextSelection.collapsed(offset: 2));
+    });
+
     test('multiline movement preserves preferred column by grapheme index', () {
       final controller = TextEditingController(text: 'hello\nhi')
         ..selection = const TextSelection.collapsed(offset: 5);
