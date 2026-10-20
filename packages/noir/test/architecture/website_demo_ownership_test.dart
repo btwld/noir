@@ -213,7 +213,10 @@ void main() {
       reason: 'the two checkpoints must differ only by the taught edit',
     );
     expect(tutorial, contains(checkpoint.trimRight()));
-    expect(generated, contains(jsonEncode(checkpoint.trimRight())));
+    expect(generated, contains('Count: '));
+    expect(generated, isNot(contains('Total: ')));
+    expect(generated, contains('export const firstAppStateHtml'));
+    expect(generated, isNot(contains('export const firstAppSource')));
     expect(
       generated,
       contains('example/tutorials/first_app/step_01.dart'),

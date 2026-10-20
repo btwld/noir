@@ -24,9 +24,7 @@ abstract class BuildContext {
   ///
   /// This mirrors the framework's `mounted`, not its `active`: an element
   /// removed by reconciliation stays mounted — and reports `true` here —
-  /// until the build pass finalizes and permanently unmounts it. That window
-  /// is exactly where a retained-`State` reinsertion would be observed, so
-  /// mounted is the liveness question a caller across an async gap is asking.
+  /// until the build pass finalizes and permanently unmounts it.
   ///
   /// It is also not `State.mounted`. The element leaves the tree before
   /// `State.dispose()` runs, so this reads `false` for the whole of that call

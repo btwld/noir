@@ -19,9 +19,6 @@ import '../framework/widget.dart';
 /// express "paint no fill at all", so those parameters resolve through
 /// [Theme.maybeOf] and stay unfilled when there is no ancestor [Theme]. Pass
 /// [Color.transparent] to opt out of a fill inside a themed subtree.
-///
-/// [dark]'s values reproduce the literals the built-in widgets hard-coded
-/// before they were themed, so the retrofit changed no pixels.
 @immutable
 class ThemeData {
   /// Stores one color per token, defaulting to the [dark] palette values.

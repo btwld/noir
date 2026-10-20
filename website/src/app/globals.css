@@ -898,32 +898,6 @@ main[data-pagefind-body='true'] th {
   color: var(--quiet);
 }
 
-.doc-ledger {
-  border-top: 1px solid var(--ink);
-  list-style: none;
-  margin: 1.75rem 0 2.25rem;
-  padding: 0;
-}
-
-.doc-ledger > div,
-.doc-ledger > li {
-  border-bottom: 1px solid var(--rule);
-  display: grid;
-  gap: 1.4rem;
-  grid-template-columns: minmax(11rem, 0.8fr) minmax(0, 1.2fr);
-  max-width: none !important;
-  padding: 0.85rem 0;
-}
-
-.doc-ledger dt,
-.doc-ledger strong {
-  font-weight: 600;
-}
-
-.doc-ledger dd {
-  margin: 0;
-}
-
 .api-surfaces {
   border-top: 1px solid var(--ink);
   margin: 1.75rem 0 2.5rem;
@@ -1110,17 +1084,6 @@ main[data-pagefind-body='true'] th {
 
   .concept-flow > li > span {
     grid-column: 2;
-  }
-
-  .doc-ledger > div,
-  .doc-ledger > li {
-    display: block;
-  }
-
-  .doc-ledger dd,
-  .doc-ledger li span {
-    display: block;
-    margin-top: 0.35rem;
   }
 
   .limitation-list > div {

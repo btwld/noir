@@ -105,8 +105,7 @@ abstract class State<T extends StatefulWidget> {
   /// Called when this object is removed from the tree.
   ///
   /// This is called before [dispose]. Unlike [dispose], this method is called
-  /// whenever the element is removed from the tree, even if it might be
-  /// reinserted later.
+  /// whenever the element is removed from the tree.
   ///
   /// If an override throws, framework-owned subtree deactivation still
   /// completes before the original error is rethrown, and permanent teardown

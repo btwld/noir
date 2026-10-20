@@ -323,11 +323,11 @@ a layout box around it. `waitForText` polls painted capture rows; `byText`
 reads `Text`/`RichText` source. CLI tree defaults to depth 2; `find` and
 `click` always use the full tree.
 
-Outside the repo the extension surface still activates, but the CLI and the
-`NoirDriver` client are not part of the published package, and the surface is
-development tooling rather than stable API. Drive mode is for looking at and
-driving a live app; automated assertions belong in ordinary tests
-(`references/testing.md`).
+Outside the repo the extension surface still activates. The drive CLI and the
+`NoirDriver` client ship as the published `package:noir_driver`, separate from
+`package:noir`. The surface is development tooling rather than stable API.
+Drive mode is for looking at and driving a live app; automated assertions
+belong in ordinary tests (`references/testing.md`).
 
 ## Terminal-specific gotchas
 
@@ -350,10 +350,10 @@ driving a live app; automated assertions belong in ordinary tests
   Design tests around controller selection and observable callbacks instead of
   expecting a caret glyph in text output.
 - **Mouse reporting is opt-in.** Pass `enableMouse: true` to `runTuiApp` for
-  clicks and wheel events. Use the handle's `enableMouse(enableMovement: true)`
-  only when the app needs hover, drag, or other pointer-move events. Use
-  `MouseEvent.localPosition` for hit logic rather than recomputing absolute
-  origins.
+  clicks, wheel events, and movement. Movement is included by default; pass
+  `enableMovement: false` to `enableMouse` for click and drag reporting only.
+  Use `MouseEvent.localPosition` for hit logic rather than recomputing
+  absolute origins.
 - **Headless mode has no renderer.** `runTuiApp(..., headless: true)` mounts the
   widget tree with `isHeadless == true` and no owned terminal renderer, so
   mouse and Kitty keyboard mode controls are unavailable. It is a lifecycle

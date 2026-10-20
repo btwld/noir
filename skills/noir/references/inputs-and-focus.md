@@ -620,8 +620,8 @@ Mouse reporting must be turned on once at startup:
 void main() => runTuiApp(app, enableMouse: true);
 ```
 
-Use the handle's `enableMouse(enableMovement: true)` only when the app needs
-hover, drag, or other pointer-move events.
+Movement reporting is included by default. Pass `enableMovement: false` for
+click and drag reporting only.
 
 ---
 
