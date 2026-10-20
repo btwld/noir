@@ -45,13 +45,6 @@ void main() {
         'destroyRenderer(',
         '_disposed = true',
       ],
-      'lib/src/foundation/persistent_utf8_text.dart': [
-        'Finalizer<Pointer<Void>>',
-        'void dispose()',
-        '_finalizer.detach(_finalizerKey)',
-        'calloc.free(_pointer)',
-        '_disposed = true',
-      ],
     };
 
     for (final MapEntry(:key, :value) in requiredSnippets.entries) {

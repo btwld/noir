@@ -70,13 +70,11 @@ const FocusTraversalPolicy _defaultTraversalPolicy =
 /// focus manager.
 @internal
 class FocusAttachment {
-  FocusAttachment._(this._node, this._manager, {required this.isScope});
+  FocusAttachment._(this._node, this._manager);
 
   final FocusNode _node;
   final FocusManager _manager;
 
-  /// Whether the attached node is a [FocusScopeNode].
-  final bool isScope;
   Element? _element;
 
   /// Whether this attachment currently maps its node to an [Element].
@@ -110,9 +108,6 @@ class FocusAttachment {
     _manager._detachNode(_node, expectedElement: element);
     _element = null;
   }
-
-  /// Element currently mapped by this attachment, or `null` when detached.
-  Element? get element => _element;
 }
 
 /// A focusable point in the focus tree that notifies listeners when its
@@ -185,11 +180,7 @@ class FocusNode extends ChangeNotifier {
   @internal
   FocusAttachment attach(BuildContext context) {
     final manager = FocusManager.of(context);
-    final attachment = FocusAttachment._(
-      this,
-      manager,
-      isScope: this is FocusScopeNode,
-    );
+    final attachment = FocusAttachment._(this, manager);
     attachment.attach(context);
     _isAttached = true;
     return attachment;

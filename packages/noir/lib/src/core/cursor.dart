@@ -107,16 +107,6 @@ class CursorController implements Disposable {
     _owner = null;
   }
 
-  /// Updates the cursor position to (x, y) if [owner] currently owns the cursor.
-  void updatePosition(Object owner, int x, int y) {
-    if (_owner != owner) return;
-    _x = x;
-    _y = y;
-    if (_visible) {
-      _applyCursor();
-    }
-  }
-
   /// Whether the cursor is currently visible.
   bool get isVisible => _visible;
 

@@ -21,26 +21,11 @@ class TextRange {
   /// Whether this range has non-negative endpoints.
   bool get isValid => start >= 0 && end >= 0;
 
-  /// Whether [start] is less than or equal to [end].
-  bool get isNormalized => end >= start;
-
   /// Whether this range contains no text.
   bool get isCollapsed => start == end;
 
-  /// Text before this range.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `TextRange.textBefore`.
-  String textBefore(String text) => text.substring(0, start);
-
   /// Text inside this range.
   String textInside(String text) => text.substring(start, end);
-
-  /// Text after this range.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `TextRange.textAfter`.
-  String textAfter(String text) => text.substring(end);
 
   @override
   bool operator ==(Object other) =>
