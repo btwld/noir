@@ -546,9 +546,6 @@ abstract interface class McpSession {
   /// The capability names the server advertised, such as `tools`.
   Set<String> get capabilities;
 
-  /// The server's usage instructions, when it supplies them.
-  String? get instructions;
-
   /// Every JSON-RPC message this session carries.
   Stream<ProtocolEntry> get protocol;
 

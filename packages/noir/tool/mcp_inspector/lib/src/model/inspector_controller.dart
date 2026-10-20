@@ -120,9 +120,6 @@ final class InspectorController extends ChangeNotifier {
   /// The capability names the server advertised.
   Set<String> get capabilities => session.capabilities;
 
-  /// The server's usage instructions, when it supplies them.
-  String? get instructions => session.instructions;
-
   /// Why the session failed, when it did.
   String? get errorMessage => _errorMessage;
 

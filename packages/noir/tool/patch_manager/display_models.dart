@@ -18,7 +18,7 @@ enum PatchLayoutMode {
   bool get isMedium => this == PatchLayoutMode.medium;
 }
 
-enum PatchActionKind { skip, stage, refresh, staged }
+enum PatchActionKind { skip, stage, staged }
 
 class PatchActionItem {
   const PatchActionItem({
@@ -105,7 +105,7 @@ class PatchActionSet {
             color: PatchTheme.cyan,
           ),
           const PatchActionItem(
-            kind: PatchActionKind.refresh,
+            kind: PatchActionKind.staged,
             label: 'failed',
             selected: true,
             enabled: false,
@@ -258,10 +258,6 @@ class PatchFileRowModel {
       additionCount = null;
       deletionCount = null;
       fallbackMetadata = compact ? 'binary' : 'binary file';
-    } else if (!file.canStageContent && !file.canStageWholeFile) {
-      additionCount = null;
-      deletionCount = null;
-      fallbackMetadata = compact ? 'preview' : 'preview only';
     } else {
       additionCount = file.additionCount;
       deletionCount = file.deletionCount;
@@ -283,8 +279,6 @@ class PatchFileRowModel {
   /// Short basename of the file, already truncated to fit the current layout.
   final String basename;
 
-  /// Single-letter file-status glyph (M/A/D/R/B/!/U/S/K) — derived from both
-  /// the diff status and the review status.
   final String fileStatusLetter;
 
   /// One-cell file-kind glyph shown before the basename.
