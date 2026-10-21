@@ -938,6 +938,7 @@ const Set<String> _tuiAppMembers = <String>{
   'onPaste',
   'enableMouse',
   'disableMouse',
+  'copyToClipboard',
   'enableKittyKeyboard',
   'disableKittyKeyboard',
   'reassemble',

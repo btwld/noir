@@ -292,6 +292,12 @@ the terminal input or signal handlers; drive-mode keys remain caller-owned.
 `TuiApp.isHeadless`. Renderer-backed mouse and Kitty keyboard mode controls
 are unavailable in that mode, so `enableMouse: true` fails loudly there.
 
+`TuiApp.copyToClipboard(text)` asks the terminal to copy `text` to the system
+clipboard with an OSC 52 escape sequence. It returns whether the sequence was
+written, not whether the terminal honored it, because terminals may ignore or
+restrict OSC 52. It returns `false` for empty text or when the app has no
+renderer, as in a headless app.
+
 `TuiApp.reassemble()` invokes `State.reassemble()` on every retained state,
 rebuilds the whole widget tree, and forces a full layout and paint pass
 without recreating any `State`, terminal, or native resource. It is the

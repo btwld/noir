@@ -268,6 +268,18 @@ final class TuiApp implements Disposable {
     _binding.disableMouse();
   }
 
+  /// Requests that the terminal copy [text] to the system clipboard.
+  ///
+  /// The request is an OSC 52 escape sequence written to the terminal. Returns
+  /// whether that sequence was written, which does not confirm that the
+  /// terminal honored it: terminals may ignore or restrict OSC 52. Returns
+  /// `false`, writing nothing, when [text] is empty or this app has no renderer
+  /// to write through, as in a [isHeadless] app.
+  bool copyToClipboard(String text) {
+    _checkNotDisposed();
+    return _binding.buildOwner.copyToClipboard(text);
+  }
+
   /// Enables Kitty keyboard reporting.
   void enableKittyKeyboard({int flags = KittyFlags.disambiguateEscapeCodes}) {
     _checkNotDisposed();
