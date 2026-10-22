@@ -488,6 +488,3 @@ void _validateObscuringCharacter(String value) {
     'must be exactly one single-cell grapheme cluster',
   );
 }
-
-/// Signature for callbacks that receive a changed value of type [T].
-typedef ValueChanged<T> = void Function(T value);

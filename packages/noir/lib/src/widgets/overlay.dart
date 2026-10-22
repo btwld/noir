@@ -56,15 +56,6 @@ final class OverlayPortalController {
     client.hide();
   }
 
-  /// Shows the overlay child when hidden and hides it when shown.
-  void toggle() {
-    if (isShowing) {
-      hide();
-    } else {
-      show();
-    }
-  }
-
   void _attach(_OverlayPortalState state) {
     _validateAttachment(state);
     _client = state;

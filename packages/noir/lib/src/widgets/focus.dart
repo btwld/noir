@@ -3,23 +3,9 @@
 import 'dart:async';
 
 import '../framework/build_context.dart';
-import '../framework/element.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
 import 'focus_node_owner_mixin.dart';
-
-T? _findAncestorFocusNode<T extends FocusNode>(Element element) {
-  final owner = element.owner;
-  Element? current = element;
-  while (current != null) {
-    final node = owner.focusManager.nodeForElement(current);
-    if (node is T) {
-      return node;
-    }
-    current = current.parent;
-  }
-  return null;
-}
 
 /// Attaches a [FocusNode] here and rebuilds when its focus state changes.
 class Focus extends StatefulWidget {
@@ -54,27 +40,6 @@ class Focus extends StatefulWidget {
 
   /// Subtree associated with the attached focus node.
   final Widget child;
-
-  /// Returns the nearest enclosing [FocusNode], or throws a [StateError]
-  /// if none.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's `Focus.of`.
-  static FocusNode of(BuildContext context) {
-    final node = maybeOf(context);
-    if (node == null) {
-      throw StateError(
-        'Focus.of() called with a context that has no Focus ancestor.',
-      );
-    }
-    return node;
-  }
-
-  /// Returns the nearest enclosing [FocusNode], or null if none.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `Focus.maybeOf`.
-  static FocusNode? maybeOf(BuildContext context) =>
-      _findAncestorFocusNode<FocusNode>(context.element);
 
   @override
   State<StatefulWidget> createState() => _FocusState();
@@ -197,33 +162,6 @@ class FocusScope extends Focus {
 
   /// Policy used for Tab and Shift+Tab traversal inside this scope.
   final FocusTraversalPolicy? traversalPolicy;
-
-  /// Returns the nearest enclosing [FocusScopeNode], falling back to the
-  /// root scope; [maybeOf] always resolves, so the no-ancestor [StateError]
-  /// is a defensive backstop rather than a reachable outcome.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `FocusScope.of`.
-  static FocusScopeNode of(BuildContext context) {
-    final node = maybeOf(context);
-    if (node == null) {
-      throw StateError(
-        'FocusScope.of() called with a context that has no FocusScope ancestor.',
-      );
-    }
-    return node;
-  }
-
-  /// Returns the nearest enclosing [FocusScopeNode], falling back to the
-  /// root scope when no [FocusScope] ancestor exists.
-  ///
-  /// Local extension of Flutter's parity surface: Flutter exposes only
-  /// `FocusScope.of`; this null-typed form has no Flutter counterpart.
-  static FocusScopeNode? maybeOf(BuildContext context) {
-    final element = context.element;
-    return _findAncestorFocusNode<FocusScopeNode>(element) ??
-        element.owner.focusManager.rootScope;
-  }
 
   @override
   State<StatefulWidget> createState() => _FocusScopeState();

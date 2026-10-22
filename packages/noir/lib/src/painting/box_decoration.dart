@@ -8,12 +8,7 @@ import 'tui_canvas.dart';
 
 /// An immutable description of how to paint a box.
 ///
-/// Rectangular fill and borders are supported. [BoxShape.circle] is an
-/// experimental compatibility value: it suppresses the body fill, while the
-/// border and hit-testing geometry remain rectangular.
-///
-/// The body of the box is painted with the [color]. In the terminal,
-/// [color] only fills [BoxShape.rectangle] bodies.
+/// The body of the box is painted with the [color].
 ///
 /// The [border] paints over the body.
 @immutable
@@ -22,16 +17,9 @@ class BoxDecoration extends Decoration {
   ///
   /// * If [color] is null, then no background will be painted.
   /// * If [border] is null, then no border will be painted.
-  const BoxDecoration({
-    this.color,
-    this.border,
-    this.shape = BoxShape.rectangle,
-  });
+  const BoxDecoration({this.color, this.border});
 
   /// The color to fill in the background of the box.
-  ///
-  /// In the terminal the fill is only painted for [BoxShape.rectangle];
-  /// [BoxShape.circle] paints no body fill.
   ///
   /// The [color] is drawn under the [border].
   final Color? color;
@@ -42,18 +30,12 @@ class BoxDecoration extends Decoration {
   /// direction.
   final BoxBorder? border;
 
-  /// Controls whether the background [color] is filled.
-  ///
-  /// [BoxShape.circle] currently suppresses the fill. It does not make the
-  /// terminal border or hit-test geometry circular.
-  final BoxShape shape;
-
   @override
   EdgeInsets? get padding => border?.dimensions;
 
   @override
   void paint(TuiCanvas canvas, Rect rect) {
-    if (color != null && shape == BoxShape.rectangle) {
+    if (color != null) {
       canvas.fillRect(rect, color!);
     }
 
@@ -68,19 +50,17 @@ class BoxDecoration extends Decoration {
     if (other.runtimeType != runtimeType) return false;
     return other is BoxDecoration &&
         other.color == color &&
-        other.border == border &&
-        other.shape == shape;
+        other.border == border;
   }
 
   @override
-  int get hashCode => Object.hash(color, border, shape);
+  int get hashCode => Object.hash(color, border);
 
   @override
   String toString() {
     final description = <String>[];
     if (color != null) description.add('color: $color');
     if (border != null) description.add('border: $border');
-    if (shape != BoxShape.rectangle) description.add('shape: $shape');
     return 'BoxDecoration(${description.join(', ')})';
   }
 }

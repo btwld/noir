@@ -303,37 +303,6 @@ final class DocumentSelectionControls extends StatelessWidget {
   );
 }
 
-/// Internal imperative scroll seam shared by composed document widgets.
-@internal
-final class DocumentViewportController {
-  void Function(int line)? _jump;
-  int? _pendingLine;
-
-  /// Scrolls to a zero-based visual [line] when a viewport is attached.
-  void jumpToLine(int line) {
-    if (line < 0) {
-      throw ArgumentError.value(line, 'line', 'must be non-negative');
-    }
-    final jump = _jump;
-    if (jump == null) {
-      _pendingLine = line;
-    } else {
-      jump(line);
-    }
-  }
-
-  void _attach(void Function(int line) jump) {
-    _jump = jump;
-    final pending = _pendingLine;
-    _pendingLine = null;
-    if (pending != null) jump(pending);
-  }
-
-  void _detach(void Function(int line) jump) {
-    if (_jump == jump) _jump = null;
-  }
-}
-
 /// A background painted across whole viewport rows behind a source range.
 ///
 /// [DocumentView] fills the cells that `[start, end)` covers on every visual
@@ -393,7 +362,6 @@ final class DocumentView extends StatefulWidget {
     this.onCopy,
     this.onPointerDownOffset,
     this.onVisibleLineChanged,
-    this.controller,
     this.rowBackgrounds = const <DocumentRowBackground>[],
   });
 
@@ -438,9 +406,6 @@ final class DocumentView extends StatefulWidget {
 
   /// Receives the first visible zero-based visual line after scrolling.
   final void Function(int line)? onVisibleLineChanged;
-
-  /// Optional internal scroll coordinator for composed document views.
-  final DocumentViewportController? controller;
 
   /// Row fills painted behind [text] before its runs.
   final List<DocumentRowBackground> rowBackgrounds;
@@ -557,44 +522,19 @@ final class _DocumentViewState extends State<DocumentView>
   int _scrollY = 0;
   bool _dragging = false;
 
-  void _jumpToLine(int line) {
-    final target = _metrics.layout == null
-        ? line
-        : line.clamp(0, _metrics.maxScrollY);
-    if (target == _scrollY) return;
-    setState(() => _scrollY = target);
-    widget.onVisibleLineChanged?.call(target);
-  }
-
   @override
   FocusNode? get widgetFocusNode => widget.focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller?._attach(_jumpToLine);
-  }
 
   @override
   void didUpdateWidget(DocumentView oldWidget) {
     super.didUpdateWidget(oldWidget);
     syncFocusNode(oldWidget.focusNode);
-    if (!identical(widget.controller, oldWidget.controller)) {
-      oldWidget.controller?._detach(_jumpToLine);
-      widget.controller?._attach(_jumpToLine);
-    }
     if (widget.plainText != oldWidget.plainText) {
       final selection = _selection;
       if (selection != null && selection.end > widget.plainText.length) {
         _setSelection(null);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    widget.controller?._detach(_jumpToLine);
-    super.dispose();
   }
 
   SelectedText? get _selectedText {

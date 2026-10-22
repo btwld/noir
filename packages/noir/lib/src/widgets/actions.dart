@@ -65,31 +65,10 @@ class Actions extends InheritedWidget {
     return found;
   }
 
-  /// Finds the nearest action for [intentType] or throws.
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `Actions.find`.
-  static Action<Intent> find(BuildContext context, Type intentType) {
-    final action = maybeFind(context, intentType);
-    if (action == null) {
-      throw StateError('No Action registered for $intentType.');
-    }
-    return action;
-  }
-
   /// Invokes the nearest action matching [intent], if any.
   static KeyEventResult maybeInvoke(BuildContext context, Intent intent) {
     final action = maybeFind(context, intent.runtimeType);
     if (action == null) return KeyEventResult.ignored;
-    return action.invokeIntent(intent, context);
-  }
-
-  /// Invokes the nearest action matching [intent].
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `Actions.invoke`.
-  static KeyEventResult invoke(BuildContext context, Intent intent) {
-    final action = find(context, intent.runtimeType);
     return action.invokeIntent(intent, context);
   }
 
