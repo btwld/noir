@@ -249,36 +249,4 @@ void main() {
       expect(() => notifier.notifyListeners(), returnsNormally);
     });
   });
-
-  group('Listenable.merge', () {
-    test('notifies when any child listenable changes', () {
-      final first = ChangeNotifier();
-      final second = ChangeNotifier();
-      final merged = Listenable.merge([first, null, second]);
-      var calls = 0;
-
-      merged.addListener(() => calls++);
-      first.notifyListeners();
-      second.notifyListeners();
-
-      expect(calls, 2);
-    });
-
-    test('removeListener stops forwarding from all child listenables', () {
-      final first = ChangeNotifier();
-      final second = ChangeNotifier();
-      final merged = Listenable.merge([first, second]);
-      var calls = 0;
-      void listener() => calls++;
-
-      merged.addListener(listener);
-      first.notifyListeners();
-      expect(calls, 1);
-
-      merged.removeListener(listener);
-      first.notifyListeners();
-      second.notifyListeners();
-      expect(calls, 1);
-    });
-  });
 }

@@ -54,12 +54,6 @@ class Color {
   /// Zero is transparent and one is opaque.
   final double a;
 
-  /// Returns a copy of this color with the alpha channel replaced by [opacity].
-  ///
-  /// Flutter-parity member; kept for API parity — see Flutter's
-  /// `Color.withOpacity`.
-  Color withOpacity(double opacity) => Color(r, g, b, opacity);
-
   /// Linearly interpolates between [a] and [b] by [t], clamped to `0–1`.
   ///
   /// Flutter-parity member; kept for API parity — see Flutter's
@@ -86,8 +80,6 @@ class Color {
   }
 
   // --- Palette constants ----------------------------------------------------
-  // Channel values mirror the previous ColorPalette so existing layouts and
-  // goldens keep their colors.
 
   // Grayscale
   /// Opaque white (r=1, g=1, b=1).

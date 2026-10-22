@@ -3,12 +3,11 @@ import 'package:test/test.dart';
 
 void main() {
   group('TextEditingValue', () {
-    test('defaults to collapsed selection and empty composing range', () {
+    test('defaults to a collapsed selection', () {
       const value = TextEditingValue(text: 'hello');
 
       expect(value.text, 'hello');
       expect(value.selection, const TextSelection.collapsed(offset: -1));
-      expect(value.composing, TextRange.empty);
     });
 
     test('copyWith replaces selected fields', () {
@@ -24,24 +23,20 @@ void main() {
 
       expect(updated.text, 'hello!');
       expect(updated.selection, const TextSelection.collapsed(offset: 6));
-      expect(updated.composing, value.composing);
     });
 
-    test('equality includes text, selection, and composing range', () {
+    test('equality includes text and selection', () {
       const first = TextEditingValue(
         text: 'hello',
         selection: TextSelection.collapsed(offset: 5),
-        composing: TextRange(start: 0, end: 5),
       );
       const second = TextEditingValue(
         text: 'hello',
         selection: TextSelection.collapsed(offset: 5),
-        composing: TextRange(start: 0, end: 5),
       );
       const different = TextEditingValue(
         text: 'hello',
         selection: TextSelection.collapsed(offset: 0),
-        composing: TextRange(start: 0, end: 5),
       );
 
       expect(first, second);

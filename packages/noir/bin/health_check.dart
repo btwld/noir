@@ -6,7 +6,6 @@ library;
 import 'dart:io' as io;
 
 import 'package:noir/noir.dart';
-import 'package:noir/noir_ffi.dart';
 import 'package:noir/noir_low_level.dart';
 
 /// Runs the packaged health check and records its result as the process exit

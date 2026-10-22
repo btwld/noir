@@ -1,6 +1,5 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:async';
-import 'dart:io' as io;
 
 import 'package:meta/meta.dart';
 
@@ -307,10 +306,6 @@ final class TuiBinding {
     if (painted) {
       renderer.render(force: true);
       _frameCount++;
-
-      if (io.Platform.environment['TERMINAL_TUI_DEBUG_LOG'] == '1') {
-        io.stderr.writeln('tuibinding: frame rendered');
-      }
     }
   }
 
