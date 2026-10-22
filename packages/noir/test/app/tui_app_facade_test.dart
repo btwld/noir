@@ -1,6 +1,13 @@
+import 'dart:convert';
+import 'dart:ffi';
+
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/app/app.dart' show createTuiAppForTesting;
+import 'package:noir/src/core/renderer.dart' show createRendererForTesting;
+import 'package:noir/src/ffi/bindings.dart';
+import 'package:noir/src/ffi/native_symbols.dart';
+import 'package:noir/src/ffi/types.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -76,6 +83,50 @@ void main() {
     expect(log, <String>['build', 'build']);
   });
 
+  test(
+    'copyToClipboard requests the system clipboard through the renderer',
+    () {
+      final native = _ClipboardNativeSymbols();
+      final renderer = createRendererForTesting(
+        OpenTuiBindings.fromNativeSymbols(native),
+        RendererHandle.fromNative(9),
+      );
+      addTearDown(renderer.dispose);
+      final app = createTuiAppForTesting(
+        TuiBinding(headless: true, renderer: renderer),
+      );
+      addTearDown(app.dispose);
+
+      expect(app.copyToClipboard('世界'), isTrue);
+      expect(native.copied, (renderer: 9, target: 0, text: '世界'));
+
+      native
+        ..copied = null
+        ..accepts = false;
+      expect(app.copyToClipboard('declined'), isFalse);
+      expect(native.copied?.text, 'declined');
+    },
+  );
+
+  test('copyToClipboard reports false without a renderer or text', () {
+    final headless = createTuiAppForTesting(TuiBinding(headless: true));
+    addTearDown(headless.dispose);
+    expect(headless.copyToClipboard('text'), isFalse);
+
+    final native = _ClipboardNativeSymbols();
+    final renderer = createRendererForTesting(
+      OpenTuiBindings.fromNativeSymbols(native),
+      RendererHandle.fromNative(10),
+    );
+    addTearDown(renderer.dispose);
+    final app = createTuiAppForTesting(
+      TuiBinding(headless: true, renderer: renderer),
+    );
+    addTearDown(app.dispose);
+    expect(app.copyToClipboard(''), isFalse);
+    expect(native.copied, isNull);
+  });
+
   test('dispose cancels active handlers and rejects every mutator', () {
     final inputManager = InputManager();
     final app = createTuiAppForTesting(
@@ -114,10 +165,36 @@ void main() {
       app.enableKittyKeyboard,
       app.disableKittyKeyboard,
       app.reassemble,
+      () => app.copyToClipboard('text'),
     ]) {
       expect(operation, throwsStateError);
     }
   });
+}
+
+final class _ClipboardNativeSymbols implements OpenTuiNativeSymbols {
+  ({int renderer, int target, String text})? copied;
+  bool accepts = true;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    final arguments = invocation.positionalArguments;
+    switch (invocation.memberName) {
+      case #copyToClipboardOSC52:
+        final pointer = arguments[2]! as Pointer<Uint8>;
+        final length = arguments[3]! as int;
+        copied = (
+          renderer: arguments[0]! as int,
+          target: arguments[1]! as int,
+          text: utf8.decode(pointer.asTypedList(length)),
+        );
+        return accepts;
+      case #destroyRenderer:
+        return null;
+      default:
+        throw UnsupportedError(invocation.memberName.toString());
+    }
+  }
 }
 
 class _BuildProbe extends StatelessWidget {
