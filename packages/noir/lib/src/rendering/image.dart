@@ -167,8 +167,8 @@ class RenderImage extends RenderBox {
       );
       return _ImageGeometry(
         destination: Rect.fromLTWH(
-          (size.width - width) ~/ 2,
-          (size.height - height) ~/ 2,
+          ((size.width - width) / 2).round(),
+          ((size.height - height) / 2).round(),
           width,
           height,
         ),

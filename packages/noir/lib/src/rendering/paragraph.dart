@@ -158,30 +158,29 @@ class RenderParagraph extends RenderBox {
       return;
     }
 
-    var textX = absoluteX;
-    switch (_alignment) {
-      case TextAlign.left:
-        break;
-      case TextAlign.center:
-        textX =
-            absoluteX +
-            ((availableWidth - textWidth).clamp(0, availableWidth) ~/ 2);
-      case TextAlign.right:
-        textX =
-            absoluteX + (availableWidth - textWidth).clamp(0, availableWidth);
+    final paintedLines = math.min(linesToRender, layout.lines.length);
+    for (var lineIndex = 0; lineIndex < paintedLines; lineIndex++) {
+      final lineWidth = layout.lines[lineIndex].width;
+      final shift = _lineShift(lineWidth, availableWidth);
+      final textX = math.max(0, shift);
+      final sourceLeft = math.max(0, -shift);
+      final sourceWidth = math.min(
+        lineWidth - sourceLeft,
+        availableWidth - textX,
+      );
+      if (sourceWidth <= 0) {
+        continue;
+      }
+      context.canvas.drawTextLayout(
+        layout,
+        Offset(absoluteX + textX, absoluteY + lineIndex),
+        sourceRect: Rect.fromLTWH(sourceLeft, lineIndex, sourceWidth, 1),
+        selection: _selection,
+      );
     }
 
     final needsWidthClip = textWidth > availableWidth;
     final needsHeightClip = layout.lineCount > linesToRender;
-    final hasClip = needsWidthClip || needsHeightClip;
-    context.canvas.drawTextLayout(
-      layout,
-      Offset(textX, absoluteY),
-      sourceRect: hasClip
-          ? Rect.fromLTWH(0, 0, availableWidth, linesToRender)
-          : null,
-      selection: _selection,
-    );
 
     if (_overflow == TextOverflow.ellipsis &&
         (needsWidthClip || needsHeightClip)) {
@@ -233,6 +232,15 @@ class RenderParagraph extends RenderBox {
       BoxConstraints(maxWidth: _softWrap ? constraints.maxWidth : null);
 
   int _maxLinesLimit(TextLayout layout) => _maxLines ?? layout.lineCount;
+
+  int _lineShift(int lineWidth, int availableWidth) {
+    final slack = availableWidth - lineWidth;
+    return switch (_alignment) {
+      TextAlign.left => 0,
+      TextAlign.center => (slack / 2).round(),
+      TextAlign.right => slack,
+    };
+  }
 
   String _plainText() {
     final buffer = StringBuffer();

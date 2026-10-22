@@ -46,6 +46,32 @@ void main() {
     image.dispose();
   });
 
+  test('fit gives an odd leftover cell to the leading side', () {
+    // A 4x10 image in a 5x5 cell box, measured 1:1, fits as 2x5.
+    // Slack on x is 3. Truncating ~/ 2 places it at column 1;
+    // ((slack) / 2).round() places it at column 2.
+    final image = _image(width: 4, height: 10);
+    final render = RenderImage(image: image, fit: ImageFit.fit)
+      ..layout(const BoxConstraints.tight(width: 5, height: 5));
+    final canvas = _RecordingCanvas();
+
+    render.paint(
+      PaintingContext(
+        canvas,
+        cellMetrics: const TerminalCellMetrics(
+          columns: 5,
+          rows: 5,
+          pixelWidth: 5,
+          pixelHeight: 5,
+        ),
+      ),
+      Offset.zero,
+    );
+
+    expect(canvas.destination, const Rect.fromLTWH(2, 0, 2, 5));
+    image.dispose();
+  });
+
   test('measured pixels are passed to fill draws', () {
     final image = _image(width: 8, height: 4);
     final render = RenderImage(image: image, fit: ImageFit.fill)
