@@ -393,6 +393,10 @@ final class LogicalKeyboardKey {
   }
 
   /// Returns the logical key for printable text.
+  ///
+  /// One Unicode scalar is identified by `0x200000000` plus that scalar, above
+  /// the named-key ids. A string of several scalars keeps a hashed id and
+  /// compares equal only when the text matches.
   static LogicalKeyboardKey forCharacter(String character) {
     if (character == ' ') return space;
     if (character.length == 1) {
@@ -403,18 +407,21 @@ final class LogicalKeyboardKey {
       }
       if (code >= 0x61 && code <= 0x7a) return forLetter(character);
     }
+    final scalar = _singleUnicodeScalar(character);
     return LogicalKeyboardKey._(
-      0x200000000 + _stableStringHash(character),
+      0x200000000 + (scalar ?? _stableStringHash(character)),
       character,
     );
   }
 
   @override
   bool operator ==(Object other) =>
-      other is LogicalKeyboardKey && other.keyId == keyId;
+      other is LogicalKeyboardKey &&
+      other.keyId == keyId &&
+      other.keyLabel == keyLabel;
 
   @override
-  int get hashCode => keyId;
+  int get hashCode => Object.hash(keyId, keyLabel);
 
   @override
   String toString() => 'LogicalKeyboardKey($keyLabel)';
@@ -430,6 +437,15 @@ enum KeyEventResult {
 
   /// Stop the current handler chain but do not mark the event handled.
   skipRemainingHandlers,
+}
+
+int? _singleUnicodeScalar(String value) {
+  final iterator = value.runes.iterator;
+  if (!iterator.moveNext()) return null;
+  final scalar = iterator.current;
+  if (iterator.moveNext()) return null;
+  if (scalar >= 0xd800 && scalar <= 0xdfff) return null;
+  return scalar;
 }
 
 int _stableStringHash(String value) {
