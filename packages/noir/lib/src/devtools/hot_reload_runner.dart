@@ -44,7 +44,13 @@ Future<int> runWithHotReload(File target, List<String> arguments) async {
 
   var stopping = false;
   final childExit = child.exitCode.whenComplete(() => stopping = true);
+  // The first Ctrl+C forwards SIGINT. A child that stays up would block the
+  // wait below, so the next Ctrl+C kills it. A kill after that wait cannot.
   final interrupts = ProcessSignal.sigint.watch().listen((_) {
+    if (stopping) {
+      child.kill(ProcessSignal.sigkill);
+      return;
+    }
     stopping = true;
     child.kill(ProcessSignal.sigint);
   });
@@ -70,7 +76,6 @@ Future<int> runWithHotReload(File target, List<String> arguments) async {
     return await childExit;
   } finally {
     await interrupts.cancel();
-    child.kill(ProcessSignal.sigkill);
     _deleteWorkspace(workspace, logFile);
   }
 }
