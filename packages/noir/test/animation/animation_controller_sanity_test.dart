@@ -134,22 +134,6 @@ void main() {
       },
     );
 
-    test('zero-distance forward short-circuits', () async {
-      final controller = AnimationController(
-        vsync: vsync,
-        duration: const Duration(milliseconds: 100),
-        value: 1,
-      );
-
-      final future = controller.forward();
-      // Should be already completed without ticking
-      await future;
-      expect(controller.status, AnimationStatus.completed);
-      expect(controller.value, 1.0);
-      expect(controller.isAnimating, isFalse);
-      controller.dispose();
-    });
-
     test('manual jump to end mid-run finishes immediately', () async {
       final controller = AnimationController(
         vsync: vsync,

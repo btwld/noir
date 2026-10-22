@@ -3,9 +3,6 @@ import 'package:test/test.dart';
 
 import '../helpers/buffer_capture.dart';
 
-/// Phase D retrofit contract for the four widgets that predate [Theme]:
-/// an unthemed widget renders exactly as it did before, an ancestor [Theme]
-/// supplies every unset color, and an explicit parameter always wins.
 void main() {
   group('TextInput theming', () {
     test('unthemed text and cursor keep their original literals', () {

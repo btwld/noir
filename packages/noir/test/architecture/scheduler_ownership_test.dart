@@ -21,6 +21,7 @@ void main() {
     expect(body, contains('SchedulerBinding'));
     expect(body, contains('_scheduler.setFrameCallback(_drawFrame)'));
     expect(body, contains('_owner.setFrameCallback(_scheduler.scheduleFrame)'));
+    expect(source, isNot(contains('scheduleMicrotask')));
     expect(body, isNot(contains('scheduleMicrotask')));
   });
 

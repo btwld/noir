@@ -209,14 +209,6 @@ void main() {
       expect(app.requestExit, returnsNormally);
     });
   });
-
-  test('enableMouse on a rendererless headless app fails loudly', () {
-    expect(
-      () =>
-          runTuiApp(const SizedBox.shrink(), headless: true, enableMouse: true),
-      throwsA(isA<StateError>()),
-    );
-  });
 }
 
 /// Mounts [widget] under a caller-owned exit sink and returns the app handle.

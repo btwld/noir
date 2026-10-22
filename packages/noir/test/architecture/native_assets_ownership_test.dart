@@ -58,10 +58,28 @@ void main() {
       final bindings = _read('lib/src/ffi/bindings.dart');
       final renderer = _read('lib/src/core/renderer.dart');
 
-      expect(library, contains('static final OpenTuiNativeSymbols'));
-      expect(library, contains('_openValidatedForProcess'));
-      expect(bindings, contains('OpenTuiNativeLibrary.open()'));
-      expect(renderer, contains('OpenTuiBindings()'));
+      expect(
+        library,
+        contains(
+          'static final OpenTuiNativeSymbols _symbols = '
+          '_openValidatedForProcess();',
+        ),
+      );
+      expect(
+        library,
+        contains('static OpenTuiNativeSymbols open() => _symbols;'),
+      );
+      expect(
+        bindings,
+        contains('OpenTuiBindings() : _native = OpenTuiNativeLibrary.open();'),
+      );
+      _expectTokensInOrder(
+        _declarationBody(renderer, 'factory Renderer.create('),
+        <String>[
+          'final bindings = OpenTuiBindings();',
+          'bindings.createRenderer(',
+        ],
+      );
     },
   );
 

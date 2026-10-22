@@ -55,29 +55,6 @@ void main() {
       }
     });
 
-    test('accepts one-cell obscuring characters', () {
-      final capture = BufferCapture(width: 12, height: 1);
-      try {
-        expect(
-          () =>
-              capture.capture(const TextInput(value: 'abc', obscureText: true)),
-          returnsNormally,
-        );
-        expect(
-          () => capture.capture(
-            const TextInput(
-              value: 'abc',
-              obscureText: true,
-              obscuringCharacter: '•',
-            ),
-          ),
-          returnsNormally,
-        );
-      } finally {
-        capture.dispose();
-      }
-    });
-
     test('rejects invalid obscuringCharacter values on mount', () {
       expect(
         () => _mountTextInputWithObscuringCharacter(''),

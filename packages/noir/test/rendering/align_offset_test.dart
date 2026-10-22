@@ -16,9 +16,6 @@ void main() {
     });
 
     test('Align inside Row with leading spacer paints at correct position', () {
-      // This test verifies that Align accounts for its own position when painting.
-      // The SizedBox creates a 10-char spacer, so the aligned text should
-      // appear at column 10 or later, not at column 0.
       const widget = Row(
         children: [
           SizedBox(width: 10), // Leading spacer
@@ -36,7 +33,6 @@ void main() {
       final result = capture.capture(widget);
       final lines = result.toLines();
 
-      // Find where "Aligned" appears - should be after the spacer (column >= 10)
       var foundAtCorrectPosition = false;
       for (final line in lines) {
         final index = line.indexOf('Aligned');
@@ -59,7 +55,6 @@ void main() {
     });
 
     test('Nested Align with offsets renders correctly', () {
-      // Verify nested Align widgets accumulate offsets correctly
       const widget = Container(
         width: 30,
         height: 8,
@@ -74,7 +69,6 @@ void main() {
       final result = capture.capture(widget);
       final lines = result.toLines();
 
-      // "Center" should appear somewhere after column 5
       var found = false;
       for (final line in lines) {
         final index = line.indexOf('Center');

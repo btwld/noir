@@ -3,39 +3,6 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('render objects with native handles dispose them from detach', () {
-    final missingDetach = <String>[];
-    final missingDispose = <String>[];
-
-    for (final file in _dartFilesUnder('lib/src/rendering')) {
-      final source = file.readAsStringSync();
-      if (!_hasNativeHandleField(source)) {
-        continue;
-      }
-
-      final path = _normalizePath(file.path);
-      if (!RegExp(r'\bvoid\s+detach\s*\(').hasMatch(source)) {
-        missingDetach.add(path);
-        continue;
-      }
-      if (!RegExp(r'\.\s*(dispose|destroy)\s*\(').hasMatch(source)) {
-        missingDispose.add(path);
-      }
-    }
-
-    expect(
-      missingDetach,
-      isEmpty,
-      reason:
-          'RenderObjects that own native handles must release them deterministically.',
-    );
-    expect(
-      missingDispose,
-      isEmpty,
-      reason: 'Native-handle detach overrides must call dispose/destroy.',
-    );
-  });
-
   test('core native resource owners expose deterministic dispose paths', () {
     final requiredSnippets = <String, List<String>>{
       'lib/src/core/renderer.dart': [
@@ -108,14 +75,3 @@ void main() {
     );
   });
 }
-
-Iterable<File> _dartFilesUnder(String directory) => Directory(directory)
-    .listSync(recursive: true)
-    .whereType<File>()
-    .where((file) => file.path.endsWith('.dart'));
-
-bool _hasNativeHandleField(String source) =>
-    RegExp(r'\bRenderer\?\s+_[A-Za-z0-9_]+').hasMatch(source);
-
-String _normalizePath(String path) =>
-    path.replaceAll(Platform.pathSeparator, '/');

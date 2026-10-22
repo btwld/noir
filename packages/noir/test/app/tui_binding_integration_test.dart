@@ -321,7 +321,7 @@ void main() {
   });
 
   test('signal cleanup disposes binding once through TerminalSession', () {
-    final platform = _FakeTerminalPlatform();
+    final platform = _RecordingTerminalPlatform(stdoutHasTerminal: false);
     final exits = <int>[];
     final disposals = <String>[];
     final app = createTuiTestApp(
@@ -950,36 +950,4 @@ class _RecordingTerminalPlatform implements TerminalPlatform {
   void emit(TerminalSignal signal) {
     _signals[signal]!.add(null);
   }
-}
-
-class _FakeTerminalPlatform implements TerminalPlatform {
-  final Map<TerminalSignal, StreamController<void>> _signals = {
-    for (final signal in TerminalSignal.values)
-      signal: StreamController<void>.broadcast(sync: true),
-  };
-
-  void emit(TerminalSignal signal) {
-    _signals[signal]!.add(null);
-  }
-
-  @override
-  String? get terminalProgram => null;
-
-  @override
-  bool get stdoutHasTerminal => false;
-
-  @override
-  bool get isWindows => false;
-
-  @override
-  int get terminalColumns => 80;
-
-  @override
-  int get terminalLines => 24;
-
-  @override
-  void stdoutWrite(String data) {}
-
-  @override
-  Stream<void> watchSignal(TerminalSignal signal) => _signals[signal]!.stream;
 }

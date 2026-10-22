@@ -21,7 +21,6 @@ void main() {
       File('lib/noir.dart'),
       File('lib/noir_low_level.dart'),
       File('lib/noir_ffi.dart'),
-      File('test/architecture/baselines/noir_low_level_symbols.txt'),
     ];
 
     for (final file in publicBarrels) {

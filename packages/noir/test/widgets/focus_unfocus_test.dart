@@ -17,6 +17,9 @@ void main() {
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
       final c = FocusNode(debugLabel: 'c');
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      addTearDown(c.dispose);
 
       final app = runTuiAppForTesting(
         Column(
@@ -32,6 +35,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -44,8 +48,6 @@ void main() {
       expect(fm.primaryFocus, isNot(same(a)));
       expect(fm.primaryFocus, isNull);
       expect(a.hasFocus, isFalse);
-
-      app.dispose();
     });
 
     test(
@@ -55,6 +57,10 @@ void main() {
         final a = FocusNode(debugLabel: 'a');
         final b = FocusNode(debugLabel: 'b');
         final c = FocusNode(debugLabel: 'c');
+        addTearDown(scope.dispose);
+        addTearDown(a.dispose);
+        addTearDown(b.dispose);
+        addTearDown(c.dispose);
 
         final app = runTuiAppForTesting(
           FocusScope(
@@ -73,6 +79,7 @@ void main() {
           ),
           headless: true,
         );
+        addTearDown(app.dispose);
 
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
@@ -85,8 +92,6 @@ void main() {
         expect(fm.primaryFocus, isNot(same(a)));
         expect(fm.primaryFocus, same(scope));
         expect(scope.hasFocus, isTrue);
-
-        app.dispose();
       },
     );
 
@@ -95,6 +100,9 @@ void main() {
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
       final c = FocusNode(debugLabel: 'c');
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      addTearDown(c.dispose);
 
       final app = runTuiAppForTesting(
         Column(
@@ -110,6 +118,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -124,8 +133,6 @@ void main() {
       expect(fm.primaryFocus, isNull);
       expect(a.hasFocus, isFalse);
       expect(b.hasFocus, isFalse);
-
-      app.dispose();
     });
 
     test('unfocusing a middle child moves focus to the enclosing FocusScope, '
@@ -134,6 +141,10 @@ void main() {
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
       final c = FocusNode(debugLabel: 'c');
+      addTearDown(scope.dispose);
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      addTearDown(c.dispose);
 
       final app = runTuiAppForTesting(
         FocusScope(
@@ -152,6 +163,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -164,14 +176,14 @@ void main() {
       expect(fm.primaryFocus, isNot(same(a)));
       expect(fm.primaryFocus, isNot(same(b)));
       expect(fm.primaryFocus, same(scope));
-
-      app.dispose();
     });
 
     test('unfocusing the only focusable node in a scope is not immediately '
         'reselected', () async {
       final scope = FocusScopeNode(debugLabel: 'scope');
       final a = FocusNode(debugLabel: 'a');
+      addTearDown(scope.dispose);
+      addTearDown(a.dispose);
 
       final app = runTuiAppForTesting(
         FocusScope(
@@ -184,6 +196,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -196,8 +209,6 @@ void main() {
       expect(fm.primaryFocus, isNot(same(a)));
       expect(fm.primaryFocus, same(scope));
       expect(a.hasFocus, isFalse);
-
-      app.dispose();
     });
 
     test('after unfocus hands focus to the scope, Tab traversal still reaches '
@@ -205,6 +216,9 @@ void main() {
       final scope = FocusScopeNode(debugLabel: 'scope');
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
+      addTearDown(scope.dispose);
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
 
       final app = runTuiAppForTesting(
         FocusScope(
@@ -222,6 +236,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -236,14 +251,14 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(a.hasFocus, isTrue);
-
-      app.dispose();
     });
 
     test('unfocus notifies hasFocus exactly once (true to false), with no '
         'reselection churn', () async {
       final a = FocusNode(debugLabel: 'a');
       final b = FocusNode(debugLabel: 'b');
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
 
       final app = runTuiAppForTesting(
         Column(
@@ -258,6 +273,7 @@ void main() {
         ),
         headless: true,
       );
+      addTearDown(app.dispose);
 
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -272,8 +288,6 @@ void main() {
       a.unfocus();
 
       expect(observed, [false]);
-
-      app.dispose();
     });
   });
 }

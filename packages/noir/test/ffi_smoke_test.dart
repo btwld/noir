@@ -16,6 +16,13 @@ void main() {
       buf.drawText('Hello, OpenTUI!', 2, 2, Color.yellow);
       buf.fillRect(1, 4, 10, 1, Color.red);
 
+      final cells = buf.getDirectAccess();
+      expect(cells.getChar(2, 2), 'H');
+      expect(cells.getForeground(2, 2), Color.yellow);
+      expect(cells.getBackground(1, 4), Color.red);
+      expect(cells.getBackground(10, 4), Color.red);
+      expect(cells.getBackground(0, 4), isNot(Color.red));
+
       renderer.render(force: true);
     });
   });

@@ -456,9 +456,7 @@ void main() {
       driver.dispose();
     });
 
-    test('clicking past content does nothing', () async {
-      // ScrollBox itself has no row-click handler. This test asserts the
-      // pointer down is not consumed and the scroll offset stays unchanged.
+    test('a viewport click does not scroll and stays unconsumed', () async {
       final controller = ScrollController();
       final driver = KeyDriver(
         SizedBox(
@@ -469,15 +467,15 @@ void main() {
         paintFrames: true,
       );
       await driver.ready();
-      await driver.sendMouse(
-        MouseEvent(
-          type: MouseEventType.down,
-          button: MouseButton.left,
-          x: 50, // way past the box's width
-          y: 50, // way past the box's height
-        ),
+      final click = MouseEvent(
+        type: MouseEventType.down,
+        button: MouseButton.left,
+        x: 1,
+        y: 1,
       );
+      await driver.sendMouse(click);
       expect(controller.offset, 0);
+      expect(click.isConsumed, isFalse);
       driver.dispose();
     });
   });

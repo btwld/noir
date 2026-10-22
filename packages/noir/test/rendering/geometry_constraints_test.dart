@@ -20,7 +20,6 @@ void main() {
         ).isNormalized,
         isTrue,
       );
-      expect(Size.zero, Size.zero);
     });
 
     test(

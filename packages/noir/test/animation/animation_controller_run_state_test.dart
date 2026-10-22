@@ -151,6 +151,7 @@ void main() {
           final future = controller.forward();
           await future;
           expect(controller.status, AnimationStatus.completed);
+          expect(controller.value, 1.0);
           expect(controller.isAnimating, isFalse);
           controller.dispose();
         },
@@ -238,7 +239,6 @@ void main() {
           expect(controller.value, closeTo(0.5, 1e-6));
           final valueAtStop = controller.value;
 
-          // stop() takes no arguments -- the `canceled` parameter is gone.
           controller.stop();
           await future;
           expect(controller.value, valueAtStop);

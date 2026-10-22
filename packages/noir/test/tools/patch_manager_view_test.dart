@@ -1570,8 +1570,6 @@ void main() {
       expect(await clickAt(6), 0);
       expect(await clickAt(7), 1);
       expect(await clickAt(8), 2);
-      // Clicking does not jump focus to the diff pane — the user keeps
-      // navigating files with arrow keys afterwards.
       expect(
         presentedPath(controller.currentFile),
         'lib/third.dart',
@@ -1594,10 +1592,7 @@ void main() {
         );
 
         await driver.ready();
-        // Move focus to the diff pane via Tab — same state Leo ends up in
-        // after pressing Enter on a file row.
         await driver.sendLogicalKey(LogicalKeyboardKey.tab);
-        // Now click the first file row.
         await driver.sendMouse(
           MouseEvent(
             type: MouseEventType.down,
@@ -1607,7 +1602,6 @@ void main() {
           ),
         );
         expect(controller.selectedFileIndex, 0);
-        // And the third file row.
         await driver.sendMouse(
           MouseEvent(
             type: MouseEventType.down,
