@@ -1,4 +1,3 @@
-// Run with: dart run example/file_picker_demo.dart
 // The example uses an in-memory project tree and never reads the host file
 // system. Up/Down move, Right expands, Left collapses or selects the parent,
 // and Enter toggles a folder. Tab reaches Cancel and Open; Escape closes the
@@ -216,50 +215,34 @@ class _FilePickerDemoAppState extends State<FilePickerDemoApp> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 11,
+            height: 12,
             child: Row(
+              spacing: 1,
               children: [
-                SizedBox(
-                  width: 32,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        _treeFocus.hasFocus ? '› Project' : 'Project',
-                        style: TextStyle(
-                          color: _treeFocus.hasFocus
-                              ? theme.accent
-                              : theme.textMuted,
-                          fontWeight: _treeFocus.hasFocus
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      TreeView<DemoFileNode>(
-                        key: const ValueKey<String>('file-tree'),
-                        controller: _tree,
-                        itemBuilder: _buildTreeRow,
-                        height: 10,
-                        focusNode: _treeFocus,
-                        showScrollIndicator: true,
-                        backgroundColor: Color.transparent,
-                        onActivate: _openNode,
-                      ),
-                    ],
+                Panel(
+                  title: 'Project',
+                  focused: _treeFocus.hasFocus,
+                  width: 34,
+                  height: 12,
+                  child: TreeView<DemoFileNode>(
+                    key: const ValueKey<String>('file-tree'),
+                    controller: _tree,
+                    itemBuilder: _buildTreeRow,
+                    height: 10,
+                    focusNode: _treeFocus,
+                    showScrollIndicator: true,
+                    backgroundColor: Color.transparent,
+                    onActivate: _openNode,
                   ),
                 ),
-                const SizedBox(height: 11, child: Divider(axis: Axis.vertical)),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.only(left: 1),
+                  child: Panel(
+                    title: 'Preview',
+                    height: 12,
                     child: Column(
                       spacing: 1,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Preview',
-                          style: TextStyle(color: theme.textMuted),
-                        ),
                         Text(
                           selectedPath ?? 'No selection',
                           maxLines: 1,

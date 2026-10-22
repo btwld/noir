@@ -9,17 +9,17 @@ resources, and prompts, generates a form from each input schema, records every
 JSON-RPC message, shows the server's standard error output, and answers
 server-initiated input requests from a modal.
 
-This package is not published. It lives in `tools/`, which `.pubignore`
+This package is not published. It lives in `tool/`, which `.pubignore`
 excludes from the Noir archive.
 
 ## Run it
 
 ```sh
-cd tools/mcp_inspector
+cd tool/mcp_inspector
 dart pub get
 
 # Compile the fixture, then start it as a child process.
-# From tools/mcp_inspector:
+# From tool/mcp_inspector:
 (cd ../mcp_fixtures && dart pub get && dart compile exe bin/calculate_server.dart -o .dart_tool/calculate_server)
 dart run bin/mcp_inspector.dart -- ../mcp_fixtures/.dart_tool/calculate_server
 
@@ -43,7 +43,7 @@ and is also the path used by the automated integration tests.
 The child's stdout is the protocol channel, so nothing else may write to it.
 In a package whose dependency graph has a native-assets build hook, `dart run`
 writes `Running build hooks...` there. `--verbosity=error` suppresses that only
-from Dart 3.11 on. The fixtures live in `tools/mcp_fixtures`, which depends on
+from Dart 3.11 on. The fixtures live in `tool/mcp_fixtures`, which depends on
 `package:mcp_dart` alone and therefore has no hook. Give a server of your own
 either a hook-free package or a compiled executable. See
 [`FINDINGS.md`](FINDINGS.md), entry 16.
@@ -160,10 +160,3 @@ printf 'wait key primitive:calculate\nkey enter\ntype 5\nkey tab\ntype 3\nclick 
 
 [`FINDINGS.md`](FINDINGS.md) records every Noir gap, documented behavior, and
 mcp_dart observation this tool produced.
-
-One authorized iTerm2 run captured this inspector and the official MCP
-Inspector TUI on the same server surface at a 100x40 grid, plus the 80x24 and
-60x18 floors and the elicitation modal. The screenshots, `COMPARISON.md`, and
-`NOTES.md` live in an untracked run folder under
-`.context/terminal-evidence/`, because `.context/` is workspace state rather
-than repository source.

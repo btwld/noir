@@ -1,5 +1,3 @@
-// Run with: dart run example/listview_demo.dart
-//
 // Tab moves between the two lists. In the selectable list use ↑/↓ (or j/k),
 // PageUp/PageDown, Home/End, and Enter; the plain list scrolls with the same
 // keys and with the mouse wheel. Press q to quit.

@@ -1,5 +1,3 @@
-// Run with: dart run example/widgets_tour.dart
-//
 // Combined tour of Select, ScrollBox, and TextArea.
 // Press Tab / Shift+Tab to move focus. Ctrl+D submits the TextArea.
 // Esc always quits. q quits unless the TextArea is focused.

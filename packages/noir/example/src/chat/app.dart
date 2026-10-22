@@ -1408,22 +1408,13 @@ class _ChatDemoAppState extends State<ChatDemoApp> {
     );
   }
 
-  Widget _buildModal(BuildContext context) {
-    final content = switch (_surface) {
-      _ModalSurface.permission => _buildPermissionModal(context),
-      _ModalSurface.question => _buildQuestionModal(context),
-      _ModalSurface.model => _buildModelModal(context),
-      _ModalSurface.sessions => _buildSessionModal(context),
-      null => const SizedBox(),
-    };
-    return Container(
-      color: Theme.of(context).surface,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [content],
-      ),
-    );
-  }
+  Widget _buildModal(BuildContext context) => switch (_surface) {
+    _ModalSurface.permission => _buildPermissionModal(context),
+    _ModalSurface.question => _buildQuestionModal(context),
+    _ModalSurface.model => _buildModelModal(context),
+    _ModalSurface.sessions => _buildSessionModal(context),
+    null => const SizedBox(),
+  };
 
   Widget _buildPermissionModal(BuildContext context) {
     final theme = Theme.of(context);

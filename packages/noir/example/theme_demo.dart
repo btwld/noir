@@ -1,5 +1,3 @@
-// Run with: dart run example/theme_demo.dart
-//
 // Press t to swap palettes, q to quit. Demonstrates Theme/ThemeData: one
 // InheritedWidget publishes a flat token set, and every widget below it
 // resolves its colors from the nearest enclosing Theme.

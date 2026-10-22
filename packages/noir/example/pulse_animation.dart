@@ -78,10 +78,9 @@ class _PulseAnimationDemoState extends State<PulseAnimationDemo>
       onKeyEvent: _onKey,
       child: Container(
         color: theme.surface,
-        alignment: Alignment.center,
         padding: EdgeInsets.all(2),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 1,
           children: [
             Text(

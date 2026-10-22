@@ -560,7 +560,7 @@ Future<int> _visibleRowCount(NoirDriver driver) async {
 
 /// The command the inspector runs for [fixture], compiled on first use.
 ///
-/// [fixture] is relative to `tools/mcp_fixtures`, which depends only on
+/// [fixture] is relative to `tool/mcp_fixtures`, which depends only on
 /// `package:mcp_dart` and so has no native-assets build hook. That matters
 /// twice. `dart run` on a hook-bearing package writes hook progress to
 /// **stdout** — the MCP protocol channel — and `--verbosity=error` suppresses

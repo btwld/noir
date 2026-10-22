@@ -1,6 +1,6 @@
 /// Command-line entry point for the Noir MCP inspector.
 ///
-/// From `tools/mcp_inspector`, start a server as a child process:
+/// From `tool/mcp_inspector`, start a server as a child process:
 ///
 /// ```sh
 /// (cd ../mcp_fixtures && dart pub get && dart compile exe bin/calculate_server.dart -o .dart_tool/calculate_server)

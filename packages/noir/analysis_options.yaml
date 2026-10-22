@@ -18,12 +18,6 @@ analyzer:
     - test/fixtures/source_package_consumer/**
     - tool/mcp_fixtures/**
     - tool/mcp_inspector/**
-    - android/**
-    - ios/**
-    - web/**
-    - windows/**
-    - macos/**
-    - linux/**
 
 linter:
   rules:

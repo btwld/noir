@@ -53,7 +53,6 @@ enum PubSuggestionKind {
 
 /// One completion row. Package rows are names only; topic rows carry a count.
 final class PubSuggestion {
-  /// A package-name suggestion.
   const PubSuggestion.package(this.name)
     : kind = PubSuggestionKind.package,
       packageCount = null;
@@ -62,10 +61,8 @@ final class PubSuggestion {
   const PubSuggestion.topic(this.name, this.packageCount)
     : kind = PubSuggestionKind.topic;
 
-  /// Package or topic.
   final PubSuggestionKind kind;
 
-  /// Package name or topic slug.
   final String name;
 
   /// Package count for a topic; null for a package name.
@@ -78,7 +75,6 @@ final class PubSuggestion {
 /// application already owns both, so repeating them here would create a second
 /// source of truth that could disagree with the controls on screen.
 final class PackageSearchPage {
-  /// Creates a result page.
   PackageSearchPage({
     required this.page,
     required List<String> packages,
@@ -89,7 +85,6 @@ final class PackageSearchPage {
   /// One-based result page.
   final int page;
 
-  /// Package names returned by pub.dev.
   final List<String> packages;
 
   /// Whether pub.dev supplied a next-page URL.
@@ -101,7 +96,6 @@ final class PackageSearchPage {
 
 /// Documentation and release information for one published version.
 final class PackageRelease {
-  /// Creates a release summary.
   const PackageRelease({
     required this.version,
     required this.published,
@@ -110,13 +104,11 @@ final class PackageRelease {
     this.documentationStatus,
   });
 
-  /// Semantic version string.
   final String version;
 
   /// Publication time reported by pub.dev.
   final DateTime published;
 
-  /// Whether this release was retracted.
   final bool retracted;
 
   /// Whether hosted API documentation exists, when known.
@@ -128,7 +120,6 @@ final class PackageRelease {
 
 /// A security advisory reduced to terminal-friendly fields.
 final class PackageAdvisorySummary {
-  /// Creates an advisory summary.
   PackageAdvisorySummary({
     required this.id,
     this.summary,
@@ -137,7 +128,6 @@ final class PackageAdvisorySummary {
     List<String> affectedVersions = const [],
   }) : affectedVersions = List.unmodifiable(affectedVersions);
 
-  /// Advisory identifier.
   final String id;
 
   /// Short advisory title from OSV.
@@ -156,7 +146,6 @@ final class PackageAdvisorySummary {
 
 /// One section from the package analyzer report.
 final class PackageHealthSection {
-  /// Creates an analyzer section summary.
   const PackageHealthSection({
     required this.title,
     required this.status,
@@ -165,31 +154,25 @@ final class PackageHealthSection {
     this.maxPoints,
   });
 
-  /// Human-readable section title.
   final String title;
 
-  /// Analyzer status.
   final String status;
 
   /// GitHub-flavoured markdown from pana's `ReportSection.summary`.
   final String summary;
 
-  /// Points granted for this section.
   final int? grantedPoints;
 
-  /// Maximum points for this section.
   final int? maxPoints;
 }
 
 /// A screenshot entry from the package pubspec.
 final class PackageScreenshotSummary {
-  /// Creates a screenshot summary.
   const PackageScreenshotSummary({
     required this.description,
     required this.path,
   });
 
-  /// Screenshot description.
   final String description;
 
   /// Package-relative screenshot path.
@@ -198,7 +181,6 @@ final class PackageScreenshotSummary {
 
 /// Download counts attributed to one semantic-version range.
 final class PackageVersionDownloads {
-  /// Creates a version-range history.
   PackageVersionDownloads({
     required this.versionRange,
     required List<int> counts,
@@ -228,7 +210,6 @@ enum PackageDependencySource {
 
 /// Structured, terminal-friendly dependency metadata from a package pubspec.
 final class PackageDependencySummary {
-  /// Creates a dependency summary.
   const PackageDependencySummary({
     required this.source,
     this.constraint,
@@ -239,7 +220,6 @@ final class PackageDependencySummary {
     this.sdk,
   });
 
-  /// Dependency source kind.
   final PackageDependencySource source;
 
   /// Hosted or SDK version constraint.
@@ -251,13 +231,11 @@ final class PackageDependencySummary {
   /// Hosted repository or Git URL.
   final String? url;
 
-  /// Git ref.
   final String? ref;
 
   /// Git subpath or local package path.
   final String? path;
 
-  /// SDK name.
   final String? sdk;
 
   /// Complete compact representation for the Dependencies tab.
@@ -287,7 +265,6 @@ final class PackageDependencySummary {
 
 /// Repository metadata inferred by pana.
 final class PackageRepositorySummary {
-  /// Creates a repository summary.
   const PackageRepositorySummary({
     this.provider,
     this.host,
@@ -298,7 +275,6 @@ final class PackageRepositorySummary {
   /// Source host provider, such as GitHub.
   final String? provider;
 
-  /// Repository host.
   final String? host;
 
   /// Owner and repository name.
@@ -568,52 +544,37 @@ final class PubPackageSnapshot {
     );
   }
 
-  /// Package name.
   final String name;
 
-  /// Latest version.
   final String version;
 
-  /// Latest pubspec description.
   final String description;
 
-  /// Latest publication time.
   final DateTime published;
 
-  /// Canonical pub.dev package page.
   final String packageUrl;
 
-  /// Canonical pub.dev changelog page.
   final String changelogUrl;
 
-  /// Whether the latest release is retracted.
   final bool retracted;
 
-  /// Verified publisher identifier.
   final String? publisher;
 
-  /// Pubspec environment constraints.
   final Map<String, String> environment;
 
-  /// Homepage URL.
   final String? homepage;
 
-  /// Repository URL.
   final String? repository;
 
-  /// Issue tracker URL.
   final String? issueTracker;
 
-  /// Documentation URL.
   final String? documentationUrl;
 
   /// Contributing guide URL inferred by pana.
   final String? contributingUrl;
 
-  /// Funding URLs.
   final List<String> fundingUrls;
 
-  /// Pubspec topics.
   final List<String> topics;
 
   /// Supported platforms derived from score tags.
@@ -625,49 +586,36 @@ final class PubPackageSnapshot {
   /// License identifiers and paths.
   final List<String> licenses;
 
-  /// Pubspec publication target.
   final String? publishTo;
 
-  /// Pubspec screenshots.
   final List<PackageScreenshotSummary> screenshots;
 
-  /// Direct runtime dependencies.
   final Map<String, PackageDependencySummary> directDependencies;
 
-  /// Direct development dependencies.
   final Map<String, PackageDependencySummary> devDependencies;
 
-  /// Pubspec dependency overrides.
   final Map<String, PackageDependencySummary> dependencyOverrides;
 
   /// All dependencies observed by pana.
   final List<String> transitiveDependencies;
 
-  /// Package executables.
   final Map<String, String?> executables;
 
-  /// Workspace members.
   final List<String> workspace;
 
-  /// Pub workspace resolution mode.
   final String? resolution;
 
-  /// Granted pub points.
   final int? grantedPoints;
 
-  /// Maximum pub points.
   final int? maxPoints;
 
-  /// Like count.
   final int? likeCount;
 
   /// Downloads in the latest 30-day window.
   final int? downloadCount30Days;
 
-  /// Published versions.
   final List<PackageRelease> releases;
 
-  /// Whether the package is discontinued.
   final bool isDiscontinued;
 
   /// Replacement package, when discontinued.
@@ -676,22 +624,16 @@ final class PubPackageSnapshot {
   /// Whether the package is hidden from search.
   final bool isUnlisted;
 
-  /// Security advisories.
   final List<PackageAdvisorySummary> advisories;
 
-  /// Time the advisory set was refreshed.
   final DateTime? advisoriesUpdated;
 
-  /// Pana report status.
   final String? analysisStatus;
 
-  /// Dartdoc report status.
   final String? dartdocStatus;
 
-  /// Scorecard task status.
   final String? taskStatus;
 
-  /// Individual pana report sections.
   final List<PackageHealthSection> healthSections;
 
   /// URL problems reported by pana.
@@ -700,19 +642,15 @@ final class PubPackageSnapshot {
   /// Screenshot checks reported by pana.
   final List<String> analysisScreenshots;
 
-  /// Scorecard update time.
   final DateTime? metricsUpdated;
 
-  /// Pana analysis time.
   final DateTime? analysisUpdated;
 
   /// Package version analyzed by the scorecard.
   final String? scorecardPackageVersion;
 
-  /// Scorecard runtime version.
   final String? scorecardRuntimeVersion;
 
-  /// Pana version.
   final String? panaVersion;
 
   /// SDK version used for analysis.
@@ -730,13 +668,10 @@ final class PubPackageSnapshot {
   /// Pana result maximum points.
   final int? analysisMaxPoints;
 
-  /// Total weekly download history.
   final List<int> weeklyDownloads;
 
-  /// Weekly downloads grouped by major-version ranges.
   final List<PackageVersionDownloads> majorVersionDownloads;
 
-  /// Date of the newest weekly count.
   final DateTime? weeklyDownloadsNewestDate;
 }
 

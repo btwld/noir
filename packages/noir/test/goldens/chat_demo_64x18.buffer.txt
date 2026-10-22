@@ -5,12 +5,12 @@
                                                                 
  › Inspect the current change.                                  
    ┌─ › Permission required ────────────────────────────────┐   
-   │Edit                                                    │   
+ ● │Edit                                                    │   
    │                                                        │   
-   │Update the focused regression test                      │   
+ ● │Update the focused regression test                      │s  
    │                                                        │   
-   │                                           Deny   Allow │   
-   └────────────────────────────────────────────────────────┘   
+ ──│                                           Deny   Allow │── 
+ … └────────────────────────────────────────────────────────┘   
  ────────────────────────────────────────────────────────────── 
  Ctrl+J newline · Enter send · Shift+Tab mode... 0 tok · $0.000 
                                                                 

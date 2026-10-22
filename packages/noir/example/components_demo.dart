@@ -1,5 +1,3 @@
-// Run with: dart run example/components_demo.dart
-//
 // Tab and Shift+Tab move between the interactive controls; Space or Enter
 // activates the focused one, and a left click does the same. Press Ctrl+T to
 // swap the complete palette, Ctrl+S to stop or restart the spinner, and Ctrl+Q

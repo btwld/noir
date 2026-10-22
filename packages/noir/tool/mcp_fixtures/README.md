@@ -18,3 +18,5 @@ boundary.
 | `legacy_elicit_server` | `--protocol legacy` | `register_user` calls `elicitation/create` from inside its tool callback |
 | `selection_server` | `--protocol legacy` | Two tools with distinct fields, for focus across form replacement |
 | `long_form_server` | `--protocol legacy` | One tool with eight fields, for a scrolling modal |
+| `many_tools_server` | default | Twenty echo tools, `tool01` through `tool20`, enough to overflow the primitives list |
+| `slow_server` | default | `slow` echoes a note after a delay, so a check can observe a request still in flight |

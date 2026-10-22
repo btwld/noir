@@ -1,5 +1,3 @@
-// Run with: dart run example/scrollbox_demo.dart
-//
 // Use ↑/↓ to scroll one line, PgUp/PgDn for a page, Home/End for ends.
 // Press q to quit.
 
