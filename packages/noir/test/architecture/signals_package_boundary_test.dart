@@ -334,7 +334,8 @@ dependencies:
     for (final published in const [
       {'noir': '0.0.3', 'noir_signals': '0.0.1-alpha.1'},
       {'noir': '0.0.4', 'noir_signals': '0.0.1-alpha.1'},
-      {'noir': '0.0.4', 'noir_signals': '0.0.1-alpha.2'},
+      {'noir': '0.0.5', 'noir_signals': '0.0.1-alpha.1'},
+      {'noir': '0.0.5', 'noir_signals': '0.0.1'},
     ]) {
       expect(
         _hostedCompanionConstraintsResolve(source, published),
@@ -344,7 +345,7 @@ dependencies:
     }
     for (final unpublished in [
       source.replaceFirst('^0.0.3', '^0.0.4'),
-      source.replaceFirst('^0.0.1-alpha.1', '^0.0.1-alpha.2'),
+      source.replaceFirst('^0.0.1-alpha.1', '^0.0.1'),
     ]) {
       expect(
         _hostedCompanionConstraintsResolve(unpublished, const {

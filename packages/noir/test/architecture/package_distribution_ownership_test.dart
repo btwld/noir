@@ -133,7 +133,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    expect(packageVersion, '0.0.4');
+    expect(packageVersion, '0.0.5');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -149,8 +149,52 @@ void main() {
     final currentRelease = _changelogSection(changelog, packageVersion);
 
     expect(currentRelease, isNotEmpty);
+    for (final heading in const ['Added', 'Fixed', 'Removed']) {
+      expect(
+        RegExp('^### $heading\$', multiLine: true).allMatches(currentRelease),
+        hasLength(1),
+        reason: heading,
+      );
+    }
+    for (final contract in const [
+      'TuiApp.copyToClipboard(text)',
+      'OSC 52 escape sequence',
+      'returns whether the sequence was written, not whether the terminal honored it',
+      '`false` without writing for empty text or a headless app',
+      'bundled native artifacts are unchanged from 0.0.4',
+      'place each line inside their box',
+      'sits one cell further right than in 0.0.4',
+      '`ImageFit.fit` centers an image with the same rounding',
+      'keys with different labels never compare equal',
+      'selection is cleared or lies outside the text',
+      'in release builds too',
+      'zero-width-joiner emoji lost its tail',
+      'by terminal cells rather than UTF-16 code units',
+      'A second Ctrl+C now stops `dart run noir:run`',
+      '**Breaking prerelease change:**',
+      'without compatibility shims',
+      '`BoxShape` and `BoxDecoration.shape`',
+      '`Color.withOpacity`',
+      '`Listenable.merge`',
+      '`TextRange.isNormalized`, `TextRange.textBefore`, and `TextRange.textAfter`',
+      '`TextEditingValue.composing`',
+      '`Actions.find` and `Actions.invoke`',
+      '`Focus.of`, `Focus.maybeOf`, `FocusScope.of`, and `FocusScope.maybeOf`',
+      '`OverlayPortalController.toggle`',
+      '`CursorController.updatePosition`',
+      '`TERMINAL_TUI_DEBUG_LOG=1`',
+    ]) {
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
+    }
+  });
+
+  test('published 0.0.4 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedRelease = _changelogSection(changelog, '0.0.4');
+
+    expect(publishedRelease, isNotEmpty);
     expect(
-      RegExp(r'^### Added$', multiLine: true).allMatches(currentRelease),
+      RegExp(r'^### Added$', multiLine: true).allMatches(publishedRelease),
       hasLength(1),
     );
     for (final contract in const [
@@ -163,7 +207,11 @@ void main() {
       'Drive mode does not install this signal hook',
       'bundled native artifacts are unchanged from 0.0.3',
     ]) {
-      expect(_normalized(currentRelease), contains(contract), reason: contract);
+      expect(
+        _normalized(publishedRelease),
+        contains(contract),
+        reason: contract,
+      );
     }
   });
 

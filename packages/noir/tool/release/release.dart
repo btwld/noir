@@ -443,10 +443,10 @@ Future<List<String>> recordPublication(
 
 /// The version a consumer gets from `dart pub add`, or null when there is none.
 ///
-/// A prerelease only wins when nothing stable has shipped, which is how
-/// `noir_driver` and `noir_signals` read today and how `noir` read before
-/// 0.0.1. Pub resolves a bare constraint to the newest stable version, so a
-/// stable release must not be reported as superseded by an older prerelease.
+/// A prerelease only wins when nothing stable has shipped, as for `noir`
+/// before 0.0.1 and for each companion before its own 0.0.1. Pub resolves a
+/// bare constraint to the newest stable version, so a stable release must not
+/// be reported as superseded by an older prerelease.
 Version? latestStableOrPrerelease(Set<Version> versions) {
   if (versions.isEmpty) return null;
   final stable = versions.where((version) => !version.isPreRelease).toList();

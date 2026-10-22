@@ -1,5 +1,83 @@
 # Changelog
 
+## 0.0.5
+
+Adds a public clipboard request, fixes text alignment and cell painting,
+character keys, text editing, and hot-reload shutdown, and removes unused
+prerelease API. The native ABI and bundled native artifacts are unchanged
+from 0.0.4.
+
+### Added
+
+- `TuiApp.copyToClipboard(text)` asks the terminal to copy `text` to the
+  system clipboard with an OSC 52 escape sequence. It returns whether the
+  sequence was written, not whether the terminal honored it, and returns
+  `false` without writing for empty text or a headless app. Before this the
+  OSC 52 path was reachable only through the internal `BuildOwner` and the
+  low-level `Renderer` extension.
+
+### Fixed
+
+- `Text` and `RichText` place each line inside their box for
+  `TextAlign.center` and `TextAlign.right`. Every line used to share the
+  offset of the widest line, so shorter wrapped lines stayed at the left, and
+  a line wider than the box kept its leading cells whatever the alignment. An
+  over-wide line now keeps its trailing cells when right-aligned and its
+  middle when centered. Centering also gives an odd spare cell to the leading
+  side, as other layouts already do, so centered text with an odd number of
+  spare cells sits one cell further right than in 0.0.4. `ImageFit.fit`
+  centers an image with the same rounding.
+- `LogicalKeyboardKey.forCharacter` identifies a single Unicode scalar by the
+  scalar itself, and keys with different labels never compare equal.
+  Characters other than ASCII letters, digits, and space were identified by a
+  hash that could collide, so a `Shortcuts` binding for one emoji could match
+  another.
+- `TextEditingController` edits and cursor movement do nothing while its
+  selection is cleared or lies outside the text, as on a new controller
+  before a selection is set. `insert`, `newline`, `deleteBack`, and
+  `deleteForward` return `false` and leave the text unchanged. `insert` and
+  `deleteForward` used to throw a `RangeError`, and `moveCursorRight` skipped
+  the start of the text. Set `selection` before editing programmatically.
+- `Text`, `RichText`, and `RenderParagraph.selection` reject a `TextHighlight`
+  with a negative or reversed range by throwing an `ArgumentError` in release
+  builds too. Only a debug assertion caught it before.
+- `Select` paints each grapheme cluster of an option's name and description
+  whole. The earlier per-cell path kept only a cluster's first scalar, so a
+  zero-width-joiner emoji lost its tail. `DiffView` pads split-view columns
+  by terminal cells rather than UTF-16 code units, so wide text in the left
+  column no longer moves the column divider.
+- A second Ctrl+C now stops `dart run noir:run` when the app ignores the
+  first. The runner forwards the first SIGINT to the app, and an app that
+  handles SIGINT and keeps running, such as one passing `onExitRequested`,
+  used to leave the runner waiting on it; later presses were only forwarded
+  again. The second now kills the app process.
+
+### Removed
+
+**Breaking prerelease change:** these unused members are removed without
+compatibility shims.
+
+- `BoxShape` and `BoxDecoration.shape`, with the `shape` constructor
+  parameter. `BoxShape.circle` only suppressed the body fill; leave `color`
+  unset instead.
+- `Color.withOpacity`. Pass the alpha channel to the constructor instead, as
+  in `Color(color.r, color.g, color.b, opacity)`.
+- `Listenable.merge`. Add the listener to each source instead.
+- `TextRange.isNormalized`, `TextRange.textBefore`, and `TextRange.textAfter`.
+- `TextEditingValue.composing` and the `composing` parameters of the
+  `TextEditingValue` constructor and `copyWith`. Noir never set a composing
+  range, and equality and `toString` no longer include one.
+- `Actions.find` and `Actions.invoke`. `Actions.maybeFind` returns `null` and
+  `Actions.maybeInvoke` returns `KeyEventResult.ignored` where those threw.
+- `Focus.of`, `Focus.maybeOf`, `FocusScope.of`, and `FocusScope.maybeOf`.
+  Pass a `FocusNode` to `Focus` or a `FocusScopeNode` to `FocusScope` and
+  keep a reference to it instead.
+- `OverlayPortalController.toggle`. Call `show` or `hide` according to
+  `isShowing` instead.
+- `CursorController.updatePosition`, from `package:noir/noir_low_level.dart`.
+- The undocumented `TERMINAL_TUI_DEBUG_LOG=1` environment switch, which wrote
+  a line to standard error for every rendered frame.
+
 ## 0.0.4
 
 Adds opt-in caller-owned shutdown. The native ABI and bundled native artifacts

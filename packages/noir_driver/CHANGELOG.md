@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.1
+
+First stable release of `noir_driver`. It requires `noir: ^0.0.5`, the version
+this client is built and tested against. The library, public API, and behavior
+are unchanged from 0.0.1-alpha.2.
+
 ## 0.0.1-alpha.2
 
 ### Fixed

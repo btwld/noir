@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.0.1-alpha.2
+## 0.0.1
 
-- Requires `noir: ^0.0.4`, the version this companion is built and tested
-  against. The library, public API, and behavior are unchanged.
+First stable release of `noir_signals`. It requires `noir: ^0.0.5`, the
+version this companion is built and tested against. The library, public API,
+and behavior are unchanged from 0.0.1-alpha.1.
 
 ## 0.0.1-alpha.1
 
