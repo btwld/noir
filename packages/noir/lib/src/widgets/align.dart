@@ -9,9 +9,6 @@ import '../rendering/positioned_box.dart';
 ///
 /// Positions the child in whole terminal cells. Flutter's `widthFactor` and
 /// `heightFactor` sizing options are not supported.
-///
-/// This widget uses RenderPositionedBox to handle alignment positioning
-/// without relying on Container widgets to avoid circular dependencies.
 class Align extends SingleChildRenderObjectWidget {
   /// Creates an alignment widget.
   ///

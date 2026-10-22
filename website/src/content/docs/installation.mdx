@@ -91,11 +91,11 @@ dependency_overrides:
 The override routes the companion's own `noir` dependency to the same
 checkout, so one revision supplies both packages.
 
-## Try an unreleased Noir API without the companion
+## Evaluate source newer than publication.json
 
-`LayoutBuilder`, `State.deferDispose`, and mouse pointer shapes are included in
-Noir 0.0.1. To evaluate changes beyond the published package, point your
-application at a repository checkout:
+`publication.json` records the Noir version on pub.dev. To evaluate Noir
+source newer than that record, without the companion, point the application
+at a repository checkout:
 
 ```yaml
 dependencies:

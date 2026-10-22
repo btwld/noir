@@ -161,8 +161,6 @@ test('replacing a JPEG requires updated review provenance', async (t) => {
 
 test('a canonical lesson replaces stale generated release prose before validation', async (t) => {
   const f = await fixture(t);
-  // Only Noir is published in this transition. Clear the existing authored
-  // pages to isolate the generated lesson's before/after contract.
   await f.write(
     'publication.json',
     JSON.stringify({
@@ -223,6 +221,15 @@ test('wrapped authored release claims are rejected', async (t) => {
     '# Hooks\nRequires the unreleased Noir\n  0.0.1.\n',
   );
   rejectsSync(f, /hooks\.mdx says "unreleased Noir 0\.0\.1"/);
+});
+
+test('a repository-only claim is rejected once noir_driver is published', async (t) => {
+  const f = await fixture(t);
+  await f.write(
+    'website/src/content/api.mdx',
+    '# API\nNoir Driver is repository-only.\n',
+  );
+  rejectsSync(f, /api\.mdx says "repository-only"/);
 });
 
 for (const version of [['0.0.1-alpha.4'], { version: '0.0.1-alpha.4' }]) {
