@@ -166,10 +166,35 @@ void main() {
           ),
         );
 
+        // A wide cluster fills its continuation cell. The separator follows it.
         expect(captured.getChar(0, 0), '中');
-        expect(captured.getChar(1, 0), ' ');
+        expect(captured.getChar(1, 0), '');
         expect(captured.getChar(2, 0), ' ');
         expect(captured.getChar(3, 0), '😀');
+        expect(captured.getChar(4, 0), '');
+      } finally {
+        capture.dispose();
+      }
+    });
+
+    test('paints a wide ZWJ grapheme in the name and description', () {
+      const cluster = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+      final capture = BufferCapture(width: 12, height: 1);
+      try {
+        final frame = capture.capture(
+          const Select<String>(
+            height: 1,
+            options: [
+              SelectOption(
+                name: cluster,
+                description: cluster,
+                value: 'family',
+              ),
+            ],
+          ),
+        );
+
+        expect(frame.toLines().single.trimRight(), '$cluster $cluster');
       } finally {
         capture.dispose();
       }

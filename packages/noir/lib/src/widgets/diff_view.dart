@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:meta/meta.dart';
 
 import '../core/color.dart';
+import '../core/grapheme_metrics.dart';
 import '../core/input.dart';
 import '../core/terminal_style.dart';
 import '../foundation/disposable.dart';
@@ -1053,6 +1054,16 @@ void _addSplitRows(
   })
   addRow,
 ) {
+  // splitColumnWidth counts cells. String.padRight counts UTF-16 code units,
+  // so a wide grapheme would place the divider early. Style offsets are taken
+  // from this padded string and must stay on that same boundary.
+  String padToCells(String text) {
+    final width = terminalStringWidth(text);
+    final cells = widget.splitColumnWidth;
+    if (width >= cells) return text;
+    return '$text${' ' * (cells - width)}';
+  }
+
   var index = 0;
   while (index < hunk.lines.length) {
     final line = hunk.lines[index];
@@ -1061,7 +1072,7 @@ void _addSplitRows(
       final number = widget.showLineNumbers
           ? '${line.oldLineNumber ?? ''}'.padLeft(4)
           : '';
-      final left = '$number ${line.text}'.padRight(widget.splitColumnWidth);
+      final left = padToCells('$number ${line.text}');
       final rightNumber = widget.showLineNumbers
           ? '${line.newLineNumber ?? ''}'.padLeft(4)
           : '';
@@ -1095,9 +1106,7 @@ void _addSplitRows(
       final newNumber = widget.showLineNumbers
           ? '${addition?.newLineNumber ?? ''}'.padLeft(4)
           : '';
-      final left = '$oldNumber-${deletion?.text ?? ''}'.padRight(
-        widget.splitColumnWidth,
-      );
+      final left = padToCells('$oldNumber-${deletion?.text ?? ''}');
       addRow(
         '$left │ $newNumber+${addition?.text ?? ''}',
         deletion == null

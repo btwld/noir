@@ -622,17 +622,18 @@ class RenderSelect<T> extends RenderBox
         );
       }
 
-      // Advance by grapheme clusters so a wide glyph occupies more than one cell.
+      // Advance by grapheme clusters so a wide glyph occupies more than one
+      // cell. drawText encodes the whole cluster; setCell keeps only its
+      // first scalar, which truncates a ZWJ sequence.
       var col = 0;
       for (final cluster in opt.name.characters) {
         final cw = terminalCellWidth(cluster);
         if (col + cw > usableWidth) break;
-        canvas.setCell(
-          Offset(originX + col, originY + row),
+        canvas.drawText(
           cluster,
+          Offset(originX + col, originY + row),
           fg,
-          bg,
-          0,
+          background: bg,
         );
         col += cw;
       }
@@ -646,12 +647,11 @@ class RenderSelect<T> extends RenderBox
         for (final cluster in opt.description!.characters) {
           final cw = terminalCellWidth(cluster);
           if (col + cw > usableWidth) break;
-          canvas.setCell(
-            Offset(originX + col, originY + row),
+          canvas.drawText(
             cluster,
+            Offset(originX + col, originY + row),
             descColor,
-            bg,
-            0,
+            background: bg,
           );
           col += cw;
         }

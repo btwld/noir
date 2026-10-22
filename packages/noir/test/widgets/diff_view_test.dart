@@ -252,6 +252,43 @@ diff --git "a/lib/path with space-\303\244.dart" "b/lib/path with space-\303\244
     }
   });
 
+  test('split columns pad a wide ZWJ grapheme by cells', () {
+    const cluster = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    const columnWidth = 10;
+    final capture = BufferCapture(width: 40, height: 3);
+    addTearDown(capture.dispose);
+
+    final frame = capture.capture(
+      DiffView(
+        document: UnifiedDiffParser().parse(
+          '--- a.txt\n'
+          '+++ a.txt\n'
+          '@@ -1,2 +1,2 @@\n'
+          ' $cluster\n'
+          '-$cluster\n'
+          '+$cluster\n',
+        ),
+        mode: DiffViewMode.split,
+        splitColumnWidth: columnWidth,
+        showLineNumbers: false,
+      ),
+    );
+
+    // Both the context row and the paired change reserve [columnWidth]
+    // cells, then a space, then the divider.
+    const dividerColumn = columnWidth + 1;
+    expect(frame.getChar(1, 1), cluster);
+    expect(frame.getChar(dividerColumn, 1), '│');
+    expect(frame.getChar(1, 2), cluster);
+    expect(frame.getChar(dividerColumn, 2), '│');
+    expect(frame.getChar(columnWidth + 4, 2), cluster);
+
+    final surface = ThemeData.dark.surface.toHex();
+    expect(frame.getBackgroundColor(columnWidth - 1, 2).toHex(), '#380f0fff');
+    expect(frame.getBackgroundColor(dividerColumn, 2).toHex(), surface);
+    expect(frame.getBackgroundColor(columnWidth + 3, 2).toHex(), '#0d331aff');
+  });
+
   test('row builder default preserves syntax and diff backgrounds', () {
     final capture = BufferCapture(width: 40, height: 4);
     try {
