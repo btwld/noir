@@ -75,9 +75,6 @@ final class FakeMcpSession implements McpSession {
   String? get protocolVersion => _connected ? '2026-07-28' : null;
 
   @override
-  String? get instructions => _connected ? 'Fake instructions.' : null;
-
-  @override
   Set<String> get capabilities =>
       _connected ? const <String>{'tools', 'resources', 'prompts'} : const {};
 

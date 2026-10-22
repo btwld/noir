@@ -4,7 +4,6 @@ import 'dart:math' as math;
 
 import 'package:noir/noir.dart'
     hide DiffFile, DiffHunk, DiffLine, UnifiedDiffParser;
-import 'package:noir/noir.dart' as noir_diff;
 import 'display_models.dart';
 import 'git_path.dart';
 import 'models.dart';
@@ -397,43 +396,31 @@ class PatchDiffSurface extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.scrollController,
-    required this.diffViewController,
     required this.stagingEnabled,
     this.onSkipHunk,
     this.onStageHunk,
     this.onSkipWholeFile,
     this.onStageWholeFile,
-    this.onRefresh,
   });
 
   final PatchReviewController controller;
   final FocusNode focusNode;
   final ScrollController scrollController;
-  final noir_diff.DiffViewController diffViewController;
   final bool stagingEnabled;
   final void Function(DiffHunk hunk)? onSkipHunk;
   final void Function(DiffHunk hunk)? onStageHunk;
   final void Function(WholeFileChange change)? onSkipWholeFile;
   final void Function(WholeFileChange change)? onStageWholeFile;
-  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final file = controller.currentFile;
-    if (!file.canStageContent && !file.canStageWholeFile) {
-      return const Text(
-        'This file has no reviewable changes.',
-        style: TextStyle(color: PatchTheme.amber),
-      );
-    }
-
     final hunkLabel = file.canStageContent
         ? 'hunk ${controller.selectedHunkIndex + 1} of ${file.hunks.length}'
         : WholeFileChangeDisplay.fromChange(
             file.wholeFileStageUnit!,
           ).title.toLowerCase();
     final incompletePreviewLabel = _incompletePreviewHeaderLabel(file);
-    final diffAdapter = file.canStageContent ? _PatchDiffAdapter(file) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -483,35 +470,54 @@ class PatchDiffSurface extends StatelessWidget {
         PatchDiffFilterBar(controller: controller, file: file),
         const SizedBox(height: 1),
         Expanded(
-          child: diffAdapter == null
-              ? ScrollBox(
-                  focusNode: focusNode,
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _wholeFileWidgets(file),
-                  ),
-                )
-              : noir_diff.DiffView(
-                  document: diffAdapter.document,
-                  controller: diffViewController,
-                  scrollController: scrollController,
-                  focusNode: focusNode,
-                  selectable: false,
-                  showLineNumbers: false,
-                  rowBuilder: (_, _, hunk, line, _) => diffAdapter.buildRow(
-                    hunk: hunk,
-                    line: line,
-                    controller: controller,
-                    stagingEnabled: stagingEnabled,
-                    onSkipHunk: onSkipHunk,
-                    onStageHunk: onStageHunk,
-                    onRefresh: onRefresh,
-                  ),
-                ),
+          child: ScrollBox(
+            focusNode: focusNode,
+            controller: scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: file.canStageContent
+                  ? _hunkWidgets(file)
+                  : _wholeFileWidgets(file),
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  List<Widget> _hunkWidgets(DiffFile file) {
+    final widgets = <Widget>[];
+    for (var hunkIndex = 0; hunkIndex < file.hunks.length; hunkIndex++) {
+      final hunk = file.hunks[hunkIndex];
+      final selected = hunkIndex == controller.selectedHunkIndex;
+      widgets
+        ..add(PatchHunkBorderRow(selected: selected, top: true))
+        ..add(
+          PatchHunkCard(
+            controller: controller,
+            hunk: hunk,
+            selected: selected,
+            stagingEnabled: stagingEnabled,
+            onSkipHunk: onSkipHunk,
+            onStageHunk: onStageHunk,
+          ),
+        );
+      for (var lineIndex = 0; lineIndex < hunk.lines.length; lineIndex++) {
+        widgets.add(
+          PatchDiffLine(
+            controller: controller,
+            hunk: hunk,
+            lineIndex: lineIndex,
+            framed: true,
+            selectedHunk: selected,
+          ),
+        );
+      }
+      widgets
+        ..add(PatchHunkBorderRow(selected: selected, top: false))
+        ..add(const SizedBox(height: 1));
+    }
+    return widgets;
   }
 
   List<Widget> _wholeFileWidgets(DiffFile file) {
@@ -523,7 +529,6 @@ class PatchDiffSurface extends StatelessWidget {
         stagingEnabled: stagingEnabled,
         onSkip: onSkipWholeFile,
         onStage: onStageWholeFile,
-        onRefresh: onRefresh,
       ),
     ];
     final notice = _untrackedPreviewNotice(file);
@@ -553,106 +558,6 @@ class PatchDiffSurface extends StatelessWidget {
       }
     }
     return widgets;
-  }
-}
-
-final class _PatchDiffAdapter {
-  _PatchDiffAdapter(DiffFile file) {
-    final presentationHunks = <noir_diff.DiffHunk>[];
-    for (var hunkIndex = 0; hunkIndex < file.hunks.length; hunkIndex++) {
-      final hunk = file.hunks[hunkIndex];
-      final presentationLines = <noir_diff.DiffLine>[];
-      for (var lineIndex = 0; lineIndex < hunk.lines.length; lineIndex++) {
-        final line = hunk.lines[lineIndex];
-        final presentation = noir_diff.DiffLine(
-          kind: switch (line.type) {
-            DiffLineType.context => noir_diff.DiffLineKind.context,
-            DiffLineType.addition => noir_diff.DiffLineKind.addition,
-            DiffLineType.deletion => noir_diff.DiffLineKind.deletion,
-            DiffLineType.noNewlineMarker =>
-              noir_diff.DiffLineKind.noNewlineMarker,
-          },
-          text: line.text,
-          oldLineNumber: line.oldLineNumber,
-          newLineNumber: line.newLineNumber,
-        );
-        presentationLines.add(presentation);
-        _lines[presentation] = (hunk: hunk, lineIndex: lineIndex);
-      }
-      final presentation = noir_diff.DiffHunk(
-        oldStart: hunk.oldStart,
-        oldCount: hunk.oldCount,
-        newStart: hunk.newStart,
-        newCount: hunk.newCount,
-        header: hunk.sectionHeading,
-        lines: presentationLines,
-      );
-      presentationHunks.add(presentation);
-      _hunks[presentation] = (hunk: hunk, hunkIndex: hunkIndex);
-    }
-    document = noir_diff.DiffDocument(<noir_diff.DiffFile>[
-      noir_diff.DiffFile(
-        oldPath: file.oldPath == null
-            ? null
-            : GitPathPresentation.asciiSafe(file.oldPath!).full,
-        newPath: file.newPath == null
-            ? null
-            : GitPathPresentation.asciiSafe(file.newPath!).full,
-        hunks: presentationHunks,
-      ),
-    ]);
-  }
-
-  late final noir_diff.DiffDocument document;
-  final Map<noir_diff.DiffHunk, ({DiffHunk hunk, int hunkIndex})> _hunks = {};
-  final Map<noir_diff.DiffLine, ({DiffHunk hunk, int lineIndex})> _lines = {};
-
-  Widget buildRow({
-    required noir_diff.DiffHunk hunk,
-    required noir_diff.DiffLine? line,
-    required PatchReviewController controller,
-    required bool stagingEnabled,
-    required void Function(DiffHunk hunk)? onSkipHunk,
-    required void Function(DiffHunk hunk)? onStageHunk,
-    required VoidCallback? onRefresh,
-  }) {
-    final hunkRecord = _hunks[hunk]!;
-    final selectedHunk = hunkRecord.hunkIndex == controller.selectedHunkIndex;
-    if (line == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          PatchHunkBorderRow(selected: selectedHunk, top: true),
-          PatchHunkCard(
-            controller: controller,
-            hunk: hunkRecord.hunk,
-            selected: selectedHunk,
-            stagingEnabled: stagingEnabled,
-            onSkipHunk: onSkipHunk,
-            onStageHunk: onStageHunk,
-            onRefresh: onRefresh,
-          ),
-        ],
-      );
-    }
-    final lineRecord = _lines[line]!;
-    final last = lineRecord.lineIndex == lineRecord.hunk.lines.length - 1;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PatchDiffLine(
-          controller: controller,
-          hunk: lineRecord.hunk,
-          lineIndex: lineRecord.lineIndex,
-          framed: true,
-          selectedHunk: selectedHunk,
-        ),
-        if (last) ...<Widget>[
-          PatchHunkBorderRow(selected: selectedHunk, top: false),
-          const SizedBox(height: 1),
-        ],
-      ],
-    );
   }
 }
 
@@ -762,7 +667,6 @@ class PatchWholeFileCard extends StatelessWidget {
     required this.stagingEnabled,
     this.onSkip,
     this.onStage,
-    this.onRefresh,
   });
 
   final PatchReviewController controller;
@@ -770,7 +674,6 @@ class PatchWholeFileCard extends StatelessWidget {
   final bool stagingEnabled;
   final void Function(WholeFileChange change)? onSkip;
   final void Function(WholeFileChange change)? onStage;
-  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -820,7 +723,6 @@ class PatchWholeFileCard extends StatelessWidget {
                       onStage == null ? null : () => onStage!(change),
                     PatchActionKind.skip =>
                       onSkip == null ? null : () => onSkip!(change),
-                    PatchActionKind.refresh => onRefresh,
                     PatchActionKind.staged => null,
                   },
                 ),
@@ -847,7 +749,6 @@ class PatchHunkCard extends StatelessWidget {
     required this.stagingEnabled,
     this.onSkipHunk,
     this.onStageHunk,
-    this.onRefresh,
   });
 
   final PatchReviewController controller;
@@ -856,7 +757,6 @@ class PatchHunkCard extends StatelessWidget {
   final bool stagingEnabled;
   final void Function(DiffHunk hunk)? onSkipHunk;
   final void Function(DiffHunk hunk)? onStageHunk;
-  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -915,7 +815,6 @@ class PatchHunkCard extends StatelessWidget {
     PatchActionKind.skip => onSkipHunk == null ? null : () => onSkipHunk!(hunk),
     PatchActionKind.stage =>
       onStageHunk == null ? null : () => onStageHunk!(hunk),
-    PatchActionKind.refresh => onRefresh,
     PatchActionKind.staged => null,
   };
 }

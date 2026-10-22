@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:meta/meta.dart';
 import 'package:noir/noir.dart'
     hide DiffFile, DiffHunk, DiffLine, UnifiedDiffParser;
-import 'package:noir/noir.dart' as noir_diff;
 import 'package:noir/noir_low_level.dart';
 import 'display_models.dart';
 import 'git_path.dart';
@@ -171,7 +170,6 @@ class _PatchManagerViewState extends State<PatchManagerView> {
   final _diffFocus = FocusNode();
   late final List<FocusNode> _focusRing;
   late ScrollController _diffScroll;
-  final _diffViewController = noir_diff.DiffViewController();
   String? _diffScrollTarget;
   int _diffAnchorGeneration = 0;
   late String _status;
@@ -223,7 +221,6 @@ class _PatchManagerViewState extends State<PatchManagerView> {
         ..dispose();
     }
     _diffScroll.dispose();
-    _diffViewController.dispose();
     super.dispose();
   }
 
@@ -336,12 +333,7 @@ class _PatchManagerViewState extends State<PatchManagerView> {
             !_controller.hasFiles) {
           return;
         }
-        final file = _controller.currentFile;
-        if (file.canStageContent) {
-          _diffViewController.jumpToHunk(_controller.selectedHunkIndex);
-          // Patch Manager rows are variable-height cards. DiffView establishes
-          // the semantic hunk anchor; this correction retains the selected
-          // line/card offset used by the review workflow.
+        if (_controller.currentFile.canStageContent) {
           _diffScroll.jumpTo(_selectedSectionScrollOffset().toDouble());
         }
       }),
@@ -679,13 +671,11 @@ class _PatchManagerViewState extends State<PatchManagerView> {
               controller: _controller,
               focusNode: _diffFocus,
               scrollController: _diffScroll,
-              diffViewController: _diffViewController,
               stagingEnabled: !_refreshRequired,
               onSkipHunk: _skipHunk,
               onStageHunk: _stageHunk,
               onSkipWholeFile: (_) => _skipCurrentReviewTarget(),
               onStageWholeFile: _stageWholeFile,
-              onRefresh: _refresh,
             ),
           ),
         ),

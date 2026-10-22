@@ -98,9 +98,6 @@ final class LiveMcpSession implements McpSession {
   String? get protocolVersion => _client?.getProtocolVersion();
 
   @override
-  String? get instructions => _client?.getInstructions();
-
-  @override
   Set<String> get capabilities {
     final advertised = _client?.getServerCapabilities();
     if (advertised == null) return const <String>{};
