@@ -18,7 +18,7 @@ The finished app after lesson 5.
 </figure>
 
 You need Dart 3.10 or later and a checkout of the Noir repository.
-`noir_signals` requires Noir 0.0.4. You will build inside the checkout, which
+`noir_signals` requires Noir 0.0.5. You will build inside the checkout, which
 resolves both packages from the same revision. To add the published packages
 to an application of your own instead, use the
 [install instructions](../README.md).

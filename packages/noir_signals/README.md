@@ -36,11 +36,11 @@ both packages. The task-list tutorial builds its app there, in
 
 To evaluate unreleased changes, clone Noir beside your application directory,
 pin an exact commit or tag, and resolve both packages from that revision. The
-0.0.1-alpha.2 checkout candidate requires Noir 0.0.4:
+0.0.1 checkout candidate requires Noir 0.0.5:
 
 ```yaml
 dependencies:
-  noir: ^0.0.4
+  noir: ^0.0.5
   noir_signals:
     path: ../noir/packages/noir_signals
 dependency_overrides:
