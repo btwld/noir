@@ -10,14 +10,14 @@ This document is the reference. To learn hooks by building an app, start with
 
 ## Install and import
 
-The published 0.0.1-alpha.1 companion requires Noir 0.0.3. An application
+The published 0.0.1 companion requires Noir 0.0.5. An application
 declares both packages; the
 [package overview](../README.md) also covers a repository checkout:
 
 ```yaml
 dependencies:
-  noir: ^0.0.3
-  noir_signals: ^0.0.1-alpha.1
+  noir: ^0.0.5
+  noir_signals: ^0.0.1
 ```
 
 ```dart
