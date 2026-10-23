@@ -13,8 +13,7 @@ user actions in one runnable app.
 
 ## Install
 
-Add the published companion beside Noir. Version 0.0.1-alpha.1 requires Noir
-0.0.3:
+Add the published companion beside Noir. Version 0.0.1 requires Noir 0.0.5:
 
 ```sh
 dart pub add noir noir_signals
@@ -22,8 +21,8 @@ dart pub add noir noir_signals
 
 ```yaml
 dependencies:
-  noir: ^0.0.3
-  noir_signals: ^0.0.1-alpha.1
+  noir: ^0.0.5
+  noir_signals: ^0.0.1
 ```
 
 ### Inside the Noir repository
@@ -35,8 +34,7 @@ both packages. The task-list tutorial builds its app there, in
 ### From a repository checkout
 
 To evaluate unreleased changes, clone Noir beside your application directory,
-pin an exact commit or tag, and resolve both packages from that revision. The
-0.0.1 checkout candidate requires Noir 0.0.5:
+pin an exact commit or tag, and resolve both packages from that revision:
 
 ```yaml
 dependencies:
