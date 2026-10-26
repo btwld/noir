@@ -506,16 +506,19 @@ final class _NetworkImageSource extends _ImageSource {
       );
     }
     final timeout = debugNetworkImageTimeout;
+    final elapsed = Stopwatch()..start();
+    Duration remaining() => timeout - elapsed.elapsed;
     final client = io.HttpClient()..connectionTimeout = timeout;
     void cancelRequest() => client.close(force: true);
     token.addCancelCallback(cancelRequest);
     try {
       token.throwIfCancelled();
-      final request = await client.getUrl(uri).timeout(timeout);
+      final request = await client.getUrl(uri).timeout(remaining());
       headers.forEach(request.headers.set);
-      final response = await request.close().timeout(timeout);
+      final response = await request.close().timeout(remaining());
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        await response.drain<void>();
+        // This client serves one image only. Do not wait for an error body
+        // that may never finish; finally closes the connection instead.
         throw ImageLoadException(
           code: ImageLoadErrorCode.httpStatus,
           source: uri.toString(),
@@ -526,7 +529,12 @@ final class _NetworkImageSource extends _ImageSource {
       if (response.contentLength > maxTerminalImageEncodedBytes) {
         throw TerminalImageException.fromStatus(6);
       }
-      final bytes = await _readBytes(response, token);
+      final bytes = await _readBytes(
+        response,
+        token,
+        timeout: remaining(),
+        onTimeout: cancelRequest,
+      );
       token.throwIfCancelled();
       return TerminalImage.decode(bytes);
     } on ImageLoadException {
@@ -544,7 +552,7 @@ final class _NetworkImageSource extends _ImageSource {
       );
     } finally {
       token.removeCancelCallback(cancelRequest);
-      client.close(force: token.isCancelled);
+      client.close(force: true);
     }
   }
 
@@ -560,15 +568,20 @@ final class _NetworkImageSource extends _ImageSource {
 
 Future<Uint8List> _readBytes(
   Stream<List<int>> stream,
-  _ImageLoadToken token,
-) async {
+  _ImageLoadToken token, {
+  Duration? timeout,
+  void Function()? onTimeout,
+}) async {
   final builder = BytesBuilder(copy: false);
   final iterator = StreamIterator<List<int>>(stream);
   void cancelRead() => unawaited(iterator.cancel());
   token.addCancelCallback(cancelRead);
+  final elapsed = Stopwatch()..start();
   var length = 0;
   try {
-    while (await iterator.moveNext()) {
+    while (await (timeout == null
+        ? iterator.moveNext()
+        : iterator.moveNext().timeout(timeout - elapsed.elapsed))) {
       token.throwIfCancelled();
       final chunk = iterator.current;
       if (chunk.length > maxTerminalImageEncodedBytes - length) {
@@ -578,8 +591,14 @@ Future<Uint8List> _readBytes(
       length += chunk.length;
     }
     return builder.takeBytes();
+  } on TimeoutException {
+    // Close the underlying network producer before waiting for subscription
+    // cancellation, which must finish before a timeout reaches the widget.
+    onTimeout?.call();
+    rethrow;
   } finally {
     token.removeCancelCallback(cancelRead);
+    await iterator.cancel();
   }
 }
 

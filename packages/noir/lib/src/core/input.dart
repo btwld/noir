@@ -718,15 +718,19 @@ class InputSubscription {
   InputSubscription._(this._cancel);
 
   final void Function() _cancel;
-  bool _cancelled = false;
 
   /// Remove this subscription. Idempotent.
-  void cancel() {
-    if (_cancelled) return;
-    _cancelled = true;
-    _cancel();
-  }
+  void cancel() => _cancel();
 }
+
+final class _InputRegistration<H> {
+  _InputRegistration(this.handler);
+
+  final H handler;
+  bool active = true;
+}
+
+typedef _InputBuckets<H> = SplayTreeMap<int, List<_InputRegistration<H>>>;
 
 /// Internal dispatch kernel for terminal input events.
 ///
@@ -738,14 +742,11 @@ final class InputDispatcher {
   // priority -> insertion-ordered list. SplayTreeMap keeps keys sorted so
   // we can walk priorities in either direction without re-sorting on each
   // dispatch. The lists preserve registration order within a bucket.
-  final SplayTreeMap<int, List<KeyEventHandler>> _keyByPriority =
-      SplayTreeMap<int, List<KeyEventHandler>>();
-  final SplayTreeMap<int, List<MouseEventHandler>> _mouseByPriority =
-      SplayTreeMap<int, List<MouseEventHandler>>();
-  final SplayTreeMap<int, List<PasteEventHandler>> _pasteByPriority =
-      SplayTreeMap<int, List<PasteEventHandler>>();
-  final SplayTreeMap<int, List<CapabilityResponseHandler>>
-  _capabilityByPriority = SplayTreeMap<int, List<CapabilityResponseHandler>>();
+  final _InputBuckets<KeyEventHandler> _keyByPriority = _InputBuckets();
+  final _InputBuckets<MouseEventHandler> _mouseByPriority = _InputBuckets();
+  final _InputBuckets<PasteEventHandler> _pasteByPriority = _InputBuckets();
+  final _InputBuckets<CapabilityResponseHandler> _capabilityByPriority =
+      _InputBuckets();
   VoidCallback? _afterEvent;
   Offset? _mousePosition;
 
@@ -756,14 +757,20 @@ final class InputDispatcher {
   /// Registers [handler] in [byPriority] and returns a handle that, when
   /// cancelled, removes the subscription (dropping empty priority buckets).
   InputSubscription _subscribe<H>(
-    SplayTreeMap<int, List<H>> byPriority,
+    _InputBuckets<H> byPriority,
     H handler,
     int priority,
   ) {
-    final list = byPriority.putIfAbsent(priority, () => <H>[]);
-    list.add(handler);
+    final list = byPriority.putIfAbsent(
+      priority,
+      () => <_InputRegistration<H>>[],
+    );
+    final registration = _InputRegistration(handler);
+    list.add(registration);
     return InputSubscription._(() {
-      list.remove(handler);
+      if (!registration.active) return;
+      registration.active = false;
+      list.remove(registration);
       if (list.isEmpty) {
         byPriority.remove(priority);
       }
@@ -808,7 +815,7 @@ final class InputDispatcher {
   /// handler consumes it. Schedules a frame via [_afterEvent] exactly once,
   /// unless [scheduleOnlyIfHandled] is set and no handler ran.
   void _dispatchEventBucket<E extends _Consumable>(
-    SplayTreeMap<int, List<void Function(E)>> byPriority,
+    _InputBuckets<void Function(E)> byPriority,
     E event, {
     bool scheduleOnlyIfHandled = false,
   }) {
@@ -822,10 +829,13 @@ final class InputDispatcher {
     for (final priority in priorities) {
       final bucket = byPriority[priority];
       if (bucket == null) continue;
-      final snapshot = List<void Function(E)>.from(bucket);
-      for (final handler in snapshot) {
+      final snapshot = List<_InputRegistration<void Function(E)>>.of(bucket);
+      for (final registration in snapshot) {
+        // Cancellation can tear down a callback's owner during an earlier
+        // callback. A snapshot preserves order, not canceled registrations.
+        if (!registration.active) continue;
         handled = true;
-        handler(event);
+        registration.handler(event);
         if (event.isConsumed) {
           _afterEvent?.call();
           return;

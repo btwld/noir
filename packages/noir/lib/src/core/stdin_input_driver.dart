@@ -108,6 +108,7 @@ final class _IoStdinInputSource implements StdinInputSource {
 /// - Printable ASCII and UTF-8 multi-byte characters
 /// - Backspace (DEL `0x7f`, BS `0x08`), Tab `0x09`, Enter `0x0a`/`0x0d`
 /// - Escape `0x1b` alone
+/// - Legacy ESC-prefixed Alt character, control, and Backspace keys
 /// - Ctrl+letter (1..26) — emitted as a letter [LogicalKeyboardKey] with the
 ///   `KeyModifiers.ctrl` bit set and no printable character
 /// - CSI cursor keys: `ESC[A/B/C/D` → logical arrow keys
@@ -115,6 +116,7 @@ final class _IoStdinInputSource implements StdinInputSource {
 /// - CSI tilde keys: `ESC[3~`/`ESC[5~`/`ESC[6~` → logical Delete/Page keys
 /// - xterm modifyOtherKeys: `ESC[27;modifier;code~`
 /// - Function keys F1–F12 via `ESC O P/Q/R/S` and `ESC[N~`
+/// - SS3 application-cursor arrows/Home/End and printable application keypad
 /// - SGR mouse: `ESC[<Cb;Cx;CyM/m` for press/release, drag, and wheel
 /// - Bracketed paste: `ESC[200~...ESC[201~` accumulated into a single event
 /// - Kitty keyboard CSI-u:
@@ -639,7 +641,42 @@ int _parseOne(
     if (next == 0x5c) {
       return 2;
     }
-    // Bare ESC.
+    // Legacy Alt input prefixes an ordinary key with ESC. Decode the entire
+    // key first so split UTF-8 stays pending rather than becoming Escape plus
+    // an unmodified character. Known control-string introducers above retain
+    // their framing semantics.
+    if (next != 0x1b) {
+      final keyInputs = <ParsedInput>[];
+      final consumed = _parseOne(
+        bytes,
+        start + 1,
+        keyInputs,
+        paste,
+        holdTrailingEscape,
+        context,
+      );
+      if (consumed == 0) return 0;
+      if (keyInputs.singleOrNull case KeyInput(:final event)) {
+        var modifiers = event.modifiers | KeyModifiers.alt;
+        if (next >= 0x41 && next <= 0x5a) {
+          modifiers |= KeyModifiers.shift;
+        }
+        out.add(
+          KeyInput(
+            _key(
+              event.logicalKey,
+              keyCode: event.keyCode,
+              character: event.character,
+              modifiers: modifiers,
+              isPress: event.isPress,
+              isRepeat: event.isRepeat,
+            ),
+          ),
+        );
+        return consumed + 1;
+      }
+    }
+    // Unrecognized ESC prefix: retain the ordinary Escape fallback.
     out.add(KeyInput(_key(LogicalKeyboardKey.escape, keyCode: 27)));
     return 1;
   }
@@ -893,6 +930,12 @@ int _parseCsi(
       evt = _csiKey(LogicalKeyboardKey.home, metadata);
     case 0x46: // 'F'
       evt = _csiKey(LogicalKeyboardKey.end, metadata);
+    case 0x50: // 'P'
+      evt = _csiKey(LogicalKeyboardKey.f1, metadata);
+    case 0x51: // 'Q'
+      evt = _csiKey(LogicalKeyboardKey.f2, metadata);
+    case 0x53: // 'S'
+      evt = _csiKey(LogicalKeyboardKey.f4, metadata);
     case 0x5a: // 'Z' — Shift+Tab
       evt = _key(
         LogicalKeyboardKey.tab,
@@ -960,13 +1003,33 @@ CapabilityInput _capabilityInput({
   ),
 );
 
-/// `ESC O <letter>` sequences — historically used for F1-F4 in some
-/// terminals (xterm "application keypad" mode).
+/// `ESC O <letter>` application-cursor, keypad, and function-key sequences.
 int _parseSs3(List<int> bytes, int start, List<ParsedInput> out) {
   if (start + 2 >= bytes.length) return 0;
   final c = bytes[start + 2];
   KeyEvent? evt;
   switch (c) {
+    case 0x41:
+    case 0x42:
+    case 0x43:
+    case 0x44:
+    case 0x46:
+    case 0x48:
+    case 0x61:
+    case 0x62:
+    case 0x63:
+    case 0x64:
+      final key = switch (c) {
+        0x41 || 0x61 => LogicalKeyboardKey.arrowUp,
+        0x42 || 0x62 => LogicalKeyboardKey.arrowDown,
+        0x43 || 0x63 => LogicalKeyboardKey.arrowRight,
+        0x44 || 0x64 => LogicalKeyboardKey.arrowLeft,
+        0x46 => LogicalKeyboardKey.end,
+        _ => LogicalKeyboardKey.home,
+      };
+      evt = _key(key, keyCode: 0, modifiers: c >= 0x61 ? KeyModifiers.ctrl : 0);
+    case 0x4d:
+      evt = _key(LogicalKeyboardKey.enter, keyCode: 13);
     case 0x50:
       evt = _key(LogicalKeyboardKey.f1, keyCode: 0);
     case 0x51:
@@ -975,6 +1038,18 @@ int _parseSs3(List<int> bytes, int start, List<ParsedInput> out) {
       evt = _key(LogicalKeyboardKey.f3, keyCode: 0);
     case 0x53:
       evt = _key(LogicalKeyboardKey.f4, keyCode: 0);
+    case 0x58:
+    case >= 0x6a && <= 0x79:
+      final character = c == 0x58
+          ? '='
+          : c >= 0x70
+          ? String.fromCharCode(c - 0x40)
+          : const ['*', '+', ',', '-', '.', '/'][c - 0x6a];
+      evt = _key(
+        LogicalKeyboardKey.forCharacter(character),
+        keyCode: character.codeUnitAt(0),
+        character: character,
+      );
   }
   if (evt != null) out.add(KeyInput(evt));
   return 3;

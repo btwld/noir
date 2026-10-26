@@ -14,6 +14,19 @@ import 'terminal_style.dart';
 
 const _rgbaChannelsPerCell = 4;
 
+typedef _BufferClip = ({int x, int y, int width, int height});
+
+_BufferClip _intersectClips(_BufferClip a, _BufferClip b) {
+  final x = math.max(a.x, b.x);
+  final y = math.max(a.y, b.y);
+  return (
+    x: x,
+    y: y,
+    width: math.max(0, math.min(a.x + a.width, b.x + b.width) - x),
+    height: math.max(0, math.min(a.y + a.height, b.y + b.height) - y),
+  );
+}
+
 void _checkUnsignedAbi(int value, int maximum, String name) {
   if (value < 0 || value > maximum) {
     throw RangeError.range(value, 0, maximum, name);
@@ -164,27 +177,43 @@ class Buffer {
   final _BufferValidity _validity;
   final bool _materializeImagesAsBlocks;
 
+  _BufferClip? get _clip => null;
+
   /// Returns a [Buffer] view that silently drops draw calls outside the
   /// rectangle `(clipX, clipY, clipWidth, clipHeight)`. The view shares the
   /// underlying FFI buffer and validity state; invalidating the parent
-  /// also invalidates every clipped view. Used by scrolling/clipping
-  /// containers (e.g. `ScrollBox`).
+  /// also invalidates every clipped view. Nested views intersect their clips.
+  /// Native box borders can straddle clip edges. Frame-buffer blits can also
+  /// write or clear parts of a wide grapheme beyond an edge; see
+  /// [drawFrameBuffer]. Used by scrolling/clipping containers (e.g. `ScrollBox`).
   Buffer clipped({
     required int clipX,
     required int clipY,
     required int clipWidth,
     required int clipHeight,
-  }) => _ClippedBufferView(
-    _ptr,
-    _bindings,
-    _ownerIsDisposed,
-    _validity,
-    materializeImagesAsBlocks: _materializeImagesAsBlocks,
-    clipX: clipX,
-    clipY: clipY,
-    clipWidth: clipWidth,
-    clipHeight: clipHeight,
-  );
+  }) {
+    final requested = (
+      x: clipX,
+      y: clipY,
+      width: clipWidth,
+      height: clipHeight,
+    );
+    final parentClip = _clip;
+    final clip = parentClip == null
+        ? requested
+        : _intersectClips(parentClip, requested);
+    return _ClippedBufferView(
+      _ptr,
+      _bindings,
+      _ownerIsDisposed,
+      _validity,
+      materializeImagesAsBlocks: _materializeImagesAsBlocks,
+      clipX: clip.x,
+      clipY: clip.y,
+      clipWidth: clip.width,
+      clipHeight: clip.height,
+    );
+  }
 
   void _checkValid() {
     if (!_validity.isValid || _ownerIsDisposed()) {
@@ -441,6 +470,12 @@ class Buffer {
   /// [srcWidth], and [srcHeight] must fit unsigned 32-bit values and [destX]
   /// and [destY] signed 32-bit values; violations throw a pre-invocation
   /// [RangeError].
+  ///
+  /// Clipped views intersect the copy rectangle with their clip. The pinned
+  /// native implementation can still expand a copied wide grapheme or clear
+  /// an overwritten destination grapheme across that edge. Keep wide grapheme
+  /// spans wholly inside or outside the clip in both buffers when exact
+  /// clipping is required.
   void drawFrameBuffer(
     Buffer sourceBuffer,
     int srcX,
@@ -458,6 +493,41 @@ class Buffer {
     _checkUnsignedAbi(srcHeight, 0xFFFFFFFF, 'srcHeight');
     _checkSigned32Abi(destX, 'destX');
     _checkSigned32Abi(destY, 'destY');
+    final clip = _clip;
+    if (clip != null) {
+      final sourceWidth = sourceBuffer.width;
+      final sourceHeight = sourceBuffer.height;
+      if (srcX >= sourceWidth || srcY >= sourceHeight) return;
+      final drawWidth = math.min(
+        srcWidth == 0 ? sourceWidth : srcWidth,
+        sourceWidth - srcX,
+      );
+      final drawHeight = math.min(
+        srcHeight == 0 ? sourceHeight : srcHeight,
+        sourceHeight - srcY,
+      );
+      final visible = _intersectClips(
+        _intersectClips((
+          x: destX,
+          y: destY,
+          width: drawWidth,
+          height: drawHeight,
+        ), clip),
+        (x: 0, y: 0, width: width, height: height),
+      );
+      if (visible.width == 0 || visible.height == 0) return;
+      _bindings.drawFrameBuffer(
+        _ptr,
+        visible.x,
+        visible.y,
+        sourceBuffer._ptr,
+        srcX + visible.x - destX,
+        srcY + visible.y - destY,
+        visible.width,
+        visible.height,
+      );
+      return;
+    }
     _bindings.drawFrameBuffer(
       _ptr,
       destX,
@@ -544,37 +614,26 @@ class Buffer {
       _checkUnsignedAbi(clipWidth!, 0xFFFFFFFF, 'clipWidth');
       _checkUnsignedAbi(clipHeight!, 0xFFFFFFFF, 'clipHeight');
     }
-    if (_materializeImagesAsBlocks) {
-      final left = hasClip ? math.max(x, clipX!) : x;
-      final top = hasClip ? math.max(y, clipY!) : y;
-      final right = hasClip
-          ? math.min(x + width, clipX! + clipWidth!)
-          : x + width;
-      final bottom = hasClip
-          ? math.min(y + height, clipY! + clipHeight!)
-          : y + height;
-      for (
-        var row = math.max(0, top);
-        row < math.min(this.height, bottom);
-        row++
-      ) {
-        for (
-          var column = math.max(0, left);
-          column < math.min(this.width, right);
-          column++
-        ) {
-          setCell(column, row, '▀', Color.white, Color.black, 0);
-        }
-      }
-      return true;
+    var effectiveClip = hasClip
+        ? (x: clipX!, y: clipY!, width: clipWidth!, height: clipHeight!)
+        : null;
+    final viewClip = _clip;
+    if (viewClip != null) {
+      effectiveClip = _intersectClips(
+        effectiveClip == null
+            ? viewClip
+            : _intersectClips(viewClip, effectiveClip),
+        (x: 0, y: 0, width: this.width, height: this.height),
+      );
     }
-    if (hasClip) {
+    if (effectiveClip != null) {
+      if (effectiveClip.width == 0 || effectiveClip.height == 0) return false;
       _bindings.bufferPushScissorRect(
         _ptr,
-        clipX!,
-        clipY!,
-        clipWidth!,
-        clipHeight!,
+        effectiveClip.x,
+        effectiveClip.y,
+        effectiveClip.width,
+        effectiveClip.height,
       );
     }
     try {
@@ -591,10 +650,11 @@ class Buffer {
         sourceY: sourceY,
         sourceWidth: resolvedSourceWidth,
         sourceHeight: resolvedSourceHeight,
-        protocol: protocol.index,
+        protocol: (_materializeImagesAsBlocks ? ImageProtocol.blocks : protocol)
+            .index,
       );
     } finally {
-      if (hasClip) _bindings.bufferPopScissorRect(_ptr);
+      if (effectiveClip != null) _bindings.bufferPopScissorRect(_ptr);
     }
   }
 
@@ -831,6 +891,10 @@ class _ClippedBufferView extends Buffer {
   final int clipY;
   final int clipWidth;
   final int clipHeight;
+
+  @override
+  _BufferClip get _clip =>
+      (x: clipX, y: clipY, width: clipWidth, height: clipHeight);
 
   bool _inClip(int x, int y) =>
       x >= clipX &&

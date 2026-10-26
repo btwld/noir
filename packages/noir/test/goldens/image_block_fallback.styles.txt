@@ -1,3 +1,7 @@
-0,0:#ffffffff|#000000ff|0 * 6
-0,1:#ffffffff|#000000ff|0 * 6
+0,0:#ff0000ff|#ff0000ff|0 * 2
+2,0:#00ff00ff|#00ff00ff|0 * 2
+4,0:#ffffffff|#000000ff|0 * 2
+0,1:#0000ffff|#0000ffff|0 * 2
+2,1:#ffff00ff|#ffff00ff|0 * 2
+4,1:#ffffffff|#000000ff|0 * 2
 0,2:#ffffffff|#000000ff|0 * 6
