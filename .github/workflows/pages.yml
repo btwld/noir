@@ -11,6 +11,7 @@ on:
       - "packages/noir_signals/README.md"
       - "publication.json"
       - "packages/noir/pubspec.yaml"
+      - "packages/noir_driver/pubspec.yaml"
       - "packages/noir/example/**"
       - "packages/noir_signals/pubspec.yaml"
       - "packages/noir_signals/doc/**"
