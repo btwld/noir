@@ -56,6 +56,35 @@ final class PollDeadline {
   }
 }
 
+/// Acquires a resource within [deadline], releasing it if it arrives too late.
+///
+/// Timing out a Future does not cancel it. Keep ownership of a late process or
+/// connection until [release] runs, rather than losing it with the caller's
+/// expired wait. Errors still propagate unchanged before the deadline.
+Future<T> acquireBeforeDeadline<T>(
+  Future<T> acquisition, {
+  required PollDeadline deadline,
+  required Future<void> Function(T resource) release,
+  required String operation,
+}) {
+  var abandoned = false;
+  TimeoutException expired() => TimeoutException(operation, deadline.budget);
+  final owned = acquisition.then((resource) async {
+    if (abandoned) {
+      await release(resource);
+      throw expired();
+    }
+    return resource;
+  });
+  return deadline.bound(
+    owned,
+    onExpired: () {
+      abandoned = true;
+      throw expired();
+    },
+  );
+}
+
 /// The default pause between two probes of a client-side wait.
 Future<void> pollDelay(Duration duration) {
   // VM timers truncate fractional milliseconds. Round up so a pause clamped

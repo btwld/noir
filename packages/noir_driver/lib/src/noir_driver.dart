@@ -173,11 +173,13 @@ class NoirDriver {
     required String isolateId,
     required Directory workspace,
     required Future<int> exitCode,
+    required Duration requestTimeout,
   }) : _process = process,
        _service = service,
        _isolateId = isolateId,
        _workspace = workspace,
-       _exitCode = exitCode;
+       _exitCode = exitCode,
+       _requestTimeout = requestTimeout;
 
   /// Starts [entryPoint] in drive mode and connects to its VM service.
   ///
@@ -185,6 +187,13 @@ class NoirDriver {
   /// and stderr are captured rather than inherited so the driving terminal
   /// stays clean for rendered frames; each line goes to [onAppOutput], which
   /// defaults to a prefixed line on this process's stderr.
+  ///
+  /// [timeout] is one budget for process start, connection, isolate discovery,
+  /// and the first frame. A failed launch releases any acquired connection and
+  /// terminates the owned process, including resources that arrive late.
+  /// [requestTimeout] bounds each later service request, separately from an
+  /// input method's frame-settle window. Expiry throws [TimeoutException]; it
+  /// does not cancel work already accepted by the app.
   static Future<NoirDriver> launch(
     String entryPoint, {
     int width = 80,
@@ -192,7 +201,14 @@ class NoirDriver {
     List<String> arguments = const <String>[],
     void Function(String line)? onAppOutput,
     Duration timeout = const Duration(seconds: 60),
+    Duration requestTimeout = const Duration(seconds: 30),
   }) async {
+    if (timeout.isNegative || requestTimeout.isNegative) {
+      throw ArgumentError('Driver timeouts must be non-negative.');
+    }
+    if (width <= 0 || height <= 0) {
+      throw ArgumentError('Driver dimensions must be positive.');
+    }
     final target = File(entryPoint);
     if (!target.existsSync()) {
       throw ArgumentError.value(entryPoint, 'entryPoint', 'No such file');
@@ -200,49 +216,70 @@ class NoirDriver {
 
     final workspace = Directory.systemTemp.createTempSync('noir_drive_');
     final serviceInfo = File('${workspace.path}/service_info.json');
-    final process = await Process.start(
-      Platform.resolvedExecutable,
-      <String>[
-        'run',
-        '--enable-vm-service=0',
-        '--write-service-info=${serviceInfo.path}',
-        target.path,
-        ...arguments,
-      ],
-      environment: <String, String>{
-        'NOIR_DRIVE': '1',
-        'NOIR_DRIVE_SIZE': '${width}x$height',
-      },
-    );
-
-    var exited = false;
-    final exitCode = process.exitCode.whenComplete(() => exited = true);
-    final report = onAppOutput ?? _reportAppOutput;
-    for (final stream in <Stream<List<int>>>[process.stdout, process.stderr]) {
-      stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(report);
-    }
-
+    final deadline = PollDeadline(timeout);
+    Process? process;
     VmService? service;
     try {
-      service = await _connect(serviceInfo, () => exited, timeout);
-      final isolateId = (await service.getVM()).isolates!.first.id!;
+      final launched = await acquireBeforeDeadline<Process>(
+        Process.start(
+          Platform.resolvedExecutable,
+          <String>[
+            'run',
+            '--enable-vm-service=0',
+            '--write-service-info=${serviceInfo.path}',
+            target.path,
+            ...arguments,
+          ],
+          environment: <String, String>{
+            'NOIR_DRIVE': '1',
+            'NOIR_DRIVE_SIZE': '${width}x$height',
+          },
+        ),
+        deadline: deadline,
+        release: (lateProcess) => _releaseFailedLaunch(lateProcess, workspace),
+        operation: 'Starting the driven process',
+      );
+      process = launched;
+      var exited = false;
+      final exitCode = launched.exitCode.whenComplete(() => exited = true);
+      final report = onAppOutput ?? _reportAppOutput;
+      for (final stream in <Stream<List<int>>>[
+        launched.stdout,
+        launched.stderr,
+      ]) {
+        stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen(report);
+      }
+
+      service = await _connect(serviceInfo, () => exited, deadline);
+      final vm = await deadline.bound(
+        service.getVM(),
+        onExpired: () {
+          throw TimeoutException('Discovering the driven isolate', timeout);
+        },
+      );
+      final isolateId = vm.isolates!.first.id!;
       final driver = NoirDriver._(
-        process: process,
+        process: launched,
         service: service,
         isolateId: isolateId,
         workspace: workspace,
         exitCode: exitCode,
+        requestTimeout: requestTimeout,
       );
-      await driver._awaitDriverSurface(timeout);
+      await driver._awaitDriverSurface(deadline);
       return driver;
     } on Object {
-      await service?.dispose();
-      process.kill(ProcessSignal.sigkill);
-      await exitCode;
-      _deleteWorkspace(workspace);
+      // Cleanup retains ownership, but may not extend the launch deadline.
+      final connection = service;
+      if (connection != null) Future<void>.sync(connection.dispose).ignore();
+      if (process == null) {
+        _deleteWorkspace(workspace);
+      } else {
+        _releaseFailedLaunch(process, workspace).ignore();
+      }
       rethrow;
     }
   }
@@ -252,6 +289,7 @@ class NoirDriver {
   final String _isolateId;
   final Directory _workspace;
   final Future<int> _exitCode;
+  final Duration _requestTimeout;
 
   /// The emulated terminal size and the frames the app has painted.
   Future<({int width, int height, int frames})> info() async {
@@ -311,11 +349,16 @@ class NoirDriver {
   Future<bool> waitStable({
     Duration timeout = const Duration(seconds: 2),
   }) async {
-    final json = await _call(
-      'waitStable',
-      args: <String, Object?>{'timeoutMs': '${timeout.inMilliseconds}'},
-    );
-    return json['stable'] == true;
+    try {
+      final json = await _call(
+        'waitStable',
+        args: <String, Object?>{'timeoutMs': '${timeout.inMilliseconds}'},
+        timeout: timeout,
+      );
+      return json['stable'] == true;
+    } on TimeoutException {
+      return false;
+    }
   }
 
   /// Polls painted capture rows until one contains [text], then returns that frame.
@@ -386,10 +429,9 @@ class NoirDriver {
 
   /// Rebuilds the whole widget tree through `ext.noir.reassemble`.
   Future<bool> reassemble() async {
-    final response = await _service.callServiceExtension(
-      'ext.noir.reassemble',
-      isolateId: _isolateId,
-    );
+    final response = await _service
+        .callServiceExtension('ext.noir.reassemble', isolateId: _isolateId)
+        .timeout(_requestTimeout);
     return response.json?['reassembled'] == true;
   }
 
@@ -403,7 +445,9 @@ class NoirDriver {
   Future<({bool reloaded, bool reassembled, String? message})> reload() async {
     final ReloadReport report;
     try {
-      report = await _service.reloadSources(_isolateId, force: true);
+      report = await _service
+          .reloadSources(_isolateId, force: true)
+          .timeout(_requestTimeout);
     } on RPCError catch (error) {
       return (
         reloaded: false,
@@ -426,19 +470,26 @@ class NoirDriver {
   /// A request that fails means the app cannot acknowledge, so it is killed
   /// instead. Drive mode holds the isolate open with a keep-alive timer, so
   /// waiting on an app that will never quit itself would hang the driver.
-  Future<int> quit() async {
+  /// [timeout] bounds the request, connection cleanup, and exit wait together.
+  /// Throws [TimeoutException] if the process has not exited within that
+  /// budget; termination is still requested and its owned cleanup continues.
+  Future<int> quit({Duration timeout = const Duration(seconds: 10)}) async {
+    final deadline = PollDeadline(timeout);
     try {
-      await _call('quit');
+      await _call('quit', timeout: deadline.remaining);
+      return await _finish(deadline);
     } on Object {
-      _process.kill(ProcessSignal.sigkill);
+      _releaseFailedLaunch(_process, _workspace).ignore();
+      return _finish(deadline);
     }
-    return _finish();
   }
 
   /// Kills the app process, then returns its exit code.
-  Future<int> kill() {
+  /// Throws [TimeoutException] if exit and cleanup exceed [timeout].
+  Future<int> kill({Duration timeout = const Duration(seconds: 10)}) {
+    final deadline = PollDeadline(timeout);
     _process.kill(ProcessSignal.sigkill);
-    return _finish();
+    return _finish(deadline);
   }
 
   Future<bool> _sendBytes(List<int> bytes, Duration settle) async {
@@ -469,12 +520,15 @@ class NoirDriver {
   Future<Map<String, dynamic>> _call(
     String method, {
     Map<String, Object?>? args,
+    Duration? timeout,
   }) async {
-    final response = await _service.callServiceExtension(
-      'ext.noir.driver.$method',
-      isolateId: _isolateId,
-      args: args,
-    );
+    final response = await _service
+        .callServiceExtension(
+          'ext.noir.driver.$method',
+          isolateId: _isolateId,
+          args: args,
+        )
+        .timeout(timeout ?? _requestTimeout);
     final json = response.json;
     if (json == null || json['type'] != 'Success') {
       throw StateError('ext.noir.driver.$method failed: $json');
@@ -482,18 +536,33 @@ class NoirDriver {
     return json;
   }
 
-  Future<void> _awaitDriverSurface(Duration timeout) =>
-      awaitDriverReady(frames: _frames, timeout: timeout);
+  Future<void> _awaitDriverSurface(PollDeadline deadline) => awaitDriverReady(
+    // Startup owns the launch budget. A deliberately short requestTimeout
+    // applies only after launch and must not cut its readiness phase short.
+    frames: () async =>
+        (await _call('info', timeout: deadline.remaining))['frames']! as int,
+    timeout: deadline.remaining,
+  );
 
-  Future<int> _finish() async {
+  Future<int> _finish(PollDeadline deadline) async {
     try {
-      await _service.dispose();
+      await _service.dispose().timeout(deadline.remaining);
     } on Object {
       // A socket dropped by the exiting app is not a driver failure.
     }
-    final code = await _exitCode;
-    _deleteWorkspace(_workspace);
-    return code;
+    try {
+      return await deadline.bound(
+        _exitCode,
+        onExpired: () {
+          throw TimeoutException(
+            'Waiting for the driven app to exit',
+            deadline.budget,
+          );
+        },
+      );
+    } finally {
+      _deleteWorkspace(_workspace);
+    }
   }
 }
 
@@ -675,22 +744,38 @@ void _reportAppOutput(String line) {
 Future<VmService> _connect(
   File serviceInfo,
   bool Function() exited,
-  Duration timeout,
+  PollDeadline deadline,
 ) async {
-  final deadline = DateTime.now().add(timeout);
-  while (DateTime.now().isBefore(deadline)) {
+  while (!deadline.isExpired) {
     if (exited()) {
       throw StateError('The app exited before publishing a VM service URI.');
     }
     final uri = _readServiceUri(serviceInfo);
     if (uri != null) {
-      return vmServiceConnectUri(
-        convertToWebSocketUrl(serviceProtocolUrl: uri).toString(),
+      return acquireBeforeDeadline(
+        vmServiceConnectUri(
+          convertToWebSocketUrl(serviceProtocolUrl: uri).toString(),
+        ),
+        deadline: deadline,
+        release: (connection) => connection.dispose(),
+        operation: 'Connecting to the driven VM service',
       );
     }
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await deadline.pause(const Duration(milliseconds: 50), delay: pollDelay);
   }
-  throw StateError('The app never published ${serviceInfo.path}');
+  throw TimeoutException(
+    'The app never published ${serviceInfo.path}',
+    deadline.budget,
+  );
+}
+
+Future<void> _releaseFailedLaunch(Process process, Directory workspace) async {
+  try {
+    process.kill(ProcessSignal.sigkill);
+    await process.exitCode;
+  } finally {
+    _deleteWorkspace(workspace);
+  }
 }
 
 Uri? _readServiceUri(File serviceInfo) {

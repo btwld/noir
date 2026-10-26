@@ -613,12 +613,22 @@ class _CompiledFixtures {
   }
 
   /// Removes every executable this instance compiled.
-  void dispose() {
+  Future<void> dispose() async {
     final output = _output;
     _output = null;
     _executables.clear();
-    if (output != null && output.existsSync()) {
-      output.deleteSync(recursive: true);
+    if (output == null) return;
+    for (var attempt = 0; ; attempt++) {
+      if (!output.existsSync()) return;
+      try {
+        await output.delete(recursive: true);
+        return;
+      } on PathAccessException {
+        // Windows can retain a just-exited fixture's executable handle.
+        // Persistent access failures must still fail the suite.
+        if (!Platform.isWindows || attempt == 19) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
     }
   }
 }
