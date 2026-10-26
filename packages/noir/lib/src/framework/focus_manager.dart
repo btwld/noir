@@ -129,7 +129,6 @@ class FocusNode extends ChangeNotifier {
   );
   bool _hasFocus = false;
   bool _descendantsHaveFocus = false;
-  bool _isAttached = false;
   FocusOnKeyEvent? _onKeyEvent;
   bool _canRequestFocus;
 
@@ -165,8 +164,10 @@ class FocusNode extends ChangeNotifier {
       final manager = _manager;
       if (manager == null) return;
       final anchor = _parent;
-      manager._unfocus(this, descendants: false);
-      manager._scheduleFocusRecovery(anchor);
+      manager._mutateFocus(() {
+        manager._unfocus(this, descendants: false);
+        manager._scheduleFocusRecovery(anchor);
+      });
     }
   }
 
@@ -182,7 +183,6 @@ class FocusNode extends ChangeNotifier {
     final manager = FocusManager.of(context);
     final attachment = FocusAttachment._(this, manager);
     attachment.attach(context);
-    _isAttached = true;
     return attachment;
   }
 
@@ -193,7 +193,6 @@ class FocusNode extends ChangeNotifier {
     if (manager != null) {
       manager._detachNode(this);
     }
-    _isAttached = false;
   }
 
   /// Detaches this node before releasing its notifier listeners.
@@ -267,7 +266,7 @@ class FocusNode extends ChangeNotifier {
       return;
     }
     _hasFocus = value;
-    notifyListeners();
+    _notifyFocusChanged();
   }
 
   void _setDescendantsHaveFocus(bool value) {
@@ -275,11 +274,20 @@ class FocusNode extends ChangeNotifier {
       return;
     }
     _descendantsHaveFocus = value;
-    notifyListeners();
+    _notifyFocusChanged();
+  }
+
+  void _notifyFocusChanged() {
+    final manager = _manager;
+    if (manager == null) {
+      notifyListeners();
+    } else {
+      manager._notifyFocusChanged(this);
+    }
   }
 
   /// Whether this node is registered with a [FocusManager].
-  bool get isAttached => _isAttached;
+  bool get isAttached => _manager != null;
 
   /// Whether this node is currently attached to [manager].
   @internal
@@ -337,7 +345,6 @@ class FocusManager {
   /// Creates the root scope and owns a focus-priority key subscription.
   FocusManager(this.inputManager) {
     rootScope._manager = this;
-    rootScope._isAttached = true;
     rootScope.canRequestFocus = false;
     _keySubscription = inputManager.dispatcher.onKey(
       _handleKeyEvent,
@@ -371,6 +378,9 @@ class FocusManager {
   /// Cached depth-first, tree-order list of attached focus nodes used by the
   /// default Tab / Shift-Tab traversal. Null when the cache is dirty.
   List<FocusNode>? _traversalOrderCache;
+  final Set<FocusNode> _pendingNotifications = Set<FocusNode>.identity();
+  int _focusMutationDepth = 0;
+  bool _notifyingFocus = false;
 
   /// Node that currently holds primary focus, or `null` when none.
   FocusNode? get primaryFocus => _primaryFocus;
@@ -408,7 +418,6 @@ class FocusManager {
     }
 
     node._manager = this;
-    node._isAttached = true;
     _bindNodeToElement(node, element);
   }
 
@@ -438,7 +447,17 @@ class FocusManager {
     }
   }
 
-  void _reparentNode(FocusNode node, Element expectedElement, Element element) {
+  void _reparentNode(
+    FocusNode node,
+    Element expectedElement,
+    Element element,
+  ) => _mutateFocus(() => _reparentNodeNow(node, expectedElement, element));
+
+  void _reparentNodeNow(
+    FocusNode node,
+    Element expectedElement,
+    Element element,
+  ) {
     final oldElement = _nodeToElement[node];
     if (!identical(node._manager, this) ||
         !identical(oldElement, expectedElement)) {
@@ -477,7 +496,11 @@ class FocusManager {
     }
   }
 
-  void _detachNode(FocusNode node, {Element? expectedElement}) {
+  void _detachNode(FocusNode node, {Element? expectedElement}) => _mutateFocus(
+    () => _detachNodeNow(node, expectedElement: expectedElement),
+  );
+
+  void _detachNodeNow(FocusNode node, {Element? expectedElement}) {
     if (expectedElement != null &&
         !identical(_nodeToElement[node], expectedElement)) {
       return;
@@ -497,7 +520,6 @@ class FocusManager {
       _scheduleFocusRecovery(oldParent);
     }
     node._manager = null;
-    node._isAttached = false;
     _invalidateTraversalCache();
   }
 
@@ -678,7 +700,42 @@ class FocusManager {
     _traversalOrderCache = null;
   }
 
-  void _requestFocus(FocusNode node) {
+  // Publish the complete primary/ancestor transition before notifying any
+  // node. A callback can synchronously commit a newer transition; the outer
+  // transition has no remaining writes that could overwrite that decision.
+  void _mutateFocus(void Function() mutation) {
+    _focusMutationDepth++;
+    try {
+      mutation();
+    } finally {
+      _focusMutationDepth--;
+      if (_focusMutationDepth == 0) _flushFocusNotifications();
+    }
+  }
+
+  void _notifyFocusChanged(FocusNode node) {
+    _pendingNotifications.add(node);
+    if (_focusMutationDepth == 0) _flushFocusNotifications();
+  }
+
+  void _flushFocusNotifications() {
+    if (_notifyingFocus) return;
+    _notifyingFocus = true;
+    try {
+      while (_pendingNotifications.isNotEmpty) {
+        final node = _pendingNotifications.first;
+        _pendingNotifications.remove(node);
+        node.notifyListeners();
+      }
+    } finally {
+      _notifyingFocus = false;
+    }
+  }
+
+  void _requestFocus(FocusNode node) =>
+      _mutateFocus(() => _requestFocusNow(node));
+
+  void _requestFocusNow(FocusNode node) {
     if (!node.canRequestFocus) {
       return;
     }
@@ -699,7 +756,10 @@ class FocusManager {
     }
   }
 
-  void _unfocus(FocusNode node, {required bool descendants}) {
+  void _unfocus(FocusNode node, {required bool descendants}) =>
+      _mutateFocus(() => _unfocusNow(node, descendants: descendants));
+
+  void _unfocusNow(FocusNode node, {required bool descendants}) {
     if (descendants) {
       for (final child in List<FocusNode>.from(node._children)) {
         _unfocus(child, descendants: true);
@@ -917,6 +977,12 @@ class FocusManager {
   /// Returns the focus node attached to [element], or `null` when absent.
   @internal
   FocusNode? nodeForElement(Element element) => _elementToNode[element];
+}
+
+/// Invalidates cached widget order after logical child reconciliation.
+@internal
+void invalidateFocusTraversalOrder(FocusManager manager) {
+  manager._invalidateTraversalCache();
 }
 
 /// Validates a widget-driven node replacement before the current attachment

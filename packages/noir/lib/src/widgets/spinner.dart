@@ -77,7 +77,7 @@ class _SpinnerState extends State<Spinner>
   @override
   void initState() {
     super.initState();
-    _requireFrames();
+    _validateConfiguration();
     _controller = AnimationController(vsync: this, duration: _runDuration)
       ..addListener(_handleTick)
       ..addStatusListener(_handleStatus);
@@ -89,12 +89,19 @@ class _SpinnerState extends State<Spinner>
 
   /// Checked here rather than in a constructor assert: `List.isEmpty` is not
   /// const-evaluable, and `const Spinner()` has to stay legal.
-  void _requireFrames() {
+  void _validateConfiguration() {
     if (widget.frames.isEmpty) {
       throw ArgumentError.value(
         widget.frames,
         'frames',
         'must contain at least one glyph',
+      );
+    }
+    if (widget.interval <= Duration.zero) {
+      throw ArgumentError.value(
+        widget.interval,
+        'interval',
+        'must be positive',
       );
     }
   }
@@ -112,7 +119,7 @@ class _SpinnerState extends State<Spinner>
   @override
   void didUpdateWidget(Spinner oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _requireFrames();
+    _validateConfiguration();
     _controller.duration = _runDuration;
   }
 

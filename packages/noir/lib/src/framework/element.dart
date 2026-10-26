@@ -6,6 +6,7 @@ import '../foundation/first_error.dart';
 import '../rendering/box.dart';
 import '../rendering/object.dart';
 import 'build_context.dart';
+import 'focus_manager.dart';
 import 'key.dart';
 import 'owner.dart';
 import 'widget.dart';
@@ -1043,6 +1044,7 @@ class MultiChildRenderObjectElement extends RenderObjectElement {
       reconcile();
     } finally {
       _reconcilingChildren = wasReconciling;
+      invalidateFocusTraversalOrder(owner.focusManager);
     }
   }
 

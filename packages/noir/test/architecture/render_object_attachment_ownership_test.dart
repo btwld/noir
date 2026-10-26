@@ -43,7 +43,9 @@ void main() {
     expect(detach, contains('detach()'));
 
     final drop = _methodBody(renderSource, 'void _dropChild(');
-    expect(drop, contains('child.detach()'));
+    expect(drop, contains('failures.attempt(child.detach)'));
+    expect(drop, contains('failures.attempt(markNeedsLayout)'));
+    expect(drop, contains('failures.rethrowFirst()'));
   });
 
   test('generic render edge has one private store and read-only live view', () {
