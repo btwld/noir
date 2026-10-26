@@ -159,7 +159,7 @@ final class _TabSelectState<T> extends State<TabSelect<T>>
     _validateTabWidth(widget.tabWidth);
     if (widget.selectedIndex != oldWidget.selectedIndex) {
       _selected = widget.selectedIndex.clamp(0, _maxIndex);
-    } else if (widget.options.length != oldWidget.options.length) {
+    } else {
       _selected = _selected.clamp(0, _maxIndex);
     }
   }
@@ -328,7 +328,7 @@ final class _RenderTabSelect<T> extends RenderBox implements MouseCursorTarget {
     required int selectedTextAttributes,
     required Color descriptionColor,
     required _TabSelectMetrics metrics,
-  }) : _options = options,
+  }) : _options = List<SelectOption<T>>.unmodifiable(options),
        _selectedIndex = selectedIndex,
        _tabWidth = tabWidth,
        _showScrollArrows = showScrollArrows,
@@ -357,7 +357,7 @@ final class _RenderTabSelect<T> extends RenderBox implements MouseCursorTarget {
   _TabSelectMetrics _metrics;
 
   void updateFrom(_TabSelectLeaf<T> widget) {
-    _options = widget.options;
+    _options = List<SelectOption<T>>.unmodifiable(widget.options);
     _selectedIndex = widget.selectedIndex;
     _tabWidth = widget.tabWidth;
     _showScrollArrows = widget.showScrollArrows;

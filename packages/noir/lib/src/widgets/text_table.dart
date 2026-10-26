@@ -7,7 +7,6 @@ import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/input.dart';
 import '../foundation/selected_text.dart';
-import '../foundation/text_index_map.dart';
 import '../foundation/text_selection.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
@@ -23,7 +22,6 @@ import 'focus_node_owner_mixin.dart';
 import 'pointer_listener.dart';
 import 'text_layout.dart';
 import 'text_span.dart';
-import 'text_style.dart';
 import 'text_table_model.dart';
 import 'theme.dart';
 
@@ -489,8 +487,7 @@ final class RenderTextTable extends RenderBox {
         sourceOffset += grapheme.length;
       }
     }
-    final lineEnd = line.runs.isEmpty ? 0 : line.runs.last.sourceEnd;
-    return cell.sourceBase + lineEnd;
+    return cell.sourceBase + line.sourceEnd;
   }
 
   /// Atomically replaces the table configuration and invalidates layout.
@@ -1019,103 +1016,61 @@ TextLayout _layoutCell(InlineSpan span, int width, TextTableWrapMode mode) =>
     };
 
 TextLayout _characterLayout(InlineSpan span, int width) {
-  final sourceRuns = <_CellSourceRun>[];
-  final buffer = StringBuffer();
-  _flattenCell(span, const TextStyle(), null, buffer, sourceRuns);
-  final text = buffer.toString();
-  final lines = <List<TextLayoutRun>>[];
-  var current = <TextLayoutRun>[];
-  var currentWidth = 0;
+  // Reuse the source-wide segmentation and hard-break metadata, then split
+  // only at whole-grapheme boundaries for this table's character-wrap mode.
+  final source = const TextLayoutEngine().layout(span, const BoxConstraints());
+  final lines = <TextLayoutLine>[];
+  for (final sourceLine in source.lines) {
+    var current = <TextLayoutRun>[];
+    var currentWidth = 0;
+    var sourceStart = sourceLine.sourceStart;
+    var sourceEnd = sourceStart;
 
-  void flush() {
-    lines.add(current);
-    current = <TextLayoutRun>[];
-    currentWidth = 0;
-  }
-
-  for (final run in sourceRuns) {
-    var sourceOffset = run.start;
-    for (final grapheme in run.text.characters) {
-      if (grapheme == '\n') {
-        flush();
-        sourceOffset += grapheme.length;
-        continue;
-      }
-      final cellWidth = terminalCellWidth(grapheme);
-      if (current.isNotEmpty && currentWidth + cellWidth > width) flush();
-      current.add(
-        TextLayoutRun(
-          text: grapheme,
-          style: run.style,
-          uri: run.uri,
-          sourceStart: sourceOffset,
-          sourceEnd: sourceOffset + grapheme.length,
+    void flush() {
+      lines.add(
+        TextLayoutLine(
+          runs: current,
+          width: currentWidth,
+          sourceStart: sourceStart,
+          sourceEnd: sourceEnd,
         ),
       );
-      currentWidth += cellWidth;
-      sourceOffset += grapheme.length;
+      current = <TextLayoutRun>[];
+      currentWidth = 0;
+      sourceStart = sourceEnd;
     }
-  }
-  if (current.isNotEmpty || lines.isEmpty) flush();
-  final layoutLines = lines
-      .map(
-        (runs) => TextLayoutLine(
-          runs: runs,
-          width: runs.fold<int>(
-            0,
-            (sum, run) => sum + terminalStringWidth(run.text),
+
+    for (final run in sourceLine.runs) {
+      var offset = run.sourceStart;
+      for (final grapheme in run.text.characters) {
+        final cellWidth = terminalCellWidth(grapheme);
+        if (current.isNotEmpty && currentWidth + cellWidth > width) flush();
+        sourceEnd = offset + grapheme.length;
+        current.add(
+          TextLayoutRun(
+            text: grapheme,
+            style: run.style,
+            uri: run.uri,
+            sourceStart: offset,
+            sourceEnd: sourceEnd,
           ),
-        ),
-      )
-      .toList(growable: false);
+        );
+        currentWidth += cellWidth;
+        offset = sourceEnd;
+      }
+    }
+    flush();
+  }
   return TextLayout(
-    text: text,
-    style: span is TextSpan
-        ? span.style ?? const TextStyle()
-        : const TextStyle(),
-    indexMap: TextIndexMap(text),
-    lines: layoutLines,
+    text: source.text,
+    style: source.style,
+    indexMap: source.indexMap,
+    lines: lines,
     size: Size(
-      layoutLines.fold<int>(0, (value, line) => math.max(value, line.width)),
-      layoutLines.length,
+      lines.fold<int>(0, (value, line) => math.max(value, line.width)),
+      lines.length,
     ),
   );
-}
-
-final class _CellSourceRun {
-  const _CellSourceRun(this.text, this.style, this.uri, this.start);
-  final String text;
-  final TextStyle style;
-  final Uri? uri;
-  final int start;
-}
-
-void _flattenCell(
-  InlineSpan span,
-  TextStyle inherited,
-  Uri? inheritedUri,
-  StringBuffer buffer,
-  List<_CellSourceRun> runs,
-) {
-  if (span is TextSpan) {
-    final style = span.style ?? inherited;
-    final uri = span.uri ?? inheritedUri;
-    if (span.text case final text? when text.isNotEmpty) {
-      final start = buffer.length;
-      buffer.write(text);
-      runs.add(_CellSourceRun(text, style, uri, start));
-    }
-    for (final child in span.children) {
-      _flattenCell(child, style, uri, buffer, runs);
-    }
-    return;
-  }
-  final text = span.toPlainText();
-  if (text.isNotEmpty) {
-    final start = buffer.length;
-    buffer.write(text);
-    runs.add(_CellSourceRun(text, inherited, inheritedUri, start));
-  }
 }
 
 String _junction({

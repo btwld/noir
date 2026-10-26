@@ -54,14 +54,27 @@ final class TextLayout {
 /// One laid-out terminal text line.
 final class TextLayoutLine {
   /// Creates a laid-out text line.
-  TextLayoutLine({required List<TextLayoutRun> runs, required this.width})
-    : runs = List<TextLayoutRun>.unmodifiable(runs);
+  TextLayoutLine({
+    required List<TextLayoutRun> runs,
+    required this.width,
+    int? sourceStart,
+    int? sourceEnd,
+  }) : runs = List<TextLayoutRun>.unmodifiable(runs),
+       sourceStart = sourceStart ?? (runs.isEmpty ? 0 : runs.first.sourceStart),
+       sourceEnd =
+           sourceEnd ?? (runs.isEmpty ? sourceStart ?? 0 : runs.last.sourceEnd);
 
   /// Styled runs on this line.
   final List<TextLayoutRun> runs;
 
   /// Width in terminal cells.
   final int width;
+
+  /// UTF-16 start, retained even when an empty source line has no text runs.
+  final int sourceStart;
+
+  /// UTF-16 end before the hard line break, or the shared soft-wrap boundary.
+  final int sourceEnd;
 
   /// Plain text for this line.
   String get text => runs.map((run) => run.text).join();
@@ -111,15 +124,19 @@ final class TextLayoutEngine {
     final text = textBuffer.toString();
     final effectiveStyle = root is TextSpan ? root.style ?? style : style;
     final indexMap = TextIndexMap(text);
-    final laidOut = _layoutRuns(runs, constraints.maxWidth);
+    final lines = _layoutRuns(text, runs, constraints.maxWidth);
+    final maxLineWidth = lines.fold<int>(
+      0,
+      (width, line) => math.max(width, line.width),
+    );
     return TextLayout(
       text: text,
       style: effectiveStyle,
       indexMap: indexMap,
-      lines: laidOut.lines,
+      lines: lines,
       size: Size(
-        constraints.constrainWidth(laidOut.maxLineWidth),
-        constraints.constrainHeight(math.max(1, laidOut.lines.length)),
+        constraints.constrainWidth(maxLineWidth),
+        constraints.constrainHeight(math.max(1, lines.length)),
       ),
     );
   }
@@ -136,9 +153,8 @@ final class TextLayoutEngine {
       final uri = span.uri ?? inheritedUri;
       final value = span.text;
       if (value != null && value.isNotEmpty) {
-        final start = textBuffer.length;
         textBuffer.write(value);
-        runs.add(_SourceRun(value, style, uri, start));
+        runs.add(_SourceRun(style, uri, textBuffer.length));
       }
       for (final child in span.children) {
         _flatten(child, style, uri, textBuffer, runs);
@@ -152,28 +168,37 @@ final class TextLayoutEngine {
     if (value.isEmpty) {
       return;
     }
-    final start = textBuffer.length;
     textBuffer.write(value);
-    runs.add(_SourceRun(value, inheritedStyle, inheritedUri, start));
+    runs.add(_SourceRun(inheritedStyle, inheritedUri, textBuffer.length));
   }
 
-  _LayoutResult _layoutRuns(List<_SourceRun> sourceRuns, int? maxWidth) {
+  List<TextLayoutLine> _layoutRuns(
+    String text,
+    List<_SourceRun> sourceRuns,
+    int? maxWidth,
+  ) {
     final lines = <_LineBuild>[];
     final current = <_ClusterToken>[];
     var currentWidth = 0;
+    var lineStart = 0;
 
     int widthOf(List<_ClusterToken> tokens) =>
         tokens.fold(0, (sum, token) => sum + token.width);
 
     void flushLine() {
+      final start = current.isEmpty ? lineStart : current.first.sourceStart;
+      final end = current.isEmpty ? start : current.last.sourceEnd;
       lines.add(
         _LineBuild(
           tokens: List<_ClusterToken>.unmodifiable(current),
           width: currentWidth,
+          sourceStart: start,
+          sourceEnd: end,
         ),
       );
       current.clear();
       currentWidth = 0;
+      lineStart = end;
     }
 
     void wrapBefore(_ClusterToken token) {
@@ -200,44 +225,50 @@ final class TextLayoutEngine {
       flushLine();
     }
 
-    for (final run in sourceRuns) {
-      var sourceOffset = run.sourceStart;
-      for (final cluster in run.text.characters) {
-        if (cluster == '\n') {
-          flushLine();
-          sourceOffset += cluster.length;
-          continue;
-        }
-
-        final token = _ClusterToken(
-          text: cluster,
-          style: run.style,
-          uri: run.uri,
-          sourceStart: sourceOffset,
-          sourceEnd: sourceOffset + cluster.length,
-          width: terminalCellWidth(cluster),
-        );
-        wrapBefore(token);
-        current.add(token);
-        currentWidth += token.width;
-        sourceOffset += cluster.length;
+    var sourceOffset = 0;
+    var runIndex = 0;
+    for (final cluster in text.characters) {
+      final sourceStart = sourceOffset;
+      sourceOffset += cluster.length;
+      if (cluster == '\n' || cluster == '\r\n') {
+        flushLine();
+        lineStart = sourceOffset;
+        continue;
       }
+
+      // A terminal grapheme cannot carry multiple styles or links. Its first
+      // source unit owns that metadata, even when spans divide the cluster.
+      while (sourceRuns[runIndex].sourceEnd <= sourceStart) {
+        runIndex++;
+      }
+      final run = sourceRuns[runIndex];
+      final token = _ClusterToken(
+        text: cluster,
+        style: run.style,
+        uri: run.uri,
+        sourceStart: sourceStart,
+        sourceEnd: sourceOffset,
+        width: terminalCellWidth(cluster),
+      );
+      wrapBefore(token);
+      current.add(token);
+      currentWidth += token.width;
     }
 
     if (current.isNotEmpty || lines.isEmpty) {
       flushLine();
     }
 
-    final textLines = lines
+    return lines
         .map(
           (line) => TextLayoutLine(
-            runs: List<TextLayoutRun>.unmodifiable(_runsFor(line.tokens)),
+            runs: _runsFor(line.tokens).toList(growable: false),
             width: line.width,
+            sourceStart: line.sourceStart,
+            sourceEnd: line.sourceEnd,
           ),
         )
         .toList(growable: false);
-
-    return _LayoutResult(lines: List<TextLayoutLine>.unmodifiable(textLines));
   }
 
   Iterable<TextLayoutRun> _runsFor(List<_ClusterToken> tokens) sync* {
@@ -269,12 +300,12 @@ final class TextLayoutEngine {
 }
 
 final class _SourceRun {
-  const _SourceRun(this.text, this.style, this.uri, this.sourceStart);
+  const _SourceRun(this.style, this.uri, this.sourceEnd);
 
-  final String text;
   final TextStyle style;
   final Uri? uri;
-  final int sourceStart;
+  // UTF-16 end in the flattened source buffer, never a cell width.
+  final int sourceEnd;
 }
 
 final class _ClusterToken {
@@ -298,10 +329,17 @@ final class _ClusterToken {
 }
 
 final class _LineBuild {
-  const _LineBuild({required this.tokens, required this.width});
+  const _LineBuild({
+    required this.tokens,
+    required this.width,
+    required this.sourceStart,
+    required this.sourceEnd,
+  });
 
   final List<_ClusterToken> tokens;
   final int width;
+  final int sourceStart;
+  final int sourceEnd;
 }
 
 final class _MutableRun {
@@ -325,15 +363,4 @@ final class _MutableRun {
     sourceStart: sourceStart,
     sourceEnd: sourceEnd,
   );
-}
-
-final class _LayoutResult {
-  const _LayoutResult({required this.lines});
-
-  final List<TextLayoutLine> lines;
-
-  /// Maximum laid-out line width in terminal cells, derived from [lines]
-  /// exactly as [TextLayout.maxLineWidth] derives it.
-  int get maxLineWidth =>
-      lines.isEmpty ? 0 : lines.map((line) => line.width).reduce(math.max);
 }

@@ -141,7 +141,7 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
   void moveLineEnd() {
     if (!selectionWithinText) return;
     final position = _positionForOffset(text, selection.extentOffset);
-    final lineText = lines[position.line];
+    final lineText = _lineContent(lines, position.line);
     setCursor(position.line, TextIndexMap(lineText).graphemeCount);
   }
 
@@ -185,7 +185,9 @@ class TextEditingController extends ValueNotifier<TextEditingValue> {
     if (clamped <= lineEnd) {
       return (
         line: line,
-        column: TextIndexMap(lineText).utf16ToGrapheme(clamped - lineStart),
+        column: TextIndexMap(
+          _lineContent(lines, line),
+        ).utf16ToGrapheme(clamped - lineStart),
       );
     }
     lineStart = lineEnd + 1;
@@ -201,10 +203,21 @@ int _offsetForPosition(String text, int line, int column) {
   for (var i = 0; i < clampedLine; i++) {
     offset += lines[i].length + 1;
   }
-  final lineText = lines[clampedLine];
+  final lineText = _lineContent(lines, clampedLine);
   final map = TextIndexMap(lineText);
   final clampedColumn = column.clamp(0, map.graphemeCount);
   return offset + map.graphemeToUtf16(clampedColumn);
+}
+
+final _trailingCarriageReturn = RegExp(r'\r$');
+
+String _lineContent(List<String> lines, int index) {
+  final line = lines[index];
+  // Keep raw LF-split lines and UTF-16 accumulation unchanged, but do not
+  // count the CR of a CRLF hard break as an editable grapheme column.
+  return index < lines.length - 1
+      ? line.replaceFirst(_trailingCarriageReturn, '')
+      : line;
 }
 
 int _previousGraphemeBoundary(String text, int offset) {

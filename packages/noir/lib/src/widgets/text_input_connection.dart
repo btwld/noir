@@ -210,14 +210,13 @@ class TextInputConnection {
     if (limit == null) return true;
     if (!allowNewline && replacement.contains('\n')) return false;
     final selection = controller.selection;
-    final selectedLength = selection
-        .textInside(controller.text)
-        .characters
-        .length;
-    final nextLength =
-        controller.text.characters.length -
-        selectedLength +
-        replacement.characters.length;
-    return nextLength <= limit;
+    // Segmentation can merge across either insertion boundary, so the counts
+    // of the old text and replacement are not additive.
+    final nextText = controller.text.replaceRange(
+      selection.start,
+      selection.end,
+      replacement,
+    );
+    return nextText.characters.length <= limit;
   }
 }
