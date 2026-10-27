@@ -409,6 +409,10 @@ final class DocumentView extends StatefulWidget {
   final void Function(int line)? onVisibleLineChanged;
 
   /// Publishes completed source-line geometry to hosting document components.
+  ///
+  /// Called synchronously during layout. Use it to record geometry; schedule
+  /// widget state changes after the current frame instead of calling
+  /// `setState` from this callback.
   final void Function(TextLayout layout)? onLayout;
 
   /// Row fills painted behind [text] before its runs.

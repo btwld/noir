@@ -865,20 +865,31 @@ final class _DiffRowMeasure extends SingleChildRenderObjectWidget {
 
   @override
   void updateRenderObject(BuildContext context, _RenderDiffRowMeasure render) {
-    render.onLayout = onLayout;
-    render.markNeedsLayout();
+    render.updateOnLayout(onLayout);
   }
 }
 
 final class _RenderDiffRowMeasure extends RenderProxyBox {
-  _RenderDiffRowMeasure(this.onLayout);
+  _RenderDiffRowMeasure(this._onLayout);
 
-  void Function(int height) onLayout;
+  void Function(int height) _onLayout;
+  int? _height;
+
+  void updateOnLayout(void Function(int height) callback) {
+    if (_onLayout == callback) return;
+    _onLayout = callback;
+    // A rebuilt presentation may need the existing measurement, but changing
+    // its recipient does not change the row's layout. Child and constraint
+    // changes still report their new height through performBoxLayout.
+    final height = _height;
+    if (height != null) callback(height);
+  }
 
   @override
   void performBoxLayout(BoxConstraints constraints) {
     super.performBoxLayout(constraints);
-    onLayout(size.height);
+    _height = size.height;
+    _onLayout(size.height);
   }
 }
 

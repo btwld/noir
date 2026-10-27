@@ -1,4 +1,5 @@
 import 'package:noir/noir.dart';
+import 'package:noir/noir_low_level.dart';
 import 'package:test/test.dart';
 
 import '../helpers/tui_test_app.dart';
@@ -15,6 +16,41 @@ const _patch = '''
 ''';
 
 void main() {
+  test('rebuilds retain custom-row layout and hunk measurements', () {
+    var layouts = 0;
+    final navigation = DiffViewController();
+    final scroll = ScrollController();
+    final key = GlobalKey<_GeometryHostState>();
+    final app = createTuiTestApp(
+      _GeometryHost(
+        key: key,
+        navigation: navigation,
+        scroll: scroll,
+        row: _CountedRow(() => layouts++),
+      ),
+      width: 40,
+      height: 2,
+    );
+    addTearDown(navigation.dispose);
+    addTearDown(scroll.dispose);
+    addTearDown(app.dispose);
+    app.pumpFrame();
+    final initialLayouts = layouts;
+    expect(initialLayouts, greaterThan(0));
+
+    key.currentState!.rebuild();
+    app.pumpFrame();
+    expect(layouts, initialLayouts);
+
+    // A fresh presentation clears hunk geometry even when the replacement
+    // rows themselves have not changed or requested another layout.
+    key.currentState!.replaceDocument();
+    app.pumpFrame();
+    navigation.jumpToHunk(1);
+    app.pumpFrame();
+    expect(scroll.offset, 9);
+  });
+
   test('custom row height changes replace previous hunk geometry', () async {
     final navigation = DiffViewController();
     final scroll = ScrollController();
@@ -85,18 +121,23 @@ class _GeometryHost extends StatefulWidget {
   const _GeometryHost({
     required this.navigation,
     required this.scroll,
+    this.row,
     super.key,
   });
   final DiffViewController navigation;
   final ScrollController scroll;
+  final Widget? row;
   @override
   State<_GeometryHost> createState() => _GeometryHostState();
 }
 
 class _GeometryHostState extends State<_GeometryHost> {
-  final document = const UnifiedDiffParser().parse(_patch);
+  DiffDocument document = const UnifiedDiffParser().parse(_patch);
   int rowHeight = 3;
   void grow() => setState(() => rowHeight = 4);
+  void rebuild() => setState(() {});
+  void replaceDocument() =>
+      setState(() => document = const UnifiedDiffParser().parse(_patch));
   @override
   Widget build(BuildContext context) => DiffView(
     document: document,
@@ -104,6 +145,28 @@ class _GeometryHostState extends State<_GeometryHost> {
     scrollController: widget.scroll,
     showLineNumbers: false,
     rowBuilder: (context, file, hunk, line, defaultRow) =>
-        SizedBox(height: rowHeight, child: defaultRow),
+        widget.row ?? SizedBox(height: rowHeight, child: defaultRow),
   );
+}
+
+class _CountedRow extends SingleChildRenderObjectWidget {
+  const _CountedRow(this.onLayout) : super(child: const SizedBox(height: 3));
+
+  final void Function() onLayout;
+
+  @override
+  RenderProxyBox createRenderObject(BuildContext context) =>
+      _RenderCountedRow(onLayout);
+}
+
+class _RenderCountedRow extends RenderProxyBox {
+  _RenderCountedRow(this.onLayout);
+
+  final void Function() onLayout;
+
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    onLayout();
+    super.performBoxLayout(constraints);
+  }
 }
