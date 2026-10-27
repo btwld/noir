@@ -578,6 +578,7 @@ Future<Uint8List> _readBytes(
   token.addCancelCallback(cancelRead);
   final elapsed = Stopwatch()..start();
   var length = 0;
+  var timedOut = false;
   try {
     while (await (timeout == null
         ? iterator.moveNext()
@@ -592,13 +593,19 @@ Future<Uint8List> _readBytes(
     }
     return builder.takeBytes();
   } on TimeoutException {
-    // Close the underlying network producer before waiting for subscription
-    // cancellation, which must finish before a timeout reaches the widget.
+    // Stop the network producer immediately. Subscription cancellation may
+    // itself stall, so it cannot remain on the expired load's critical path.
+    timedOut = true;
     onTimeout?.call();
     rethrow;
   } finally {
     token.removeCancelCallback(cancelRead);
-    await iterator.cancel();
+    final cancellation = iterator.cancel();
+    if (timedOut) {
+      cancellation.ignore();
+    } else {
+      await cancellation;
+    }
   }
 }
 

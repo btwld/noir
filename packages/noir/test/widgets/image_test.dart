@@ -14,6 +14,59 @@ import '../helpers/key_driver.dart';
 import '../helpers/test_element_host.dart';
 
 void main() {
+  test('network timeout does not wait for response cancellation', () async {
+    final oldTimeout = debugNetworkImageTimeout;
+    debugNetworkImageTimeout = const Duration(milliseconds: 40);
+    addTearDown(() => debugNetworkImageTimeout = oldTimeout);
+    final cancellation = Completer<void>();
+    final events = <String>[];
+    final body = StreamController<List<int>>(
+      onCancel: () {
+        events.add('cancel');
+        return cancellation.future;
+      },
+    );
+    addTearDown(() async {
+      if (!cancellation.isCompleted) cancellation.complete();
+      await body.close();
+    });
+    final failed = Completer<Object>();
+    var errors = 0;
+    await HttpOverrides.runZoned(
+      () async {
+        final driver = KeyDriver(
+          Image.network(
+            Uri.parse('http://image.test/stalled-cancellation'),
+            onError: (error, _) {
+              errors++;
+              if (!failed.isCompleted) failed.complete(error);
+            },
+          ),
+        );
+        addTearDown(driver.dispose);
+
+        final error = await failed.future.timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => throw StateError('image load exceeded its deadline'),
+        );
+        expect(
+          error,
+          isA<ImageLoadException>()
+              .having((e) => e.code, 'code', ImageLoadErrorCode.network)
+              .having((e) => e.cause, 'cause', isA<TimeoutException>()),
+        );
+        expect(events.take(2), ['close', 'cancel']);
+        expect(cancellation.isCompleted, isFalse);
+        // Late cancellation errors must not replace or duplicate the timeout.
+        cancellation.completeError(StateError('late cancellation failure'));
+        await Future<void>.delayed(Duration.zero);
+        expect(errors, 1);
+      },
+      createHttpClient: (_) =>
+          _StalledImageClient(body.stream, () => events.add('close')),
+    );
+  });
+
   test(
     'network body timeout reports once and closes the active response',
     () async {
@@ -409,6 +462,78 @@ void main() {
     );
     networkHost.dispose();
   });
+}
+
+class _StalledImageClient implements HttpClient {
+  _StalledImageClient(this.body, this.onClose);
+
+  final Stream<List<int>> body;
+  final void Function() onClose;
+
+  @override
+  set connectionTimeout(Duration? value) {}
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async =>
+      _StalledImageRequest(_StalledImageResponse(body));
+
+  @override
+  void close({bool force = false}) {
+    expect(force, isTrue);
+    onClose();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _StalledImageRequest implements HttpClientRequest {
+  _StalledImageRequest(this.response);
+
+  final HttpClientResponse response;
+
+  @override
+  final HttpHeaders headers = _ImageRequestHeaders();
+
+  @override
+  Future<HttpClientResponse> close() async => response;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ImageRequestHeaders implements HttpHeaders {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _StalledImageResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _StalledImageResponse(this.body);
+
+  final Stream<List<int>> body;
+
+  @override
+  int get statusCode => HttpStatus.ok;
+
+  @override
+  int get contentLength => -1;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int>)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => body.listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _ImageParent extends StatefulWidget {
