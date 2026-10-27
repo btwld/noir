@@ -3,12 +3,107 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:noir_driver/noir_driver.dart';
 import 'package:noir_driver/src/driver_polling.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('acknowledged quit timeout kills before workspace cleanup', () async {
+    final events = <String>[];
+    final systemTemp = Directory.systemTemp;
+    final acknowledged = Completer<void>();
+    final deleted = Completer<void>();
+    final driver = await IOOverrides.runZoned(
+      () => NoirDriver.launch(
+        'test/fixtures/driver_stalled_service_probe.dart',
+        arguments: ['--ignore-quit'],
+        onAppOutput: (line) {
+          if (line == 'quit acknowledged') acknowledged.complete();
+        },
+      ),
+      getSystemTempDirectory: () => _TrackedDirectory(systemTemp, () {
+        events.add('workspace deleted');
+        if (!deleted.isCompleted) deleted.complete();
+      }),
+    );
+    final exited = driver.waitForExit().then((code) {
+      events.add('process exited');
+      return code;
+    });
+    addTearDown(() async {
+      await driver.kill();
+      await exited;
+    });
+
+    const budget = Duration(milliseconds: 100);
+    await expectLater(
+      driver
+          .quit(timeout: budget)
+          .timeout(
+            const Duration(seconds: 1),
+            onTimeout: () => throw StateError('quit exceeded its deadline'),
+          ),
+      throwsA(
+        isA<TimeoutException>().having((e) => e.duration, 'budget', budget),
+      ),
+    );
+    await acknowledged.future.timeout(const Duration(seconds: 1));
+    expect(await exited.timeout(const Duration(seconds: 1)), isNot(0));
+    await deleted.future.timeout(const Duration(seconds: 1));
+    expect(events, ['process exited', 'workspace deleted']);
+  });
+
+  test('a rejected quit still kills the driven process', () async {
+    final driver = await NoirDriver.launch(
+      'test/fixtures/driver_stalled_service_probe.dart',
+      arguments: ['--fail-quit'],
+      onAppOutput: (_) {},
+    );
+    addTearDown(driver.kill);
+
+    expect(await driver.quit(), isNot(0));
+  });
+
+  test('waitForExit times out and kills a process that stays alive', () async {
+    final driver = await NoirDriver.launch(
+      'test/fixtures/driver_stalled_service_probe.dart',
+      onAppOutput: (_) {},
+    );
+    addTearDown(driver.kill);
+    // Observe the exit independently of the short wait. A missing timeout
+    // kill cannot pass by relying on this observer's longer timeout.
+    final exited = driver.waitForExit(timeout: const Duration(seconds: 5));
+
+    const budget = Duration(milliseconds: 40);
+    await expectLater(
+      driver
+          .waitForExit(timeout: budget)
+          .timeout(
+            const Duration(seconds: 1),
+            onTimeout: () =>
+                throw StateError('exit wait exceeded its deadline'),
+          ),
+      throwsA(
+        isA<TimeoutException>().having((e) => e.duration, 'budget', budget),
+      ),
+    );
+    expect(await exited.timeout(const Duration(seconds: 1)), isNot(0));
+  });
+
+  test('waitForExit preserves the natural exit code', () async {
+    final driver = await NoirDriver.launch(
+      'test/fixtures/driver_stalled_service_probe.dart',
+      onAppOutput: (_) {},
+    );
+    addTearDown(driver.kill);
+    final exited = driver.waitForExit();
+
+    expect(await driver.quit(), 0);
+    expect(await exited, 0);
+  });
+
   test(
     'launch readiness uses its startup budget, not the later RPC ceiling',
     () async {
@@ -111,4 +206,30 @@ void main() {
     expect(stable, isFalse);
     expect((await driver.info()).frames, 1);
   });
+}
+
+class _TrackedDirectory implements Directory {
+  _TrackedDirectory(this.directory, this.onDelete);
+
+  final Directory directory;
+  final void Function() onDelete;
+
+  @override
+  String get path => directory.path;
+
+  @override
+  Directory createTempSync([String? prefix]) =>
+      _TrackedDirectory(directory.createTempSync(prefix), onDelete);
+
+  @override
+  bool existsSync() => directory.existsSync();
+
+  @override
+  void deleteSync({bool recursive = false}) {
+    onDelete();
+    directory.deleteSync(recursive: recursive);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

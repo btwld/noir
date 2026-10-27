@@ -462,8 +462,13 @@ class NoirDriver {
     return (reloaded: true, reassembled: reassembled, message: null);
   }
 
-  /// The driven process's exit code, once it has ended.
-  Future<int> waitForExit() => _exitCode;
+  /// Waits up to [timeout] for the driven process's exit code.
+  ///
+  /// Throws [TimeoutException] on expiry and kills the owned process. Its
+  /// workspace is retained until the process exits. Use [quit] to request
+  /// graceful shutdown, or [kill] to terminate it immediately.
+  Future<int> waitForExit({Duration timeout = const Duration(seconds: 10)}) =>
+      _waitForExit(PollDeadline(timeout));
 
   /// Asks the app to shut down, then returns its exit code.
   ///
@@ -477,11 +482,10 @@ class NoirDriver {
     final deadline = PollDeadline(timeout);
     try {
       await _call('quit', timeout: deadline.remaining);
-      return await _finish(deadline);
     } on Object {
-      _releaseFailedLaunch(_process, _workspace).ignore();
-      return _finish(deadline);
+      _process.kill(ProcessSignal.sigkill);
     }
+    return _finish(deadline);
   }
 
   /// Kills the app process, then returns its exit code.
@@ -550,20 +554,24 @@ class NoirDriver {
     } on Object {
       // A socket dropped by the exiting app is not a driver failure.
     }
-    try {
-      return await deadline.bound(
-        _exitCode,
-        onExpired: () {
-          throw TimeoutException(
-            'Waiting for the driven app to exit',
-            deadline.budget,
-          );
-        },
-      );
-    } finally {
-      _deleteWorkspace(_workspace);
-    }
+    final code = await _waitForExit(deadline);
+    _deleteWorkspace(_workspace);
+    return code;
   }
+
+  Future<int> _waitForExit(PollDeadline deadline) => deadline.bound(
+    _exitCode,
+    onExpired: () {
+      // Signal synchronously, then retain ownership until exit. Cleanup must
+      // neither extend the caller's budget nor delete a live app's workspace.
+      _releaseFailedLaunch(_process, _workspace).ignore();
+      Future<void>.sync(_service.dispose).ignore();
+      throw TimeoutException(
+        'Waiting for the driven app to exit',
+        deadline.budget,
+      );
+    },
+  );
 }
 
 /// One captured drive-mode frame.

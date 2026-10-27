@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-// A responsive VM-service peer with two deliberately pending RPCs. It exits
-// normally when asked; deadline tests never need to kill a stalled process.
+// A responsive VM-service peer with deliberately pending RPCs. Shutdown tests
+// can also leave it alive after acknowledging quit, or reject the request.
 void main(List<String> arguments) {
   final keepAlive = Timer.periodic(const Duration(seconds: 1), (_) {});
   var infoRequests = 0;
@@ -23,6 +23,13 @@ void main(List<String> arguments) {
     );
   }
   registerExtension('ext.noir.driver.quit', (_, _) async {
+    if (arguments.contains('--fail-quit')) {
+      return ServiceExtensionResponse.error(-32000, 'quit rejected');
+    }
+    if (arguments.contains('--ignore-quit')) {
+      stdout.writeln('quit acknowledged');
+      return ServiceExtensionResponse.result('{"type":"Success"}');
+    }
     keepAlive.cancel();
     Timer(const Duration(milliseconds: 100), () => exit(0));
     return ServiceExtensionResponse.result('{"type":"Success"}');
