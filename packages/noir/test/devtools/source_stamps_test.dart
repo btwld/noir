@@ -36,6 +36,29 @@ void main() {
     expect(readSourceStamps([fixture]), readSourceStamps([fixture]));
   });
 
+  for (final failure in <FileSystemException>[
+    const PathNotFoundException(
+      'lib/removed',
+      OSError('directory disappeared', 2),
+    ),
+    const FileSystemException('recursive listing failed'),
+  ]) {
+    test('listing failure is retried on a later poll: $failure', () {
+      var unavailable = true;
+      final root = _ListedDirectory(() {
+        if (unavailable) throw failure;
+        return fixture.listSync();
+      });
+
+      expect(readSourceStamps([root]), isEmpty);
+      // A failed root must not prevent the other watched roots being scanned.
+      expect(readSourceStamps([root, fixture]).keys, [source.absolute.path]);
+
+      unavailable = false;
+      expect(readSourceStamps([root]), readSourceStamps([fixture]));
+    });
+  }
+
   test('source additions and removals remain observable', () {
     final before = readSourceStamps([fixture]);
     final nested = File(path.join(fixture.path, 'lib', 'new.dart'));
