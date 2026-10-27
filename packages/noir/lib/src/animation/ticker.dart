@@ -21,7 +21,6 @@ class TickerScheduler {
   /// Initializes an empty ticker registry with no frame-request callback.
   TickerScheduler();
 
-  final Set<Ticker> _managedTickers = <Ticker>{};
   final Set<Ticker> _activeTickers = <Ticker>{};
   void Function()? _frameCallback;
   bool _isHandlingFrame = false;
@@ -31,7 +30,7 @@ class TickerScheduler {
     _frameCallback = callback;
   }
 
-  /// Registers and returns an inactive ticker that unregisters on disposal.
+  /// Returns an inactive ticker driven by this scheduler when started.
   ///
   /// [onDispose] also runs when the ticker is disposed; framework ticker
   /// providers use it to drop their own tracking references.
@@ -39,16 +38,7 @@ class TickerScheduler {
     TickerCallback onTick, {
     String? debugLabel,
     void Function(Ticker)? onDispose,
-  }) {
-    final ticker = Ticker._(
-      onTick,
-      this,
-      debugLabel: debugLabel,
-      onDispose: onDispose,
-    );
-    _managedTickers.add(ticker);
-    return ticker;
-  }
+  }) => Ticker._(onTick, this, debugLabel: debugLabel, onDispose: onDispose);
 
   void _startTicker(Ticker ticker) {
     _activeTickers.add(ticker);
@@ -59,10 +49,6 @@ class TickerScheduler {
 
   void _stopTicker(Ticker ticker) {
     _activeTickers.remove(ticker);
-  }
-
-  void _removeTicker(Ticker ticker) {
-    _managedTickers.remove(ticker);
   }
 
   /// Ticks an active snapshot and requests another frame while work remains.
@@ -156,7 +142,6 @@ class Ticker {
       return;
     }
     stop();
-    _scheduler._removeTicker(this);
     _isDisposed = true;
     final onDispose = _onDispose;
     _onDispose = null;

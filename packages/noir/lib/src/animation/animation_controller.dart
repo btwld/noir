@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../foundation/first_error.dart';
 import 'animation.dart';
 import 'ticker.dart';
 
@@ -110,6 +111,10 @@ class AnimationController extends Animation<double> {
   // less time than a full-range run. See _scaledDuration.
   Duration _runDuration = Duration.zero;
   Completer<void>? _completer;
+  int _commandGeneration = 0;
+  int _valueRevision = 0;
+  int _notifiedValueRevision = 0;
+  bool _disposed = false;
 
   static const double _completionTolerance = 1e-6;
 
@@ -125,6 +130,7 @@ class AnimationController extends Animation<double> {
       return;
     }
     _value = clamped;
+    _valueRevision++;
 
     if (_ticker.isTicking) {
       if ((_isAnimatingForward && _value >= _endValue - _completionTolerance) ||
@@ -136,7 +142,7 @@ class AnimationController extends Animation<double> {
       _updateStatusForValue();
     }
 
-    notifyListeners();
+    _notifyValueListeners();
   }
 
   @override
@@ -157,33 +163,7 @@ class AnimationController extends Animation<double> {
   /// The run's wall-clock length is [duration] scaled by the fraction of
   /// `[lowerBound, upperBound]` actually traveled, so `forward(from: 0.5)`
   /// over the default `[0.0, 1.0]` range takes half of [duration].
-  Future<void> forward({double? from}) {
-    if (isAnimating) {
-      stop();
-    }
-    _isAnimatingForward = true;
-    if (from != null) {
-      value = from;
-    }
-    _beginValue = value;
-    _endValue = upperBound;
-
-    if ((_beginValue - _endValue).abs() <= _completionTolerance) {
-      _setStatus(AnimationStatus.completed);
-      return Future<void>.value();
-    }
-
-    if (duration == Duration.zero) {
-      value = _endValue;
-      _setStatus(AnimationStatus.completed);
-      return Future<void>.value();
-    }
-
-    _runDuration = _scaledDuration(duration);
-    _setStatus(AnimationStatus.forward);
-    _ticker.start();
-    return _ensureCompleter();
-  }
+  Future<void> forward({double? from}) => _startRun(forward: true, from: from);
 
   /// Starts the animation running towards [lowerBound].
   ///
@@ -198,33 +178,62 @@ class AnimationController extends Animation<double> {
   /// the fraction of `[lowerBound, upperBound]` actually traveled, so
   /// `reverse(from: 0.5)` over the default `[0.0, 1.0]` range takes half of
   /// that duration.
-  Future<void> reverse({double? from}) {
-    if (isAnimating) {
-      stop();
-    }
-    _isAnimatingForward = false;
-    if (from != null) {
-      value = from;
-    }
-    _beginValue = value;
-    _endValue = lowerBound;
+  Future<void> reverse({double? from}) => _startRun(forward: false, from: from);
 
-    if ((_beginValue - _endValue).abs() <= _completionTolerance) {
-      _setStatus(AnimationStatus.dismissed);
-      return Future<void>.value();
+  Future<void> _startRun({required bool forward, double? from}) {
+    if (_disposed) {
+      throw StateError('AnimationController has been disposed');
+    }
+    if (from != null && !from.isFinite) {
+      throw ArgumentError.value(from, 'from', 'must be finite');
     }
 
-    final totalDuration = reverseDuration ?? duration;
-    if (totalDuration == Duration.zero) {
-      value = _endValue;
-      _setStatus(AnimationStatus.dismissed);
-      return Future<void>.value();
-    }
-
+    _commandGeneration++;
+    _ticker.stop();
+    _takeCompleter()?.complete();
+    final run = Completer<void>();
+    _completer = run;
+    final previousValue = _value;
+    _isAnimatingForward = forward;
+    _value = from?.clamp(lowerBound, upperBound) ?? _value;
+    _beginValue = _value;
+    _endValue = forward ? upperBound : lowerBound;
+    final totalDuration = forward ? duration : reverseDuration ?? duration;
     _runDuration = _scaledDuration(totalDuration);
-    _setStatus(AnimationStatus.reverse);
-    _ticker.start();
-    return _ensureCompleter();
+
+    final completesImmediately =
+        (_beginValue - _endValue).abs() <= _completionTolerance ||
+        _runDuration == Duration.zero;
+    if (completesImmediately) {
+      _value = _endValue;
+    }
+    if ((_value - previousValue).abs() >= _completionTolerance) {
+      _valueRevision++;
+    }
+
+    if (completesImmediately) {
+      _finishAnimation();
+    } else {
+      // The run and ticker are authoritative before any status/from-value
+      // listener can stop, replace or dispose them. Keep this invocation's
+      // Future even if a callback installs a newer run before we return.
+      _ticker.start();
+      if (identical(_completer, run)) {
+        _setStatus(forward ? AnimationStatus.forward : AnimationStatus.reverse);
+      }
+    }
+
+    _notifyValueListeners();
+    return run.future;
+  }
+
+  void _notifyValueListeners() {
+    if (_disposed || _notifiedValueRevision == _valueRevision) return;
+    // A status callback may replace the run without changing its value. Let
+    // that replacement deliver the still-pending value notification once;
+    // the older invocation must neither lose it nor deliver it twice.
+    _notifiedValueRevision = _valueRevision;
+    notifyListeners();
   }
 
   /// Stops the running animation in place, without changing [value].
@@ -240,24 +249,35 @@ class AnimationController extends Animation<double> {
   /// already describe a replacement run. Register an [addStatusListener]
   /// before starting a run when its status transitions matter.
   void stop() {
-    if (!isAnimating) {
+    if (!isAnimating && _completer == null) {
       return;
     }
+    _commandGeneration++;
     _ticker.stop();
     final old = _takeCompleter();
-    _updateStatusForValue();
-    old?.complete();
+    try {
+      _updateStatusForValue();
+    } finally {
+      old?.complete();
+    }
   }
 
   /// Stops the current run, restores [lowerBound], and publishes dismissed status.
   void reset() {
-    stop();
+    final generation = ++_commandGeneration;
+    _ticker.stop();
+    _takeCompleter()?.complete();
     value = lowerBound;
-    _setStatus(AnimationStatus.dismissed);
+    if (_commandGeneration == generation) {
+      _setStatus(AnimationStatus.dismissed);
+    }
   }
 
   @override
   void addStatusListener(AnimationStatusListener listener) {
+    if (_disposed) {
+      throw StateError('Cannot add a status listener after dispose().');
+    }
     _statusListeners.add(listener);
   }
 
@@ -268,16 +288,17 @@ class AnimationController extends Animation<double> {
 
   @override
   void dispose() {
-    _ticker.dispose();
+    if (_disposed) return;
+    _disposed = true;
+    _commandGeneration++;
     final old = _takeCompleter();
-    old?.complete();
+    final failures = FirstErrorRecorder();
+    failures.attempt(() => _ticker.dispose());
+    if (old != null) failures.attempt(old.complete);
     _statusListeners.clear();
-    super.dispose();
-  }
-
-  Future<void> _ensureCompleter() {
-    _completer ??= Completer<void>();
-    return _completer!.future;
+    failures
+      ..attempt(super.dispose)
+      ..rethrowFirst();
   }
 
   Completer<void>? _takeCompleter() {

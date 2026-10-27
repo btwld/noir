@@ -25,7 +25,13 @@ void main() {
   test('FocusNode child membership has one identity store and cached read-only '
       'view', () {
     final file = File('lib/src/framework/focus_manager.dart');
-    final source = file.readAsStringSync();
+    final fileSource = file.readAsStringSync();
+    // FocusManager also owns a notification queue. The one-store invariant
+    // concerns FocusNode's child membership, not every set in the library.
+    final source = fileSource.substring(
+      fileSource.indexOf('class FocusNode '),
+      fileSource.indexOf('class FocusScopeNode '),
+    );
     expect(
       RegExp(r'Set<FocusNode>\.identity\(\)').allMatches(source),
       hasLength(1),

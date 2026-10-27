@@ -6,6 +6,48 @@ import '../helpers/buffer_capture.dart';
 
 void main() {
   group('Spinner', () {
+    test(
+      'nonpositive intervals are rejected before a repeating run starts',
+      () {
+        for (final interval in [
+          Duration.zero,
+          const Duration(microseconds: -1),
+        ]) {
+          final owner = BuildOwner();
+          addTearDown(owner.dispose);
+          expect(
+            () =>
+                Spinner(interval: interval).createElement().mount(null, owner),
+            throwsArgumentError,
+          );
+        }
+      },
+    );
+
+    test('a rejected interval update leaves active timing unchanged', () {
+      final owner = BuildOwner()..setFrameCallback(() {});
+      addTearDown(owner.dispose);
+      final element = const Spinner(
+        interval: Duration(milliseconds: 100),
+        frames: SpinnerFrames.line,
+      ).createElement()..mount(null, owner);
+      addTearDown(element.unmount);
+      owner.handleBeginFrame(Duration.zero);
+
+      expect(
+        () => element.update(
+          const Spinner(interval: Duration.zero, frames: SpinnerFrames.line),
+        ),
+        throwsArgumentError,
+      );
+      owner.handleBeginFrame(const Duration(milliseconds: 100));
+      owner.buildScope();
+      expect(
+        (element.children.single.widget as Text).data,
+        SpinnerFrames.line[1],
+      );
+    });
+
     test('advances one frame per interval and wraps around', () {
       final owner = BuildOwner();
       owner.setFrameCallback(() {});

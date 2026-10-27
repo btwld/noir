@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 
 import '../core/input.dart';
 import '../core/mouse_cursor.dart';
+import '../foundation/first_error.dart';
 import '../painting/tui_canvas.dart';
 import '../render/geometry.dart';
 
@@ -370,6 +371,9 @@ abstract class RenderObject {
     }
     final owner = _pipelineOwner;
     final attachment = _inspectSubtree(child, owner);
+    if (attachment.nodes.any((node) => identical(node, this))) {
+      throw StateError('A render object cannot adopt itself or an ancestor.');
+    }
     if (owner == null && attachment.state != _SubtreeState.detached) {
       throw StateError(
         'A detached render object cannot adopt an attached child.',
@@ -414,12 +418,14 @@ abstract class RenderObject {
 
     child._parent = null;
     _children.removeAt(childIndex);
+    final failures = FirstErrorRecorder();
     if (owner != null) {
-      child.detach();
+      failures.attempt(child.detach);
     }
     if (invalidateParent) {
-      markNeedsLayout();
+      failures.attempt(markNeedsLayout);
     }
+    failures.rethrowFirst();
   }
 
   /// Move an existing direct [child] after another direct child.
@@ -564,15 +570,19 @@ abstract class RenderObject {
     visitChildren(childSnapshot.add);
     formerOwner._forget(this);
     _pipelineOwner = null;
+    final failures = FirstErrorRecorder();
     for (final child in childSnapshot) {
-      if (identical(child._pipelineOwner, formerOwner)) {
-        child.detach();
-      } else if (child._pipelineOwner != null) {
-        throw StateError(
-          'Render subtree changed owner while it was being detached.',
-        );
-      }
+      failures.attempt(() {
+        if (identical(child._pipelineOwner, formerOwner)) {
+          child.detach();
+        } else if (child._pipelineOwner != null) {
+          throw StateError(
+            'Render subtree changed owner while it was being detached.',
+          );
+        }
+      });
     }
+    failures.rethrowFirst();
   }
 }
 
@@ -636,24 +646,13 @@ void _attachInspectedSubtree(List<RenderObject> nodes, PipelineOwner owner) {
     node._pipelineOwner = owner;
   }
 
-  Object? firstError;
-  StackTrace? firstStackTrace;
-  void attempt(void Function() action) {
-    try {
-      action();
-    } catch (error, stackTrace) {
-      firstError ??= error;
-      firstStackTrace ??= stackTrace;
-    }
-  }
-
+  final failures = FirstErrorRecorder();
   for (final node in nodes) {
-    attempt(() => owner.scheduleLayout(node));
-    attempt(() => node.didAttach(owner));
+    failures
+      ..attempt(() => owner.scheduleLayout(node))
+      ..attempt(() => node.didAttach(owner));
   }
-  if (firstError != null) {
-    Error.throwWithStackTrace(firstError!, firstStackTrace!);
-  }
+  failures.rethrowFirst();
 }
 
 RenderObject? _singleRenderObjectChild(RenderObject owner) {
@@ -711,6 +710,9 @@ void setSingleRenderObjectChild(
       );
     }
     final attachment = _inspectSubtree(next, ownerObject._pipelineOwner);
+    if (attachment.nodes.any((node) => identical(node, ownerObject))) {
+      throw StateError('A render object cannot adopt itself or an ancestor.');
+    }
     if (ownerObject._pipelineOwner == null &&
         attachment.state != _SubtreeState.detached) {
       throw StateError(

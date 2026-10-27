@@ -1,6 +1,7 @@
 import 'package:noir/noir.dart';
 
 import 'effect_guard.dart';
+import 'first_error.dart';
 import 'framework.dart';
 
 /// Releases resources created by an effect.
@@ -197,30 +198,15 @@ final class _EffectHookState extends HookState<Object?, _EffectHook> {
   }
 
   void _runEffect() {
-    Object? firstError;
-    StackTrace? firstStackTrace;
-
+    final failures = FirstErrorRecorder();
     final cleanup = _cleanup;
     _cleanup = null;
-    try {
-      if (cleanup != null) {
-        EffectExecutionGuard.run(cleanup);
-      }
-    } on Object catch (error, stackTrace) {
-      firstError = error;
-      firstStackTrace = stackTrace;
+    if (cleanup != null) {
+      failures.attempt(() => EffectExecutionGuard.run(cleanup));
     }
-
-    try {
-      _cleanup = EffectExecutionGuard.run(hook.effect);
-    } on Object catch (error, stackTrace) {
-      firstError ??= error;
-      firstStackTrace ??= stackTrace;
-    }
-
-    if (firstError != null) {
-      Error.throwWithStackTrace(firstError, firstStackTrace!);
-    }
+    failures
+      ..attempt(() => _cleanup = EffectExecutionGuard.run(hook.effect))
+      ..rethrowFirst();
   }
 }
 
