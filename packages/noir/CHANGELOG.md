@@ -49,6 +49,10 @@ remains an early 0.0.x release, not a 1.0 claim.
   cancels later app handlers in the same dispatch. Legacy ESC-prefixed Alt
   keys, SS3 application-cursor keys, and CSI function keys stay one key
   across split reads. A bare Escape still flushes without an Alt modifier.
+- Nested `Buffer.clipped` views intersect their rectangles, so a child view
+  cannot widen its parent's clip. `drawFrameBuffer` intersects a clipped
+  view's copy rectangle with that clip and the buffer bounds before the
+  native call, preserving source offsets.
 - The testing renderer records an image's source pixels as colored block
   cells, including a source crop and a clip that crops those pixels with the
   destination. `BufferCapture`
@@ -59,8 +63,8 @@ remains an early 0.0.x release, not a 1.0 claim.
 - Hot reload notices a same-size edit that preserves the modification time.
   A source that disappears between listing and reading is absent for that
   scan and can return on a later one. A directory listing that fails is
-  retried on a later poll. An unrelated read error keeps the previous
-  identity.
+  retried on a later poll. An unrelated read error propagates and stops
+  hot reload for that process.
 
 ### Changed
 
