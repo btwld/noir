@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.2
+
+Pairs this companion with Noir 0.0.6. The public hook surface is unchanged
+from 0.0.1. When a `useEffect` cleanup and the effect that follows it both
+throw, both still run and the first error is still the one reported.
+
+### Changed
+
+- Requires `noir: ^0.0.6`, narrowed from `^0.0.5`, to name the Noir this
+  companion is built and tested against.
+
 ## 0.0.1
 
 First stable release of `noir_signals`. It requires `noir: ^0.0.5`, the

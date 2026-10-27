@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.0.6
+
+Corrects lifecycle, text geometry, input, image capture, and hot reload.
+The native ABI and bundled native artifacts are unchanged from 0.0.5. This
+remains an early 0.0.x release, not a 1.0 claim.
+
+### Fixed
+
+- Keyed focus traversal follows the child order from the latest
+  reconciliation. After a keyed reorder, Tab and Shift+Tab move through that
+  order. A focus callback can reattach its node during detach, redirect
+  primary focus, dispose the node that just gained focus, or dispose the
+  focused child and choose another, and that decision is the one that sticks.
+  An explicit empty-focus decision during disabling cancels recovery.
+- A render object that would adopt itself or an ancestor throws `StateError`
+  and leaves the existing edges in place. Detach still visits every sibling
+  and descendant when one of them throws, reports the first error, and drops
+  them from the pipeline. A cleanup failure still invalidates after the
+  attempt.
+- `Spinner` rejects a non-positive `interval` with `ArgumentError` before it
+  starts. An empty `frames` list still throws, as it did in 0.0.5. The
+  message says the interval must be positive.
+- `AnimationController.forward` and `reverse` reject a `from` value that is
+  not finite with `ArgumentError`, and leave an in-flight run and its Future
+  intact. A listener that stops, resets, disposes, or replaces the run during
+  the start notification ends only that run: a replacement keeps its own
+  Future, and disposal cannot restart the ticker.
+- `TextSpan` segments graphemes across the whole span tree. A grapheme that
+  crosses span boundaries takes its style and hyperlink from the span where
+  it starts. `CodeView`, `TextTable`, and document lines keep UTF-16 ranges
+  for CRLF rows and for empty rows. `TextEditingController` treats CRLF as
+  one hard break and leaves a standalone CR in the line.
+- `TextInput` and `TextArea` keep the caret on the painted cell for wrapped
+  and CRLF text, including after a resize of an exact-height unwrapped
+  `TextArea`. A zero-width `TextInput` publishes no caret.
+- `Select` snapshots its options, so a later edit of the same list is a real
+  change. The highlight stays inside the list when that list shrinks, even
+  if `selectedIndex` itself did not change. Paint and pointer hits use the
+  scroll window from the latest highlight, so Home, End, and a click agree
+  with the painted rows. `TabSelect` clamps its selection the same way when
+  the options list changes without a new `selectedIndex`.
+- `DiffView` keeps custom-row layout and hunk measurements across a rebuild
+  that does not change row geometry, and replaces them when a custom row
+  height does change.
+- Canceling an input registration during dispatch skips that registration
+  and still runs the ones that remain, in their original order. App exit
+  cancels later app handlers in the same dispatch. Legacy ESC-prefixed Alt
+  keys, SS3 application-cursor keys, and CSI function keys stay one key
+  across split reads. A bare Escape still flushes without an Alt modifier.
+- The testing renderer records an image's source pixels as colored block
+  cells, including a source crop and a clip that crops those pixels with the
+  destination. `BufferCapture`
+  keeps those pixels across repeated captures, and reports the primary
+  capture error when cleanup also fails. An HTTP image load spends one
+  timeout across the request, the response, and the body. A stalled body is
+  cancelled off that timeout's critical path.
+- Hot reload notices a same-size edit that preserves the modification time.
+  A source that disappears between listing and reading is absent for that
+  scan and can return on a later one. A directory listing that fails is
+  retried on a later poll. An unrelated read error keeps the previous
+  identity.
+
+### Changed
+
+- Low-level `Buffer.drawFrameBuffer` copies can still write or clear a wide
+  grapheme across a clip edge. That limit is documented on the platform
+  limitations page. The bundled native artifacts are unchanged from 0.0.5.
+
 ## 0.0.5
 
 Adds a public clipboard request, fixes text alignment and cell painting,
