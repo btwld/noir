@@ -1,8 +1,26 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
+  test('manifest changes regenerate every package availability label', () {
+    final workspace = loadYaml(_read('../../pubspec.yaml')) as YamlMap;
+    final workflow =
+        loadYaml(_read('../../.github/workflows/pages.yml')) as YamlMap;
+    final triggers = workflow['on'] as YamlMap;
+    final push = triggers['push'] as YamlMap;
+    final triggerPaths = push['paths'] as YamlList;
+
+    for (final member in workspace['workspace'] as YamlList) {
+      expect(
+        triggerPaths,
+        contains('$member/pubspec.yaml'),
+        reason: 'package availability derives from every workspace manifest',
+      );
+    }
+  });
+
   test('website exports one GitHub Pages-compatible static artifact', () {
     final config = _read('../../website/next.config.mjs');
     final package = _read('../../website/package.json');
