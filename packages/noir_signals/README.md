@@ -38,7 +38,7 @@ pin an exact commit or tag, and resolve both packages from that revision:
 
 ```yaml
 dependencies:
-  noir: ^0.0.5
+  noir: ^0.0.6
   noir_signals:
     path: ../noir/packages/noir_signals
 dependency_overrides:

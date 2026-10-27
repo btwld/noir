@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.0.2
+
+Bounds launch, service requests, and shutdown. It requires `noir: ^0.0.6`,
+the version this client is built and tested against.
+
+### Fixed
+
+- `NoirDriver.launch` spends one `timeout` (60 seconds by default) on process
+  start, VM-service connection, isolate discovery, and the first frame. When
+  launch times out, the caller receives `TimeoutException`; a process or
+  connection that arrives afterward is released.
+- Each later service request, including input `sendBytes`, `reload`, and
+  `reassemble`, is bounded by `requestTimeout` (30 seconds by default). That
+  budget is separate from an input method's frame-settle window. Expiry
+  throws `TimeoutException` and does not cancel work the app has already
+  accepted.
+- `quit`, `kill`, and `waitForExit` each spend one `timeout` (10 seconds by
+  default). `quit` covers the quit request, connection cleanup, and the exit
+  wait together. Expiry throws `TimeoutException`, still requests
+  termination, and keeps the workspace until the process exits.
+- `NoirDriver.launch` rejects a negative `timeout` or `requestTimeout` with
+  `ArgumentError`. A negative `timeout` on `quit`, `kill`, or `waitForExit`
+  expires with `TimeoutException`.
+
+### Changed
+
+- Requires `noir: ^0.0.6`, narrowed from `^0.0.5`, to name the Noir this
+  client is built and tested against. `^0.0.5` still admits 0.0.6; this
+  release states the version that was actually verified.
+
 ## 0.0.1
 
 First stable release of `noir_driver`. It requires `noir: ^0.0.5`, the version

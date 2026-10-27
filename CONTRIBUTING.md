@@ -353,9 +353,9 @@ runs it on the release pull request.
 
 Every release tag is `<package>-v<version>`:
 
-    noir-v0.0.5
-    noir_driver-v0.0.1
-    noir_signals-v0.0.1
+    noir-v0.0.6
+    noir_driver-v0.0.2
+    noir_signals-v0.0.2
 
 One convention serves three consumers. It is pub.dev's documented
 recommendation for a repository that publishes more than one package, it is
@@ -368,10 +368,10 @@ anything.
 
 Push the tags **one at a time, Noir first**, and wait for each run to finish:
 
-    git tag noir-v0.0.5 && git push origin noir-v0.0.5
+    git tag noir-v0.0.6 && git push origin noir-v0.0.6
     # wait for the run to publish, then:
-    git tag noir_driver-v0.0.1 && git push origin noir_driver-v0.0.1
-    git tag noir_signals-v0.0.1 && git push origin noir_signals-v0.0.1
+    git tag noir_driver-v0.0.2 && git push origin noir_driver-v0.0.2
+    git tag noir_signals-v0.0.2 && git push origin noir_signals-v0.0.2
 
 One at a time for three reasons. GitHub creates no tag events at all when more
 than three tags arrive in one push. `dart pub publish` resolves dependencies
