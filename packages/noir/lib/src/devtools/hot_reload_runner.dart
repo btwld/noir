@@ -6,6 +6,8 @@ import 'package:vm_service/utils.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
+import 'source_stamps.dart';
+
 const _pollInterval = Duration(milliseconds: 400);
 const _connectTimeout = Duration(seconds: 30);
 
@@ -133,7 +135,7 @@ Future<void> _watchSources(
   File logFile,
 ) async {
   final isolateId = (await service.getVM()).isolates!.first.id!;
-  var stamps = _sourceStamps(roots);
+  var stamps = readSourceStamps(roots);
   // Rejected edits remain pending even when another file triggers the retry.
   var acceptedStamps = stamps;
   // The VM recompiles a source only when its mtime is newer than the start of
@@ -148,7 +150,7 @@ Future<void> _watchSources(
     if (stopping()) {
       return;
     }
-    final next = _sourceStamps(roots);
+    final next = readSourceStamps(roots);
     if (_sameStamps(stamps, next)) {
       continue;
     }
@@ -220,8 +222,8 @@ Future<DateTime?> _reloadAndReassemble(
 /// Changed sources whose mtime is not newer than [baseline]. A removed source
 /// needs no force: the VM treats a missing file as modified.
 List<String> _stalePaths(
-  Map<String, _SourceStamp> before,
-  Map<String, _SourceStamp> after,
+  Map<String, SourceStamp> before,
+  Map<String, SourceStamp> after,
   DateTime baseline,
 ) {
   final stale = <String>[];
@@ -245,30 +247,9 @@ List<Directory> _watchRoots(File target) {
   return roots.values.toList(growable: false);
 }
 
-typedef _SourceStamp = ({DateTime modified, int size});
-
-Map<String, _SourceStamp> _sourceStamps(List<Directory> roots) {
-  final stamps = <String, _SourceStamp>{};
-  for (final root in roots) {
-    if (!root.existsSync()) {
-      continue;
-    }
-    for (final entity in root.listSync(recursive: true, followLinks: false)) {
-      if (entity is File && entity.path.endsWith('.dart')) {
-        final stat = entity.statSync();
-        stamps[entity.absolute.path] = (
-          modified: stat.modified,
-          size: stat.size,
-        );
-      }
-    }
-  }
-  return stamps;
-}
-
 bool _sameStamps(
-  Map<String, _SourceStamp> before,
-  Map<String, _SourceStamp> after,
+  Map<String, SourceStamp> before,
+  Map<String, SourceStamp> after,
 ) {
   if (before.length != after.length) {
     return false;
