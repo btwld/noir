@@ -92,6 +92,17 @@ to use. Headless captures cannot show the desktop pointer.
     </dd>
   </div>
   <div>
+    <dt>Wide-character clipping in buffer copies</dt>
+    <dd>
+      Low-level <code>Buffer.drawFrameBuffer</code> copies can write a wide
+      character's continuation cell outside a clip, or clear an existing
+      destination character across the clip edge. Native scissoring does not
+      prevent these whole-character writes. Keep wide characters wholly inside
+      or outside the copy's clip in both source and destination buffers when
+      exact clipping matters.
+    </dd>
+  </div>
+  <div>
     <dt>macOS terminal teardown</dt>
     <dd>
       On an observed macOS/iTerm path, alternate-screen teardown can return to

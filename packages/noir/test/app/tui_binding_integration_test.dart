@@ -163,7 +163,14 @@ void main() {
     final render = imageKey.currentContext!.findRenderObject()! as RenderImage;
     expect(render.size, const Size(8, 3));
     expect(app.binding.debugHasScheduledFrame, isFalse);
-    expect(app.captureFrame(), BufferMatchers.hasCharAt(2, 1, '▀'));
+    final initial = app.captureFrame();
+    for (var y = 0; y < 3; y++) {
+      for (var x = 0; x < 8; x++) {
+        expect(initial, BufferMatchers.hasCharAt(x, y, '█'));
+        expect(initial, BufferMatchers.hasColorAt(x, y, Color.red));
+        expect(initial, BufferMatchers.hasBackgroundAt(x, y, Color.red));
+      }
+    }
 
     app.mockInput.typeText('\x1b[4;480;800t');
     app.pumpFrame();
@@ -175,8 +182,17 @@ void main() {
     expect(render.size, const Size(1, 1));
     expect(followUpScheduled, isTrue);
     expect(app.binding.debugHasScheduledFrame, isFalse);
-    expect(app.captureFrame(), BufferMatchers.hasCharAt(0, 0, '▀'));
-    expect(app.captureFrame(), BufferMatchers.hasCharAt(2, 1, ' '));
+    final resized = app.captureFrame();
+    expect(resized, BufferMatchers.hasCharAt(0, 0, '█'));
+    expect(resized, BufferMatchers.hasColorAt(0, 0, Color.red));
+    expect(resized, BufferMatchers.hasBackgroundAt(0, 0, Color.red));
+    for (var y = 0; y < 3; y++) {
+      for (var x = 0; x < 8; x++) {
+        if (x == 0 && y == 0) continue;
+        expect(resized, BufferMatchers.hasCharAt(x, y, ' '));
+        expect(resized, BufferMatchers.hasBackgroundAt(x, y, Color.black));
+      }
+    }
   });
 
   test(

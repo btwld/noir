@@ -431,6 +431,9 @@ corrupt package.
   border. Native `bufferDrawBox` writes transparent-background borders through
   an unchecked index, so it escapes even OpenTUI's own scissor rect. Boxes that
   miss the viewport entirely are dropped.
+- Low-level frame-buffer blits can alter wide-grapheme cells across clip edges.
+  See the [platform limitations](https://btwld.github.io/noir/docs/platform-limitations/)
+  for the source and destination boundary requirements.
 - Some low-level native operation failures cannot be reported precisely to
   Dart.
 - On the observed macOS/iTerm path, the pinned alternate-screen lifecycle can

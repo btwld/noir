@@ -706,7 +706,7 @@ async function runSmoke() {
 
     // ---- Route contracts at phone width ----
     await page.setViewportSize({ width: 390, height: 844 });
-    const expectedLimitationRows = 9;
+    const expectedLimitationRows = 10;
     const routeContracts = [
       ['/docs', 'main h2', 6],
       ['/docs/getting-started', '[id="3-write-the-screen"]', 1],

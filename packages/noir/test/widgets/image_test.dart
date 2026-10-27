@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -9,9 +10,172 @@ import 'package:noir/src/core/terminal_image.dart'
 import 'package:noir/src/widgets/image.dart' show debugNetworkImageTimeout;
 import 'package:test/test.dart';
 
+import '../helpers/key_driver.dart';
 import '../helpers/test_element_host.dart';
 
 void main() {
+  test('network timeout does not wait for response cancellation', () async {
+    final oldTimeout = debugNetworkImageTimeout;
+    debugNetworkImageTimeout = const Duration(milliseconds: 40);
+    addTearDown(() => debugNetworkImageTimeout = oldTimeout);
+    final cancellation = Completer<void>();
+    final events = <String>[];
+    final body = StreamController<List<int>>(
+      onCancel: () {
+        events.add('cancel');
+        return cancellation.future;
+      },
+    );
+    addTearDown(() async {
+      if (!cancellation.isCompleted) cancellation.complete();
+      await body.close();
+    });
+    final failed = Completer<Object>();
+    var errors = 0;
+    await HttpOverrides.runZoned(
+      () async {
+        final driver = KeyDriver(
+          Image.network(
+            Uri.parse('http://image.test/stalled-cancellation'),
+            onError: (error, _) {
+              errors++;
+              if (!failed.isCompleted) failed.complete(error);
+            },
+          ),
+        );
+        addTearDown(driver.dispose);
+
+        final error = await failed.future.timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => throw StateError('image load exceeded its deadline'),
+        );
+        expect(
+          error,
+          isA<ImageLoadException>()
+              .having((e) => e.code, 'code', ImageLoadErrorCode.network)
+              .having((e) => e.cause, 'cause', isA<TimeoutException>()),
+        );
+        expect(events.take(2), ['close', 'cancel']);
+        expect(cancellation.isCompleted, isFalse);
+        // Late cancellation errors must not replace or duplicate the timeout.
+        cancellation.completeError(StateError('late cancellation failure'));
+        await Future<void>.delayed(Duration.zero);
+        expect(errors, 1);
+      },
+      createHttpClient: (_) =>
+          _StalledImageClient(body.stream, () => events.add('close')),
+    );
+  });
+
+  test(
+    'network body timeout reports once and closes the active response',
+    () async {
+      final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(server.close);
+      final bodyStarted = Completer<void>();
+      final disconnected = Completer<void>();
+      server.listen((socket) {
+        addTearDown(socket.destroy);
+        var responded = false;
+        void noteDisconnect() {
+          if (!disconnected.isCompleted) disconnected.complete();
+        }
+
+        socket.listen(
+          (_) async {
+            if (responded) return;
+            responded = true;
+            socket.add(
+              ascii.encode(
+                'HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n',
+              ),
+            );
+            socket.add([0x89]);
+            await socket.flush();
+            bodyStarted.complete();
+          },
+          onDone: noteDisconnect,
+          onError: (Object _) => noteDisconnect(),
+        );
+      });
+      final oldTimeout = debugNetworkImageTimeout;
+      debugNetworkImageTimeout = const Duration(milliseconds: 100);
+      addTearDown(() => debugNetworkImageTimeout = oldTimeout);
+      final failed = Completer<Object>();
+      var errors = 0;
+      final driver = KeyDriver(
+        Image.network(
+          Uri.parse('http://127.0.0.1:${server.port}/stalled-body'),
+          onError: (error, _) {
+            errors++;
+            if (!failed.isCompleted) failed.complete(error);
+          },
+        ),
+      );
+      addTearDown(driver.dispose);
+      await bodyStarted.future;
+
+      final error = await failed.future.timeout(const Duration(seconds: 1));
+      expect(
+        error,
+        isA<ImageLoadException>().having(
+          (error) => error.code,
+          'code',
+          ImageLoadErrorCode.network,
+        ),
+      );
+      await disconnected.future.timeout(const Duration(seconds: 1));
+      expect(errors, 1);
+    },
+  );
+
+  test(
+    'network acquisition shares one deadline across headers and body',
+    () async {
+      final fixture = await File(
+        '../../external/opentui/packages/core/src/tests/fixtures/images/rgba.png',
+      ).readAsBytes();
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      server.listen((request) async {
+        try {
+          await Future<void>.delayed(const Duration(milliseconds: 80));
+          request.response.add(fixture.sublist(0, 1));
+          await request.response.flush();
+          await Future<void>.delayed(const Duration(milliseconds: 80));
+          request.response.add(fixture.sublist(1));
+          await request.response.close();
+        } on SocketException {
+          // The one acquisition deadline closes this still-active response.
+        }
+      });
+      final oldTimeout = debugNetworkImageTimeout;
+      debugNetworkImageTimeout = const Duration(milliseconds: 120);
+      addTearDown(() => debugNetworkImageTimeout = oldTimeout);
+      final failed = Completer<Object>();
+      var loads = 0;
+      final driver = KeyDriver(
+        Image.network(
+          Uri.parse('http://127.0.0.1:${server.port}/two-phases'),
+          onLoad: (_) => loads++,
+          onError: (error, _) => failed.complete(error),
+        ),
+      );
+      addTearDown(driver.dispose);
+
+      final error = await failed.future.timeout(const Duration(seconds: 1));
+      expect(
+        error,
+        isA<ImageLoadException>().having(
+          (error) => error.code,
+          'code',
+          ImageLoadErrorCode.network,
+        ),
+      );
+      expect(loads, 0);
+    },
+  );
+
   test('borrowed images remain live after the widget unmounts', () {
     final image = TerminalImage.fromRgba(
       Uint8List.fromList(<int>[255, 0, 0, 255]),
@@ -298,6 +462,78 @@ void main() {
     );
     networkHost.dispose();
   });
+}
+
+class _StalledImageClient implements HttpClient {
+  _StalledImageClient(this.body, this.onClose);
+
+  final Stream<List<int>> body;
+  final void Function() onClose;
+
+  @override
+  set connectionTimeout(Duration? value) {}
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async =>
+      _StalledImageRequest(_StalledImageResponse(body));
+
+  @override
+  void close({bool force = false}) {
+    expect(force, isTrue);
+    onClose();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _StalledImageRequest implements HttpClientRequest {
+  _StalledImageRequest(this.response);
+
+  final HttpClientResponse response;
+
+  @override
+  final HttpHeaders headers = _ImageRequestHeaders();
+
+  @override
+  Future<HttpClientResponse> close() async => response;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ImageRequestHeaders implements HttpHeaders {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _StalledImageResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _StalledImageResponse(this.body);
+
+  final Stream<List<int>> body;
+
+  @override
+  int get statusCode => HttpStatus.ok;
+
+  @override
+  int get contentLength => -1;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int>)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => body.listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _ImageParent extends StatefulWidget {

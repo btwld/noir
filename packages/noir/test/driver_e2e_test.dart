@@ -165,10 +165,15 @@ class _ProbeState extends State<Probe> {
       expect(info['height'], 4);
 
       await _call(service, isolateId, 'waitStable');
-      final before = await _call(service, isolateId, 'capture');
+      final before = await _call(
+        service,
+        isolateId,
+        'capture',
+        args: {'format': 'cells'},
+      );
       final beforeLines = (before['lines']! as List<Object?>).cast<String>();
       expect(beforeLines, contains('COUNT 0'), reason: '$diagnostics');
-      expect(beforeLines, contains('▀▀▀▀'), reason: '$diagnostics');
+      _expectBlockImagePixels(before);
 
       await _call(
         service,
@@ -178,7 +183,12 @@ class _ProbeState extends State<Probe> {
       );
       await _call(service, isolateId, 'waitStable');
 
-      final after = await _call(service, isolateId, 'capture');
+      final after = await _call(
+        service,
+        isolateId,
+        'capture',
+        args: {'format': 'cells'},
+      );
       final afterLines = (after['lines']! as List<Object?>).cast<String>();
       expect(
         afterLines,
@@ -186,7 +196,7 @@ class _ProbeState extends State<Probe> {
         reason: 'the injected arrow key must repaint the app\n$diagnostics',
       );
       expect(afterLines, contains('COUNT 1'), reason: '$diagnostics');
-      expect(afterLines, contains('▀▀▀▀'), reason: '$diagnostics');
+      _expectBlockImagePixels(after);
 
       await clickDriverLocator(
         const DriverLocator.byKey('increment'),
@@ -220,12 +230,14 @@ class _ProbeState extends State<Probe> {
       expect(resized['width'], 12);
       expect(resized['height'], 5);
       await _call(service, isolateId, 'waitStable');
-      final resizedCapture = await _call(service, isolateId, 'capture');
-      expect(resizedCapture['width'], 12);
-      expect(
-        (resizedCapture['lines']! as List<Object?>).cast<String>(),
-        contains('▀▀▀▀'),
+      final resizedCapture = await _call(
+        service,
+        isolateId,
+        'capture',
+        args: {'format': 'cells'},
       );
+      expect(resizedCapture['width'], 12);
+      _expectBlockImagePixels(resizedCapture);
 
       final quit = await _call(service, isolateId, 'quit');
       expect(quit['quitting'], isTrue);
@@ -238,6 +250,28 @@ class _ProbeState extends State<Probe> {
     },
     timeout: const Timeout(Duration(minutes: 4)),
   );
+}
+
+void _expectBlockImagePixels(Map<String, Object?> capture) {
+  final rows = (capture['rows']! as List<Object?>).cast<Map<String, Object?>>();
+  final imageRows = rows.where(
+    (row) => (row['chars']! as List<Object?>).take(4).join() == '████',
+  );
+  expect(
+    imageRows,
+    isNotEmpty,
+    reason: 'source images must reach cell capture',
+  );
+  for (final row in imageRows) {
+    for (final channel in ['fg', 'bg']) {
+      expect((row[channel]! as List<Object?>).take(4), [
+        '#ff0000ff',
+        '#ff0000ff',
+        '#00ff00ff',
+        '#00ff00ff',
+      ]);
+    }
+  }
 }
 
 /// Polls `info` until the driven app has registered `ext.noir.driver.*`.

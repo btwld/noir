@@ -2,6 +2,7 @@
 import 'package:noir/noir.dart';
 import 'package:noir/noir_low_level.dart';
 import 'package:noir/src/core/buffer.dart' show debugResolveBufferCell;
+import 'package:noir/src/foundation/first_error.dart';
 import 'package:test/test.dart';
 
 import 'test_element_host.dart';
@@ -21,11 +22,10 @@ class BufferCapture {
   /// captures. Pass [layoutConstraints] when the scene must model a specific
   /// root contract, such as a full terminal's tight dimensions.
   BufferCapture({this.width = 80, this.height = 24, this.layoutConstraints}) {
-    _renderer = Renderer.create(width, height, testing: true);
-    _buffer = _renderer.nextBuffer;
+    _renderer = Renderer.create(width, height, testing: true)
+      ..setAutoFlush(false);
   }
-  late Renderer _renderer;
-  late Buffer _buffer;
+  late final Renderer _renderer;
   final int width;
   final int height;
 
@@ -39,26 +39,31 @@ class BufferCapture {
   /// 2. Finds the root RenderObject
   /// 3. Flushes layout within the buffer constraints
   /// 4. Flushes paint from the root (children painted recursively by parents)
-  /// 5. Returns a structured representation of the buffer content
+  /// 5. Renders to the native testing sink, materializing image block cells
+  /// 6. Returns a structured representation of the rendered buffer content
   ///
   /// The returned [CapturedBuffer] also includes a [CapturedCursor] reflecting
   /// the post-paint state of the [BuildOwner.cursorController] (focus-driven
   /// widgets such as `TextInput` and `TextArea` set this during paint).
   CapturedBuffer capture(Widget widget) {
-    // Clear the buffer
-    _buffer.clear(Color.black);
-
-    final host = TestElementHost(renderer: _renderer)
-      ..mount(widget)
-      ..pumpFrame(buffer: _buffer, constraints: layoutConstraints);
-
-    // Capture and return the buffer content. Include the cursor snapshot
-    // (taken before clearRenderer hides the cursor) for focus-aware tests.
-    final cursor = CapturedCursor.fromController(host.owner.cursorController);
-    final captured = CapturedBuffer.fromBuffer(_buffer, cursor: cursor);
-
-    host.dispose();
-
+    final buffer = _renderer.nextBuffer..clear(Color.black);
+    final host = TestElementHost(renderer: _renderer);
+    late final CapturedBuffer captured;
+    final failures = FirstErrorRecorder();
+    failures.attempt(() {
+      host
+        ..mount(widget)
+        ..pumpFrame(buffer: buffer, constraints: layoutConstraints);
+      final cursor = CapturedCursor.fromController(host.owner.cursorController);
+      _renderer.render(force: true, autoFlush: false);
+      captured = CapturedBuffer.fromBuffer(
+        _renderer.debugCurrentBuffer,
+        cursor: cursor,
+      );
+    });
+    failures
+      ..attempt(host.dispose)
+      ..rethrowFirst();
     return captured;
   }
 

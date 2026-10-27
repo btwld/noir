@@ -104,10 +104,12 @@ void main() {
         isTrue,
       );
       renderer.render(force: true, autoFlush: false);
-      expect(
-        debugResolveBufferCharacters(renderer.debugCurrentBuffer),
-        isNotEmpty,
-      );
+      expect(debugResolveBufferCharacters(renderer.debugCurrentBuffer), '██');
+      final cells = renderer.debugCurrentBuffer.getDirectAccess();
+      expect(cells.getForeground(0, 0), Color.red);
+      expect(cells.getBackground(0, 0), Color.red);
+      expect(cells.getForeground(1, 0), Color.green);
+      expect(cells.getBackground(1, 0), Color.green);
     } finally {
       renderer.dispose();
       image.dispose();
