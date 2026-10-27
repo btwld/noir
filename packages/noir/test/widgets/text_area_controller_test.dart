@@ -185,7 +185,7 @@ void main() {
       controller.dispose();
     });
 
-    test('pre-layout cursor repair uses the complete fallback pair', () {
+    test('first layout reconciles the active cursor beyond fallback hints', () {
       final controller = TextEditingController(text: _fallbackMultilineText);
       final focusNode = FocusNode();
       final renderer = Renderer.create(4, 2, testing: true);
@@ -215,9 +215,11 @@ void main() {
         );
         final captured = CapturedBuffer.fromBuffer(buffer);
 
-        expect(captured.getRegion(0, 0, 4, 1), 'aaaa');
-        expect(captured.getRegion(0, 1, 4, 1), 'bbbb');
-        expect(host.owner.cursorController.isVisible, isFalse);
+        expect(captured.getRegion(0, 0, 4, 1), 'ddd ');
+        expect(captured.getRegion(0, 1, 4, 1), 'eee ');
+        expect(host.owner.cursorController.isVisible, isTrue);
+        expect(host.owner.cursorController.x, 3);
+        expect(host.owner.cursorController.y, 1);
       } finally {
         host.dispose();
         renderer.dispose();
@@ -231,7 +233,7 @@ void main() {
       (width: 4, height: 0),
     ]) {
       test(
-        'completed ${zeroAxis.width}x${zeroAxis.height} layout falls back as a pair',
+        'recovery from ${zeroAxis.width}x${zeroAxis.height} keeps the active cursor visible',
         () {
           final controller = TextEditingController(text: _longMultilineText)
             ..selection = const TextSelection.collapsed(offset: 0);
@@ -268,9 +270,11 @@ void main() {
             );
             final captured = CapturedBuffer.fromBuffer(buffer);
 
-            expect(captured.getRegion(0, 0, 4, 1), 'bbbb');
-            expect(captured.getRegion(0, 1, 4, 1), 'cccc');
-            expect(host.owner.cursorController.isVisible, isFalse);
+            expect(captured.getRegion(0, 0, 4, 1), 'eee ');
+            expect(captured.getRegion(0, 1, 4, 1), 'fff ');
+            expect(host.owner.cursorController.isVisible, isTrue);
+            expect(host.owner.cursorController.x, 3);
+            expect(host.owner.cursorController.y, 1);
           } finally {
             host.dispose();
             renderer.dispose();

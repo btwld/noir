@@ -19,6 +19,11 @@ abstract class InlineSpan {
 }
 
 /// A text span with optional children.
+///
+/// Graphemes are segmented across the whole span tree. If a grapheme crosses
+/// span boundaries, its starting span supplies its style and hyperlink; later
+/// graphemes use the metadata at their own source start. LF and CRLF both
+/// create hard line breaks without changing source offsets.
 final class TextSpan extends InlineSpan {
   /// Creates a text span.
   const TextSpan({

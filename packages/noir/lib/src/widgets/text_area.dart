@@ -1,4 +1,6 @@
 // ignore_for_file: avoid_setters_without_getters
+import 'dart:math' as math;
+
 import 'package:characters/characters.dart';
 
 import '../core/color.dart';
@@ -691,15 +693,21 @@ class RenderTextArea extends RenderBox {
       0,
       (visualLayout.lines.length - height).clamp(0, visualLayout.lines.length),
     );
-    if (_focused && (_softWrap || _maxHeightLines != null) && height > 0) {
+    if (_focused && height > 0) {
       if (cursor.row < effectiveScrollLine) {
         effectiveScrollLine = cursor.row;
       } else if (cursor.row >= effectiveScrollLine + height) {
         effectiveScrollLine = cursor.row - height + 1;
       }
     }
-    var effectiveScrollCell = _softWrap ? 0 : _scrollCell;
-    if (_focused && _maxHeightLines != null && !_softWrap && width > 0) {
+    final contentWidth = visualLayout.lines.fold<int>(
+      0,
+      (width, line) => math.max(width, line.width),
+    );
+    var effectiveScrollCell = _softWrap
+        ? 0
+        : _scrollCell.clamp(0, math.max(0, contentWidth + 1 - width)).toInt();
+    if (_focused && !_softWrap && width > 0) {
       if (cursor.cell < effectiveScrollCell) {
         effectiveScrollCell = cursor.cell;
       } else if (cursor.cell >= effectiveScrollCell + width) {
@@ -742,7 +750,6 @@ class RenderTextArea extends RenderBox {
         if (lineIdx >= visualLayout.lines.length) break;
         final line = visualLayout.lines[lineIdx];
         var cellAccum = 0;
-        var paintedCol = 0;
         paintLine:
         for (final run in line.runs) {
           for (final cluster in run.text.characters) {
@@ -756,6 +763,7 @@ class RenderTextArea extends RenderBox {
               cellAccum += clusterWidth;
               continue;
             }
+            final paintedCol = cellAccum - effectiveScrollCell;
             if (paintedCol + clusterWidth > width) break paintLine;
             canvas.drawText(
               cluster,
@@ -763,7 +771,6 @@ class RenderTextArea extends RenderBox {
               _color,
               background: _backgroundColor,
             );
-            paintedCol += clusterWidth;
             cellAccum += clusterWidth;
           }
         }
@@ -853,31 +860,16 @@ final class _TextAreaVisualLayout {
       TextSpan(text: text),
       BoxConstraints(maxWidth: maxWidth),
     );
-    final hardBreakOffsets = '\n'
-        .allMatches(text)
-        .map((match) => match.start)
-        .toSet();
     final lines = <_TextAreaVisualLine>[];
-    var sourceCursor = 0;
     for (final line in laidOut.lines) {
-      final sourceStart = line.runs.isEmpty
-          ? sourceCursor
-          : line.runs.first.sourceStart;
-      final sourceEnd = line.runs.isEmpty
-          ? sourceStart
-          : line.runs.last.sourceEnd;
       lines.add(
         _TextAreaVisualLine(
           runs: line.runs,
-          sourceStart: sourceStart,
-          sourceEnd: sourceEnd,
+          sourceStart: line.sourceStart,
+          sourceEnd: line.sourceEnd,
           width: line.width,
         ),
       );
-      sourceCursor = sourceEnd;
-      if (hardBreakOffsets.contains(sourceCursor)) {
-        sourceCursor++;
-      }
     }
     if (text.endsWith('\n')) {
       lines.add(

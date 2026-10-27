@@ -14,12 +14,15 @@ import '../foundation/text_selection.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../render/geometry.dart';
+import '../rendering/proxy_box.dart';
 import 'code_view.dart';
 import 'document_view.dart';
 import 'focus_node_owner_mixin.dart';
 import 'pointer_listener.dart';
 import 'row_column.dart';
 import 'scroll_box.dart';
+import 'text_layout.dart';
 import 'text_span.dart';
 import 'text_style.dart';
 import 'theme.dart';
@@ -496,15 +499,18 @@ final class _DiffViewState extends State<DiffView>
   TextSelection? _selection;
   bool _dragging = false;
   int? _pendingHunk;
-  bool _viewportReady = false;
   bool _pendingJumpScheduled = false;
+  List<int>? _hunkOffsets;
+  List<int?> _rowHeights = const [];
 
   @override
   FocusNode? get widgetFocusNode => widget.focusNode;
 
+  bool get _viewportReady => _scrollController.viewportExtent > 0;
+
   void _jumpToHunk(int hunkIndex) {
     if (hunkIndex >= _presentation.hunkLines.length) return;
-    if (!_viewportReady) {
+    if (!_viewportReady || _hunkOffset(hunkIndex) == null) {
       _pendingHunk = hunkIndex;
       return;
     }
@@ -514,13 +520,51 @@ final class _DiffViewState extends State<DiffView>
 
   void _applyHunkJump(int hunkIndex) {
     if (hunkIndex >= _presentation.hunkLines.length) return;
-    final line = _presentation.hunkLines[hunkIndex];
-    _scrollController.jumpTo(line.toDouble());
+    final offset = _hunkOffset(hunkIndex);
+    if (offset == null) return;
+    _scrollController.jumpTo(offset.toDouble());
+  }
+
+  int? _hunkOffset(int index) {
+    if (widget.rowBuilder == null) return _hunkOffsets?[index];
+    final target = _presentation.hunkLines[index];
+    if (_rowHeights[target] == null) return null;
+    var y = 0;
+    for (var row = 0; row < target; row++) {
+      final height = _rowHeights[row];
+      if (height == null) return null;
+      y += height;
+    }
+    return y;
+  }
+
+  void _resetHunkGeometry() {
+    _hunkOffsets = null;
+    _rowHeights = List<int?>.filled(_presentation.rows.length, null);
+  }
+
+  void _handleDocumentLayout(TextLayout layout) {
+    var visualLine = 0;
+    final offsets = <int>[];
+    for (final rowIndex in _presentation.hunkLines) {
+      final sourceStart = _presentation.rows[rowIndex].start;
+      while (visualLine + 1 < layout.lines.length &&
+          layout.lines[visualLine].sourceEnd < sourceStart) {
+        visualLine++;
+      }
+      offsets.add(visualLine);
+    }
+    _hunkOffsets = offsets;
+    _schedulePendingJump();
+  }
+
+  void _handleCustomRowLayout(int index, int height) {
+    _rowHeights[index] = height;
+    _schedulePendingJump();
   }
 
   void _handleScrollMetricsChanged() {
     if (_scrollController.viewportExtent <= 0) return;
-    _viewportReady = true;
     _schedulePendingJump();
   }
 
@@ -531,6 +575,11 @@ final class _DiffViewState extends State<DiffView>
       _pendingJumpScheduled = false;
       if (!mounted || !_viewportReady) return;
       final pending = _pendingHunk;
+      if (pending != null &&
+          pending < _presentation.hunkLines.length &&
+          _hunkOffset(pending) == null) {
+        return;
+      }
       _pendingHunk = null;
       if (pending != null) _applyHunkJump(pending);
     });
@@ -543,6 +592,7 @@ final class _DiffViewState extends State<DiffView>
     _ownsScrollController = widget.scrollController == null;
     _scrollController.addListener(_handleScrollMetricsChanged);
     _presentation = _buildPresentation(widget);
+    _resetHunkGeometry();
     widget.controller?._attach(_jumpToHunk);
     _refreshHighlights();
   }
@@ -554,22 +604,19 @@ final class _DiffViewState extends State<DiffView>
     if ((widget.rowBuilder == null) != (oldWidget.rowBuilder == null)) {
       _retainFocusAcrossRendererChange();
     }
-    if (!identical(widget.controller, oldWidget.controller)) {
-      oldWidget.controller?._detach(_jumpToHunk);
-      widget.controller?._attach(_jumpToHunk);
-    }
     if (!identical(widget.scrollController, oldWidget.scrollController)) {
       _scrollController.removeListener(_handleScrollMetricsChanged);
       if (_ownsScrollController) _scrollController.dispose();
       _scrollController = widget.scrollController ?? ScrollController();
       _ownsScrollController = widget.scrollController == null;
       _scrollController.addListener(_handleScrollMetricsChanged);
-      _viewportReady = false;
     }
-    if (!identical(widget.document, oldWidget.document) ||
+    final presentationChanged =
+        !identical(widget.document, oldWidget.document) ||
         widget.mode != oldWidget.mode ||
         widget.showLineNumbers != oldWidget.showLineNumbers ||
-        widget.splitColumnWidth != oldWidget.splitColumnWidth) {
+        widget.splitColumnWidth != oldWidget.splitColumnWidth;
+    if (presentationChanged) {
       _presentation = _buildPresentation(widget);
       final selection = _selection;
       if (selection != null && selection.end > _presentation.text.length) {
@@ -580,6 +627,15 @@ final class _DiffViewState extends State<DiffView>
     } else if (!identical(widget.highlighter, oldWidget.highlighter) ||
         widget.language != oldWidget.language) {
       _refreshHighlights();
+    }
+    if (presentationChanged ||
+        widget.wrap != oldWidget.wrap ||
+        !identical(widget.rowBuilder, oldWidget.rowBuilder)) {
+      _resetHunkGeometry();
+    }
+    if (!identical(widget.controller, oldWidget.controller)) {
+      oldWidget.controller?._detach(_jumpToHunk);
+      widget.controller?._attach(_jumpToHunk);
     }
   }
 
@@ -673,8 +729,15 @@ final class _DiffViewState extends State<DiffView>
         : Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              for (final row in _presentation.rows)
-                _buildCustomRow(context, theme, row),
+              for (var index = 0; index < _presentation.rows.length; index++)
+                _DiffRowMeasure(
+                  onLayout: (height) => _handleCustomRowLayout(index, height),
+                  child: _buildCustomRow(
+                    context,
+                    theme,
+                    _presentation.rows[index],
+                  ),
+                ),
             ],
           );
     return DocumentSelectionControls(
@@ -719,6 +782,7 @@ final class _DiffViewState extends State<DiffView>
       selectionBackgroundColor:
           widget.selectionBackgroundColor ?? theme.selectedBackground,
       onPointerDownOffset: _activateSourceOffset,
+      onLayout: _handleDocumentLayout,
       rowBackgrounds: <DocumentRowBackground>[
         for (final row in _presentation.rows) ...row.rowBackgrounds(theme),
       ],
@@ -787,6 +851,45 @@ final class _DiffViewState extends State<DiffView>
         child: built,
       ),
     );
+  }
+}
+
+final class _DiffRowMeasure extends SingleChildRenderObjectWidget {
+  const _DiffRowMeasure({required this.onLayout, required super.child});
+
+  final void Function(int height) onLayout;
+
+  @override
+  _RenderDiffRowMeasure createRenderObject(BuildContext context) =>
+      _RenderDiffRowMeasure(onLayout);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderDiffRowMeasure render) {
+    render.updateOnLayout(onLayout);
+  }
+}
+
+final class _RenderDiffRowMeasure extends RenderProxyBox {
+  _RenderDiffRowMeasure(this._onLayout);
+
+  void Function(int height) _onLayout;
+  int? _height;
+
+  void updateOnLayout(void Function(int height) callback) {
+    if (_onLayout == callback) return;
+    _onLayout = callback;
+    // A rebuilt presentation may need the existing measurement, but changing
+    // its recipient does not change the row's layout. Child and constraint
+    // changes still report their new height through performBoxLayout.
+    final height = _height;
+    if (height != null) callback(height);
+  }
+
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    super.performBoxLayout(constraints);
+    _height = size.height;
+    _onLayout(size.height);
   }
 }
 

@@ -215,6 +215,27 @@ void main() {
       _expectNoWork(harness, () => select.showScrollIndicator = true);
     });
 
+    test('Select detects in-place option entry and length changes', () {
+      final options = <SelectOption<String>>[
+        const SelectOption(name: 'a', value: 'a'),
+        const SelectOption(name: 'b', value: 'b'),
+      ];
+      final select = _select(options: options);
+      final harness = _Harness(select);
+
+      options[0] = const SelectOption(name: 'changed', value: 'changed');
+      _expectLayout(harness, () => select.options = options);
+      _expectNoWork(harness, () => select.options = options);
+
+      options.add(const SelectOption(name: 'added', value: 'added'));
+      _expectLayout(harness, () => select.options = options);
+      _expectNoWork(harness, () => select.options = options);
+
+      options.removeAt(1);
+      _expectLayout(harness, () => select.options = options);
+      _expectNoWork(harness, () => select.options = options);
+    });
+
     test('TextInput and TextArea size setters own layout', () {
       final input = _textInput();
       final inputHarness = _Harness(input);

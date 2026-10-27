@@ -367,6 +367,10 @@ class RenderTextInput extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    if (width <= 0 || height <= 0) {
+      _cursorController.hideCursorFor(this);
+      return;
+    }
     final targetX = offset.dx + x;
     final targetY = offset.dy + y;
     final canvas = context.canvas;
@@ -450,7 +454,7 @@ class RenderTextInput extends RenderBox {
     int cursorCluster,
     int viewportCells,
   ) {
-    if (viewportCells <= 1) return 0;
+    if (viewportCells <= 0) return 0;
     if (clusters.isEmpty) return 0;
     // Painted column up to (but not including) cursorCluster.
     var rawCursorCol = 0;

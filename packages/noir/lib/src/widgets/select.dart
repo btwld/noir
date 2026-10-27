@@ -127,13 +127,15 @@ class Select<T> extends StatefulWidget {
 
 class _SelectLayoutMetrics {
   int? _lastCompletedRows;
+  int? scrollOffset;
 
   int? get lastCompletedRows => _lastCompletedRows;
 
   // A verb expresses one-way publication more clearly than a writable API.
   // ignore: use_setters_to_change_properties
-  void publish(int rows) {
+  void publish(int rows, int offset) {
     _lastCompletedRows = rows;
+    scrollOffset = offset;
   }
 }
 
@@ -171,11 +173,10 @@ class _SelectState<T> extends State<Select<T>>
     }
     if (widget.selectedIndex != oldWidget.selectedIndex) {
       _highlighted = widget.selectedIndex.clamp(0, _maxIndex);
-      _viewport.ensureVisible(_highlighted, _highlighted + 1);
-    } else if (widget.options.length != oldWidget.options.length) {
+    } else {
       _highlighted = _highlighted.clamp(0, _maxIndex);
-      _viewport.ensureVisible(_highlighted, _highlighted + 1);
     }
+    _viewport.ensureVisible(_highlighted, _highlighted + 1);
   }
 
   int get _maxIndex => widget.options.isEmpty ? 0 : widget.options.length - 1;
@@ -186,6 +187,7 @@ class _SelectState<T> extends State<Select<T>>
   int _refreshViewportFromLayout() {
     final rows = _paintedViewportRows();
     _viewport.viewportExtent = rows;
+    _viewport.jumpTo(_layoutMetrics.scrollOffset ?? _viewport.scrollOffset);
     return rows;
   }
 
@@ -299,7 +301,8 @@ class _SelectState<T> extends State<Select<T>>
     final localY = event.localPosition.dy;
     final rows = _paintedViewportRows();
     if (localY < 0 || localY >= rows) return;
-    final index = _viewport.scrollOffset + localY;
+    final index =
+        (_layoutMetrics.scrollOffset ?? _viewport.scrollOffset) + localY;
     if (index < 0 || index > _maxIndex) return;
     _setHighlighted(index);
     _confirm();
@@ -451,7 +454,8 @@ class RenderSelect<T> extends RenderBox
     required Color selectedTextColor,
     required Color descriptionColor,
   }) : _layoutMetrics = layoutMetrics,
-       _options = options,
+       _options = List<SelectOption<T>>.unmodifiable(options),
+       _optionsSource = options,
        _highlighted = highlighted,
        _scrollOffset = scrollOffset,
        _visibleRows = visibleRows,
@@ -466,8 +470,12 @@ class RenderSelect<T> extends RenderBox
 
   final _SelectLayoutMetrics? _layoutMetrics;
   List<SelectOption<T>> _options;
+  // Identity-only bookkeeping. Layout and paint read the owned snapshot above.
+  List<SelectOption<T>> _optionsSource;
   int _highlighted;
   int _scrollOffset;
+  int _effectiveScrollOffset = 0;
+  bool _hasCompletedLayout = false;
   int _visibleRows;
   bool _showScrollIndicator;
   Color _color;
@@ -477,20 +485,32 @@ class RenderSelect<T> extends RenderBox
   Color _descriptionColor;
 
   set options(List<SelectOption<T>> v) {
-    if (identical(_options, v)) return;
-    _options = v;
+    if (identical(_optionsSource, v) && _sameOptionEntries(v)) return;
+    final snapshot = List<SelectOption<T>>.unmodifiable(v);
+    _optionsSource = v;
+    _options = snapshot;
     markNeedsLayout();
+  }
+
+  bool _sameOptionEntries(List<SelectOption<T>> options) {
+    if (_options.length != options.length) return false;
+    for (var index = 0; index < options.length; index++) {
+      if (!identical(_options[index], options[index])) return false;
+    }
+    return true;
   }
 
   set highlighted(int v) {
     if (_highlighted == v) return;
     _highlighted = v;
+    _syncEffectiveViewport();
     markNeedsPaint();
   }
 
   set scrollOffset(int v) {
     if (_scrollOffset == v) return;
     _scrollOffset = v;
+    _syncEffectiveViewport();
     markNeedsPaint();
   }
 
@@ -555,7 +575,30 @@ class RenderSelect<T> extends RenderBox
       desiredWidth == 0 ? constraints.minWidth : desiredWidth,
     );
     size = Size(w, h);
-    _layoutMetrics?.publish(paintedRows);
+    _hasCompletedLayout = true;
+    _syncEffectiveViewport();
+  }
+
+  void _syncEffectiveViewport() {
+    // Selection and offset remain paint-only changes. Refresh their shared
+    // window against the last layout without waiting for another layout pass.
+    if (!_hasCompletedLayout) return;
+    final paintedRows = math.min(height, _visibleRows);
+    var effectiveOffset = _scrollOffset
+        .clamp(0, math.max(0, _options.length - paintedRows))
+        .toInt();
+    if (_layoutMetrics != null &&
+        paintedRows > 0 &&
+        _highlighted >= 0 &&
+        _highlighted < _options.length) {
+      if (_highlighted < effectiveOffset) {
+        effectiveOffset = _highlighted;
+      } else if (_highlighted >= effectiveOffset + paintedRows) {
+        effectiveOffset = _highlighted - paintedRows + 1;
+      }
+    }
+    _effectiveScrollOffset = effectiveOffset;
+    _layoutMetrics?.publish(paintedRows, effectiveOffset);
   }
 
   @override
@@ -566,7 +609,7 @@ class RenderSelect<T> extends RenderBox
     // Standalone low-level render boxes have no widget activation handler.
     if (_layoutMetrics == null) return null;
     final row = position.dy;
-    final index = _scrollOffset + row;
+    final index = _effectiveScrollOffset + row;
     return row >= 0 &&
             row < math.min(height, _visibleRows) &&
             index >= 0 &&
@@ -608,7 +651,7 @@ class RenderSelect<T> extends RenderBox
     final showsScrollIndicator = _showsScrollIndicator(paintedRows);
     final usableWidth = showsScrollIndicator ? width - 1 : width;
     for (var row = 0; row < paintedRows; row++) {
-      final index = _scrollOffset + row;
+      final index = _effectiveScrollOffset + row;
       if (index >= _options.length) break;
       final opt = _options[index];
       final isHighlighted = index == _highlighted;
@@ -672,12 +715,12 @@ class RenderSelect<T> extends RenderBox
       final indCol = originX + width - 1;
       canvas.setCell(
         Offset(indCol, originY),
-        _scrollOffset > 0 ? Icons.triangleUp : ' ',
+        _effectiveScrollOffset > 0 ? Icons.triangleUp : ' ',
         _color,
         rowBg,
         0,
       );
-      final lastVisible = _scrollOffset + paintedRows;
+      final lastVisible = _effectiveScrollOffset + paintedRows;
       canvas.setCell(
         Offset(indCol, originY + paintedRows - 1),
         lastVisible < _options.length ? Icons.triangleDown : ' ',

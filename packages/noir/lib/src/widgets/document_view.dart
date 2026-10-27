@@ -362,6 +362,7 @@ final class DocumentView extends StatefulWidget {
     this.onCopy,
     this.onPointerDownOffset,
     this.onVisibleLineChanged,
+    this.onLayout,
     this.rowBackgrounds = const <DocumentRowBackground>[],
   });
 
@@ -407,6 +408,13 @@ final class DocumentView extends StatefulWidget {
   /// Receives the first visible zero-based visual line after scrolling.
   final void Function(int line)? onVisibleLineChanged;
 
+  /// Publishes completed source-line geometry to hosting document components.
+  ///
+  /// Called synchronously during layout. Use it to record geometry; schedule
+  /// widget state changes after the current frame instead of calling
+  /// `setState` from this callback.
+  final void Function(TextLayout layout)? onLayout;
+
   /// Row fills painted behind [text] before its runs.
   final List<DocumentRowBackground> rowBackgrounds;
 
@@ -417,7 +425,6 @@ final class DocumentView extends StatefulWidget {
 final class _DocumentMetrics {
   TextLayout? layout;
   int gutterWidth = 0;
-  int viewportWidth = 0;
   int viewportHeight = 0;
   int maxScrollX = 0;
   int maxScrollY = 0;
@@ -446,22 +453,20 @@ final class _DocumentMetrics {
         sourceOffset += grapheme.length;
       }
     }
-    return line.runs.isEmpty ? 0 : line.runs.last.sourceEnd;
+    return line.sourceEnd;
   }
 
   int? offsetOneVisualLine(int offset, int delta) {
     final current = layout;
     if (current == null || current.lines.isEmpty) return null;
     var lineIndex = current.lines.indexWhere(
-      (line) => line.runs.any(
-        (run) => offset >= run.sourceStart && offset <= run.sourceEnd,
-      ),
+      (line) => offset >= line.sourceStart && offset <= line.sourceEnd,
     );
     if (lineIndex < 0) lineIndex = delta < 0 ? current.lines.length - 1 : 0;
     final target = lineIndex + delta;
     if (target < 0 || target >= current.lines.length) return null;
     final line = current.lines[target];
-    return line.runs.isEmpty ? null : line.runs.first.sourceStart;
+    return line.sourceStart;
   }
 }
 
@@ -866,6 +871,7 @@ final class _DocumentViewState extends State<DocumentView>
               scrollY: _scrollY,
               metrics: _metrics,
               onScrollClamped: _reconcileScrollAfterLayout,
+              onLayout: widget.onLayout,
               backgroundColor: theme.surface,
               rowBackgrounds: widget.rowBackgrounds,
             ),
@@ -927,6 +933,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     required this.scrollY,
     required this.metrics,
     required this.onScrollClamped,
+    required this.onLayout,
     required this.backgroundColor,
     required this.rowBackgrounds,
   });
@@ -941,6 +948,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
   final int scrollY;
   final _DocumentMetrics metrics;
   final void Function(int x, int y) onScrollClamped;
+  final void Function(TextLayout layout)? onLayout;
   final Color backgroundColor;
   final List<DocumentRowBackground> rowBackgrounds;
 
@@ -956,6 +964,7 @@ final class _DocumentLeaf extends RenderObjectWidget {
     scrollY: scrollY,
     metrics: metrics,
     onScrollClamped: onScrollClamped,
+    onLayout: onLayout,
     backgroundColor: backgroundColor,
     rowBackgrounds: rowBackgrounds,
   );
@@ -978,6 +987,7 @@ final class _RenderDocument extends RenderBox {
     required int scrollY,
     required _DocumentMetrics metrics,
     required void Function(int x, int y) onScrollClamped,
+    required void Function(TextLayout layout)? onLayout,
     required Color backgroundColor,
     required List<DocumentRowBackground> rowBackgrounds,
   }) : _text = snapshotInlineSpan(text),
@@ -990,6 +1000,7 @@ final class _RenderDocument extends RenderBox {
        _scrollY = scrollY,
        _metrics = metrics,
        _onScrollClamped = onScrollClamped,
+       _onLayout = onLayout,
        _backgroundColor = backgroundColor,
        _rowBackgrounds = List<DocumentRowBackground>.unmodifiable(
          rowBackgrounds,
@@ -1005,6 +1016,7 @@ final class _RenderDocument extends RenderBox {
   int _scrollY;
   _DocumentMetrics _metrics;
   void Function(int x, int y) _onScrollClamped;
+  void Function(TextLayout layout)? _onLayout;
   Color _backgroundColor;
   List<DocumentRowBackground> _rowBackgrounds;
   late TextLayout _layout;
@@ -1020,6 +1032,7 @@ final class _RenderDocument extends RenderBox {
     _scrollY = widget.scrollY;
     _metrics = widget.metrics;
     _onScrollClamped = widget.onScrollClamped;
+    _onLayout = widget.onLayout;
     _backgroundColor = widget.backgroundColor;
     _rowBackgrounds = List<DocumentRowBackground>.unmodifiable(
       widget.rowBackgrounds,
@@ -1047,7 +1060,6 @@ final class _RenderDocument extends RenderBox {
     _metrics
       ..layout = _layout
       ..gutterWidth = gutter
-      ..viewportWidth = math.max(0, size.width - gutter)
       ..viewportHeight = size.height
       ..maxScrollX = math.max(0, _layout.maxLineWidth - (size.width - gutter))
       ..maxScrollY = math.max(0, _layout.lineCount - size.height);
@@ -1056,6 +1068,7 @@ final class _RenderDocument extends RenderBox {
     if (effectiveScrollX != _scrollX || effectiveScrollY != _scrollY) {
       _onScrollClamped(effectiveScrollX, effectiveScrollY);
     }
+    _onLayout?.call(_layout);
   }
 
   @override
@@ -1097,14 +1110,10 @@ final class _RenderDocument extends RenderBox {
     final gutter = _metrics.gutterWidth;
     final viewportWidth = size.width - gutter;
     if (viewportWidth <= 0) return;
-    var nextLineStart = 0;
     for (var visualLine = 0; visualLine < _layout.lines.length; visualLine++) {
       final line = _layout.lines[visualLine];
-      final lineStart = line.runs.isEmpty
-          ? nextLineStart
-          : line.runs.first.sourceStart;
-      final lineEnd = line.runs.isEmpty ? lineStart : line.runs.last.sourceEnd;
-      nextLineStart = lineEnd + 1;
+      final lineStart = line.sourceStart;
+      final lineEnd = line.sourceEnd;
       final viewportY = visualLine - scrollY;
       if (viewportY < 0) continue;
       if (viewportY >= size.height) break;
@@ -1154,7 +1163,7 @@ final class _RenderDocument extends RenderBox {
       final visualLine = scrollY + viewportY;
       if (visualLine >= _layout.lines.length) break;
       final line = _layout.lines[visualLine];
-      final offset = line.runs.isEmpty ? 0 : line.runs.first.sourceStart;
+      final offset = line.sourceStart;
       final sourceLine = '\n'
           .allMatches(_plainText.substring(0, offset))
           .length;
