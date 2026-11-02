@@ -365,4 +365,3 @@ int? _optionalStepBudget(String job, String name) {
   ).firstMatch(step);
   return timeout == null ? null : int.parse(timeout.group(1)!);
 }
-
