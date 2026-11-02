@@ -175,6 +175,8 @@ jobs:
         run: dart run melos:melos run test:signals
 
   desktop-test:
+    # Paused to limit GitHub Actions usage.
+    if: ${{ false }}
     name: Test (${{ matrix.os }})
     needs: analyze
     strategy:
@@ -225,3 +227,4 @@ jobs:
       - name: Run companion tests
         timeout-minutes: 4
         run: dart run melos:melos run test:signals
+

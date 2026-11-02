@@ -105,6 +105,10 @@ checkout. They cover native cell output, the packaged health check, a relocated
 CLI bundle, and driven widget/input behavior. This catches files or dependencies
 that work through a source path but are missing from the published archive.
 
+Hosted CI and packaged-asset validation currently use Linux only to limit
+Actions usage. macOS and Windows jobs are paused; run platform checks locally
+when needed. This does not establish cross-platform release readiness.
+
 Automatic push/pull-request CI is ordinary verification. Do not manually
 dispatch or rerun a workflow without exact authorization.
 
@@ -394,8 +398,8 @@ Each push runs `.github/workflows/publish.yml`, one ordered chain:
    the whole `verify` ladder, the native-asset verify, and that package's
    `dart pub publish --dry-run`.
 2. **test-package** (Noir only) deletes the checkout's native assets, restores
-   the packaged copy, and runs the health check and a CLI bundle on Linux,
-   macOS and Windows. Publication cannot be undone, so the last proof that the
+   the packaged copy, and runs the health check and a CLI bundle on Linux.
+   macOS and Windows package checks are paused. Publication cannot be undone, so the last proof that the
    shipped bytes load runs before the upload, not after it.
 3. **publish** stops at the `pub.dev` environment until a required reviewer
    approves, then publishes with `dart pub publish --force` over OIDC.
@@ -513,3 +517,4 @@ published; three near-identical files would be three places to drift.
 
 Repository visibility and native artifact refreshes remain separate explicit
 decisions and are never part of an ordinary change.
+

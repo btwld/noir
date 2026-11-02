@@ -183,18 +183,18 @@ void main() {
     expect(publishJob, contains("needs.preflight.outputs.publish == 'true'"));
   });
 
-  test('nothing is uploaded until the packaged assets load everywhere', () {
+  test('nothing is uploaded until the packaged assets load on Linux', () {
     final publishJob = _job(publish, 'publish');
     final packaged = _job(publish, 'test-package');
 
-    // Publication is irreversible, so the cross-platform check on the bytes
+    // Publication is irreversible, so the Linux check on the bytes
     // being shipped runs before the upload, not after it.
     expect(publishJob, contains('needs: [preflight, test-package]'));
     expect(packaged, contains('dart run noir:health_check'));
     expect(packaged, contains('rm -rf native native_manifest.json'));
     expect(packaged, contains('ubuntu-latest'));
-    expect(packaged, contains('macos-latest'));
-    expect(packaged, contains('windows-latest'));
+    expect(packaged, isNot(contains('macos-latest')));
+    expect(packaged, isNot(contains('windows-latest')));
     // Skipped for a companion tag, and a skipped `needs` skips its
     // dependents, so the publish job must name the result rather than
     // silently inherit a skip.
@@ -365,3 +365,4 @@ int? _optionalStepBudget(String job, String name) {
   ).firstMatch(step);
   return timeout == null ? null : int.parse(timeout.group(1)!);
 }
+

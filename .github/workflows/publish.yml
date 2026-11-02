@@ -157,7 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 12
     defaults:
@@ -377,3 +377,4 @@ jobs:
           \`publication.json\` is a cache of the registry and \
           \`availability.ts\` is derived from it; both were regenerated, not \
           hand-written."
+
