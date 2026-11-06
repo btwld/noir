@@ -72,11 +72,17 @@ void main() {
     }
   });
 
-  test('pull requests validate the website without deploying it', () {
+  test('non-draft pull requests validate the website without deploying it', () {
     final workflow = _read('../../.github/workflows/ci.yml');
     final website = _job(workflow, 'website');
 
-    expect(website, contains("if: github.event_name == 'pull_request'"));
+    expect(
+      website,
+      contains(
+        "if: github.event_name == 'pull_request' && "
+        'github.event.pull_request.draft == false',
+      ),
+    );
     expect(website, contains('working-directory: website'));
     expect(website, contains('node-version: 24'));
     expect(
