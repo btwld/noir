@@ -1,5 +1,9 @@
 # Noir
 
+[![pub package](https://img.shields.io/pub/v/noir.svg)](https://pub.dev/packages/noir)
+[![CI](https://github.com/btwld/noir/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/btwld/noir/actions/workflows/ci.yml?query=branch%3Amain)
+[![BSD-3-Clause license](https://img.shields.io/github/license/btwld/noir)](https://github.com/btwld/noir/blob/main/LICENSE)
+
 A Flutter-like reactive terminal UI framework for Dart, powered by OpenTUI.
 
 - Website and documentation: <https://btwld.github.io/noir/>
