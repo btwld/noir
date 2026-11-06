@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    # `ready_for_review` is listed because marking a draft ready fires that
+    # event. Each job stays skipped while pull_request.draft is true. Push
+    # still runs the jobs it runs today.
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -15,6 +19,7 @@ concurrency:
 jobs:
   analyze:
     name: Format and analyze
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 23
 
@@ -68,15 +73,15 @@ jobs:
         run: dart run melos:melos run analyze:signals
 
       # A release is prepared by an ordinary pull request, so the gate that
-      # reads the manifests and changelogs runs on every pull request rather
-      # than first running when a tag is pushed.
+      # reads the manifests and changelogs runs on reviewable pull requests
+      # rather than first running when a tag is pushed.
       - name: Check release readiness
         timeout-minutes: 2
         run: dart run melos:melos run release:check
 
   website:
     name: Validate website
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 12
     defaults:
@@ -127,6 +132,9 @@ jobs:
   ubuntu-test:
     name: Test (Ubuntu)
     needs: analyze
+    # No status function, so the implicit success() check remains and a failed
+    # analyze still skips this job. The clause only excludes drafts.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 32
 
@@ -175,8 +183,10 @@ jobs:
         run: dart run melos:melos run test:signals
 
   desktop-test:
-    # Paused to limit GitHub Actions usage.
-    if: ${{ false }}
+    # Paused to limit GitHub Actions usage. `false &&` keeps that pause on
+    # push and on pull requests; the rest is the same draft gate as the
+    # other jobs, so removing the pause does not start a draft.
+    if: false && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     name: Test (${{ matrix.os }})
     needs: analyze
     strategy:

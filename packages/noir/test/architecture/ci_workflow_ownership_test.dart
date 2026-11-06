@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 const _safeProcessTests = <String>[
   'test/bin/health_check_test.dart',
@@ -29,6 +30,85 @@ void main() {
       contains(r'group: ${{ github.workflow }}-${{ github.ref }}'),
     );
     expect(workflow, contains('cancel-in-progress: true'));
+  });
+
+  test('draft pull requests run no jobs', () {
+    // `ready_for_review` is not a default pull_request type. Marking a draft
+    // ready fires that event, so leaving it off means CI never starts.
+    // Skipping is the gate: a job that runs only on drafts and exits non-zero
+    // would still be a job, and would block the pull request.
+    final workflows =
+        Directory('../../.github/workflows')
+            .listSync()
+            .whereType<File>()
+            .where(
+              (file) =>
+                  file.path.endsWith('.yml') || file.path.endsWith('.yaml'),
+            )
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
+    expect(workflows, isNotEmpty);
+
+    final triggered = <String>[];
+    for (final file in workflows) {
+      final source = file.readAsStringSync().replaceAll('\r\n', '\n');
+      final document = loadYaml(source) as YamlMap;
+      final triggers = document['on'] as YamlMap;
+      if (!triggers.containsKey('pull_request')) continue;
+      final name = path.basename(file.path);
+      triggered.add(name);
+
+      final pullRequest = triggers['pull_request'];
+      expect(pullRequest, isA<YamlMap>(), reason: name);
+      expect(
+        List<String>.from((pullRequest as YamlMap)['types'] as YamlList),
+        ['opened', 'synchronize', 'reopened', 'ready_for_review'],
+        reason: name,
+      );
+
+      final jobs = document['jobs'] as YamlMap;
+      expect(jobs.keys, isNotEmpty, reason: name);
+      for (final entry in jobs.entries) {
+        final condition = (entry.value as YamlMap)['if']?.toString();
+        expect(
+          condition,
+          contains('github.event.pull_request.draft == false'),
+          reason: '$name job ${entry.key} runs on a draft pull request',
+        );
+        expect(
+          condition,
+          isNot(contains('draft == true')),
+          reason: '${entry.key} skips drafts instead of failing a gate',
+        );
+      }
+    }
+
+    expect(triggered, ['ci.yml']);
+
+    // Push, schedule, and workflow_dispatch have no pull request, so the
+    // first clause keeps those jobs. Website validation stays pull-request
+    // only. Desktop stays paused on every event, with the same draft term.
+    const unlessDraft =
+        "github.event_name != 'pull_request' || "
+        'github.event.pull_request.draft == false';
+    expect(_job(workflow, 'analyze'), contains('if: $unlessDraft'));
+    expect(_job(workflow, 'ubuntu-test'), contains('if: $unlessDraft'));
+    expect(
+      _job(workflow, 'ubuntu-test'),
+      isNot(contains('always()')),
+      reason: 'always() would run tests after analyze failed or was skipped',
+    );
+    expect(
+      _job(workflow, 'website'),
+      contains(
+        "if: github.event_name == 'pull_request' && "
+        'github.event.pull_request.draft == false',
+      ),
+    );
+    expect(
+      _job(workflow, 'desktop-test'),
+      contains('if: false && ($unlessDraft)'),
+    );
   });
 
   test('all workflow actions use immutable full SHA references', () {
