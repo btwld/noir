@@ -13,6 +13,8 @@ import '../foundation/text_selection.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../painting/text_layout.dart';
+import '../painting/text_span.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
 import '../rendering/object.dart';
@@ -24,8 +26,6 @@ import 'pointer_listener.dart';
 import 'shortcuts.dart';
 import 'text_editing_owner_mixin.dart';
 import 'text_input_connection.dart';
-import 'text_layout.dart';
-import 'text_span.dart';
 import 'theme.dart';
 import 'viewport.dart';
 

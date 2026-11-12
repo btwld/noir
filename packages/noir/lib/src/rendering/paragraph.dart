@@ -6,13 +6,13 @@ import 'package:meta/meta.dart';
 import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/terminal_style.dart';
+import '../painting/text_highlight.dart';
+import '../painting/text_layout.dart';
+import '../painting/text_span.dart';
+import '../painting/text_style.dart';
 import '../render/geometry.dart';
-import '../widgets/text_layout.dart';
-import '../widgets/text_span.dart';
-import '../widgets/text_style.dart';
 import 'box.dart';
 import 'object.dart';
-import 'text_highlight.dart';
 
 /// RenderObject that lays out inline spans and records text paint commands.
 class RenderParagraph extends RenderBox {

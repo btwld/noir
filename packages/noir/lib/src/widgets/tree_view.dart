@@ -11,6 +11,7 @@ import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/key.dart';
 import '../framework/widget.dart';
+import '../painting/text_style.dart';
 import 'actions.dart';
 import 'flexible.dart';
 import 'icons.dart';
@@ -20,7 +21,6 @@ import 'row_column.dart';
 import 'shortcuts.dart';
 import 'sized_box.dart';
 import 'text.dart';
-import 'text_style.dart';
 import 'theme.dart';
 import 'viewport.dart';
 

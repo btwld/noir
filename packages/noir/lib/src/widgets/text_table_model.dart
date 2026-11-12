@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
 
-import 'text_span.dart';
+import '../painting/text_span.dart';
 
 /// Serializes table cells in row-major order with tab and newline separators.
 ///

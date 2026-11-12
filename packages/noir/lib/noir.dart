@@ -105,6 +105,18 @@ export 'src/framework/widget.dart'
 export 'src/painting/box_border.dart' show Border, BorderStyle, BoxBorder;
 export 'src/painting/box_decoration.dart' show BoxDecoration;
 export 'src/painting/decoration.dart' show Decoration;
+export 'src/painting/text_highlight.dart' show TextHighlight;
+export 'src/painting/text_layout.dart'
+    show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;
+export 'src/painting/text_span.dart' show InlineSpan, TextSpan;
+export 'src/painting/text_style.dart'
+    show
+        FontStyle,
+        FontWeight,
+        TextDecoration,
+        TextEffect,
+        TextStyle,
+        TextStyles;
 export 'src/painting/tui_canvas.dart' show TuiCanvas;
 // Geometry (single source of truth for geometric types)
 export 'src/render/geometry.dart'
@@ -117,9 +129,8 @@ export 'src/render/geometry.dart'
         Offset,
         Rect,
         Size;
-// Text-rendering helpers users see
+// Rendering enums users see
 export 'src/rendering/stack.dart' show StackFit;
-export 'src/rendering/text_highlight.dart' show TextHighlight;
 export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
 // Widgets
 export 'src/widgets/actions.dart'
@@ -235,17 +246,6 @@ export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
 export 'src/widgets/text_input.dart' show TextInput;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
-export 'src/widgets/text_layout.dart'
-    show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;
-export 'src/widgets/text_span.dart' show InlineSpan, TextSpan;
-export 'src/widgets/text_style.dart'
-    show
-        FontStyle,
-        FontWeight,
-        TextDecoration,
-        TextEffect,
-        TextStyle,
-        TextStyles;
 export 'src/widgets/text_table.dart'
     show
         TextTable,

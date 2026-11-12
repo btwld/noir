@@ -3,11 +3,11 @@ import 'package:meta/meta.dart';
 import '../core/terminal_style.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../painting/text_highlight.dart';
+import '../painting/text_layout.dart';
+import '../painting/text_span.dart';
 import '../rendering/object.dart';
 import '../rendering/paragraph.dart';
-import '../rendering/text_highlight.dart';
-import 'text_layout.dart';
-import 'text_span.dart';
 
 /// Displays an [InlineSpan] tree.
 class RichText extends RenderObjectWidget {

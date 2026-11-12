@@ -3,12 +3,12 @@ import 'package:meta/meta.dart';
 import '../core/terminal_style.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../painting/text_highlight.dart';
+import '../painting/text_layout.dart';
+import '../painting/text_span.dart';
+import '../painting/text_style.dart';
 import '../rendering/object.dart';
 import '../rendering/paragraph.dart';
-import '../rendering/text_highlight.dart';
-import 'text_layout.dart';
-import 'text_span.dart';
-import 'text_style.dart';
 
 /// A run of text with a single style, rendered through the terminal text
 /// pipeline.

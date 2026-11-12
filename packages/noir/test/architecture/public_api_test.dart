@@ -117,7 +117,7 @@ void main() {
         'Rect',
         'Size',
       },
-      'src/rendering/text_highlight.dart': {'TextHighlight'},
+      'src/painting/text_highlight.dart': {'TextHighlight'},
       'src/widgets/actions.dart': {
         'Action',
         'ActionCallback',
@@ -264,15 +264,15 @@ void main() {
       'src/widgets/switch.dart': {'Switch'},
       'src/widgets/text.dart': {'Text'},
       'src/widgets/text_area.dart': {'TextArea'},
-      'src/widgets/text_layout.dart': {
+      'src/painting/text_layout.dart': {
         'TextLayout',
         'TextLayoutLine',
         'TextLayoutRun',
         'TextOverflow',
       },
       'src/widgets/text_input_connection.dart': {'TextInputConnection'},
-      'src/widgets/text_span.dart': {'InlineSpan', 'TextSpan'},
-      'src/widgets/text_style.dart': {
+      'src/painting/text_span.dart': {'InlineSpan', 'TextSpan'},
+      'src/painting/text_style.dart': {
         'FontStyle',
         'FontWeight',
         'TextDecoration',

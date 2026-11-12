@@ -7,10 +7,10 @@ import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../painting/text_highlight.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
 import '../rendering/object.dart';
-import '../rendering/text_highlight.dart';
 import 'ascii_font_data.dart';
 
 /// Seven Noir-designed treatments of the built-in 5x7 display alphabet.

@@ -14,6 +14,9 @@ import '../foundation/text_selection.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../painting/text_layout.dart';
+import '../painting/text_span.dart';
+import '../painting/text_style.dart';
 import '../render/geometry.dart';
 import '../rendering/proxy_box.dart';
 import 'code_view.dart';
@@ -22,9 +25,6 @@ import 'focus_node_owner_mixin.dart';
 import 'pointer_listener.dart';
 import 'row_column.dart';
 import 'scroll_box.dart';
-import 'text_layout.dart';
-import 'text_span.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// Presentation mode for [DiffView].

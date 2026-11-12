@@ -1,9 +1,9 @@
 import '../core/color.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../painting/text_span.dart';
+import '../painting/text_style.dart';
 import 'text.dart';
-import 'text_span.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// Left-anchored block elements from one eighth (U+258F) through seven eighths
