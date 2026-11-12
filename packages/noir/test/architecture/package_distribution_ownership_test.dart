@@ -133,7 +133,7 @@ void main() {
     ).allMatches(changelog).map((match) => match.group(1)).toList();
 
     expect(packageVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    expect(packageVersion, '0.0.6');
+    expect(packageVersion, '0.0.7');
     expect(changelogVersions, isNotEmpty);
     expect(changelogVersions.first, packageVersion);
     expect(changelogVersions.toSet(), hasLength(changelogVersions.length));
@@ -149,9 +149,35 @@ void main() {
     final currentRelease = _changelogSection(changelog, packageVersion);
 
     expect(currentRelease, isNotEmpty);
+    expect(
+      RegExp(r'^### Changed$', multiLine: true).allMatches(currentRelease),
+      hasLength(1),
+    );
+    expect(
+      RegExp('^### ', multiLine: true).allMatches(currentRelease),
+      hasLength(1),
+      reason: 'The 0.0.7 release changes internal paths only.',
+    );
+    for (final contract in const [
+      'not a 1.0 claim',
+      'bundled native artifacts are unchanged from 0.0.6',
+      'export the same names as in 0.0.6',
+      'defined in `lib/src/painting/`',
+      'defined in `lib/src/framework/`',
+      'which is not a supported surface, must update those import paths',
+    ]) {
+      expect(_normalized(currentRelease), contains(contract), reason: contract);
+    }
+  });
+
+  test('published 0.0.6 changelog retains its release contracts', () {
+    final changelog = _normalizeLineEndings(_read('CHANGELOG.md'));
+    final publishedRelease = _changelogSection(changelog, '0.0.6');
+
+    expect(publishedRelease, isNotEmpty);
     for (final heading in const ['Fixed', 'Changed']) {
       expect(
-        RegExp('^### $heading\$', multiLine: true).allMatches(currentRelease),
+        RegExp('^### $heading\$', multiLine: true).allMatches(publishedRelease),
         hasLength(1),
         reason: heading,
       );
@@ -176,7 +202,11 @@ void main() {
       'same-size edit that preserves the modification time',
       'wide grapheme across a clip edge',
     ]) {
-      expect(_normalized(currentRelease), contains(contract), reason: contract);
+      expect(
+        _normalized(publishedRelease),
+        contains(contract),
+        reason: contract,
+      );
     }
   });
 
