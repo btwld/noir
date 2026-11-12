@@ -253,7 +253,7 @@ const Map<String, Set<String>> _lowLevelAllowlist = <String, Set<String>>{
   'src/widgets/ascii_font.dart': {'RenderAsciiFont'},
   'src/widgets/scroll_box.dart': {'RenderScrollBox'},
   'src/widgets/text_area.dart': {'RenderTextArea'},
-  'src/widgets/text_layout.dart': {'TextLayoutEngine'},
+  'src/painting/text_layout.dart': {'TextLayoutEngine'},
   'src/widgets/text_table.dart': {'RenderTextTable'},
 };
 

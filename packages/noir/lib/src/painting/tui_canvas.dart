@@ -7,8 +7,8 @@ import '../core/grapheme_metrics.dart';
 import '../core/terminal_image.dart';
 import '../core/terminal_style.dart';
 import '../render/geometry.dart';
-import '../rendering/text_highlight.dart';
-import '../widgets/text_layout.dart';
+import 'text_highlight.dart';
+import 'text_layout.dart';
 
 /// The supported terminal paint vocabulary.
 ///

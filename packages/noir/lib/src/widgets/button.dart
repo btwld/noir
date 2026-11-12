@@ -3,12 +3,12 @@ import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../painting/text_style.dart';
 import '../render/geometry.dart';
 import 'activatable.dart';
 import 'container.dart';
 import 'focus_node_owner_mixin.dart';
 import 'text.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// A labelled push surface activated by Space, Enter, or a left click.

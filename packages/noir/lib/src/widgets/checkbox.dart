@@ -3,12 +3,12 @@ import '../foundation/listenable.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../painting/text_style.dart';
 import 'activatable.dart';
 import 'focus_node_owner_mixin.dart';
 import 'icons.dart';
 import 'row_column.dart';
 import 'text.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// Geometric shapes, not the ballot box `☐`/`☑`: `☑` carries the Unicode

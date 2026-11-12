@@ -1,8 +1,8 @@
 import '../core/input.dart';
-import '../framework/build_context.dart';
-import '../framework/element.dart';
-import '../framework/widget.dart';
+import 'build_context.dart';
+import 'element.dart';
 import 'intents.dart';
+import 'widget.dart';
 
 /// Function used by [CallbackAction].
 typedef ActionCallback<T extends Intent> =

@@ -1,10 +1,10 @@
 import '../core/color.dart';
 import '../framework/build_context.dart';
 import '../framework/widget.dart';
+import '../painting/text_style.dart';
 import '../render/geometry.dart';
 import 'container.dart';
 import 'text.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// Meanings a [Badge] can carry, each mapping to one [ThemeData] status token.

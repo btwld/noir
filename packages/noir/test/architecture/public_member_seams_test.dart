@@ -769,7 +769,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
   ): {
     'createElement',
   },
-  (path: 'lib/src/widgets/inherited.dart', name: 'InheritedWidget'): {
+  (path: 'lib/src/framework/inherited.dart', name: 'InheritedWidget'): {
     'createElement',
   },
   (path: 'lib/src/widgets/row_column.dart', name: 'Flex'): {
@@ -883,7 +883,7 @@ const Set<_Owner> _createElementOwners = <_Owner>{
     path: 'lib/src/framework/element.dart',
     name: 'MultiChildRenderObjectWidget',
   ),
-  (path: 'lib/src/widgets/inherited.dart', name: 'InheritedWidget'),
+  (path: 'lib/src/framework/inherited.dart', name: 'InheritedWidget'),
   (path: 'lib/src/widgets/layout_builder.dart', name: 'LayoutBuilder'),
   (path: 'lib/src/widgets/row_column.dart', name: 'Flex'),
   (path: 'lib/src/widgets/stack.dart', name: 'Stack'),

@@ -1,9 +1,9 @@
 import '../core/input.dart';
-import '../framework/build_context.dart';
-import '../framework/element.dart';
-import '../framework/widget.dart';
 import 'actions.dart';
+import 'build_context.dart';
+import 'element.dart';
 import 'intents.dart';
+import 'widget.dart';
 
 /// Matches a [KeyEvent] and chooses a semantic [Intent].
 abstract class ShortcutActivator {

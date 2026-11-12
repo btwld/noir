@@ -1,8 +1,16 @@
 import '../painting/decoration.dart';
 import '../render/geometry.dart';
-import '../widgets/decorated_box.dart';
 import 'box.dart';
 import 'object.dart';
+
+/// Where to paint a box decoration.
+enum DecorationPosition {
+  /// Paint the box decoration behind the children.
+  background,
+
+  /// Paint the box decoration in front of the children.
+  foreground,
+}
 
 /// A render object that paints a [Decoration].
 ///

@@ -1,12 +1,12 @@
 import 'package:noir/src/core/color.dart';
 import 'package:noir/src/core/renderer.dart';
 import 'package:noir/src/core/terminal_style.dart';
+import 'package:noir/src/painting/text_highlight.dart';
+import 'package:noir/src/painting/text_layout.dart';
+import 'package:noir/src/painting/text_span.dart';
+import 'package:noir/src/painting/text_style.dart';
 import 'package:noir/src/painting/tui_canvas.dart';
 import 'package:noir/src/render/geometry.dart';
-import 'package:noir/src/rendering/text_highlight.dart';
-import 'package:noir/src/widgets/text_layout.dart';
-import 'package:noir/src/widgets/text_span.dart';
-import 'package:noir/src/widgets/text_style.dart';
 import 'package:test/test.dart';
 
 void main() {

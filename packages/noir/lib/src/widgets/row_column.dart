@@ -6,60 +6,6 @@ import '../render/geometry.dart';
 import '../rendering/flex.dart';
 import 'flexible.dart';
 
-/// How the children should be placed along the main axis in a flex layout.
-enum MainAxisAlignment {
-  /// Place the children as close to the start of the main axis as possible.
-  start,
-
-  /// Place the children as close to the end of the main axis as possible.
-  end,
-
-  /// Place the children as close to the middle of the main axis as possible.
-  center,
-
-  /// Place the free space evenly between the children.
-  spaceBetween,
-
-  /// Place the free space evenly between the children as well as half of that
-  /// space before and after the first and last child.
-  spaceAround,
-
-  /// Place the free space evenly between the children as well as before and
-  /// after the first and last child.
-  spaceEvenly,
-}
-
-/// How much space should be occupied in the main axis.
-///
-/// All main-axis allocations are whole terminal cells.
-enum MainAxisSize {
-  /// Size to the children's combined extent, clamped to the max constraint.
-  min,
-
-  /// Size to the incoming maximum main-axis constraint.
-  max,
-}
-
-/// How the children should be placed along the cross axis in a flex layout.
-///
-/// Baseline alignment is not supported; layout uses terminal-cell extents
-/// rather than font metrics.
-enum CrossAxisAlignment {
-  /// Place the children with their start edge aligned with the start side of
-  /// the cross axis.
-  start,
-
-  /// Place the children as close to the end of the cross axis as possible.
-  end,
-
-  /// Place the children so that their centers align with the middle of the
-  /// cross axis.
-  center,
-
-  /// Size children to fill the cross axis before positioning them.
-  stretch,
-}
-
 /// Base class for widgets that arrange children in a one-dimensional array.
 ///
 /// See also:

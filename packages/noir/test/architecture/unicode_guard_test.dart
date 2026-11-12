@@ -12,7 +12,7 @@ void main() {
       'lib/src/widgets/select.dart',
       'lib/src/widgets/text.dart',
       'lib/src/widgets/rich_text.dart',
-      'lib/src/widgets/text_layout.dart',
+      'lib/src/painting/text_layout.dart',
       'lib/src/core/buffer.dart',
       'lib/src/foundation/text_editing_controller.dart',
     ];

@@ -7,18 +7,18 @@ import '../core/color.dart';
 import '../core/cursor.dart';
 import '../core/input.dart';
 import '../foundation/change_notifier.dart';
+import '../framework/actions.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
+import '../framework/intents.dart';
+import '../framework/shortcuts.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
 import '../rendering/object.dart';
 import '../rendering/proxy_box.dart';
-import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
-import 'intents.dart';
 import 'pointer_listener.dart';
-import 'shortcuts.dart';
 import 'theme.dart';
 
 /// Observable scroll state shared between [ScrollBox] and its consumers.

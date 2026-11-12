@@ -117,8 +117,8 @@ void main() {
         'Rect',
         'Size',
       },
-      'src/rendering/text_highlight.dart': {'TextHighlight'},
-      'src/widgets/actions.dart': {
+      'src/painting/text_highlight.dart': {'TextHighlight'},
+      'src/framework/actions.dart': {
         'Action',
         'ActionCallback',
         'Actions',
@@ -149,7 +149,7 @@ void main() {
         'DataTableCellBuilder',
         'DataTableSort',
       },
-      'src/widgets/decorated_box.dart': {'DecoratedBox', 'DecorationPosition'},
+      'src/widgets/decorated_box.dart': {'DecoratedBox'},
       'src/widgets/diff_view.dart': {
         'DiffDocument',
         'DiffFile',
@@ -166,7 +166,7 @@ void main() {
       },
       'src/widgets/divider.dart': {'Divider'},
       'src/widgets/document_view.dart': {'SelectionCopyCallback'},
-      'src/widgets/flexible.dart': {'Expanded', 'FlexFit', 'Flexible'},
+      'src/widgets/flexible.dart': {'Expanded', 'Flexible'},
       'src/widgets/focus.dart': {'Focus', 'FocusScope'},
       'src/widgets/image.dart': {
         'Image',
@@ -177,7 +177,7 @@ void main() {
       },
       'src/widgets/icons.dart': {'Icons'},
       'src/widgets/text_input.dart': {'TextInput'},
-      'src/widgets/intents.dart': {
+      'src/framework/intents.dart': {
         'ActivateIntent',
         'DeleteBackwardIntent',
         'DeleteForwardIntent',
@@ -237,14 +237,7 @@ void main() {
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/progress_bar.dart': {'ProgressBar'},
       'src/widgets/rich_text.dart': {'RichText'},
-      'src/widgets/row_column.dart': {
-        'Column',
-        'CrossAxisAlignment',
-        'Flex',
-        'MainAxisAlignment',
-        'MainAxisSize',
-        'Row',
-      },
+      'src/widgets/row_column.dart': {'Column', 'Flex', 'Row'},
       'src/widgets/scroll_box.dart': {'ScrollBox', 'ScrollController'},
       'src/widgets/select.dart': {
         'Select',
@@ -252,7 +245,7 @@ void main() {
         'SelectConfirmed',
         'SelectOption',
       },
-      'src/widgets/shortcuts.dart': {
+      'src/framework/shortcuts.dart': {
         'CharacterActivator',
         'ShortcutActivator',
         'Shortcuts',
@@ -264,15 +257,15 @@ void main() {
       'src/widgets/switch.dart': {'Switch'},
       'src/widgets/text.dart': {'Text'},
       'src/widgets/text_area.dart': {'TextArea'},
-      'src/widgets/text_layout.dart': {
+      'src/painting/text_layout.dart': {
         'TextLayout',
         'TextLayoutLine',
         'TextLayoutRun',
         'TextOverflow',
       },
       'src/widgets/text_input_connection.dart': {'TextInputConnection'},
-      'src/widgets/text_span.dart': {'InlineSpan', 'TextSpan'},
-      'src/widgets/text_style.dart': {
+      'src/painting/text_span.dart': {'InlineSpan', 'TextSpan'},
+      'src/painting/text_style.dart': {
         'FontStyle',
         'FontWeight',
         'TextDecoration',
@@ -288,6 +281,13 @@ void main() {
         'TreeViewItemBuilder',
       },
       'src/widgets/viewport.dart': {'ViewportController'},
+      'src/rendering/decorated_box.dart': {'DecorationPosition'},
+      'src/rendering/flex.dart': {
+        'CrossAxisAlignment',
+        'FlexFit',
+        'MainAxisAlignment',
+        'MainAxisSize',
+      },
       'src/rendering/stack.dart': {'StackFit'},
       'src/rendering/wrap.dart': {'WrapAlignment', 'WrapCrossAlignment'},
       'src/widgets/stack.dart': {'Positioned', 'Stack'},

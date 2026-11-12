@@ -7,9 +7,9 @@ import '../foundation/selected_text.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
+import '../painting/text_span.dart';
+import '../painting/text_style.dart';
 import 'document_view.dart';
-import 'text_span.dart';
-import 'text_style.dart';
 import 'theme.dart';
 
 /// One non-overlapping UTF-16 style range returned by a [CodeHighlighter].

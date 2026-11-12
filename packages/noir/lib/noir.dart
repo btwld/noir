@@ -84,92 +84,16 @@ export 'src/foundation/text_index_map.dart' show TextIndexMap;
 export 'src/foundation/text_range.dart' show TextRange;
 export 'src/foundation/text_selection.dart' show TextAffinity, TextSelection;
 export 'src/foundation/value_notifier.dart' show ValueNotifier;
+// Actions invoked for intents
+export 'src/framework/actions.dart'
+    show Action, ActionCallback, Actions, CallbackAction;
 // Widget framework: user-facing surface only.
 export 'src/framework/build_context.dart' show BuildContext;
 // Focus types users see
 export 'src/framework/focus_manager.dart'
     show FocusNode, FocusOnKeyEvent, FocusScopeNode, FocusTraversalPolicy;
-// Keys
-export 'src/framework/key.dart'
-    show GlobalKey, Key, LocalKey, ObjectKey, UniqueKey, ValueKey;
-// Widget framework
-export 'src/framework/widget.dart'
-    show
-        InheritedWidget,
-        ProxyWidget,
-        State,
-        StatefulWidget,
-        StatelessWidget,
-        Widget;
-// Painting
-export 'src/painting/box_border.dart' show Border, BorderStyle, BoxBorder;
-export 'src/painting/box_decoration.dart' show BoxDecoration;
-export 'src/painting/decoration.dart' show Decoration;
-export 'src/painting/tui_canvas.dart' show TuiCanvas;
-// Geometry (single source of truth for geometric types)
-export 'src/render/geometry.dart'
-    show
-        Alignment,
-        Axis,
-        BoxConstraints,
-        Constraints,
-        EdgeInsets,
-        Offset,
-        Rect,
-        Size;
-// Text-rendering helpers users see
-export 'src/rendering/stack.dart' show StackFit;
-export 'src/rendering/text_highlight.dart' show TextHighlight;
-export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
-// Widgets
-export 'src/widgets/actions.dart'
-    show Action, ActionCallback, Actions, CallbackAction;
-export 'src/widgets/align.dart' show Align;
-export 'src/widgets/ascii_font.dart' show AsciiFont, AsciiFontFamily;
-export 'src/widgets/autocomplete.dart'
-    show Autocomplete, AutocompleteOptionBuilder, AutocompleteStatus;
-export 'src/widgets/badge.dart' show Badge, BadgeVariant;
-export 'src/widgets/button.dart' show Button;
-export 'src/widgets/checkbox.dart' show Checkbox;
-export 'src/widgets/code_view.dart'
-    show
-        CodeHighlighter,
-        CodeView,
-        HighlightErrorCallback,
-        PlainTextCodeHighlighter,
-        StyledTextRange;
-export 'src/widgets/constrained_box.dart' show ConstrainedBox;
-export 'src/widgets/container.dart' show Container;
-export 'src/widgets/data_table.dart'
-    show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
-export 'src/widgets/decorated_box.dart' show DecoratedBox, DecorationPosition;
-export 'src/widgets/diff_view.dart'
-    show
-        DiffDocument,
-        DiffFile,
-        DiffHunk,
-        DiffHunkCallback,
-        DiffLine,
-        DiffLineCallback,
-        DiffLineKind,
-        DiffRowBuilder,
-        DiffView,
-        DiffViewController,
-        DiffViewMode,
-        UnifiedDiffParser;
-export 'src/widgets/divider.dart' show Divider;
-export 'src/widgets/document_view.dart' show SelectionCopyCallback;
-export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
-export 'src/widgets/focus.dart' show Focus, FocusScope;
-export 'src/widgets/icons.dart' show Icons;
-export 'src/widgets/image.dart'
-    show
-        Image,
-        ImageErrorBuilder,
-        ImageLoadErrorCode,
-        ImageLoadException,
-        ImageLoadingBuilder;
-export 'src/widgets/intents.dart'
+// Intents dispatched through Actions
+export 'src/framework/intents.dart'
     show
         ActivateIntent,
         DeleteBackwardIntent,
@@ -203,6 +127,101 @@ export 'src/widgets/intents.dart'
         ScrollToStartIntent,
         ScrollUpIntent,
         SubmitTextIntent;
+// Keys
+export 'src/framework/key.dart'
+    show GlobalKey, Key, LocalKey, ObjectKey, UniqueKey, ValueKey;
+// Keyboard shortcuts
+export 'src/framework/shortcuts.dart'
+    show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
+// Widget framework
+export 'src/framework/widget.dart'
+    show
+        InheritedWidget,
+        ProxyWidget,
+        State,
+        StatefulWidget,
+        StatelessWidget,
+        Widget;
+// Painting
+export 'src/painting/box_border.dart' show Border, BorderStyle, BoxBorder;
+export 'src/painting/box_decoration.dart' show BoxDecoration;
+export 'src/painting/decoration.dart' show Decoration;
+export 'src/painting/text_highlight.dart' show TextHighlight;
+export 'src/painting/text_layout.dart'
+    show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;
+export 'src/painting/text_span.dart' show InlineSpan, TextSpan;
+export 'src/painting/text_style.dart'
+    show
+        FontStyle,
+        FontWeight,
+        TextDecoration,
+        TextEffect,
+        TextStyle,
+        TextStyles;
+export 'src/painting/tui_canvas.dart' show TuiCanvas;
+// Geometry (single source of truth for geometric types)
+export 'src/render/geometry.dart'
+    show
+        Alignment,
+        Axis,
+        BoxConstraints,
+        Constraints,
+        EdgeInsets,
+        Offset,
+        Rect,
+        Size;
+// Rendering enums users see
+export 'src/rendering/decorated_box.dart' show DecorationPosition;
+export 'src/rendering/flex.dart'
+    show CrossAxisAlignment, FlexFit, MainAxisAlignment, MainAxisSize;
+export 'src/rendering/stack.dart' show StackFit;
+export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
+// Widgets
+export 'src/widgets/align.dart' show Align;
+export 'src/widgets/ascii_font.dart' show AsciiFont, AsciiFontFamily;
+export 'src/widgets/autocomplete.dart'
+    show Autocomplete, AutocompleteOptionBuilder, AutocompleteStatus;
+export 'src/widgets/badge.dart' show Badge, BadgeVariant;
+export 'src/widgets/button.dart' show Button;
+export 'src/widgets/checkbox.dart' show Checkbox;
+export 'src/widgets/code_view.dart'
+    show
+        CodeHighlighter,
+        CodeView,
+        HighlightErrorCallback,
+        PlainTextCodeHighlighter,
+        StyledTextRange;
+export 'src/widgets/constrained_box.dart' show ConstrainedBox;
+export 'src/widgets/container.dart' show Container;
+export 'src/widgets/data_table.dart'
+    show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
+export 'src/widgets/decorated_box.dart' show DecoratedBox;
+export 'src/widgets/diff_view.dart'
+    show
+        DiffDocument,
+        DiffFile,
+        DiffHunk,
+        DiffHunkCallback,
+        DiffLine,
+        DiffLineCallback,
+        DiffLineKind,
+        DiffRowBuilder,
+        DiffView,
+        DiffViewController,
+        DiffViewMode,
+        UnifiedDiffParser;
+export 'src/widgets/divider.dart' show Divider;
+export 'src/widgets/document_view.dart' show SelectionCopyCallback;
+export 'src/widgets/flexible.dart' show Expanded, Flexible;
+export 'src/widgets/focus.dart' show Focus, FocusScope;
+export 'src/widgets/icons.dart' show Icons;
+export 'src/widgets/image.dart'
+    show
+        Image,
+        ImageErrorBuilder,
+        ImageLoadErrorCode,
+        ImageLoadException,
+        ImageLoadingBuilder;
 export 'src/widgets/layout_builder.dart'
     show LayoutBuilder, LayoutWidgetBuilder;
 export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
@@ -218,13 +237,10 @@ export 'src/widgets/panel.dart' show Panel;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/progress_bar.dart' show ProgressBar;
 export 'src/widgets/rich_text.dart' show RichText;
-export 'src/widgets/row_column.dart'
-    show Column, CrossAxisAlignment, Flex, MainAxisAlignment, MainAxisSize, Row;
+export 'src/widgets/row_column.dart' show Column, Flex, Row;
 export 'src/widgets/scroll_box.dart' show ScrollBox, ScrollController;
 export 'src/widgets/select.dart'
     show Select, SelectChanged, SelectConfirmed, SelectOption;
-export 'src/widgets/shortcuts.dart'
-    show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
 export 'src/widgets/sized_box.dart' show SizedBox;
 export 'src/widgets/slider.dart' show Slider;
 export 'src/widgets/spinner.dart' show Spinner, SpinnerFrames;
@@ -235,17 +251,6 @@ export 'src/widgets/text.dart' show Text;
 export 'src/widgets/text_area.dart' show TextArea;
 export 'src/widgets/text_input.dart' show TextInput;
 export 'src/widgets/text_input_connection.dart' show TextInputConnection;
-export 'src/widgets/text_layout.dart'
-    show TextLayout, TextLayoutLine, TextLayoutRun, TextOverflow;
-export 'src/widgets/text_span.dart' show InlineSpan, TextSpan;
-export 'src/widgets/text_style.dart'
-    show
-        FontStyle,
-        FontWeight,
-        TextDecoration,
-        TextEffect,
-        TextStyle,
-        TextStyles;
 export 'src/widgets/text_table.dart'
     show
         TextTable,

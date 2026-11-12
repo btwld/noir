@@ -35,6 +35,7 @@ export 'src/framework/focus_manager.dart' show FocusManager;
 export 'src/framework/owner.dart' show BuildOwner, FrameCallback;
 export 'src/framework/widget.dart'
     show RenderObjectWidget, SingleChildRenderObjectWidget;
+export 'src/painting/text_layout.dart' show TextLayoutEngine;
 // Geometry shared with the high-level widget surface.
 export 'src/render/geometry.dart' show Axis;
 // Render-object base classes and concrete render objects
@@ -62,5 +63,4 @@ export 'src/widgets/ascii_font.dart' show RenderAsciiFont;
 // Render objects owned by widget files (re-exported as a convenience).
 export 'src/widgets/scroll_box.dart' show RenderScrollBox;
 export 'src/widgets/text_area.dart' show RenderTextArea;
-export 'src/widgets/text_layout.dart' show TextLayoutEngine;
 export 'src/widgets/text_table.dart' show RenderTextTable;
