@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.3
+
+Pairs this companion with Noir 0.0.7. The public hook surface is unchanged
+from 0.0.2.
+
+### Changed
+
+- Requires `noir: ^0.0.7`, narrowed from `^0.0.6`, to name the Noir this
+  companion is built and tested against.
+
 ## 0.0.2
 
 Pairs this companion with Noir 0.0.6. The public hook surface is unchanged

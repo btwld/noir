@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.0.7
+
+Reorganizes Noir's internal source tree so that each layer depends only on
+the layers beneath it. `package:noir/noir.dart`,
+`package:noir/noir_low_level.dart`, and `package:noir/noir_ffi.dart` export
+the same names as in 0.0.6. The native ABI and bundled native artifacts are
+unchanged from 0.0.6. This remains an early 0.0.x release, not a 1.0 claim.
+
+### Changed
+
+- Several files under `lib/src/` moved to a lower internal directory.
+  `TextStyle`, `TextSpan`, the text layout types, and `TextHighlight` are
+  defined in `lib/src/painting/`. `FlexFit`, `MainAxisAlignment`,
+  `MainAxisSize`, `CrossAxisAlignment`, and `DecorationPosition` are defined
+  in `lib/src/rendering/`, beside the render objects that use them.
+  `Actions`, the intents, `Shortcuts`, the shortcut activators, and
+  `InheritedWidget` are defined in `lib/src/framework/`. Code that imports
+  only the supported libraries needs no change. Code that imports
+  `package:noir/src/...` directly, which is not a supported surface, must
+  update those import paths.
+
 ## 0.0.6
 
 Corrects lifecycle, text geometry, input, image capture, and hot reload.
