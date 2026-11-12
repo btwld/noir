@@ -13,6 +13,7 @@ import '../framework/widget.dart';
 import '../painting/text_layout.dart';
 import '../painting/text_style.dart';
 import '../render/geometry.dart';
+import '../rendering/flex.dart';
 import 'align.dart';
 import 'container.dart';
 import 'flexible.dart';

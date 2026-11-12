@@ -149,7 +149,7 @@ void main() {
         'DataTableCellBuilder',
         'DataTableSort',
       },
-      'src/widgets/decorated_box.dart': {'DecoratedBox', 'DecorationPosition'},
+      'src/widgets/decorated_box.dart': {'DecoratedBox'},
       'src/widgets/diff_view.dart': {
         'DiffDocument',
         'DiffFile',
@@ -166,7 +166,7 @@ void main() {
       },
       'src/widgets/divider.dart': {'Divider'},
       'src/widgets/document_view.dart': {'SelectionCopyCallback'},
-      'src/widgets/flexible.dart': {'Expanded', 'FlexFit', 'Flexible'},
+      'src/widgets/flexible.dart': {'Expanded', 'Flexible'},
       'src/widgets/focus.dart': {'Focus', 'FocusScope'},
       'src/widgets/image.dart': {
         'Image',
@@ -237,14 +237,7 @@ void main() {
       'src/widgets/pointer_listener.dart': {'PointerListener'},
       'src/widgets/progress_bar.dart': {'ProgressBar'},
       'src/widgets/rich_text.dart': {'RichText'},
-      'src/widgets/row_column.dart': {
-        'Column',
-        'CrossAxisAlignment',
-        'Flex',
-        'MainAxisAlignment',
-        'MainAxisSize',
-        'Row',
-      },
+      'src/widgets/row_column.dart': {'Column', 'Flex', 'Row'},
       'src/widgets/scroll_box.dart': {'ScrollBox', 'ScrollController'},
       'src/widgets/select.dart': {
         'Select',
@@ -288,6 +281,13 @@ void main() {
         'TreeViewItemBuilder',
       },
       'src/widgets/viewport.dart': {'ViewportController'},
+      'src/rendering/decorated_box.dart': {'DecorationPosition'},
+      'src/rendering/flex.dart': {
+        'CrossAxisAlignment',
+        'FlexFit',
+        'MainAxisAlignment',
+        'MainAxisSize',
+      },
       'src/rendering/stack.dart': {'StackFit'},
       'src/rendering/wrap.dart': {'WrapAlignment', 'WrapCrossAlignment'},
       'src/widgets/stack.dart': {'Positioned', 'Stack'},

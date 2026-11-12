@@ -130,6 +130,9 @@ export 'src/render/geometry.dart'
         Rect,
         Size;
 // Rendering enums users see
+export 'src/rendering/decorated_box.dart' show DecorationPosition;
+export 'src/rendering/flex.dart'
+    show CrossAxisAlignment, FlexFit, MainAxisAlignment, MainAxisSize;
 export 'src/rendering/stack.dart' show StackFit;
 export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
 // Widgets
@@ -153,7 +156,7 @@ export 'src/widgets/constrained_box.dart' show ConstrainedBox;
 export 'src/widgets/container.dart' show Container;
 export 'src/widgets/data_table.dart'
     show DataColumn, DataTable, DataTableCellBuilder, DataTableSort;
-export 'src/widgets/decorated_box.dart' show DecoratedBox, DecorationPosition;
+export 'src/widgets/decorated_box.dart' show DecoratedBox;
 export 'src/widgets/diff_view.dart'
     show
         DiffDocument,
@@ -170,7 +173,7 @@ export 'src/widgets/diff_view.dart'
         UnifiedDiffParser;
 export 'src/widgets/divider.dart' show Divider;
 export 'src/widgets/document_view.dart' show SelectionCopyCallback;
-export 'src/widgets/flexible.dart' show Expanded, FlexFit, Flexible;
+export 'src/widgets/flexible.dart' show Expanded, Flexible;
 export 'src/widgets/focus.dart' show Focus, FocusScope;
 export 'src/widgets/icons.dart' show Icons;
 export 'src/widgets/image.dart'
@@ -229,8 +232,7 @@ export 'src/widgets/panel.dart' show Panel;
 export 'src/widgets/pointer_listener.dart' show PointerListener;
 export 'src/widgets/progress_bar.dart' show ProgressBar;
 export 'src/widgets/rich_text.dart' show RichText;
-export 'src/widgets/row_column.dart'
-    show Column, CrossAxisAlignment, Flex, MainAxisAlignment, MainAxisSize, Row;
+export 'src/widgets/row_column.dart' show Column, Flex, Row;
 export 'src/widgets/scroll_box.dart' show ScrollBox, ScrollController;
 export 'src/widgets/select.dart'
     show Select, SelectChanged, SelectConfirmed, SelectOption;

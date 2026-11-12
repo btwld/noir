@@ -16,6 +16,7 @@ import '../framework/key.dart';
 import '../framework/widget.dart';
 import '../painting/text_style.dart';
 import '../render/geometry.dart';
+import '../rendering/flex.dart';
 import 'actions.dart';
 import 'container.dart';
 import 'flexible.dart';

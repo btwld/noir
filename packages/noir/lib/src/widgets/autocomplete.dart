@@ -13,6 +13,7 @@ import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
+import '../rendering/flex.dart';
 import 'actions.dart';
 import 'container.dart';
 import 'focus_node_owner_mixin.dart';

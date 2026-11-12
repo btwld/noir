@@ -8,16 +8,6 @@ import '../rendering/box.dart';
 import '../rendering/flex.dart';
 import '../rendering/object.dart';
 
-/// How a flexible child is allowed to size itself along the main axis.
-enum FlexFit {
-  /// The child is forced to fill the available space allocated to it.
-  tight,
-
-  /// The child can be at most as large as the available space, but may be
-  /// smaller.
-  loose,
-}
-
 /// A widget that gives its [child] a share of the main-axis space in a [Flex].
 ///
 /// Stateless, Stateful, and other non-render components may separate this

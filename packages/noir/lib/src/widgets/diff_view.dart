@@ -18,6 +18,7 @@ import '../painting/text_layout.dart';
 import '../painting/text_span.dart';
 import '../painting/text_style.dart';
 import '../render/geometry.dart';
+import '../rendering/flex.dart';
 import '../rendering/proxy_box.dart';
 import 'code_view.dart';
 import 'document_view.dart';

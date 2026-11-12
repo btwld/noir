@@ -12,6 +12,7 @@ import '../framework/focus_manager.dart';
 import '../framework/widget.dart';
 import '../painting/text_span.dart';
 import '../painting/text_style.dart';
+import '../rendering/flex.dart';
 import 'code_view.dart';
 import 'divider.dart';
 import 'document_view.dart';

@@ -5,6 +5,7 @@ import '../framework/build_context.dart';
 import '../framework/widget.dart';
 import '../painting/box_decoration.dart';
 import '../render/geometry.dart';
+import '../rendering/decorated_box.dart';
 import 'align.dart';
 import 'constrained_box.dart';
 import 'decorated_box.dart';

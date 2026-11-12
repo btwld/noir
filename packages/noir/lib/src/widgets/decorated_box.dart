@@ -6,15 +6,6 @@ import '../painting/decoration.dart';
 import '../rendering/decorated_box.dart';
 import '../rendering/object.dart';
 
-/// Where to paint a box decoration.
-enum DecorationPosition {
-  /// Paint the box decoration behind the children.
-  background,
-
-  /// Paint the box decoration in front of the children.
-  foreground,
-}
-
 /// A widget that paints a [Decoration] either before or after its child paints.
 ///
 /// [Container] insets its child by the widths of the borders; this widget does

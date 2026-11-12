@@ -10,6 +10,7 @@ import '../framework/key.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
+import '../rendering/flex.dart';
 import '../rendering/overlay.dart';
 import 'actions.dart';
 import 'focus.dart';

@@ -2,7 +2,6 @@ import 'package:noir/src/render/geometry.dart';
 import 'package:noir/src/rendering/box.dart';
 import 'package:noir/src/rendering/flex.dart';
 import 'package:noir/src/rendering/object.dart';
-import 'package:noir/src/widgets/flexible.dart';
 
 void main() {
   _expectArgumentError(
