@@ -6,20 +6,20 @@ import '../core/color.dart';
 import '../core/grapheme_metrics.dart';
 import '../core/input.dart';
 import '../core/mouse_cursor.dart';
+import '../framework/actions.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
+import '../framework/intents.dart';
+import '../framework/shortcuts.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
 import '../rendering/object.dart';
-import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
 import 'icons.dart';
-import 'intents.dart';
 import 'pointer_listener.dart';
 import 'select.dart';
-import 'shortcuts.dart';
 import 'theme.dart';
 
 /// A horizontal, focusable selector over typed [SelectOption] values.

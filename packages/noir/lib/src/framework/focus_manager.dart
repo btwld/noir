@@ -6,11 +6,11 @@ import 'package:meta/meta.dart';
 
 import '../core/input.dart';
 import '../foundation/change_notifier.dart';
-import '../widgets/actions.dart';
-import '../widgets/intents.dart';
-import '../widgets/shortcuts.dart';
+import 'actions.dart';
 import 'build_context.dart';
 import 'element.dart';
+import 'intents.dart';
+import 'shortcuts.dart';
 
 /// Handles a key event at [FocusNode] scope; the result decides whether
 /// routing continues.

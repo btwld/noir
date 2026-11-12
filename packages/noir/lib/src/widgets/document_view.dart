@@ -9,8 +9,11 @@ import '../core/input.dart';
 import '../foundation/selected_text.dart';
 import '../foundation/text_index_map.dart';
 import '../foundation/text_selection.dart';
+import '../framework/actions.dart';
 import '../framework/build_context.dart';
 import '../framework/focus_manager.dart';
+import '../framework/intents.dart';
+import '../framework/shortcuts.dart';
 import '../framework/widget.dart';
 import '../painting/text_highlight.dart';
 import '../painting/text_layout.dart';
@@ -19,12 +22,9 @@ import '../painting/text_style.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
 import '../rendering/object.dart';
-import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
-import 'intents.dart';
 import 'pointer_listener.dart';
-import 'shortcuts.dart';
 import 'theme.dart';
 
 /// Called after an explicit copy attempt from a document selection.

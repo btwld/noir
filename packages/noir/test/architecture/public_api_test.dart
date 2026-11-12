@@ -118,7 +118,7 @@ void main() {
         'Size',
       },
       'src/painting/text_highlight.dart': {'TextHighlight'},
-      'src/widgets/actions.dart': {
+      'src/framework/actions.dart': {
         'Action',
         'ActionCallback',
         'Actions',
@@ -177,7 +177,7 @@ void main() {
       },
       'src/widgets/icons.dart': {'Icons'},
       'src/widgets/text_input.dart': {'TextInput'},
-      'src/widgets/intents.dart': {
+      'src/framework/intents.dart': {
         'ActivateIntent',
         'DeleteBackwardIntent',
         'DeleteForwardIntent',
@@ -245,7 +245,7 @@ void main() {
         'SelectConfirmed',
         'SelectOption',
       },
-      'src/widgets/shortcuts.dart': {
+      'src/framework/shortcuts.dart': {
         'CharacterActivator',
         'ShortcutActivator',
         'Shortcuts',

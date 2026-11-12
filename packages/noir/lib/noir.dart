@@ -84,14 +84,55 @@ export 'src/foundation/text_index_map.dart' show TextIndexMap;
 export 'src/foundation/text_range.dart' show TextRange;
 export 'src/foundation/text_selection.dart' show TextAffinity, TextSelection;
 export 'src/foundation/value_notifier.dart' show ValueNotifier;
+// Actions invoked for intents
+export 'src/framework/actions.dart'
+    show Action, ActionCallback, Actions, CallbackAction;
 // Widget framework: user-facing surface only.
 export 'src/framework/build_context.dart' show BuildContext;
 // Focus types users see
 export 'src/framework/focus_manager.dart'
     show FocusNode, FocusOnKeyEvent, FocusScopeNode, FocusTraversalPolicy;
+// Intents dispatched through Actions
+export 'src/framework/intents.dart'
+    show
+        ActivateIntent,
+        DeleteBackwardIntent,
+        DeleteForwardIntent,
+        DismissIntent,
+        InsertTabIntent,
+        InsertTextIntent,
+        Intent,
+        MoveCaretDocumentEndIntent,
+        MoveCaretDocumentStartIntent,
+        MoveCaretDownIntent,
+        MoveCaretLeftIntent,
+        MoveCaretLineEndIntent,
+        MoveCaretLineStartIntent,
+        MoveCaretRightIntent,
+        MoveCaretUpIntent,
+        MoveSelectionDownIntent,
+        MoveSelectionFirstIntent,
+        MoveSelectionLastIntent,
+        MoveSelectionPageDownIntent,
+        MoveSelectionPageUpIntent,
+        MoveSelectionUpIntent,
+        NextFocusIntent,
+        PreviousFocusIntent,
+        ScrollDownIntent,
+        ScrollLeftIntent,
+        ScrollPageDownIntent,
+        ScrollPageUpIntent,
+        ScrollRightIntent,
+        ScrollToEndIntent,
+        ScrollToStartIntent,
+        ScrollUpIntent,
+        SubmitTextIntent;
 // Keys
 export 'src/framework/key.dart'
     show GlobalKey, Key, LocalKey, ObjectKey, UniqueKey, ValueKey;
+// Keyboard shortcuts
+export 'src/framework/shortcuts.dart'
+    show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
 // Widget framework
 export 'src/framework/widget.dart'
     show
@@ -136,8 +177,6 @@ export 'src/rendering/flex.dart'
 export 'src/rendering/stack.dart' show StackFit;
 export 'src/rendering/wrap.dart' show WrapAlignment, WrapCrossAlignment;
 // Widgets
-export 'src/widgets/actions.dart'
-    show Action, ActionCallback, Actions, CallbackAction;
 export 'src/widgets/align.dart' show Align;
 export 'src/widgets/ascii_font.dart' show AsciiFont, AsciiFontFamily;
 export 'src/widgets/autocomplete.dart'
@@ -183,40 +222,6 @@ export 'src/widgets/image.dart'
         ImageLoadErrorCode,
         ImageLoadException,
         ImageLoadingBuilder;
-export 'src/widgets/intents.dart'
-    show
-        ActivateIntent,
-        DeleteBackwardIntent,
-        DeleteForwardIntent,
-        DismissIntent,
-        InsertTabIntent,
-        InsertTextIntent,
-        Intent,
-        MoveCaretDocumentEndIntent,
-        MoveCaretDocumentStartIntent,
-        MoveCaretDownIntent,
-        MoveCaretLeftIntent,
-        MoveCaretLineEndIntent,
-        MoveCaretLineStartIntent,
-        MoveCaretRightIntent,
-        MoveCaretUpIntent,
-        MoveSelectionDownIntent,
-        MoveSelectionFirstIntent,
-        MoveSelectionLastIntent,
-        MoveSelectionPageDownIntent,
-        MoveSelectionPageUpIntent,
-        MoveSelectionUpIntent,
-        NextFocusIntent,
-        PreviousFocusIntent,
-        ScrollDownIntent,
-        ScrollLeftIntent,
-        ScrollPageDownIntent,
-        ScrollPageUpIntent,
-        ScrollRightIntent,
-        ScrollToEndIntent,
-        ScrollToStartIntent,
-        ScrollUpIntent,
-        SubmitTextIntent;
 export 'src/widgets/layout_builder.dart'
     show LayoutBuilder, LayoutWidgetBuilder;
 export 'src/widgets/list_view.dart' show ListView, ListViewItemBuilder;
@@ -236,8 +241,6 @@ export 'src/widgets/row_column.dart' show Column, Flex, Row;
 export 'src/widgets/scroll_box.dart' show ScrollBox, ScrollController;
 export 'src/widgets/select.dart'
     show Select, SelectChanged, SelectConfirmed, SelectOption;
-export 'src/widgets/shortcuts.dart'
-    show CharacterActivator, ShortcutActivator, Shortcuts, SingleActivator;
 export 'src/widgets/sized_box.dart' show SizedBox;
 export 'src/widgets/slider.dart' show Slider;
 export 'src/widgets/spinner.dart' show Spinner, SpinnerFrames;

@@ -2,13 +2,13 @@ import 'package:meta/meta.dart';
 
 import '../core/input.dart';
 import '../core/mouse_cursor.dart';
+import '../framework/actions.dart';
+import '../framework/intents.dart';
+import '../framework/shortcuts.dart';
 import '../framework/widget.dart';
-import 'actions.dart';
 import 'focus.dart';
 import 'focus_node_owner_mixin.dart';
-import 'intents.dart';
 import 'pointer_listener.dart';
-import 'shortcuts.dart';
 
 /// Shared focus and activation wiring for the leaf controls — [Checkbox],
 /// [Switch], and [Button].

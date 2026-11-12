@@ -3,21 +3,21 @@ import 'package:meta/meta.dart';
 import '../core/input.dart';
 import '../foundation/first_error.dart';
 import '../foundation/listenable.dart';
+import '../framework/actions.dart';
 import '../framework/build_context.dart';
 import '../framework/element.dart';
 import '../framework/focus_manager.dart';
+import '../framework/intents.dart';
 import '../framework/key.dart';
+import '../framework/shortcuts.dart';
 import '../framework/widget.dart';
 import '../render/geometry.dart';
 import '../rendering/box.dart';
 import '../rendering/flex.dart';
 import '../rendering/overlay.dart';
-import 'actions.dart';
 import 'focus.dart';
-import 'intents.dart';
 import 'overlay.dart';
 import 'row_column.dart';
-import 'shortcuts.dart';
 
 /// Builds the [MenuAnchor] launcher from the attached [MenuController].
 typedef MenuAnchorChildBuilder =

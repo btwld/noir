@@ -9,7 +9,7 @@ import 'build_context.dart';
 import 'element.dart';
 import 'key.dart';
 
-part '../widgets/inherited.dart';
+part 'inherited.dart';
 
 /// Immutable description of part of the user interface.
 abstract class Widget {

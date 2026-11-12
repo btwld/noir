@@ -3,10 +3,10 @@ import 'package:characters/characters.dart';
 import '../core/input.dart';
 import '../foundation/listenable.dart';
 import '../foundation/text_editing_controller.dart';
+import '../framework/actions.dart';
 import '../framework/build_context.dart';
-import 'actions.dart';
-import 'intents.dart';
-import 'shortcuts.dart';
+import '../framework/intents.dart';
+import '../framework/shortcuts.dart';
 
 /// Applies text-editing shortcuts and intents to a [TextEditingController].
 ///
