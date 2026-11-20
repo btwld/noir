@@ -262,6 +262,10 @@ final class TuiBinding {
 
     final renderer = _session.renderer;
     _owner.handleBeginFrame(timestamp);
+    // A ticker or animation callback may have disposed this binding. There
+    // is then nothing left to build or paint, and a renderer the caller owns
+    // may already be gone.
+    if (_disposed) return;
     _owner.buildScope();
 
     if (renderer == null) {
