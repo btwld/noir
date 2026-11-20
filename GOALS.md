@@ -128,7 +128,8 @@ shrink-wrapped:
 | Example `DemoScaffold` | Surface fills the terminal. Title inset 2, 1. Not a public `Scaffold`. |
 
 Exempt: `counter`, `like_reactor`, `inherited_example`, `bindings_validation`.
-`layout_*` and `chat_demo` keep their own frames.
+`layout_*` and `chat_demo` keep their own frames. `inline_progress` draws one
+row beside the program's own output, not a screen.
 
 ### Catalog pass
 

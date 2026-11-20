@@ -38,6 +38,13 @@ void main() {
         continue;
       }
 
+      if (name == 'inline_progress.dart') {
+        // An inline host draws one row beside the program's own output and
+        // never calls runTuiApp, so there is no drive-mode session to attach
+        // to. test/example/inline_progress_test.dart covers this entrypoint.
+        continue;
+      }
+
       test(name, () async {
         final result = await _driveCli(
           name,

@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
+import '../core/buffer.dart';
 import '../core/color.dart';
 import '../core/input.dart';
 import '../core/renderer.dart';
@@ -75,6 +76,34 @@ TuiBinding runTuiAppForTesting(
   onExitRequested: onExitRequested,
 )..runApp(app);
 
+/// Receives a painted frame in place of the renderer's own output step.
+@internal
+typedef FramePresenter = void Function(Buffer frame);
+
+/// Builds the headless, one-row binding an inline host paints through.
+///
+/// [presentFrame] receives every painted frame instead of a native render.
+/// The borrowed [renderer] therefore only lends its cell buffer: it never
+/// serializes a frame, so it writes nothing anywhere, and its non-terminal
+/// sink, which keeps every byte until the renderer is destroyed, stays empty
+/// however long the host runs.
+///
+/// Frames are cleared to transparent rather than black, which lets the host
+/// tell a cell no widget painted behind from one a widget painted black.
+@internal
+TuiBinding createInlineTuiBinding({
+  required int width,
+  required Renderer renderer,
+  required FramePresenter presentFrame,
+}) => TuiBinding._(
+  width: width,
+  height: 1,
+  headless: true,
+  renderer: renderer,
+  presentFrame: presentFrame,
+  clearColor: Color.transparent,
+);
+
 /// Owns the app lifecycle graph for an OpenTUI widget tree.
 final class TuiBinding {
   /// Builds the lifecycle graph; an injected [renderer] remains borrowed,
@@ -114,7 +143,10 @@ final class TuiBinding {
     TerminalInputDriverFactory? inputDriverFactory,
     void Function(int exitCode)? exitProcess,
     void Function(int exitCode)? onExitRequested,
-  }) {
+    FramePresenter? presentFrame,
+    Color clearColor = Color.black,
+  }) : _presentFrame = presentFrame,
+       _clearColor = clearColor {
     SchedulerBinding? scheduler;
     BuildOwner? owner;
     InputDispatcher? inputDispatcher;
@@ -193,6 +225,8 @@ final class TuiBinding {
   late final InputManager _inputManager;
   late final InputDispatcher _inputDispatcher;
   late final RenderView _renderView;
+  final FramePresenter? _presentFrame;
+  final Color _clearColor;
   Element? _root;
   int _frameCount = 0;
   bool _disposing = false;
@@ -262,6 +296,10 @@ final class TuiBinding {
 
     final renderer = _session.renderer;
     _owner.handleBeginFrame(timestamp);
+    // A ticker or animation callback may have disposed this binding. There
+    // is then nothing left to build or paint, and a renderer the caller owns
+    // may already be gone.
+    if (_disposed) return;
     _owner.buildScope();
 
     if (renderer == null) {
@@ -285,7 +323,7 @@ final class TuiBinding {
     _session.updateMouseCursor(_owner.mouseCursor);
 
     final painted = _owner.pipelineOwner.flushPaint(_renderView, (root) {
-      buf.clear(Color.black);
+      buf.clear(_clearColor);
       final canvas = createTuiCanvas();
       final resolution = _session.pixelResolution;
       root.paint(
@@ -304,7 +342,12 @@ final class TuiBinding {
     });
 
     if (painted) {
-      renderer.render(force: true);
+      final presentFrame = _presentFrame;
+      if (presentFrame == null) {
+        renderer.render(force: true);
+      } else {
+        presentFrame(buf);
+      }
       _frameCount++;
     }
   }
