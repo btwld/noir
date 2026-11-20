@@ -320,6 +320,72 @@ The optional companion package `noir_signals` adds a fourth surface,
 `package:noir_signals/noir_signals.dart`. It is a separate dependency built
 only on Noir's high-level API; `noir` never depends on it.
 
+## One Live Row Beside a Program's Own Output
+
+`runTuiApp` takes over the screen and the keyboard. A command-line program
+that only shows progress while its result goes to stdout uses `InlineHost`
+instead. It mounts a widget as one row and redraws that row in place on a sink
+you choose, normally stderr:
+
+```dart
+import 'dart:io';
+
+import 'package:noir/noir.dart';
+
+Future<void> main() async {
+  final host = InlineHost.canDrawOn(stderr)
+      ? InlineHost.start(
+          sink: stderr,
+          child: const Row(children: [Spinner(), Text(' Scanning')]),
+        )
+      : null;
+  final String report;
+  try {
+    report = await scan();
+    host?.printAbove('Scan finished');
+  } finally {
+    host?.dispose();
+  }
+  stdout.writeln(report);
+}
+
+Future<String> scan() => Future<String>.delayed(
+  const Duration(seconds: 2),
+  () => 'Scanned 128 files.',
+);
+```
+
+- The host writes only to its sink. It never writes to stdout, reads stdin,
+  enters the alternate screen, hides the cursor, or handles an interrupt
+  signal.
+- `InlineHost.canDrawOn` is false for a redirected stream, a `dumb` terminal,
+  and a terminal that reports no width. Keep your own plain output for that
+  case: the host has no non-terminal mode.
+- The row is laid out one column narrower than the terminal, so it never
+  wraps, and it is laid out again when the terminal is resized. Content that
+  does not fit is cut by its own layout. Use `Expanded` for the part that may
+  shrink, a `Text` overflow for how it shrinks, and `LayoutBuilder` to show a
+  shorter row below some width. Nothing is drawn in a one-column terminal.
+- A cell with no painted background keeps the terminal's own background, and
+  text in the default color over such a cell keeps the terminal's own text
+  color, so the row reads on a light terminal as well as a dark one. A partly
+  transparent color is blended over black first, as on the full screen, so
+  use opaque colors here. Pass `colors: false` to write no color at all,
+  which is what `NO_COLOR` asks for.
+- `printAbove` writes a line that stays in scrollback above the row. Send
+  finished steps and warnings through it rather than to the sink directly.
+- Frames run from timers on the isolate that started the host. Keep that
+  isolate idle: do long work in another isolate or in asynchronous steps.
+- `dispose` erases the row and stops the frame timer and the resize watcher.
+  Until then the host keeps the process alive. An animation callback may
+  call it; a `build` method must not.
+- When a terminal is made narrower it may re-wrap the row already on screen
+  before the next one is drawn, which can leave a fragment on the line above.
+
+The [inline progress example](https://github.com/btwld/noir/blob/main/packages/noir/example/inline_progress.dart)
+runs a simulated scan in a second isolate and falls back to plain lines when
+stderr is not a terminal.
+
 ## Examples
 
 Start with [Main](https://github.com/btwld/noir/blob/main/packages/noir/example/main.dart), [Counter](https://github.com/btwld/noir/blob/main/packages/noir/example/counter.dart), or
@@ -382,6 +448,30 @@ dart run noir:health_check
 The diagnostic uses OpenTUI's native testing mode to exercise the bundled
 native asset and headless buffer/render lifecycle. It does not validate real
 terminal escape rendering.
+
+### Building an executable
+
+A package that depends on Noir cannot be compiled with `dart compile exe`.
+Dart rejects a package graph that contains a build hook and names the
+replacement:
+
+```text
+'dart compile' does not support build hooks, use 'dart build' instead.
+Packages with build hooks: noir.
+```
+
+Build with `dart build cli`:
+
+```bash
+dart build cli -t bin/scan.dart --output build/scan
+```
+
+That writes the executable to `build/scan/bundle/bin/scan` and the native
+library under `build/scan/bundle/lib/`. A Noir program is therefore a
+directory rather than a single file. Distribute the whole `bundle` directory,
+for example as an archive: the executable loads the library relative to its
+own location, so the two directories must stay together, and the bundle can be
+moved or unpacked anywhere as one unit.
 
 Android, iOS, and web are not supported targets. See
 [Third-Party Notices](https://github.com/btwld/noir/blob/main/packages/noir/THIRD_PARTY_NOTICES.md) for OpenTUI provenance and

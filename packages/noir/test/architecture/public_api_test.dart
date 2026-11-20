@@ -23,6 +23,7 @@ void main() {
       },
       'src/app/app.dart': {'TuiApp', 'runTuiApp'},
       'src/app/hot_reload.dart': {'registerHotReloadExtension'},
+      'src/app/inline_host.dart': {'InlineHost'},
       'src/core/color.dart': {'Color'},
       'src/core/terminal_style.dart': {
         'Attr',
@@ -391,8 +392,8 @@ void main() {
     );
     expect(
       exports.expand((export) => export.symbols).toSet(),
-      hasLength(251),
-      reason: 'The high-level surface is locked at exactly 251 symbols.',
+      hasLength(252),
+      reason: 'The high-level surface is locked at exactly 252 symbols.',
     );
   });
 }

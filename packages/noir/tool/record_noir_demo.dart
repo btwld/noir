@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:noir/noir.dart' show Attr;
+import 'package:noir/src/core/ansi_row.dart' show sgrSequence;
 import 'package:noir_driver/noir_driver.dart';
 
 const _usage =
@@ -478,29 +478,23 @@ int _cursorShapeCode(DriverCursor cursor) => switch (cursor.style) {
   final style => throw StateError('Unsupported cursor style "$style".'),
 };
 
-String _sgr(DriverCell cell) {
-  final codes = <int>[
-    0,
-    if (cell.attributes & Attr.bold != 0) 1,
-    if (cell.attributes & Attr.dim != 0) 2,
-    if (cell.attributes & Attr.italic != 0) 3,
-    if (cell.attributes & Attr.underline != 0) 4,
-    if (cell.attributes & Attr.blink != 0) 5,
-    if (cell.attributes & Attr.reverse != 0) 7,
-    if (cell.attributes & Attr.strike != 0) 9,
-    38,
-    2,
-    cell.foreground.red,
-    cell.foreground.green,
-    cell.foreground.blue,
-    48,
-    2,
-    cell.background.red,
-    cell.background.green,
-    cell.background.blue,
-  ];
-  return '\x1b[${codes.join(';')}m';
-}
+/// Selects [cell]'s style with both colors written out.
+///
+/// A recording owns its whole screen, so it never leaves a color to the
+/// player's terminal default the way an inline row does.
+String _sgr(DriverCell cell) => sgrSequence(
+  attributes: cell.attributes,
+  foreground: (
+    red: cell.foreground.red,
+    green: cell.foreground.green,
+    blue: cell.foreground.blue,
+  ),
+  background: (
+    red: cell.background.red,
+    green: cell.background.green,
+    blue: cell.background.blue,
+  ),
+);
 
 bool _sameFrame(DriverFrame left, DriverFrame right) {
   if (left.width != right.width ||

@@ -29,6 +29,8 @@ export 'src/animation/ticker.dart'
 export 'src/app/app.dart' show TuiApp, runTuiApp;
 // Opt-in hot-reload service extension for development builds.
 export 'src/app/hot_reload.dart' show registerHotReloadExtension;
+// Inline hosting: one live row on a sink, beside the program's own output.
+export 'src/app/inline_host.dart' show InlineHost;
 // Color
 export 'src/core/color.dart' show Color;
 // Cursor style enum (the controller itself is in noir_low_level)

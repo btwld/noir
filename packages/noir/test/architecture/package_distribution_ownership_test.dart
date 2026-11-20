@@ -578,12 +578,14 @@ void main() {
       contains('pin an exact commit or release tag'),
     );
     expect(readme, contains('Noir is at an early 0.0.x stage.'));
-    // Three complete, runnable samples: the one-line entry point plus the
-    // two Quick Start apps. Fragments stay inline so every block compiles.
+    // Four complete, runnable samples: the one-line entry point, the two
+    // Quick Start apps, and the inline-host program. Fragments stay inline
+    // so every block compiles.
     expect(
       RegExp(r'^```dart$', multiLine: true).allMatches(readme),
-      hasLength(3),
+      hasLength(4),
     );
+    expect(readme, contains('InlineHost.canDrawOn(stderr)'));
     expect(readme, contains('void main() => runTuiApp(const MyApp('));
     expect(readme, contains('TuiApp.exit(context)'));
     expect(quickStart, contains('class HelloApp extends StatelessWidget'));
