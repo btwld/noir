@@ -95,12 +95,51 @@ void main() {
       );
     });
 
-    test('writes a partly transparent text color as its channels', () {
+    test('blends a partly transparent text color over its background', () {
+      expect(
+        encodeAnsiRow(const <AnsiRowCell>[
+          AnsiRowCell(
+            'a',
+            foreground: Color.whiteTransparent,
+            background: Color.black,
+          ),
+        ]),
+        '\x1b[0;38;2;128;128;128;48;2;0;0;0ma\x1b[0m',
+      );
+      expect(
+        encodeAnsiRow(const <AnsiRowCell>[
+          AnsiRowCell(
+            'a',
+            foreground: Color(1, 0, 0, 0.5),
+            background: Color.blue,
+          ),
+        ]),
+        '\x1b[0;38;2;128;0;127;48;2;0;0;255ma\x1b[0m',
+      );
+    });
+
+    test('blends a partly transparent text color over black elsewhere', () {
+      // OpenTUI has already blended such a cell over its black backdrop by
+      // the time a row is read. A cell that still carries alpha gets the same
+      // backdrop here.
       expect(
         encodeAnsiRow(const <AnsiRowCell>[
           AnsiRowCell('a', foreground: Color.whiteTransparent),
         ]),
-        '\x1b[0;38;2;255;255;255ma\x1b[0m',
+        '\x1b[0;38;2;128;128;128ma\x1b[0m',
+      );
+    });
+
+    test('a fully transparent text color takes the color behind it', () {
+      expect(
+        encodeAnsiRow(const <AnsiRowCell>[
+          AnsiRowCell(
+            'a',
+            foreground: Color(1, 1, 1, 0),
+            background: Color.blue,
+          ),
+        ]),
+        '\x1b[0;38;2;0;0;255;48;2;0;0;255ma\x1b[0m',
       );
     });
 
@@ -227,6 +266,20 @@ void main() {
       expect(row[1].text, isEmpty);
       expect(row[2].text, 'a');
       expect(encodeAnsiRow(row), '界a');
+    });
+
+    test('reads a cell the native layer stored broken as a blank', () {
+      // OpenTUI v0.5.1 mis-stores a zero-width character that stands alone.
+      // Here it leaves a packed cell whose bytes are not valid UTF-8, and
+      // then a stray byte as a cell of its own.
+      final buffer = renderer.nextBuffer
+        ..clear(Color.transparent)
+        ..drawText('ab​cd', 0, 0, Color.white);
+
+      final row = readBufferRow(buffer, 0);
+
+      expect(row, hasLength(8));
+      expect(encodeAnsiRow(row), 'ab  cd');
     });
 
     test('rejects a row outside the buffer', () {

@@ -92,6 +92,11 @@ final class AnsiRowCell {
 
 /// Reads row [row] of [buffer] into cells.
 ///
+/// A cell whose text cannot be read back is reported as a blank. The pinned
+/// OpenTUI stores a zero-width character that stands alone as cells that do
+/// not hold valid text, and a row has to survive whatever a widget was
+/// given to show.
+///
 /// Throws [RangeError] when [row] is outside the buffer.
 List<AnsiRowCell> readBufferRow(Buffer buffer, int row) {
   final direct = buffer.getDirectAccess();
@@ -100,12 +105,20 @@ List<AnsiRowCell> readBufferRow(Buffer buffer, int row) {
   return <AnsiRowCell>[
     for (var x = 0; x < width; x++)
       AnsiRowCell(
-        debugResolveBufferCell(buffer, row * width + x),
+        _cellText(buffer, row * width + x),
         foreground: direct.getForeground(x, row),
         background: direct.getBackground(x, row),
         attributes: direct.getAttributes(x, row),
       ),
   ];
+}
+
+String _cellText(Buffer buffer, int cellIndex) {
+  try {
+    return debugResolveBufferCell(buffer, cellIndex);
+  } on Object {
+    return ' ';
+  }
 }
 
 /// Serializes [cells] as one row of text and SGR sequences.
@@ -124,8 +137,10 @@ List<AnsiRowCell> readBufferRow(Buffer buffer, int row) {
 /// foreground is always written, white included: the terminal's text color
 /// is only known to be readable on the terminal's own background.
 ///
-/// A partly transparent color is written as its RGB channels, because this
-/// function has no backdrop to blend it with.
+/// A partly transparent foreground is blended over what is behind it: the
+/// cell's own background when one is written, and black otherwise, which is
+/// the backdrop OpenTUI itself blends with. A partly transparent background
+/// is written as its RGB channels.
 ///
 /// With [colors] false every color is left at the terminal default, and
 /// attributes such as bold and underline are still written.
@@ -179,8 +194,27 @@ _Style _styleOf(AnsiRowCell cell, {required bool colors}) {
     attributes: attributes,
     foreground: background == null && _isDefaultTextColor(cell.foreground)
         ? null
-        : _channels(cell.foreground),
+        : _blended(cell.foreground, over: background ?? _black),
     background: background,
+  );
+}
+
+const SgrColor _black = (red: 0, green: 0, blue: 0);
+
+/// [color] composited over [over] by its alpha, rounded as OpenTUI rounds.
+SgrColor _blended(Color color, {required SgrColor over}) {
+  final channels = _channels(color);
+  final alpha = _channel(color.a);
+  if (alpha == 255) {
+    return channels;
+  }
+  final rest = 255 - alpha;
+  int mix(int source, int backdrop) =>
+      (source * alpha + backdrop * rest + 127) ~/ 255;
+  return (
+    red: mix(channels.red, over.red),
+    green: mix(channels.green, over.green),
+    blue: mix(channels.blue, over.blue),
   );
 }
 
