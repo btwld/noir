@@ -406,6 +406,11 @@ final class TuiBinding {
       return;
     }
     if (_session.resize(width, height)) {
+      // The renderer dropped its frame along with the old size. A second
+      // resize can restore the size the tree was last laid out at before any
+      // frame runs, and then nothing in the tree is dirty, so ask for the
+      // paint here rather than leaving it to layout.
+      _renderView.markNeedsPaint();
       _scheduler.scheduleFrame();
     }
   }
