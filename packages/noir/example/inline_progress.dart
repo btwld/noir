@@ -93,31 +93,40 @@ abstract interface class ScanProgress {
 
 /// Draws the running step as one live row and prints finished steps above it.
 final class LiveProgress implements ScanProgress {
-  /// Starts the row on [sink], which must be a terminal the host can draw on.
-  LiveProgress(StringSink sink, {required bool colors}) {
-    _host = InlineHost.start(
-      sink: sink,
-      colors: colors,
-      child: ScanRow(step: _step),
-    );
-  }
+  /// Reports on [sink], which must be a terminal the host can draw on.
+  ///
+  /// [columns] is only needed for a sink that is not a terminal stream.
+  LiveProgress(this._sink, {required bool colors, int Function()? columns})
+    : _colors = colors,
+      _columns = columns;
 
+  final StringSink _sink;
+  final bool _colors;
+  final int Function()? _columns;
   final ValueNotifier<int> _step = ValueNotifier<int>(0);
-  late final InlineHost _host;
+  InlineHost? _host;
 
   @override
   void started(int index) {
     _step.value = index;
+    // The row is mounted when the first step starts, so its clock starts
+    // with the step and not with the program.
+    _host ??= InlineHost.start(
+      sink: _sink,
+      columns: _columns,
+      colors: _colors,
+      child: ScanRow(step: _step),
+    );
   }
 
   @override
   void finished(int index, Duration took) {
-    _host.printAbove('  ✓ ${describeFinishedStep(index, took)}');
+    _host?.printAbove('  ✓ ${describeFinishedStep(index, took)}');
   }
 
   @override
   void close() {
-    _host.dispose();
+    _host?.dispose();
     _step.dispose();
   }
 }
@@ -165,6 +174,10 @@ String formatElapsed(Duration elapsed, {bool tenths = false}) {
 ///
 /// The name takes the space the other parts leave and is cut with an
 /// ellipsis. Below [compactRowWidth] the name and the time are dropped.
+///
+/// The step clock belongs to this widget's state, not to the label that
+/// shows it. A narrow terminal hides the label, and the clock keeps running
+/// for when the terminal is wide again.
 class ScanRow extends StatefulWidget {
   /// Shows the step whose index [step] holds.
   const ScanRow({required this.step, super.key});
@@ -176,11 +189,24 @@ class ScanRow extends StatefulWidget {
   State<ScanRow> createState() => _ScanRowState();
 }
 
-class _ScanRowState extends State<ScanRow> {
+class _ScanRowState extends State<ScanRow>
+    with SingleTickerProviderStateMixin<ScanRow> {
+  late final Ticker _clock;
+
+  /// Frame time at the last tick, and frame time when the running step began.
+  ///
+  /// Reading frame time from a [Ticker] costs no timer of its own, and lets a
+  /// test advance the clock by pumping frames.
+  var _now = Duration.zero;
+  var _stepBegan = Duration.zero;
+
+  Duration get _onStep => _now - _stepBegan;
+
   @override
   void initState() {
     super.initState();
     widget.step.addListener(_handleStepChange);
+    _clock = createTicker(_handleTick)..start();
   }
 
   @override
@@ -194,11 +220,21 @@ class _ScanRowState extends State<ScanRow> {
 
   @override
   void dispose() {
+    _clock.dispose();
     widget.step.removeListener(_handleStepChange);
     super.dispose();
   }
 
-  void _handleStepChange() => setState(() {});
+  void _handleTick(Duration elapsed) {
+    final shown = _onStep.inSeconds;
+    _now = elapsed;
+    // The label shows whole seconds, so that is how often it repaints.
+    if (_onStep.inSeconds != shown) {
+      setState(() {});
+    }
+  }
+
+  void _handleStepChange() => setState(() => _stepBegan = _now);
 
   @override
   Widget build(BuildContext context) {
@@ -222,53 +258,13 @@ class _ScanRowState extends State<ScanRow> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // A new key per step starts the clock again from zero.
-            ElapsedText(key: ValueKey<int>(index)),
+            Text(
+              ' ${formatElapsed(_onStep)}',
+              style: TextStyle(color: Theme.of(context).textMuted),
+            ),
           ],
         );
       },
     );
   }
-}
-
-/// Time since this widget was mounted, repainted once a second.
-///
-/// It reads frame time from a [Ticker] rather than a wall clock, so it costs
-/// no timer of its own and a test can advance it by pumping frames.
-class ElapsedText extends StatefulWidget {
-  /// Starts counting when the widget is mounted.
-  const ElapsedText({super.key});
-
-  @override
-  State<ElapsedText> createState() => _ElapsedTextState();
-}
-
-class _ElapsedTextState extends State<ElapsedText>
-    with SingleTickerProviderStateMixin<ElapsedText> {
-  late final Ticker _ticker;
-  var _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker(_handleTick)..start();
-  }
-
-  void _handleTick(Duration elapsed) {
-    if (elapsed.inSeconds != _elapsed.inSeconds) {
-      setState(() => _elapsed = elapsed);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Text(
-    ' ${formatElapsed(_elapsed)}',
-    style: TextStyle(color: Theme.of(context).textMuted),
-  );
 }
