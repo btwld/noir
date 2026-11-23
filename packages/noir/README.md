@@ -369,16 +369,25 @@ Future<String> scan() => Future<String>.delayed(
 - A cell with no painted background keeps the terminal's own background, and
   text in the default color over such a cell keeps the terminal's own text
   color, so the row reads on a light terminal as well as a dark one. A partly
-  transparent color is blended over black first, as on the full screen, so
-  use opaque colors here. Pass `colors: false` to write no color at all,
-  which is what `NO_COLOR` asks for.
+  transparent color is blended first: a background over black, as on the full
+  screen, and a text color over the background behind it, or over black where
+  none is painted. Prefer opaque colors here. Pass `colors: false` to write no
+  color at all, which is what `NO_COLOR` asks for.
 - `printAbove` writes a line that stays in scrollback above the row. Send
   finished steps and warnings through it rather than to the sink directly.
+  The line is written exactly as given, so that it can carry its own styling.
+  Escape any part that comes from outside the program, such as a file name: a
+  carriage return or an escape sequence in it reaches the terminal. End a
+  styled line with a reset, or its style carries into the row.
 - Frames run from timers on the isolate that started the host. Keep that
   isolate idle: do long work in another isolate or in asynchronous steps.
 - `dispose` erases the row and stops the frame timer and the resize watcher.
   Until then the host keeps the process alive. An animation callback may
-  call it; a `build` method must not.
+  call it; a `build` method must not. It does not throw when the row can no
+  longer be erased, so it is safe in a `finally` block.
+- If the sink throws, the host stops for good. It cancels its timer and its
+  resize watcher, does not write to that sink again, and lets the error
+  surface once. `dispose` then does nothing.
 - When a terminal is made narrower it may re-wrap the row already on screen
   before the next one is drawn, which can leave a fragment on the line above.
 
@@ -501,6 +510,12 @@ corrupt package.
   falls back to blocks. Forcing Kitty graphics through tmux is unsupported
   because the initial placement can overlap existing content until a resize.
   Use automatic image mode under tmux.
+- OpenTUI v0.5.1 mis-stores a zero-width character that stands alone in drawn
+  text, such as a zero-width space or a byte-order mark inside a file name.
+  The cells hold stray bytes instead, so blanks or stray characters appear in
+  its place and the text after it shifts right. A zero-width character
+  attached to the character before it, such as a combining accent or a
+  joiner, is stored correctly.
 - Dart 3.10 supplies a macOS deployment target of 12 to native-asset hooks,
   while the bundled OpenTUI libraries require macOS 13. Because
   `dart build cli` does not expose a deployment-target override, Noir documents

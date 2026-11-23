@@ -77,6 +77,11 @@ TuiBinding runTuiAppForTesting(
 )..runApp(app);
 
 /// Receives a painted frame in place of the renderer's own output step.
+///
+/// Presenting is the last thing a frame does: nothing reads the frame or the
+/// renderer after the presenter returns. A presenter may therefore resize or
+/// dispose the binding and its renderer, as long as it stops using [frame]
+/// once it has.
 @internal
 typedef FramePresenter = void Function(Buffer frame);
 

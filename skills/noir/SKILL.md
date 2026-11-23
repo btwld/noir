@@ -314,11 +314,17 @@ try {
 - Leave text in its default color and leave the background unpainted unless
   color is the point: both then follow the user's terminal theme. Over a
   painted background the text color is always written, so choose a pair that
-  contrasts. Use opaque colors: a partly transparent one is blended over
-  black, not over the user's terminal. `colors: false` writes no color and
-  keeps bold and underline.
+  contrasts. Use opaque colors: a partly transparent background is blended
+  over black, not over the user's terminal, and partly transparent text over
+  the background behind it. `colors: false` writes no color and keeps bold
+  and underline.
 - `host.printAbove(line)` is the only way to write to that stream while the
-  row is live. Use it for finished steps and warnings.
+  row is live. Use it for finished steps and warnings. It writes the line
+  verbatim, so escape text that comes from outside the program, such as a
+  file name or a tool's message, before passing it, and end a styled line
+  with a reset.
+- If the sink throws, the host stops and the error surfaces once.
+  `host.dispose()` stays safe to call afterwards.
 - Frames run on the isolate that started the host. Do the long work in
   another isolate, or in `await`ed steps, or the row will not animate.
 - Call `host.dispose()` in a `finally`. It erases the row and releases the
