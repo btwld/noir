@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show min;
 import 'dart:typed_data';
 
 import 'package:code_assets/code_assets.dart';
@@ -50,8 +51,10 @@ Future<void> buildOpenTuiNativeAsset(
   }
 
   if (input.config.code.targetOS == OS.macOS) {
+    // `dart build` derives the bundled install name from this file's basename,
+    // so keep the canonical name and separate architectures by directory.
     final bundleReadyLibrary = input.outputDirectoryShared.resolve(
-      'macos-${entry.arch}-libopentui.dylib',
+      'macos-${entry.arch}/libopentui.dylib',
     );
     await prepareMacOSBundleLibrary(library, bundleReadyLibrary);
     output.assets.code.add(
@@ -77,18 +80,200 @@ Future<void> buildOpenTuiNativeAsset(
 
 const _machO64LittleEndianMagic = 0xFEEDFACF;
 const _machOHeaderSize = 32;
+const _lcSegment64 = 0x19;
+const _lcIdDylib = 0x0D;
+const _lcCodeSignature = 0x1D;
+const _lcFunctionStarts = 0x26;
 const _lcSourceVersion = 0x2A;
+const _dylibCommandSize = 24;
+const _linkeditDataCommandSize = 16;
+const _sZeroFill = 0x1;
+const _sThreadLocalZeroFill = 0x12;
+
+/// Install-name prefix `dart build` gives bundled dylibs.
+///
+/// Dart sets `@rpath/lib/<basename of the code asset file>` and copies every
+/// bundled code asset flat into `bundle/lib/`.
+const macOSBundleInstallNamePrefix = '@rpath/lib/';
 
 /// Makes room for Dart's relocatable install-name rewrite in a build copy.
 ///
-/// Canonical OpenTUI v0.5.1 fills the Mach-O load-command area exactly. Dart
-/// expands `@rpath/libopentui.dylib` to `@rpath/lib/libopentui.dylib` when it
-/// bundles a CLI application, so remove the optional 16-byte source-version
-/// command from a hook output copy. The tracked official library remains
+/// Canonical OpenTUI v0.5.1 fills the Mach-O load-command area exactly: it was
+/// linked without `-headerpad_max_install_names`. When `dart build` bundles a
+/// linked application, it rewrites the install name to
+/// [macOSBundleInstallNamePrefix] plus the basename of [destination] and then
+/// ad-hoc signs the copy. For `libopentui.dylib` that grows `LC_ID_DYLIB` from
+/// 48 to 56 bytes. `install_name_tool` also reserves 16 bytes for
+/// `LC_CODE_SIGNATURE` when the library has none (the x64 asset).
+///
+/// So this removes the optional 16-byte `LC_SOURCE_VERSION` command and, when
+/// it describes no data, the 16-byte `LC_FUNCTION_STARTS` command from a hook
+/// output copy, then verifies the rewrite will fit (see
+/// [MacOSInstallNameHeadroom]). The tracked official library remains
 /// byte-for-byte unchanged; Dart performs its normal install-name rewrite and
 /// ad-hoc signing only on this derivative application asset.
 Future<void> prepareMacOSBundleLibrary(Uri source, Uri destination) async {
   final bytes = await File.fromUri(source).readAsBytes();
+  stripOptionalMacOSLoadCommands(bytes);
+
+  final headroom = MacOSInstallNameHeadroom.of(
+    bytes,
+    installName:
+        '$macOSBundleInstallNamePrefix${destination.pathSegments.last}',
+  );
+  if (headroom.margin < 0) {
+    throw NativeAssetBuildException(headroom.shortfallMessage);
+  }
+
+  final destinationFile = File.fromUri(destination);
+  await destinationFile.parent.create(recursive: true);
+  await destinationFile.writeAsBytes(bytes, flush: true);
+}
+
+/// Removes the load commands [prepareMacOSBundleLibrary] drops, in place.
+///
+/// `LC_SOURCE_VERSION` is required, as before. `LC_FUNCTION_STARTS` is removed
+/// only when its data size is zero, so it describes nothing.
+void stripOptionalMacOSLoadCommands(Uint8List bytes) {
+  final sourceVersion = _findLoadCommand(bytes, _lcSourceVersion);
+  if (sourceVersion == null) {
+    throw const NativeAssetBuildException(
+      'Official macOS OpenTUI asset is missing LC_SOURCE_VERSION padding.',
+    );
+  }
+  if (sourceVersion.size != 16) {
+    throw const NativeAssetBuildException(
+      'Official macOS OpenTUI asset has an unexpected '
+      'LC_SOURCE_VERSION size.',
+    );
+  }
+  _removeLoadCommand(bytes, sourceVersion);
+
+  final functionStarts = _findLoadCommand(bytes, _lcFunctionStarts);
+  if (functionStarts != null && _describesNoData(bytes, functionStarts)) {
+    _removeLoadCommand(bytes, functionStarts);
+  }
+}
+
+bool _describesNoData(Uint8List bytes, _LoadCommand command) =>
+    command.size == _linkeditDataCommandSize &&
+    ByteData.sublistView(bytes).getUint32(command.offset + 12, Endian.little) ==
+        0;
+
+/// Header space for `dart build`'s install-name rewrite of a Mach-O dylib.
+///
+/// Mirrors the check in Apple's `install_name_tool` (cctools 1035.1.102,
+/// `misc/install_name_tool.c`): the 32-byte header plus the updated load
+/// commands, plus 16 bytes reserved for `LC_CODE_SIGNATURE` only when the
+/// library has none, must not pass the file offset of the first non-empty,
+/// non-zero-fill section.
+final class MacOSInstallNameHeadroom {
+  const MacOSInstallNameHeadroom._({
+    required this.installName,
+    required this.requiredBytes,
+    required this.availableBytes,
+    required this.reservesCodeSignature,
+  });
+
+  /// Measures [bytes] as if its install name were set to [installName].
+  factory MacOSInstallNameHeadroom.of(
+    Uint8List bytes, {
+    required String installName,
+  }) {
+    final data = ByteData.sublistView(bytes);
+    final commands = _readLoadCommands(bytes);
+    _LoadCommand? id;
+    var hasCodeSignature = false;
+    final fileOffsets = <int>[];
+    for (final command in commands) {
+      switch (command.command) {
+        case _lcIdDylib:
+          id = command;
+        case _lcCodeSignature:
+          hasCodeSignature = true;
+        case _lcSegment64:
+          final segment = command.offset;
+          final sectionCount = data.getUint32(segment + 64, Endian.little);
+          if (sectionCount == 0 &&
+              data.getUint64(segment + 48, Endian.little) != 0) {
+            fileOffsets.add(data.getUint64(segment + 40, Endian.little));
+          }
+          for (var index = 0; index < sectionCount; index++) {
+            final section = segment + 72 + 80 * index;
+            final flags = data.getUint32(section + 64, Endian.little);
+            if (data.getUint64(section + 40, Endian.little) != 0 &&
+                (flags & _sZeroFill) != _sZeroFill &&
+                (flags & _sThreadLocalZeroFill) != _sThreadLocalZeroFill) {
+              fileOffsets.add(data.getUint32(section + 48, Endian.little));
+            }
+          }
+      }
+    }
+    final idCommand = id;
+    if (idCommand == null || fileOffsets.isEmpty) {
+      throw const NativeAssetBuildException(
+        'Official macOS OpenTUI asset must have an LC_ID_DYLIB command and '
+        'file-backed sections.',
+      );
+    }
+
+    final newIdSize = _roundUp(
+      _dylibCommandSize + utf8.encode(installName).length + 1,
+      8,
+    );
+    final commandBytes = data.getUint32(20, Endian.little);
+    return MacOSInstallNameHeadroom._(
+      installName: installName,
+      requiredBytes:
+          _machOHeaderSize +
+          commandBytes -
+          idCommand.size +
+          newIdSize +
+          (hasCodeSignature ? 0 : _linkeditDataCommandSize),
+      availableBytes: fileOffsets.reduce(min),
+      reservesCodeSignature: !hasCodeSignature,
+    );
+  }
+
+  /// The install name `dart build` will set.
+  final String installName;
+
+  /// Header plus updated load commands, plus any code-signature reserve.
+  final int requiredBytes;
+
+  /// File offset of the first section, where load commands must end.
+  final int availableBytes;
+
+  /// Whether `install_name_tool` reserves room for a missing signature.
+  final bool reservesCodeSignature;
+
+  /// Spare bytes after the rewrite; negative means it will fail.
+  int get margin => availableBytes - requiredBytes;
+
+  /// Explains a negative [margin] in place of `install_name_tool`'s error.
+  String get shortfallMessage {
+    final reserve = reservesCodeSignature
+        ? ' (including 16 bytes install_name_tool reserves for '
+              'LC_CODE_SIGNATURE)'
+        : '';
+    return 'macOS OpenTUI asset has no room for the install name '
+        '"$installName" that `dart build` sets: it needs $requiredBytes bytes '
+        'of Mach-O header and load commands$reserve, but only $availableBytes '
+        'are available. The OpenTUI library must be relinked with '
+        '-headerpad_max_install_names. '
+        'See https://github.com/btwld/noir/issues/139.';
+  }
+}
+
+final class _LoadCommand {
+  const _LoadCommand(this.offset, this.command, this.size);
+
+  final int offset;
+  final int command;
+  final int size;
+}
+
+List<_LoadCommand> _readLoadCommands(Uint8List bytes) {
   final data = ByteData.sublistView(bytes);
   if (bytes.length < _machOHeaderSize ||
       data.getUint32(0, Endian.little) != _machO64LittleEndianMagic) {
@@ -107,6 +292,7 @@ Future<void> prepareMacOSBundleLibrary(Uri source, Uri destination) async {
     );
   }
 
+  final commands = <_LoadCommand>[];
   var offset = _machOHeaderSize;
   for (var index = 0; index < commandCount; index++) {
     if (offset + 8 > commandsEnd) {
@@ -121,23 +307,7 @@ Future<void> prepareMacOSBundleLibrary(Uri source, Uri destination) async {
         'Official macOS OpenTUI asset has an invalid load command.',
       );
     }
-    if (command == _lcSourceVersion) {
-      if (size != 16) {
-        throw const NativeAssetBuildException(
-          'Official macOS OpenTUI asset has an unexpected '
-          'LC_SOURCE_VERSION size.',
-        );
-      }
-      bytes.setRange(offset, commandsEnd - size, bytes, offset + size);
-      bytes.fillRange(commandsEnd - size, commandsEnd, 0);
-      data
-        ..setUint32(16, commandCount - 1, Endian.little)
-        ..setUint32(20, commandBytes - size, Endian.little);
-      final destinationFile = File.fromUri(destination);
-      await destinationFile.parent.create(recursive: true);
-      await destinationFile.writeAsBytes(bytes, flush: true);
-      return;
-    }
+    commands.add(_LoadCommand(offset, command, size));
     offset += size;
   }
   if (offset != commandsEnd) {
@@ -145,10 +315,35 @@ Future<void> prepareMacOSBundleLibrary(Uri source, Uri destination) async {
       'Official macOS OpenTUI asset load-command sizes are inconsistent.',
     );
   }
-  throw const NativeAssetBuildException(
-    'Official macOS OpenTUI asset is missing LC_SOURCE_VERSION padding.',
-  );
+  return commands;
 }
+
+_LoadCommand? _findLoadCommand(Uint8List bytes, int command) {
+  for (final candidate in _readLoadCommands(bytes)) {
+    if (candidate.command == command) return candidate;
+  }
+  return null;
+}
+
+void _removeLoadCommand(Uint8List bytes, _LoadCommand command) {
+  final data = ByteData.sublistView(bytes);
+  final commandCount = data.getUint32(16, Endian.little);
+  final commandBytes = data.getUint32(20, Endian.little);
+  final commandsEnd = _machOHeaderSize + commandBytes;
+  bytes.setRange(
+    command.offset,
+    commandsEnd - command.size,
+    bytes,
+    command.offset + command.size,
+  );
+  bytes.fillRange(commandsEnd - command.size, commandsEnd, 0);
+  data
+    ..setUint32(16, commandCount - 1, Endian.little)
+    ..setUint32(20, commandBytes - command.size, Endian.little);
+}
+
+int _roundUp(int value, int alignment) =>
+    (value + alignment - 1) ~/ alignment * alignment;
 
 /// Resolves the bundled OpenTUI binary for [entry] and verifies its SHA-256.
 ///

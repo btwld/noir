@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
@@ -108,6 +109,11 @@ void main() {
         expect(code.file, isNotNull);
         final bundled = File.fromUri(code.file!);
         expect(bundled.existsSync(), isTrue);
+        final segments = code.file!.pathSegments;
+        expect(segments.sublist(segments.length - 2), [
+          'macos-${manifestEntry.arch}',
+          'libopentui.dylib',
+        ]);
         expect(
           sha256.convert(bundled.readAsBytesSync()),
           isNot(officialHashBefore),
@@ -115,6 +121,78 @@ void main() {
       },
     );
     expect(sha256.convert(official.readAsBytesSync()), officialHashBefore);
+  });
+
+  for (final (arch, minimumSpareBytes) in const [('x64', 8), ('arm64', 24)]) {
+    test('macOS $arch bundle copy fits the dart build install name with at '
+        'least $minimumSpareBytes spare bytes', () {
+      final bytes = File(
+        'native/macos/$arch/libopentui.dylib',
+      ).readAsBytesSync();
+      hook.stripOptionalMacOSLoadCommands(bytes);
+
+      final headroom = hook.MacOSInstallNameHeadroom.of(
+        bytes,
+        installName: '@rpath/lib/libopentui.dylib',
+      );
+      expect(headroom.margin, greaterThanOrEqualTo(minimumSpareBytes));
+    });
+  }
+
+  group('install-name headroom mirrors install_name_tool', () {
+    test('an exact fit is allowed and reserves room for a signature', () {
+      final bytes = _machO(firstSectionOffset: 256);
+      hook.stripOptionalMacOSLoadCommands(bytes);
+
+      final headroom = hook.MacOSInstallNameHeadroom.of(
+        bytes,
+        installName: '@rpath/lib/libopentui.dylib',
+      );
+      expect(headroom.reservesCodeSignature, isTrue);
+      expect(headroom.requiredBytes, 256);
+      expect(headroom.availableBytes, 256);
+      expect(headroom.margin, 0);
+    });
+
+    test('a signed library gets no signature reserve', () {
+      final bytes = _machO(firstSectionOffset: 256, signed: true);
+      hook.stripOptionalMacOSLoadCommands(bytes);
+
+      final headroom = hook.MacOSInstallNameHeadroom.of(
+        bytes,
+        installName: '@rpath/lib/libopentui.dylib',
+      );
+      expect(headroom.reservesCodeSignature, isFalse);
+      expect(headroom.margin, 0);
+    });
+
+    test('a library without room fails clearly and writes nothing', () async {
+      final temp = await _createTempDir('opentui_headroom_test_');
+      final source = File('${temp.path}/source.dylib')
+        ..writeAsBytesSync(_machO(firstSectionOffset: 256));
+      final destination = temp.uri.resolve(
+        'macos-x64/macos-x64-libopentui.dylib',
+      );
+
+      await expectLater(
+        hook.prepareMacOSBundleLibrary(source.uri, destination),
+        throwsA(
+          isA<hook.NativeAssetBuildException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('"@rpath/lib/macos-x64-libopentui.dylib"'),
+              contains('needs 264 bytes'),
+              contains('16 bytes install_name_tool reserves'),
+              contains('only 256 are available'),
+              contains('-headerpad_max_install_names'),
+              contains('https://github.com/btwld/noir/issues/139'),
+            ),
+          ),
+        ),
+      );
+      expect(File.fromUri(destination).existsSync(), isFalse);
+    });
   });
 
   test('manifest records every supported binary', () {
@@ -246,6 +324,53 @@ void main() {
       ),
     );
   });
+}
+
+/// A minimal thin x86_64 Mach-O dylib whose first section starts at
+/// [firstSectionOffset]: `LC_ID_DYLIB` (48 bytes), one `LC_SEGMENT_64` with
+/// one section (152 bytes), `LC_SOURCE_VERSION` (16 bytes), and optionally
+/// `LC_CODE_SIGNATURE` (16 bytes).
+Uint8List _machO({required int firstSectionOffset, bool signed = false}) {
+  const installName = '@rpath/libx.dylib';
+  final bytes = Uint8List(firstSectionOffset + 16);
+  final data = ByteData.sublistView(bytes);
+  var offset = 32;
+  var commandCount = 0;
+  void command(int type, int size) {
+    data
+      ..setUint32(offset, type, Endian.little)
+      ..setUint32(offset + 4, size, Endian.little);
+    commandCount++;
+  }
+
+  command(0x0D, 48);
+  data.setUint32(offset + 8, 24, Endian.little);
+  bytes.setAll(offset + 24, installName.codeUnits);
+  offset += 48;
+
+  command(0x19, 152);
+  data
+    ..setUint64(offset + 48, bytes.length, Endian.little)
+    ..setUint32(offset + 64, 1, Endian.little)
+    ..setUint64(offset + 72 + 40, 16, Endian.little)
+    ..setUint32(offset + 72 + 48, firstSectionOffset, Endian.little);
+  offset += 152;
+
+  command(0x2A, 16);
+  offset += 16;
+
+  if (signed) {
+    command(0x1D, 16);
+    offset += 16;
+  }
+
+  data
+    ..setUint32(0, 0xFEEDFACF, Endian.little)
+    ..setUint32(4, 0x01000007, Endian.little)
+    ..setUint32(12, 6, Endian.little)
+    ..setUint32(16, commandCount, Endian.little)
+    ..setUint32(20, offset - 32, Endian.little);
+  return bytes;
 }
 
 Future<Directory> _createTempDir(String prefix) async {

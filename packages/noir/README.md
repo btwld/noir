@@ -366,11 +366,14 @@ package is incomplete or corrupt and the build fails.
 | Windows | `x64`, `arm64` |
 
 The bundled macOS x64 and arm64 libraries require macOS 13.0 or later.
-For linked macOS applications, Dart must rewrite the dylib install name for a
-relocatable bundle. The official dylib has no load-command padding, so Noir
-removes its optional source-version load command from a temporary hook output
-copy before Dart rewrites and signs that copy. The six tracked release assets
-remain byte-for-byte identical to the hashes in `native_manifest.json`.
+For linked macOS applications, `dart build` rewrites the dylib install name to
+`@rpath/lib/libopentui.dylib` for a relocatable bundle, then ad-hoc signs it.
+The official dylib has no load-command padding, so the build hook writes a
+temporary copy to `macos-<arch>/libopentui.dylib` in its shared output
+directory, removes the optional source-version load command and an empty
+function-starts load command from that copy, and checks that the rewrite will
+fit before Dart rewrites and signs it. The six tracked release assets remain
+byte-for-byte identical to the hashes in `native_manifest.json`.
 
 Run the packaged diagnostic to check bundled native asset resolution without
 writing terminal controls:
