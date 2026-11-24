@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
+import '../core/buffer.dart';
 import '../core/color.dart';
 import '../core/input.dart';
 import '../core/renderer.dart';
@@ -75,6 +76,42 @@ TuiBinding runTuiAppForTesting(
   onExitRequested: onExitRequested,
 )..runApp(app);
 
+/// Builds the headless, one-row binding an inline host paints through.
+///
+/// The host takes part in every frame at its two ends, where nothing of the
+/// frame is in flight, so either callback may resize or dispose the binding
+/// and its renderer:
+///
+/// - [beginFrame] runs first, before the tickers and before the tree is
+///   built. A size the host sets here is the size this frame is laid out at.
+/// - [endFrame] runs last, in place of a native render, in every frame that
+///   completed. It receives the frame when one was painted and null
+///   otherwise, and must stop using the frame once it has resized or disposed
+///   anything.
+///
+/// The borrowed [renderer] therefore only lends its cell buffer: it never
+/// serializes a frame, so it writes nothing anywhere, and its non-terminal
+/// sink, which keeps every byte until the renderer is destroyed, stays empty
+/// however long the host runs.
+///
+/// Frames are cleared to transparent rather than black, which lets the host
+/// tell a cell no widget painted behind from one a widget painted black.
+@internal
+TuiBinding createInlineTuiBinding({
+  required int width,
+  required Renderer renderer,
+  required void Function() beginFrame,
+  required void Function(Buffer? painted) endFrame,
+}) => TuiBinding._(
+  width: width,
+  height: 1,
+  headless: true,
+  renderer: renderer,
+  beginFrame: beginFrame,
+  endFrame: endFrame,
+  clearColor: Color.transparent,
+);
+
 /// Owns the app lifecycle graph for an OpenTUI widget tree.
 final class TuiBinding {
   /// Builds the lifecycle graph; an injected [renderer] remains borrowed,
@@ -114,7 +151,12 @@ final class TuiBinding {
     TerminalInputDriverFactory? inputDriverFactory,
     void Function(int exitCode)? exitProcess,
     void Function(int exitCode)? onExitRequested,
-  }) {
+    void Function()? beginFrame,
+    void Function(Buffer? painted)? endFrame,
+    Color clearColor = Color.black,
+  }) : _beginFrame = beginFrame,
+       _endFrame = endFrame,
+       _clearColor = clearColor {
     SchedulerBinding? scheduler;
     BuildOwner? owner;
     InputDispatcher? inputDispatcher;
@@ -193,8 +235,12 @@ final class TuiBinding {
   late final InputManager _inputManager;
   late final InputDispatcher _inputDispatcher;
   late final RenderView _renderView;
+  final void Function()? _beginFrame;
+  final void Function(Buffer? painted)? _endFrame;
+  final Color _clearColor;
   Element? _root;
   int _frameCount = 0;
+  bool _walkingTree = false;
   bool _disposing = false;
   bool _disposed = false;
 
@@ -209,6 +255,17 @@ final class TuiBinding {
 
   /// The [BuildOwner] driving widget build/layout/paint for this binding.
   BuildOwner get buildOwner => _owner;
+
+  /// Whether a frame is building, laying out, or painting the tree right now.
+  ///
+  /// The tree cannot be resized or torn down under that walk, so a host
+  /// refuses the calls that would do either while this is true. It is false
+  /// in the rest of a frame: while tickers run, and at its two ends.
+  /// [BuildOwner.isBuilding] is not the same question. It does not cover the
+  /// layout or the paint of a render object, and it does cover the first
+  /// mount, which is not part of any frame.
+  @internal
+  bool get isWalkingTree => _walkingTree;
 
   /// Mount [app] as this binding's root widget and schedule the first frame.
   void runApp(Widget app) {
@@ -260,8 +317,46 @@ final class TuiBinding {
     final root = _root;
     if (root == null) return;
 
+    // Nothing of this frame is in flight yet, so the host may resize this
+    // binding here, or dispose it.
+    _beginFrame?.call();
+    if (_disposed) return;
+
     final renderer = _session.renderer;
     _owner.handleBeginFrame(timestamp);
+    // A ticker or animation callback may have disposed this binding. There
+    // is then nothing left to build or paint, and a renderer the caller owns
+    // may already be gone.
+    if (_disposed) return;
+
+    final Buffer? painted;
+    final wasWalkingTree = _walkingTree;
+    _walkingTree = true;
+    try {
+      painted = _buildLayoutPaint(renderer);
+    } finally {
+      // Restored rather than cleared: a test may flush a frame from inside
+      // another one's walk, and that walk is still on the stack afterwards.
+      _walkingTree = wasWalkingTree;
+    }
+
+    // Presenting is the last step of a frame: nothing reads the frame or the
+    // renderer after it, so the host may resize or dispose both from here.
+    final endFrame = _endFrame;
+    if (endFrame != null) {
+      endFrame(painted);
+    } else if (painted != null) {
+      renderer?.render(force: true);
+    }
+    if (painted != null) {
+      _frameCount++;
+    }
+  }
+
+  /// Builds, lays out, and paints the tree for one frame.
+  ///
+  /// Returns the frame when anything was painted into it.
+  Buffer? _buildLayoutPaint(Renderer? renderer) {
     _owner.buildScope();
 
     if (renderer == null) {
@@ -271,7 +366,7 @@ final class TuiBinding {
         _renderView.terminalConstraints,
       );
       _session.updateMouseCursor(_owner.mouseCursor);
-      return;
+      return null;
     }
 
     final buf = renderer.nextBuffer;
@@ -285,7 +380,7 @@ final class TuiBinding {
     _session.updateMouseCursor(_owner.mouseCursor);
 
     final painted = _owner.pipelineOwner.flushPaint(_renderView, (root) {
-      buf.clear(Color.black);
+      buf.clear(_clearColor);
       final canvas = createTuiCanvas();
       final resolution = _session.pixelResolution;
       root.paint(
@@ -303,10 +398,7 @@ final class TuiBinding {
       commitTuiCanvas(buf, canvas);
     });
 
-    if (painted) {
-      renderer.render(force: true);
-      _frameCount++;
-    }
+    return painted ? buf : null;
   }
 
   /// Flush one frame synchronously in integration tests.
@@ -363,6 +455,11 @@ final class TuiBinding {
       return;
     }
     if (_session.resize(width, height)) {
+      // The renderer dropped its frame along with the old size. A second
+      // resize can restore the size the tree was last laid out at before any
+      // frame runs, and then nothing in the tree is dirty, so ask for the
+      // paint here rather than leaving it to layout.
+      _renderView.markNeedsPaint();
       _scheduler.scheduleFrame();
     }
   }

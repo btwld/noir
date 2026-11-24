@@ -216,6 +216,7 @@ through `PointerListener` and cell-local `MouseEvent.localPosition`.
 | Editable text + cursor | `TextEditingController` | `references/state-and-animation.md` |
 | Time-based animation | `AnimationController` + ticker mixin | `references/state-and-animation.md` |
 | Share data down the tree | `InheritedWidget` | `references/state-and-animation.md` |
+| One live progress row beside the program's own output | `InlineHost` | [One live row beside program output](#one-live-row-beside-program-output-inline-host) |
 
 ## Application invariants
 
@@ -275,6 +276,70 @@ values survive, and no terminal or native resource is recreated. `main()` and
 `State.reassemble()` to re-derive what those `initState` bodies computed. Other
 changes the VM cannot swap still need a restart: signatures held by live stack
 frames, enum-to-class conversions, and the native OpenTUI library.
+
+## One live row beside program output (inline host)
+
+Use `InlineHost`, not `runTuiApp`, when a command-line program prints its
+result to stdout and only needs to show progress. It mounts a widget as one
+row and redraws it in place on a sink the program chooses, normally stderr:
+
+```dart
+final host = InlineHost.canDrawOn(stderr)
+    ? InlineHost.start(
+        sink: stderr,
+        colors: (Platform.environment['NO_COLOR'] ?? '').isEmpty,
+        child: const Row(children: [Spinner(), Text(' Scanning')]),
+      )
+    : null;
+try {
+  await scan();
+  host?.printAbove('Scan finished');
+} finally {
+  host?.dispose();
+}
+```
+
+- Start a host only when `InlineHost.canDrawOn(sink)` is true. It is false for
+  a redirected stream, a `dumb` terminal, and a terminal that reports no
+  width; print plain lines there. Pass `columns:` only for a sink that is not
+  `stdout` or `stderr` itself.
+- The host writes only to its sink: nothing reaches stdout, stdin is never
+  read or reconfigured, there is no alternate screen, the cursor stays
+  visible, and no interrupt handler is installed. There is no `TuiApp`, so
+  `TuiApp.of(context)`, key handlers, focus, and pointer input do not apply.
+- The row is one column narrower than the terminal and is laid out again on
+  resize. Give the part that may shrink an `Expanded`, cut text with
+  `maxLines: 1`, `softWrap: false`, and `overflow: TextOverflow.ellipsis`, and
+  use `LayoutBuilder` for a shorter row in a narrow terminal.
+- Leave text in its default color and leave the background unpainted unless
+  color is the point: both then follow the user's terminal theme. Over a
+  painted background the text color is always written, so choose a pair that
+  contrasts. Use opaque colors: a partly transparent background is blended
+  over black, not over the user's terminal, and partly transparent text over
+  the background behind it. `colors: false` writes no color and keeps bold
+  and underline.
+- `host.printAbove(line)` is the only way to write to that stream while the
+  row is live. Use it for finished steps and warnings. It writes the line
+  verbatim, so escape text that comes from outside the program, such as a
+  file name or a tool's message, before passing it, and end a styled line
+  with a reset.
+- If the sink throws, the host stops and the error surfaces once.
+  `host.dispose()` stays safe to call afterwards.
+- Frames run on the isolate that started the host. Do the long work in
+  another isolate, or in `await`ed steps, or the row will not animate.
+- Call `host.dispose()` in a `finally`. It erases the row and releases the
+  timer and resize watcher that otherwise keep the process alive.
+- Call `host.printAbove` and `host.dispose` from the program, or from an
+  animation or ticker callback of the row. From `build`, a `State` lifecycle
+  method, a `LayoutBuilder` builder, layout, or paint, both throw a
+  `StateError` and the host keeps running.
+- A widget driven by caller state listens to a `ValueNotifier` in a
+  `StatefulWidget` and calls `setState`. `example/inline_progress.dart` shows
+  that, a per-step elapsed time from a `Ticker`, and the plain fallback.
+
+A program that depends on Noir is built with `dart build cli`, not
+`dart compile exe`, and ships as the resulting `bundle` directory: see
+*Building an executable* in the package README.
 
 ## See and drive a running app (drive mode)
 

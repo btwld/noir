@@ -1,0 +1,1861 @@
+import 'dart:async';
+
+import 'package:noir/noir.dart';
+import 'package:noir/noir_low_level.dart';
+import 'package:noir/src/app/inline_host.dart';
+import 'package:test/test.dart';
+
+const _eraseToEnd = '\x1b[K';
+const _eraseRow = '\r\x1b[K';
+
+void main() {
+  group('InlineHost frames', () {
+    test('draws the row in place and erases what follows it', () {
+      final session = _Session.start(const Text('hello'), columns: 40);
+      addTearDown(session.dispose);
+
+      expect(session.sink.writes, isEmpty);
+      session.pump();
+
+      expect(session.sink.writes, <String>['\rhello$_eraseToEnd']);
+    });
+
+    test('writes nothing when a frame paints nothing new', () {
+      final session = _Session.start(const Text('hello'), columns: 40);
+      addTearDown(session.dispose);
+      session
+        ..pump()
+        ..pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.writes, hasLength(1));
+    });
+
+    test('writes a row only when it differs from the one on the line', () {
+      final session = _Session.start(
+        const Row(children: <Widget>[Spinner(), Text(' x')]),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+
+      // A spinner rebuilds and repaints on every frame, and shows a new glyph
+      // only every 80 ms.
+      for (final milliseconds in const <int>[0, 16, 32, 48, 64]) {
+        session.pump(Duration(milliseconds: milliseconds));
+      }
+      expect(session.sink.writes, hasLength(1));
+
+      session.pump(const Duration(milliseconds: 120));
+      expect(session.sink.writes, hasLength(2));
+    });
+
+    test('writes an unchanged row again once the terminal has resized', () {
+      // A terminal may re-wrap or clear the line when its size changes, so
+      // the host no longer knows what the line shows.
+      final session = _Session.start(const Text('hi'), columns: 20);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session
+        ..resizeTo(30)
+        ..pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.writes, <String>[
+        '\rhi$_eraseToEnd',
+        '\rhi$_eraseToEnd',
+      ]);
+    });
+
+    test('animates the spinner with the frame time the test supplies', () {
+      final session = _Session.start(
+        const Row(children: <Widget>[Spinner(), Text(' scanning')]),
+        columns: 40,
+      );
+      addTearDown(session.dispose);
+
+      for (final milliseconds in const <int>[0, 120, 200, 280]) {
+        session.pump(Duration(milliseconds: milliseconds));
+      }
+
+      expect(session.sink.writes.map(_visibleText), <String>[
+        '${SpinnerFrames.dots[0]} scanning',
+        '${SpinnerFrames.dots[1]} scanning',
+        '${SpinnerFrames.dots[2]} scanning',
+        '${SpinnerFrames.dots[3]} scanning',
+      ]);
+      for (final write in session.sink.writes) {
+        expect(write, startsWith('\r'));
+        expect(write, endsWith(_eraseToEnd));
+      }
+    });
+
+    test('repaints when the widget rebuilds from caller state', () {
+      final step = ValueNotifier<String>('one');
+      addTearDown(step.dispose);
+      final session = _Session.start(_StepLabel(step), columns: 40);
+      addTearDown(session.dispose);
+      session.pump();
+
+      step.value = 'two';
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.writes.map(_visibleText), <String>['one', 'two']);
+    });
+
+    test('a frame reads the width first and writes the row last', () {
+      final log = <String>[];
+      final rebuild = ValueNotifier<int>(0);
+      addTearDown(rebuild.dispose);
+      final session = _Session.startWith(
+        Row(
+          children: <Widget>[
+            _CallsOnEveryTick(() => log.add('tick')),
+            _Rebuilds(rebuild, (value) {
+              log.add('build');
+              return Text('$value');
+            }),
+          ],
+        ),
+        columns: () {
+          log.add('width');
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      log.clear();
+      rebuild.value = 1;
+      session.sink.onNextWrite = () => log.add('write');
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(log, <String>['width', 'tick', 'build', 'write']);
+    });
+  });
+
+  group('InlineHost width', () {
+    test('no row reaches the last column, at any width', () {
+      final contents = <String, Widget>{
+        'short': const Row(
+          children: <Widget>[
+            Spinner(),
+            Text(' 2/8 '),
+            Expanded(child: Text('Lines')),
+            Text('12 s'),
+          ],
+        ),
+        'long': const Row(
+          children: <Widget>[
+            Spinner(),
+            Text(' 2/8 '),
+            Expanded(
+              child: Text(
+                'Function complexity and duplicated code across every '
+                'package of a very large workspace, measured twice',
+              ),
+            ),
+            Text('1234 min 5 s'),
+          ],
+        ),
+        'wide glyphs': const Text('進捗状況を表示しています進捗状況を表示しています'),
+      };
+
+      for (final entry in contents.entries) {
+        for (var columns = 1; columns <= 100; columns++) {
+          final session = _Session.start(entry.value, columns: columns);
+          try {
+            session.pump();
+            session.host.printAbove('done');
+            expect(session.sink.writes, isNotEmpty);
+            for (final row in session.sink.rows) {
+              expect(
+                terminalStringWidth(row),
+                lessThan(columns),
+                reason: '${entry.key} at $columns columns wrote "$row"',
+              );
+            }
+          } finally {
+            session.dispose();
+          }
+        }
+      }
+    });
+
+    test('uses every column but the last', () {
+      final session = _Session.start(
+        const Text('abcdefghijklmnopqrstuvwxyz'),
+        columns: 10,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(session.sink.rows.single, 'abcdefghi');
+    });
+
+    test('draws nothing in a one-column terminal', () {
+      final session = _Session.start(const Text('hello'), columns: 1);
+      addTearDown(session.dispose);
+      session.pump();
+      session.host.printAbove('done');
+
+      expect(session.sink.writes, <String>[
+        _eraseRow,
+        '${_eraseRow}done\n$_eraseRow',
+      ]);
+    });
+
+    test('lays the next row out at the width a resize reports', () {
+      final session = _Session.start(
+        const Text('abcdefghijklmnopqrstuvwxyz'),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      expect(session.sink.rows.single, 'abcdefghijklmnopqrs');
+
+      session
+        ..resizeTo(8)
+        ..pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.rows.last, 'abcdefg');
+
+      session
+        ..resizeTo(30)
+        ..pump(const Duration(milliseconds: 32));
+
+      expect(session.sink.rows.last, 'abcdefghijklmnopqrstuvwxyz');
+    });
+
+    test('never redraws a row laid out for the previous width', () {
+      final session = _Session.start(
+        const Text('abcdefghijklmnopqrstuvwxyz'),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session
+        ..pump()
+        ..resizeTo(8);
+      session.host.printAbove('done');
+
+      expect(session.sink.writes.last, '${_eraseRow}done\n$_eraseRow');
+    });
+
+    test('a frame that finds a new width paints the row at that width', () {
+      final label = ValueNotifier<String>('abcdefghijklmnopqrstuvwxyz');
+      addTearDown(label.dispose);
+      final session = _Session.start(_StepLabel(label), columns: 20);
+      addTearDown(session.dispose);
+      session.pump();
+      final written = session.sink.writes.length;
+
+      // The terminal shrinks and a frame runs before any resize notification
+      // has been delivered. The frame reads the width before it lays out.
+      session.setColumns(8);
+      label.value = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.writes, hasLength(written + 1));
+      expect(session.sink.rows.last, 'ABCDEFG');
+    });
+
+    test('printAbove never redraws a row wider than a shrunken terminal', () {
+      final session = _Session.start(
+        const Text('abcdefghijklmnopqrstuvwxyz'),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.setColumns(8);
+      session.host.printAbove('done');
+      expect(session.sink.writes.last, '${_eraseRow}done\n$_eraseRow');
+
+      // The row comes back with the frame that paints it at the new width.
+      expect(session.binding.debugHasScheduledFrame, isTrue);
+      session.pump(const Duration(milliseconds: 16));
+      expect(session.sink.rows.last, 'abcdefg');
+    });
+
+    test('treats a width no terminal can report as the widest one', () {
+      final session = _Session.start(Text('x' * 70000), columns: 1 << 40);
+      addTearDown(session.dispose);
+      session.pump();
+
+      // A terminal's window size holds its columns in 16 bits.
+      expect(terminalStringWidth(session.sink.rows.single), 0xFFFF - 1);
+    });
+
+    test('erases the row at one column and restores it at two', () {
+      final session = _Session.start(const Text('hello'), columns: 2);
+      addTearDown(session.dispose);
+      session.pump();
+      expect(session.sink.writes, <String>['\rh$_eraseToEnd']);
+
+      session.resizeTo(1);
+      expect(session.sink.writes.last, _eraseRow);
+
+      session.resizeTo(2);
+      expect(session.sink.writes.last, '\rh$_eraseToEnd');
+    });
+
+    test('a resize notification redraws the row even at the same width', () {
+      // The terminal may have gone to another width and back before the
+      // host looked, and cleared the line on the way. The notification is
+      // the only word of it the host gets.
+      final session = _Session.start(const Text('hello'), columns: 40);
+      addTearDown(session.dispose);
+      session
+        ..pump()
+        ..resizeTo(40);
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.sink.writes, <String>[
+        '\rhello$_eraseToEnd',
+        '\rhello$_eraseToEnd',
+      ]);
+    });
+
+    test('a width poll that reads the same width writes nothing', () {
+      // Where there is no resize signal the width is polled, and a poll is
+      // no word that anything changed.
+      final session = _Session.start(
+        const Text('hello'),
+        columns: 40,
+        resizesArePolls: true,
+      );
+      addTearDown(session.dispose);
+      session
+        ..pump()
+        ..resizeTo(40)
+        ..resizeTo(40);
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.sink.writes, hasLength(1));
+
+      session
+        ..resizeTo(30)
+        ..pump(const Duration(milliseconds: 16));
+      expect(session.sink.writes, hasLength(2));
+    });
+
+    test('keeps the last width when the reader fails or reports none', () {
+      var fail = false;
+      var columns = 20;
+      final session = _Session.startWith(
+        const Text('abcdefghijklmnopqrstuvwxyz'),
+        columns: () {
+          if (fail) throw StateError('no terminal');
+          return columns;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      fail = true;
+      session.resizes.add(null);
+      fail = false;
+      columns = 0;
+      session.resizes.add(null);
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.sink.rows.toSet(), <String>{'abcdefghijklmnopqrs'});
+    });
+  });
+
+  group('InlineHost resize sequences', () {
+    test('repaints after a resize away and back between two frames', () {
+      final session = _Session.start(const Text('ready'), columns: 10);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session
+        ..resizeTo(5)
+        ..resizeTo(10)
+        ..pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.rows, <String>['ready', 'ready']);
+      session.host.printAbove('done');
+      expect(session.sink.writes.last, '${_eraseRow}done\n\rready$_eraseToEnd');
+    });
+
+    test('a width that comes back gets its row from the next frame', () {
+      final session = _Session.start(const Text('ready'), columns: 10);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.resizeTo(5);
+      session.host.printAbove('narrow');
+      expect(session.sink.writes.last, '${_eraseRow}narrow\n$_eraseRow');
+
+      // No row is kept for a width the terminal has left, so the row stays
+      // off the line until a frame has painted it again.
+      session.resizeTo(10);
+      session.host.printAbove('wide');
+      expect(session.sink.writes.last, '${_eraseRow}wide\n$_eraseRow');
+
+      session.pump(const Duration(milliseconds: 16));
+      expect(session.sink.writes.last, '\rready$_eraseToEnd');
+    });
+
+    test('a width only printAbove saw, away and back, loses nothing', () {
+      final session = _Session.start(const Text('ready'), columns: 10);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.setColumns(5);
+      session.host.printAbove('one');
+      expect(session.sink.writes.last, '${_eraseRow}one\n$_eraseRow');
+
+      session.setColumns(10);
+      session.host.printAbove('two');
+      expect(session.sink.writes.last, '${_eraseRow}two\n$_eraseRow');
+
+      session.pump(const Duration(milliseconds: 16));
+      session.host.printAbove('three');
+      expect(
+        session.sink.writes.last,
+        '${_eraseRow}three\n\rready$_eraseToEnd',
+      );
+    });
+
+    test(
+      'a resize before the first frame draws the first row at that width',
+      () {
+        final session = _Session.start(
+          const Text('abcdefghijklmnopqrstuvwxyz'),
+          columns: 20,
+        );
+        addTearDown(session.dispose);
+
+        session
+          ..resizeTo(8)
+          ..pump();
+
+        expect(session.sink.rows, <String>['abcdefg']);
+      },
+    );
+  });
+
+  group('InlineHost sink failure', () {
+    test('during a frame: the host stops and the error is reported once', () {
+      final session = _Session.start(
+        const Row(children: <Widget>[Spinner(), Text(' x')]),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      final failure = StateError('sink closed');
+      session.sink.failWith = failure;
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 120)),
+        throwsA(same(failure)),
+      );
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      // Nothing goes back to the sink that failed: no later frame, no erase.
+      final attempts = session.sink.attempts;
+      session.pump(const Duration(milliseconds: 200));
+      expect(session.host.dispose, returnsNormally);
+      expect(session.sink.attempts, attempts);
+      expect(() => session.host.printAbove('late'), throwsStateError);
+    });
+
+    test('on a resize redraw: the host stops the same way', () {
+      final reported = <Object>[];
+      late final _Session session;
+      runZonedGuarded(() {
+        session = _Session.start(const Text('hello'), columns: 2);
+      }, (error, stackTrace) => reported.add(error));
+      addTearDown(session.dispose);
+      session.pump();
+      final failure = StateError('sink closed');
+      session.sink.failWith = failure;
+
+      // Two columns to one keeps the one-cell row, so only a redraw is due.
+      session.resizeTo(1);
+
+      expect(reported, <Object>[same(failure)]);
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      final attempts = session.sink.attempts;
+      expect(session.host.dispose, returnsNormally);
+      expect(session.sink.attempts, attempts);
+    });
+
+    test('in printAbove: the caller gets the error and the host stops', () {
+      final session = _Session.start(
+        const Row(children: <Widget>[Spinner(), Text(' x')]),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      final failure = StateError('sink closed');
+      session.sink.failWith = failure;
+
+      expect(() => session.host.printAbove('line'), throwsA(same(failure)));
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      final attempts = session.sink.attempts;
+      session.pump(const Duration(milliseconds: 120));
+      expect(session.host.dispose, returnsNormally);
+      expect(session.sink.attempts, attempts);
+    });
+
+    test('in printAbove from a ticker: one error, and no frame after it', () {
+      final reported = <Object>[];
+      late final _Session session;
+      final failure = StateError('sink closed');
+      runZonedGuarded(() {
+        session = _Session.start(
+          Row(
+            children: <Widget>[
+              const Spinner(),
+              _CallsOnEveryTick(() => session.host.printAbove('tick')),
+            ],
+          ),
+          columns: 20,
+        );
+        session.sink.failWith = failure;
+        // A ticker reports what its callback throws to the zone of the frame.
+        session
+          ..pump()
+          ..pump(const Duration(milliseconds: 16))
+          ..pump(const Duration(milliseconds: 32));
+      }, (error, stackTrace) => reported.add(error));
+      addTearDown(session.dispose);
+
+      expect(reported, <Object>[same(failure)]);
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.sink.attempts, 1);
+    });
+
+    test('in a printAbove the width reader made: it still surfaces once', () {
+      late final _Session session;
+      var warn = false;
+      final label = ValueNotifier<String>('one');
+      addTearDown(label.dispose);
+      session = _Session.startWith(
+        _StepLabel(label),
+        columns: () {
+          // The reader does not catch what its own printAbove throws.
+          if (warn) session.host.printAbove('reading the width');
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      final failure = StateError('sink closed');
+      session.sink.failWith = failure;
+      warn = true;
+      label.value = 'two';
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 16)),
+        throwsA(same(failure)),
+      );
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      expect(session.sink.attempts, 2);
+    });
+
+    test('on the final erase: dispose still releases and does not throw', () {
+      // dispose usually runs in a finally block, where an error from a row
+      // that could not be erased would replace the caller's own.
+      final session = _Session.start(const Spinner(), columns: 20);
+      session.pump();
+      session.sink.failWith = StateError('sink closed');
+      final attempts = session.sink.attempts;
+
+      expect(session.host.dispose, returnsNormally);
+
+      expect(session.sink.attempts, attempts + 1);
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      expect(session.host.dispose, returnsNormally);
+      expect(session.sink.attempts, attempts + 1);
+      unawaited(session.resizes.close());
+    });
+  });
+
+  group('InlineHost callbacks that re-enter the host', () {
+    test('the width reader may end the host while a frame is drawn', () {
+      late final _Session session;
+      var end = false;
+      final label = ValueNotifier<String>('one');
+      addTearDown(label.dispose);
+      session = _Session.startWith(
+        _StepLabel(label),
+        columns: () {
+          if (end) session.host.dispose();
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      end = true;
+      label.value = 'two';
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 16)),
+        returnsNormally,
+      );
+      // The erase that dispose wrote is the last thing on the sink.
+      expect(session.sink.writes, <String>['\rone$_eraseToEnd', _eraseRow]);
+    });
+
+    test('the width reader may end the host during printAbove', () {
+      late final _Session session;
+      var end = false;
+      session = _Session.startWith(
+        const Text('live'),
+        columns: () {
+          if (end) session.host.dispose();
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      end = true;
+
+      expect(() => session.host.printAbove('late'), throwsStateError);
+      expect(session.sink.writes, <String>['\rlive$_eraseToEnd', _eraseRow]);
+    });
+
+    test('the width reader may end the host on a resize notification', () {
+      late final _Session session;
+      var end = false;
+      var columns = 2;
+      session = _Session.startWith(
+        const Text('live'),
+        columns: () {
+          if (end) session.host.dispose();
+          return columns;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      end = true;
+      columns = 1;
+      session.resizes.add(null);
+
+      expect(session.sink.writes, <String>['\rl$_eraseToEnd', _eraseRow]);
+    });
+
+    test('the width reader may print above, and is not read again for it', () {
+      late final _Session session;
+      var warn = false;
+      var reads = 0;
+      final label = ValueNotifier<String>('one');
+      addTearDown(label.dispose);
+      session = _Session.startWith(
+        _StepLabel(label),
+        columns: () {
+          reads++;
+          if (warn) session.host.printAbove('reading the width');
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      warn = true;
+      final readsBefore = reads;
+
+      session.host.printAbove('outer');
+
+      expect(reads, readsBefore + 1);
+      // The nested call cannot know the width that is being read, so it
+      // leaves the row off the line; the call that asked for the width puts
+      // it back.
+      expect(session.sink.writes.sublist(1), <String>[
+        '${_eraseRow}reading the width\n$_eraseRow',
+        '${_eraseRow}outer\n\rone$_eraseToEnd',
+      ]);
+
+      label.value = 'two';
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(reads, readsBefore + 2);
+      expect(session.sink.writes.sublist(3), <String>[
+        '${_eraseRow}reading the width\n$_eraseRow',
+        '\rtwo$_eraseToEnd',
+      ]);
+    });
+
+    test('a reader that prints above as the terminal narrows: no old row', () {
+      late final _Session session;
+      var terminal = 20;
+      var announced = 20;
+      final label = ValueNotifier<String>('abcdefghijklmnopqrstuvwxyz');
+      addTearDown(label.dispose);
+      session = _Session.startWith(
+        _StepLabel(label),
+        columns: () {
+          if (terminal != announced) {
+            announced = terminal;
+            session.host.printAbove('width is now $terminal');
+          }
+          return terminal;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      void expectRowsFit(int from, int columns) {
+        for (final row in session.sink.rows.skip(from)) {
+          expect(
+            terminalStringWidth(row),
+            lessThan(columns),
+            reason: 'wrote "$row" into a terminal $columns wide',
+          );
+        }
+      }
+
+      // Seen by a frame.
+      var written = session.sink.writes.length;
+      terminal = 8;
+      label.value = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      session.pump(const Duration(milliseconds: 16));
+      expectRowsFit(written, 8);
+      session.pump(const Duration(milliseconds: 32));
+      expect(session.sink.rows.last, 'ABCDEFG');
+
+      // Seen by printAbove.
+      written = session.sink.writes.length;
+      terminal = 6;
+      session.host.printAbove('step');
+      expectRowsFit(written, 6);
+
+      // Seen by a resize notification.
+      written = session.sink.writes.length;
+      terminal = 4;
+      session.resizes.add(null);
+      expectRowsFit(written, 4);
+      session.pump(const Duration(milliseconds: 48));
+      expect(session.sink.rows.last, 'ABC');
+    });
+
+    test(
+      'a reader that prints above on a notification: the row comes back',
+      () {
+        late final _Session session;
+        var warn = false;
+        session = _Session.startWith(
+          const Text('live'),
+          columns: () {
+            if (warn) session.host.printAbove('checked');
+            return 20;
+          },
+        );
+        addTearDown(session.dispose);
+        session.pump();
+        warn = true;
+
+        session.resizes.add(null);
+
+        expect(session.sink.writes.sublist(1), <String>[
+          '${_eraseRow}checked\n$_eraseRow',
+          '\rlive$_eraseToEnd',
+        ]);
+      },
+    );
+
+    test('the sink may end the host from inside a frame write', () {
+      late final _Session session;
+      session = _Session.start(
+        const Row(children: <Widget>[Spinner(), Text(' x')]),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      session.sink.onNextWrite = () => session.host.dispose();
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 120)),
+        returnsNormally,
+      );
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      final attempts = session.sink.attempts;
+      session.pump(const Duration(milliseconds: 200));
+      expect(session.sink.attempts, attempts);
+    });
+
+    test('a reader that ends the host and then throws is not silenced', () {
+      late final _Session session;
+      var end = false;
+      final failure = StateError('reader failed');
+      session = _Session.startWith(
+        const Text('live'),
+        columns: () {
+          if (end) {
+            session.host.dispose();
+            throw failure;
+          }
+          return 20;
+        },
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      end = true;
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 16)),
+        throwsA(same(failure)),
+      );
+
+      expect(session.sink.writes, <String>['\rlive$_eraseToEnd', _eraseRow]);
+    });
+
+    test('printAbove from a ticker that finds a new width: one frame', () {
+      late final _Session session;
+      var announce = false;
+      // The widths the reader reports, in order; the last one stays.
+      final widths = <int>[20];
+      session = _Session.startWith(
+        Row(
+          children: <Widget>[
+            _CallsOnEveryTick(() {
+              if (announce) {
+                announce = false;
+                session.host.printAbove('tick');
+              }
+            }),
+            const Text('abcdefghijklmnopqrstuvwxyz'),
+          ],
+        ),
+        columns: () => widths.length > 1 ? widths.removeAt(0) : widths.first,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      final written = session.sink.writes.length;
+
+      // The frame reads twenty columns when it starts. The terminal is eight
+      // wide by the time the ticker callback prints.
+      widths.add(8);
+      announce = true;
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.writes.skip(written), <String>[
+        '${_eraseRow}tick\n$_eraseRow',
+        '\rtabcdef$_eraseToEnd',
+      ]);
+    });
+  });
+
+  group('InlineHost while the row is built, laid out, or painted', () {
+    for (final MapEntry(key: place, value: build) in _walkPlaces.entries) {
+      test('dispose from $place is refused and the host keeps running', () {
+        final probe = _WalkProbe(build, (host) => host.dispose());
+        addTearDown(probe.dispose);
+
+        probe.pumpArmed();
+
+        expect(probe.thrown, _isRefusalOf('dispose'));
+        expect(probe.session.resizes.hasListener, isTrue);
+        probe.session.host.printAbove('after');
+        expect(
+          probe.session.sink.writes.last,
+          startsWith('${_eraseRow}after\n'),
+        );
+      });
+
+      test('printAbove from $place is refused before it reaches the sink', () {
+        final probe = _WalkProbe(build, (host) => host.printAbove('inside'));
+        addTearDown(probe.dispose);
+
+        probe.pumpArmed();
+
+        expect(probe.thrown, _isRefusalOf('printAbove'));
+        expect(
+          probe.session.sink.writes.where((write) => write.contains('inside')),
+          isEmpty,
+        );
+      });
+    }
+
+    test('a refusal nobody catches ends that frame, not the host', () {
+      final rebuild = ValueNotifier<int>(0);
+      addTearDown(rebuild.dispose);
+      late final _Session session;
+      session = _Session.start(
+        _Rebuilds(rebuild, (value) {
+          if (value == 1) session.host.printAbove('inside');
+          return Text('$value');
+        }),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      rebuild.value = 1;
+      expect(
+        () => session.pump(const Duration(milliseconds: 16)),
+        throwsA(_isRefusalOf('printAbove')),
+      );
+
+      expect(session.resizes.hasListener, isTrue);
+      rebuild.value = 2;
+      session.pump(const Duration(milliseconds: 32));
+      expect(session.sink.rows.last, '2');
+    });
+
+    test('a resize notification during a build waits for the next read', () {
+      final rebuild = ValueNotifier<int>(0);
+      addTearDown(rebuild.dispose);
+      late final _Session session;
+      session = _Session.start(
+        _Rebuilds(rebuild, (value) {
+          // Only a synchronous stream can deliver a notification here.
+          if (value == 1) session.resizeTo(8);
+          return const Text('abcdefghijklmnopqrstuvwxyz');
+        }),
+        columns: 20,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+      final written = session.sink.writes.length;
+
+      rebuild.value = 1;
+      session.pump(const Duration(milliseconds: 16));
+      expect(session.sink.writes, hasLength(written));
+
+      session.pump(const Duration(milliseconds: 32));
+      expect(session.sink.rows.last, 'abcdefg');
+    });
+  });
+
+  group('InlineHost colors', () {
+    test('leaves the terminal background and text color alone', () {
+      final session = _Session.start(const Text('plain'), columns: 40);
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(session.sink.writes.single, '\rplain$_eraseToEnd');
+    });
+
+    test('writes a painted background with the text color over it', () {
+      final session = _Session.start(
+        const Row(
+          children: <Widget>[
+            Text('a', style: TextStyle(backgroundColor: Color.black)),
+            Text('b'),
+          ],
+        ),
+        columns: 40,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(
+        session.sink.writes.single,
+        '\r\x1b[0;38;2;255;255;255;48;2;0;0;0ma\x1b[0mb$_eraseToEnd',
+      );
+    });
+
+    test('writes a partly transparent background blended over black', () {
+      // OpenTUI blends a translucent color against an opaque black backdrop,
+      // on the full screen and here alike, so it never reaches the row as
+      // a tint of the user's terminal.
+      final session = _Session.start(
+        const Text(
+          'a',
+          style: TextStyle(backgroundColor: Color.whiteTransparent),
+        ),
+        columns: 40,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(
+        session.sink.writes.single,
+        '\r\x1b[0;38;2;255;255;255;48;2;128;128;128ma\x1b[0m$_eraseToEnd',
+      );
+    });
+
+    test('blends a partly transparent text color over its background', () {
+      final session = _Session.start(
+        const Text(
+          'x',
+          style: TextStyle(
+            color: Color.whiteTransparent,
+            backgroundColor: Color.black,
+          ),
+        ),
+        columns: 40,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(
+        session.sink.writes.single,
+        '\r\x1b[0;38;2;128;128;128;48;2;0;0;0mx\x1b[0m$_eraseToEnd',
+      );
+    });
+
+    test('writes a color a widget chose and resets before erasing', () {
+      final session = _Session.start(
+        const Text(
+          'warn',
+          style: TextStyle(color: Color.red, fontWeight: FontWeight.bold),
+        ),
+        columns: 40,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(
+        session.sink.writes.single,
+        '\r\x1b[0;1;38;2;255;0;0mwarn\x1b[0m$_eraseToEnd',
+      );
+    });
+
+    test('with colors off, keeps attributes and drops every color', () {
+      final session = _Session.start(
+        const Row(
+          children: <Widget>[
+            Spinner(),
+            Text(
+              ' warn',
+              style: TextStyle(
+                color: Color.red,
+                backgroundColor: Color.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        columns: 40,
+        colors: false,
+      );
+      addTearDown(session.dispose);
+      session.pump();
+
+      expect(
+        session.sink.writes.single,
+        '\r${SpinnerFrames.dots[0]}\x1b[0;1m warn\x1b[0m$_eraseToEnd',
+      );
+    });
+  });
+
+  test('text from a widget cannot inject a control sequence', () {
+    final session = _Session.start(const Text('a\x1b[31mb\x07c'), columns: 40);
+    addTearDown(session.dispose);
+    session.pump();
+
+    final written = session.sink.writes.single;
+    expect(written, startsWith('\r'));
+    expect(written, endsWith(_eraseToEnd));
+    final row = written.substring(1, written.length - _eraseToEnd.length);
+    expect(row.runes.where((rune) => rune < 0x20 || rune == 0x7f), isEmpty);
+    expect(row, contains('a'));
+    expect(row, contains('b'));
+    expect(row, contains('c'));
+  });
+
+  group('InlineHost boundaries', () {
+    test('hosts the row on a headless binding', () {
+      // A headless binding acquires no input driver and no signal handler,
+      // and never sets a terminal up.
+      final session = _Session.start(const Text('x'), columns: 40);
+      addTearDown(session.dispose);
+
+      expect(session.binding.isHeadless, isTrue);
+    });
+
+    test('writes no control output but return, erase-to-end, and SGR', () {
+      final session = _Session.start(
+        const Row(
+          children: <Widget>[
+            Spinner(),
+            Text(
+              ' warn ',
+              style: TextStyle(
+                color: Color.red,
+                backgroundColor: Color.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Expanded(child: Text('a step with a rather long name')),
+          ],
+        ),
+        columns: 30,
+      );
+      session
+        ..pump()
+        ..pump(const Duration(milliseconds: 120));
+      session.host.printAbove('done');
+      session
+        ..resizeTo(12)
+        ..pump(const Duration(milliseconds: 200))
+        ..resizeTo(1)
+        ..resizeTo(40)
+        ..pump(const Duration(milliseconds: 300))
+        ..dispose();
+
+      // Anything else would be a mode switch: an alternate screen, a hidden
+      // cursor, a cleared screen, a cursor move, or a query.
+      final allowed = RegExp(r'\x1b\[[0-9;]*m|\x1b\[K|\r|\n');
+      final remainder = session.sink.writes.join().replaceAll(allowed, '');
+      expect(
+        remainder.runes.where((rune) => rune < 0x20 || rune == 0x7f),
+        isEmpty,
+        reason: 'unexpected control output in "$remainder"',
+      );
+    });
+
+    test('a child that fails to mount is rethrown, with nothing left', () {
+      final sink = _RecordingSink();
+      final resizes = StreamController<void>(sync: true);
+      // A controller nobody listened to never completes its close future.
+      addTearDown(() => unawaited(resizes.close()));
+
+      expect(
+        () => createInlineHostForTesting(
+          child: const _FailsToMount(),
+          sink: sink,
+          columns: () => 40,
+          resizes: resizes.stream,
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'mount failed',
+          ),
+        ),
+      );
+      expect(resizes.hasListener, isFalse);
+      expect(sink.writes, isEmpty);
+    });
+
+    test('keeps running when a cell cannot be read back', () {
+      // The pinned OpenTUI stores a zero-width character that stands alone
+      // as cells that do not hold valid text. They come out blank.
+      final label = ValueNotifier<String>('ab​cd');
+      addTearDown(label.dispose);
+      final session = _Session.start(_StepLabel(label), columns: 20);
+      addTearDown(session.dispose);
+
+      session.pump();
+      expect(session.sink.rows.single, 'ab  cd');
+
+      label.value = 'next';
+      session.pump(const Duration(milliseconds: 16));
+      expect(session.sink.rows.last, 'next');
+    });
+
+    test('keeps drawing when the resize watcher fails and then ends', () async {
+      final label = ValueNotifier<String>('one');
+      addTearDown(label.dispose);
+      final session = _Session.start(_StepLabel(label), columns: 20);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.resizes.addError(StateError('watcher failed'));
+      await session.resizes.close();
+      label.value = 'two';
+      session.pump(const Duration(milliseconds: 16));
+
+      expect(session.sink.rows, <String>['one', 'two']);
+    });
+
+    test('a child whose State.dispose throws is still released', () {
+      final session = _Session.start(const _FailsToDispose(), columns: 20);
+      session.pump();
+
+      expect(
+        session.host.dispose,
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'dispose failed',
+          ),
+        ),
+      );
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+      expect(session.sink.writes.last, _eraseRow);
+      expect(session.host.dispose, returnsNormally);
+      unawaited(session.resizes.close());
+    });
+
+    test('may be disposed before its first frame', () {
+      final session = _Session.start(const Spinner(), columns: 20);
+
+      session.host.dispose();
+      session.pump();
+
+      expect(session.sink.writes, <String>[_eraseRow]);
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      unawaited(session.resizes.close());
+    });
+
+    test('may be disposed from a callback that runs inside a frame', () {
+      late final _Session session;
+      session = _Session.start(
+        _CallsOnTick(() => session.host.dispose()),
+        columns: 40,
+      );
+      session.pump();
+
+      expect(
+        () => session.pump(const Duration(milliseconds: 16)),
+        returnsNormally,
+      );
+      expect(session.sink.writes.last, _eraseRow);
+    });
+  });
+
+  group('InlineHost.printAbove', () {
+    test('erases the row, writes the line, then redraws the row', () {
+      final session = _Session.start(const Text('live'), columns: 40);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.host.printAbove('  ✓ 1/8 Line counts   0.8 s');
+
+      expect(session.sink.writes, <String>[
+        '\rlive$_eraseToEnd',
+        '$_eraseRow  ✓ 1/8 Line counts   0.8 s\n\rlive$_eraseToEnd',
+      ]);
+    });
+
+    test('writes only the line before the first frame', () {
+      final session = _Session.start(const Text('live'), columns: 40);
+      addTearDown(session.dispose);
+
+      session.host.printAbove('starting');
+
+      expect(session.sink.writes, <String>['${_eraseRow}starting\n$_eraseRow']);
+    });
+
+    test('keeps a line longer than the terminal intact', () {
+      final session = _Session.start(const Text('live'), columns: 10);
+      addTearDown(session.dispose);
+      session.pump();
+      const warning = 'Warning: the cache directory cannot be written';
+
+      session.host.printAbove(warning);
+
+      expect(
+        session.sink.writes.last,
+        '$_eraseRow$warning\n\rlive$_eraseToEnd',
+      );
+    });
+
+    test('writes the line as given, control characters included', () {
+      // Unlike widget text, the line is the caller's to style, so it is the
+      // caller's to escape when it comes from outside the program.
+      final session = _Session.start(const Text('live'), columns: 40);
+      addTearDown(session.dispose);
+      session.pump();
+
+      session.host.printAbove('a\rb\x1b[31mc');
+
+      expect(
+        session.sink.writes.last,
+        '${_eraseRow}a\rb\x1b[31mc\n\rlive$_eraseToEnd',
+      );
+    });
+
+    test('throws once the host is disposed', () {
+      final session = _Session.start(const Text('live'), columns: 40);
+      session.dispose();
+
+      expect(() => session.host.printAbove('late'), throwsStateError);
+    });
+  });
+
+  group('InlineHost.dispose', () {
+    test('erases the row and leaves the cursor at the line start', () {
+      final session = _Session.start(const Text('live'), columns: 40);
+      session.pump();
+
+      session.host.dispose();
+
+      expect(session.sink.writes.last, _eraseRow);
+    });
+
+    test('stops the frame timer and the resize watcher', () {
+      final session = _Session.start(const Spinner(), columns: 40);
+      session.pump();
+      expect(session.binding.debugHasScheduledFrame, isTrue);
+      expect(session.resizes.hasListener, isTrue);
+
+      session.host.dispose();
+
+      expect(session.binding.debugHasScheduledFrame, isFalse);
+      expect(session.resizes.hasListener, isFalse);
+    });
+
+    test('writes nothing afterwards and is safe to call twice', () {
+      final session = _Session.start(const Spinner(), columns: 40);
+      session.pump();
+      session.host.dispose();
+      final written = session.sink.writes.length;
+
+      session.host.dispose();
+      session.binding.debugFlushFrame(const Duration(milliseconds: 200));
+      session.resizes.add(null);
+
+      expect(session.sink.writes, hasLength(written));
+    });
+  });
+
+  group('InlineHost.start', () {
+    test('needs a width reader for a sink that is not a terminal', () {
+      expect(
+        () => InlineHost.start(sink: StringBuffer(), child: const Text('x')),
+        throwsA(
+          isA<ArgumentError>().having((error) => error.name, 'name', 'columns'),
+        ),
+      );
+    });
+
+    test('draws on any sink once the caller supplies the width', () async {
+      final sink = _RecordingSink();
+      final host = InlineHost.start(
+        sink: sink,
+        columns: () => 12,
+        child: const Text('abcdefghijklmnopqrstuvwxyz'),
+      );
+      addTearDown(host.dispose);
+
+      // The first frame runs from a zero-delay timer created by start().
+      await Future<void>.delayed(Duration.zero);
+
+      expect(sink.rows, <String>['abcdefghijk']);
+    });
+
+    test('rejects a first width that is not positive', () {
+      expect(
+        () => InlineHost.start(
+          sink: _RecordingSink(),
+          columns: () => 0,
+          child: const Text('x'),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('InlineHost.canDrawOn', () {
+    test('refuses a sink that is not a terminal stream', () {
+      expect(InlineHost.canDrawOn(StringBuffer()), isFalse);
+      expect(InlineHost.canDrawOn(_RecordingSink()), isFalse);
+    });
+
+    test('needs a terminal that takes escape sequences and has a width', () {
+      bool supported({
+        bool hasTerminal = true,
+        bool isWindows = false,
+        bool supportsAnsiEscapes = true,
+        String? term = 'xterm-256color',
+        int? columns = 80,
+      }) => inlineHostSupportsTerminal(
+        hasTerminal: hasTerminal,
+        isWindows: isWindows,
+        supportsAnsiEscapes: supportsAnsiEscapes,
+        term: term,
+        columns: columns,
+      );
+
+      expect(supported(), isTrue);
+      expect(supported(term: 'tmux-256color'), isTrue);
+      expect(supported(hasTerminal: false), isFalse);
+      expect(supported(term: 'dumb'), isFalse);
+      expect(supported(term: ''), isFalse);
+      expect(supported(term: null), isFalse);
+      // Outside Windows only TERM decides.
+      expect(supported(supportsAnsiEscapes: false), isTrue);
+      expect(supported(isWindows: true, term: null), isTrue);
+      expect(supported(isWindows: true, supportsAnsiEscapes: false), isFalse);
+      // A terminal with no window size would make start() throw.
+      expect(supported(columns: 0), isFalse);
+      expect(supported(columns: null), isFalse);
+    });
+  });
+}
+
+/// One host under test with the seams a test drives it through.
+final class _Session {
+  _Session._(this.host, this.binding, this.sink, this.resizes, this._columns);
+
+  factory _Session.start(
+    Widget child, {
+    required int columns,
+    bool colors = true,
+    bool resizesArePolls = false,
+  }) {
+    final width = <int>[columns];
+    return _Session.startWith(
+      child,
+      columns: () => width[0],
+      colors: colors,
+      resizesArePolls: resizesArePolls,
+      width: width,
+    );
+  }
+
+  factory _Session.startWith(
+    Widget child, {
+    required int Function() columns,
+    bool colors = true,
+    bool resizesArePolls = false,
+    List<int>? width,
+  }) {
+    final sink = _RecordingSink();
+    // Closed by dispose().
+    // ignore: close_sinks
+    final resizes = StreamController<void>(sync: true);
+    final mounted = createInlineHostForTesting(
+      child: child,
+      sink: sink,
+      columns: columns,
+      resizes: resizes.stream,
+      resizesArePolls: resizesArePolls,
+      colors: colors,
+    );
+    return _Session._(mounted.host, mounted.binding, sink, resizes, width);
+  }
+
+  final InlineHost host;
+  final TuiBinding binding;
+  final _RecordingSink sink;
+  final StreamController<void> resizes;
+  final List<int>? _columns;
+
+  void pump([Duration timestamp = Duration.zero]) {
+    binding.debugFlushFrame(timestamp);
+  }
+
+  /// Changes the terminal width without delivering a resize notification.
+  void setColumns(int columns) {
+    _columns![0] = columns;
+  }
+
+  void resizeTo(int columns) {
+    setColumns(columns);
+    resizes.add(null);
+  }
+
+  void dispose() {
+    host.dispose();
+    unawaited(resizes.close());
+  }
+}
+
+/// Records every write separately, so a test can assert one write per frame.
+final class _RecordingSink implements StringSink {
+  final List<String> writes = <String>[];
+
+  /// When set, every write throws this instead of being recorded.
+  Error? failWith;
+
+  /// Runs once inside the next recorded write, so a test can re-enter the
+  /// host from the sink.
+  void Function()? onNextWrite;
+
+  /// Calls to [write], whether they were recorded or threw.
+  int attempts = 0;
+
+  /// The live rows written so far, without control sequences.
+  ///
+  /// A `printAbove` write contributes only the row it redraws: the line it
+  /// prints above belongs to scrollback and may be any width.
+  List<String> get rows => <String>[
+    for (final write in writes) _visibleText(write.split('\n').last),
+  ];
+
+  @override
+  void write(Object? object) {
+    attempts++;
+    final failure = failWith;
+    if (failure != null) {
+      throw failure;
+    }
+    final hook = onNextWrite;
+    onNextWrite = null;
+    hook?.call();
+    writes.add('$object');
+  }
+
+  @override
+  void writeAll(Iterable<Object?> objects, [String separator = '']) =>
+      write(objects.join(separator));
+
+  @override
+  void writeCharCode(int charCode) => write(String.fromCharCode(charCode));
+
+  @override
+  void writeln([Object? object = '']) => write('$object\n');
+}
+
+final _controlSequence = RegExp(r'\x1b\[[0-9;?]*[A-Za-z]');
+
+String _visibleText(String written) =>
+    written.replaceAll(_controlSequence, '').replaceAll('\r', '');
+
+final class _StepLabel extends StatefulWidget {
+  const _StepLabel(this.step);
+
+  final ValueNotifier<String> step;
+
+  @override
+  State<_StepLabel> createState() => _StepLabelState();
+}
+
+final class _StepLabelState extends State<_StepLabel> {
+  @override
+  void initState() {
+    super.initState();
+    widget.step.addListener(_handleChange);
+  }
+
+  @override
+  void dispose() {
+    widget.step.removeListener(_handleChange);
+    super.dispose();
+  }
+
+  void _handleChange() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) => Text(widget.step.value);
+}
+
+final class _FailsToMount extends StatefulWidget {
+  const _FailsToMount();
+
+  @override
+  State<_FailsToMount> createState() => _FailsToMountState();
+}
+
+final class _FailsToMountState extends State<_FailsToMount> {
+  @override
+  void initState() {
+    super.initState();
+    throw StateError('mount failed');
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('unreachable');
+}
+
+/// Runs [onTick] once, from a ticker, which is inside a frame.
+final class _CallsOnTick extends StatefulWidget {
+  const _CallsOnTick(this.onTick);
+
+  final void Function() onTick;
+
+  @override
+  State<_CallsOnTick> createState() => _CallsOnTickState();
+}
+
+final class _CallsOnTickState extends State<_CallsOnTick>
+    with SingleTickerProviderStateMixin<_CallsOnTick> {
+  late final Ticker _ticker;
+  var _called = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) {
+      if (_called) return;
+      _called = true;
+      widget.onTick();
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('ticking');
+}
+
+final class _FailsToDispose extends StatefulWidget {
+  const _FailsToDispose();
+
+  @override
+  State<_FailsToDispose> createState() => _FailsToDisposeState();
+}
+
+final class _FailsToDisposeState extends State<_FailsToDispose> {
+  @override
+  void dispose() {
+    super.dispose();
+    throw StateError('dispose failed');
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('fragile');
+}
+
+/// Runs [onTick] on every tick, which is inside a frame.
+final class _CallsOnEveryTick extends StatefulWidget {
+  const _CallsOnEveryTick(this.onTick);
+
+  final void Function() onTick;
+
+  @override
+  State<_CallsOnEveryTick> createState() => _CallsOnEveryTickState();
+}
+
+final class _CallsOnEveryTickState extends State<_CallsOnEveryTick>
+    with SingleTickerProviderStateMixin<_CallsOnEveryTick> {
+  late final Ticker _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) => widget.onTick())..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('t');
+}
+
+/// Builds with [builder] again whenever [trigger] changes.
+final class _Rebuilds extends StatefulWidget {
+  const _Rebuilds(this.trigger, this.builder);
+
+  final ValueNotifier<int> trigger;
+  final Widget Function(int value) builder;
+
+  @override
+  State<_Rebuilds> createState() => _RebuildsState();
+}
+
+final class _RebuildsState extends State<_Rebuilds> {
+  @override
+  void initState() {
+    super.initState();
+    widget.trigger.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.trigger.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) => widget.builder(widget.trigger.value);
+}
+
+/// Matches the error the host throws when it is called during the walk.
+Matcher _isRefusalOf(String method) => isA<StateError>().having(
+  (error) => error.message,
+  'message',
+  startsWith('InlineHost.$method() cannot be called while'),
+);
+
+/// Builds the part of a row that calls [call] from one place of the walk.
+///
+/// Called with 0 for the first frames and with 1 for the frame under test.
+typedef _WalkPlace = Widget Function(int value, void Function() call);
+
+/// Every place where a frame runs a widget's own code while it walks the
+/// tree: the build, the layout, and the paint.
+final _walkPlaces = <String, _WalkPlace>{
+  'build': (value, call) => _CallsFromState(call, _StateCall.build, value),
+  'initState': (value, call) {
+    if (value == 0) {
+      return const Text('0');
+    }
+    return _CallsFromState(call, _StateCall.initState, value);
+  },
+  'didUpdateWidget': (value, call) =>
+      _CallsFromState(call, _StateCall.didUpdateWidget, value),
+  'State.dispose': (value, call) {
+    if (value == 0) {
+      return _CallsFromState(call, _StateCall.dispose, value);
+    }
+    return const Text('1');
+  },
+  'a LayoutBuilder builder': (value, call) => LayoutBuilder(
+    builder: (context, constraints) {
+      call();
+      return Text('$value');
+    },
+  ),
+  'performLayout': (value, call) =>
+      _CallsFromRender(call, value, inLayout: true, child: Text('$value')),
+  'paint': (value, call) =>
+      _CallsFromRender(call, value, inLayout: false, child: Text('$value')),
+};
+
+/// A host whose row calls back into it once, from one place of the walk.
+final class _WalkProbe {
+  _WalkProbe(_WalkPlace place, this._call) {
+    session = _Session.start(
+      _Rebuilds(_trigger, (value) => place(value, _fire)),
+      columns: 20,
+    );
+    session.pump();
+  }
+
+  final void Function(InlineHost host) _call;
+  final ValueNotifier<int> _trigger = ValueNotifier<int>(0);
+  late final _Session session;
+  var _armed = false;
+
+  /// What the call threw, when it threw.
+  Object? thrown;
+
+  /// Rebuilds the row and draws the frame in which the call is made.
+  void pumpArmed() {
+    _armed = true;
+    _trigger.value = 1;
+    session.pump(const Duration(milliseconds: 16));
+    expect(_armed, isFalse, reason: 'the call was never made');
+  }
+
+  void _fire() {
+    if (!_armed) {
+      return;
+    }
+    _armed = false;
+    try {
+      _call(session.host);
+    } on Object catch (error) {
+      thrown = error;
+    }
+  }
+
+  void dispose() {
+    session.dispose();
+    _trigger.dispose();
+  }
+}
+
+enum _StateCall { build, initState, didUpdateWidget, dispose }
+
+/// Calls [call] from one method of its `State`.
+final class _CallsFromState extends StatefulWidget {
+  const _CallsFromState(this.call, this.from, this.value);
+
+  final void Function() call;
+  final _StateCall from;
+  final int value;
+
+  @override
+  State<_CallsFromState> createState() => _CallsFromStateState();
+}
+
+final class _CallsFromStateState extends State<_CallsFromState> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.from == _StateCall.initState) {
+      widget.call();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_CallsFromState oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.from == _StateCall.didUpdateWidget) {
+      widget.call();
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.from == _StateCall.dispose) {
+      widget.call();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.from == _StateCall.build) {
+      widget.call();
+    }
+    return Text('${widget.value}');
+  }
+}
+
+/// Calls [call] from the layout or from the paint of its render object.
+final class _CallsFromRender extends SingleChildRenderObjectWidget {
+  const _CallsFromRender(
+    this.call,
+    this.value, {
+    required this.inLayout,
+    super.child,
+  });
+
+  final void Function() call;
+  final int value;
+  final bool inLayout;
+
+  @override
+  _CallsFromRenderBox createRenderObject(BuildContext context) =>
+      _CallsFromRenderBox(call, value, inLayout: inLayout);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _CallsFromRenderBox renderObject,
+  ) {
+    renderObject.update(value);
+  }
+}
+
+final class _CallsFromRenderBox extends RenderProxyBox {
+  _CallsFromRenderBox(this._call, this._value, {required bool inLayout})
+    : _inLayout = inLayout;
+
+  final void Function() _call;
+  final bool _inLayout;
+  int _value;
+
+  void update(int value) {
+    if (value == _value) {
+      return;
+    }
+    _value = value;
+    if (_inLayout) {
+      markNeedsLayout();
+    } else {
+      markNeedsPaint();
+    }
+  }
+
+  @override
+  void performBoxLayout(BoxConstraints constraints) {
+    if (_inLayout) {
+      _call();
+    }
+    super.performBoxLayout(constraints);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (!_inLayout) {
+      _call();
+    }
+    super.paint(context, offset);
+  }
+}

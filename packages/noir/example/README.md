@@ -87,6 +87,12 @@ for step-by-step code changes, screenshots, and complete runnable checkpoints.
 | `dart run example/pulse_animation.dart` | Fractional-cell progress and a pauseable reversing `AnimationController`. |
 | `dart run example/like_reactor.dart` | Deterministic particles, overlapping bursts, and bounded animation lifecycle. |
 
+## Inline output
+
+| Run | Learn |
+| --- | --- |
+| `dart run example/inline_progress.dart` | One live `InlineHost` row on stderr while the report goes to stdout, with plain lines outside a terminal. |
+
 ## Advanced and reference
 
 | Run | Learn |
@@ -114,7 +120,8 @@ Type locators match `runtimeType` exactly (`Select<String>`, not
 Select or table glyphs.
 
 `example/bindings_validation.dart` needs a real terminal stdin lease and exits
-with code 70 under drive mode.
+with code 70 under drive mode. `example/inline_progress.dart` is not a
+full-screen app and has no drive-mode session.
 
 Tree inspection is part of the supported advanced API:
 
@@ -134,8 +141,9 @@ final lines = WidgetInspectorService.instance.describeTree();
   keeping errors visible. Dart 3.10 may still print build-hook progress despite
   this flag. This still runs and verifies the native asset whenever Dart invalidates the
   build-hook cache.
-- Examples exit through `TuiApp.exit(context)` or Noir's default Ctrl+C
-  handling; they do not call `dart:io`'s `exit`.
+- Full-screen examples exit through `TuiApp.exit(context)` or Noir's default
+  Ctrl+C handling. `inline_progress.dart` ends when its scan does. No example
+  calls `dart:io`'s `exit`.
 - `runTuiApp(..., headless: true)` returns a `TuiApp` whose `isHeadless` is
   `true` and creates no owned terminal renderer. Renderer-backed mouse and
   Kitty keyboard controls are unavailable in that mode.

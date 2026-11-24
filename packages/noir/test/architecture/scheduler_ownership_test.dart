@@ -25,6 +25,18 @@ void main() {
     expect(body, isNot(contains('scheduleMicrotask')));
   });
 
+  test('InlineHost defers nothing of its own', () {
+    final source = File('lib/src/app/inline_host.dart').readAsStringSync();
+    final body = _classBody(source, 'InlineHost');
+
+    // A new width is applied where it is read, and the host is torn down
+    // where it ends. Both are safe on the spot because the host refuses to be
+    // called while its tree is walked, so it has nothing to put off.
+    expect(body, contains('_binding.isWalkingTree'));
+    expect(body, isNot(contains('Timer')));
+    expect(body, isNot(contains('scheduleMicrotask')));
+  });
+
   test('TickerScheduler only owns ticker registry and dispatch', () {
     final source = File('lib/src/animation/ticker.dart').readAsStringSync();
 
