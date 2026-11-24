@@ -328,8 +328,11 @@ try {
 - Frames run on the isolate that started the host. Do the long work in
   another isolate, or in `await`ed steps, or the row will not animate.
 - Call `host.dispose()` in a `finally`. It erases the row and releases the
-  timer and resize watcher that otherwise keep the process alive. An
-  animation callback may call it; a `build` method must not.
+  timer and resize watcher that otherwise keep the process alive.
+- Call `host.printAbove` and `host.dispose` from the program, or from an
+  animation or ticker callback of the row. From `build`, a `State` lifecycle
+  method, a `LayoutBuilder` builder, layout, or paint, both throw a
+  `StateError` and the host keeps running.
 - A widget driven by caller state listens to a `ValueNotifier` in a
   `StatefulWidget` and calls `setState`. `example/inline_progress.dart` shows
   that, a per-step elapsed time from a `Ticker`, and the plain fallback.

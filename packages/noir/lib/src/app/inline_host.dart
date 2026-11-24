@@ -64,12 +64,26 @@ import 'tui_binding.dart';
 /// error surface once: from the frame or the resize notification that met
 /// it, or from the [printAbove] call. [dispose] then does nothing.
 ///
-/// The width reader and the sink are the caller's code, and either may call
-/// back into the host. When one of them ends the host, the operation in
-/// progress stops there. The host does not read the width again while the
+/// The width reader and the sink are the caller's code, and may call back
+/// into the host: the reader may call [printAbove] and [dispose], and the
+/// sink may call [dispose]. The host asks for the width before it does
+/// anything else, so when the reader ends the host, what the host was about
+/// to do does not happen. The host does not read the width again while the
 /// reader is running, so a reader may itself use [printAbove]; the row is
-/// then left off the line until the read is over, because its width is the
-/// very thing being read.
+/// then left off the line until what asked for the width is over, because
+/// its width is the very thing being read.
+///
+/// The widgets of the row may call [printAbove] and [dispose] from an
+/// animation or ticker callback. While the row is being built, laid out, or
+/// painted, both methods throw a [StateError] instead, write nothing, and
+/// leave the host running. That covers `build`, the `State` lifecycle
+/// methods a rebuild runs (`initState`, `didUpdateWidget`, `deactivate`,
+/// `dispose`), a `LayoutBuilder` builder, and the layout and paint of a
+/// render object. The tree cannot be torn down under the frame that is
+/// walking it, so end the host from outside that frame.
+///
+/// A frame in which a widget throws draws nothing: the line keeps what it
+/// showed until the next frame, [printAbove] call, or resize notification.
 ///
 /// Text a widget shows is made safe on the way out: a control character is
 /// written as a space. A zero-width character that stands alone, such as a
@@ -100,24 +114,24 @@ final class InlineHost implements Disposable {
       );
     }
     _columns = _capped(initialColumns);
-    _layoutWidth = _rowWidth(_columns);
+    final rowWidth = _rowWidth(_columns);
 
-    final renderer = Renderer.create(_layoutWidth, 1, testing: true)
+    final renderer = Renderer.create(rowWidth, 1, testing: true)
       ..setAutoFlush(false);
     _renderer = renderer;
     TuiBinding? binding;
     try {
       binding = createInlineTuiBinding(
-        width: _layoutWidth,
+        width: rowWidth,
         renderer: renderer,
-        presentFrame: _presentFrame,
+        beginFrame: _beginFrame,
+        endFrame: _endFrame,
       );
       _binding = binding;
       binding.runApp(child);
       _resizeSubscription = _watch(resizes);
     } on Object catch (error, stackTrace) {
       _disposed = true;
-      _released = true;
       if (binding != null) {
         _quietly(binding.dispose);
       }
@@ -133,7 +147,7 @@ final class InlineHost implements Disposable {
   /// such as `stderr`. It is required for any other sink; [canDrawOn] tells
   /// the two apart. Pass a reader for the stream the row is really shown on:
   /// the width of stdout says nothing about a row on stderr once either is
-  /// redirected. The host calls it again before every row it writes, in
+  /// redirected. The host calls it again at the start of every frame, in
   /// [printAbove], and on every resize notification, so it should be cheap.
   /// A width above 65,535, the most a terminal's window size can report, is
   /// treated as 65,535.
@@ -146,7 +160,8 @@ final class InlineHost implements Disposable {
   /// a terminal stream, or when it first reports a width that is not
   /// positive. An error [columns] itself throws on that first read is not
   /// caught. A later read that fails, or reports no columns, keeps the last
-  /// width instead.
+  /// width instead. The one later failure that is passed on is that of a
+  /// reader which had ended the host before it threw.
   factory InlineHost.start({
     required StringSink sink,
     required Widget child,
@@ -201,37 +216,34 @@ final class InlineHost implements Disposable {
   late final TuiBinding _binding;
   StreamSubscription<void>? _resizeSubscription;
 
-  /// The terminal's width as last read.
+  /// The terminal's width as last read. The binding is always laid out for
+  /// it: a new width is applied where it is read.
   late int _columns;
 
-  /// The width the binding is laid out at. It trails [_columns] from the
-  /// moment a new width is read until the binding is resized for it.
-  late int _layoutWidth;
-
-  /// The last painted row, already serialized, and the layout width it was
-  /// painted at. The row is kept across width changes and is simply not
-  /// drawn while it does not fit, so a width that comes back finds it again.
-  String _row = '';
-  int? _rowLayoutWidth;
+  /// The last painted row, already serialized, or null when no frame has
+  /// painted one at the current width yet. A frame is then on its way to.
+  String? _row;
 
   /// What the host last put on the line, or null when it cannot know:
   /// nothing is written yet, or the terminal changed size and may have
   /// re-wrapped or cleared the line.
   String? _shown;
 
-  bool _readingColumns = false;
-  bool _resizeDeferred = false;
+  /// Whether the width reader is running. What it starts in the host does
+  /// not read the width again.
+  bool _reading = false;
   bool _disposed = false;
-  bool _released = false;
-
-  /// The error that stopped the host, when one did.
-  Object? _failure;
 
   /// Writes [line] above the live row, where it stays in scrollback.
   ///
   /// The row is erased, [line] and a line break are written, and the row is
   /// drawn again below, all in one write. [line] may be longer than the
   /// terminal is wide; a terminal wraps it like any other output.
+  ///
+  /// The one case in which the row is not drawn again at once is a terminal
+  /// that has changed width since the row was painted. That row would not
+  /// fit, so the line below [line] stays empty until the next frame has
+  /// painted the row at the new width.
   ///
   /// [line] is written exactly as given, control characters included, so
   /// that it can carry its own styling. Unlike the text of a widget, it is
@@ -243,35 +255,21 @@ final class InlineHost implements Disposable {
   /// styled line with a reset.
   ///
   /// Throws [StateError] after [dispose], including when the width reader
-  /// ends the host during this call. If the sink throws, the host stops, as
-  /// the class documentation describes, and that error is rethrown.
+  /// ends the host during this call, and while the row is being built, laid
+  /// out, or painted. If the sink throws, the host stops, as the class
+  /// documentation describes, and that error is rethrown. So is an error the
+  /// width reader throws after it has ended the host.
   void printAbove(String line) {
     _checkNotDisposed();
-    final columns = _readWidth();
-    // The reader is the caller's code and may have ended this host.
-    _checkNotDisposed();
-    if (columns != null) {
-      _adoptColumns(columns);
-    }
-    if (_layoutWidth != _rowWidth(_columns)) {
-      // This call may be running inside a frame, where the binding cannot be
-      // resized. Until the resize has brought a new frame, the row stays off
-      // the line.
-      _resizeSoon();
-    }
-    // Called from inside the width reader, this cannot know the width that
-    // is being read. The row stays off the line, and the operation that asked
-    // for the width puts it back.
-    final row = _readingColumns ? _eraseLine : _liveRow();
-    try {
+    _checkNotWalkingTree('printAbove');
+    _run(() {
+      _sync();
+      // The reader is the caller's code and may have ended this host.
+      _checkNotDisposed();
+      final row = _live();
       _sink.write('$_eraseLine$line\n$row');
       _shown = row;
-    } on Object catch (error) {
-      // Widget code may call this during a build, and the binding cannot be
-      // torn down under a build in progress.
-      _stopAfterFailure(error, releaseNow: !_binding.buildOwner.isBuilding);
-      rethrow;
-    }
+    });
   }
 
   /// Stops the row and releases everything the host holds.
@@ -288,14 +286,19 @@ final class InlineHost implements Disposable {
   /// replace the caller's own.
   ///
   /// An animation or ticker callback may call this: the frame it runs in
-  /// ends there. Do not call it from a `build` method.
+  /// ends there.
+  ///
+  /// The one call that is refused is one made while the row is being built,
+  /// laid out, or painted, as the class documentation describes. It throws
+  /// a [StateError] before anything is stopped, so the host keeps running
+  /// and still has to be disposed, from outside that frame.
   @override
   void dispose() {
     if (_disposed) {
       return;
     }
+    _checkNotWalkingTree('dispose');
     _disposed = true;
-    _released = true;
     final failures = FirstErrorRecorder()
       ..attempt(_cancelResizeWatch)
       ..attempt(_binding.dispose)
@@ -307,18 +310,114 @@ final class InlineHost implements Disposable {
   /// The row's width for a terminal [columns] wide: every column but the last.
   ///
   /// The buffer cannot be narrower than one cell, so one column also maps to
-  /// one cell; [_liveRow] is what keeps that cell off a one-column terminal.
+  /// one cell; [_live] is what keeps that cell off a one-column terminal.
   static int _rowWidth(int columns) => columns < 2 ? 1 : columns - 1;
 
   static int _capped(int columns) =>
       columns > _maxColumns ? _maxColumns : columns;
 
+  void _checkNotDisposed() {
+    if (_disposed) {
+      throw StateError('InlineHost is disposed.');
+    }
+  }
+
+  /// The tree cannot be resized or torn down under the frame that is walking
+  /// it, and both methods that may do either are refused there, before they
+  /// have written or changed anything.
+  void _checkNotWalkingTree(String method) {
+    if (_binding.isWalkingTree) {
+      throw StateError(
+        'InlineHost.$method() cannot be called while the row is being built, '
+        'laid out, or painted, which includes the build and State lifecycle '
+        'methods of its widgets. Call it from a timer, an event handler, or '
+        'an animation callback instead.',
+      );
+    }
+  }
+
+  /// Runs the host's part of one operation: a frame, a [printAbove], or a
+  /// resize notification.
+  ///
+  /// Every operation has the same steps. It reads the width with [_sync]
+  /// before it does anything else, does its work, and puts the row on the
+  /// line. A frame is the one operation that is split in two: it reads the
+  /// width in [_beginFrame], the binding then builds and paints the tree,
+  /// and [_endFrame] puts the row on the line.
+  ///
+  /// Whatever fails in the host's part ends the host on the spot, without
+  /// going back to the sink, and is rethrown, which leaves it the only error
+  /// reported. An error a widget throws while the tree is built or painted
+  /// is not the host's: the frame passes it on and the host keeps running.
+  void _run(void Function() operation) {
+    try {
+      operation();
+    } on Object {
+      _stop();
+      rethrow;
+    }
+  }
+
+  /// Reads the terminal's width and applies a new one.
+  ///
+  /// The reader is the caller's code, and this is the only place it is
+  /// called from. It runs first in an operation, when nothing of that
+  /// operation is in flight, so check [_disposed] after this returns and
+  /// simply stop: the reader may have ended the host.
+  ///
+  /// A read that fails, or reports no columns, teaches nothing: the terminal
+  /// of the sink can go away mid-run, and the last width stays.
+  void _sync() {
+    if (_reading) {
+      // It is the reader that called into the host.
+      return;
+    }
+    final int read;
+    _reading = true;
+    try {
+      read = _readColumns();
+    } on Object {
+      if (_disposed) {
+        // The reader ended the host, or a printAbove it made failed and
+        // did. Keeping the error here would stop the host without a word
+        // to anyone.
+        rethrow;
+      }
+      return;
+    } finally {
+      _reading = false;
+    }
+    if (_disposed || read <= 0) {
+      return;
+    }
+    final columns = _capped(read);
+    if (columns == _columns) {
+      return;
+    }
+    final rowWidth = _rowWidth(columns);
+    final rowWidthChanged = rowWidth != _rowWidth(_columns);
+    _columns = columns;
+    // The terminal may have re-wrapped or cleared the line.
+    _shown = null;
+    if (rowWidthChanged) {
+      // The row was painted for a width the terminal has left. The resize
+      // marks the tree for paint and schedules a frame. Outside a frame that
+      // is the frame that paints the row. Inside one, the frame in progress
+      // paints it, and the scheduled one finds nothing left to do.
+      _row = null;
+      _binding.handleResize(rowWidth, 1);
+    }
+  }
+
   /// The text that puts the row on the sink's line, or that clears the line
-  /// when there is no row for the terminal as it is now: none painted yet,
-  /// one painted for another width, or a terminal one column wide.
-  String _liveRow() => _columns < 2 || _rowLayoutWidth != _rowWidth(_columns)
-      ? _eraseLine
-      : '\r$_row$_eraseToEnd';
+  /// when there is no row to put there: none painted at this width yet, a
+  /// terminal one column wide, or a width that is being read right now.
+  String _live() {
+    final row = _row;
+    return row == null || _columns < 2 || _reading
+        ? _eraseLine
+        : '\r$row$_eraseToEnd';
+  }
 
   /// Puts the current row on the line, unless it is already there.
   ///
@@ -327,87 +426,32 @@ final class InlineHost implements Disposable {
   /// full-screen renderer writes only the cells that changed; this is the
   /// same economy for one row.
   void _show() {
-    final row = _liveRow();
-    if (row == _shown) {
+    if (_row == null) {
+      // The frame that paints the row at this width shows it.
       return;
     }
-    _sink.write(row);
-    _shown = row;
-  }
-
-  void _adoptColumns(int columns) {
-    if (columns == _columns) {
+    final live = _live();
+    if (live == _shown) {
       return;
     }
-    _columns = columns;
-    // The terminal may have re-wrapped or cleared the line.
-    _shown = null;
+    _sink.write(live);
+    _shown = live;
   }
 
-  void _checkNotDisposed() {
-    if (_disposed) {
-      throw StateError('InlineHost is disposed.');
-    }
-  }
-
-  /// Asks the caller for the terminal width.
+  /// The start of a frame, before its tickers run and before it builds.
   ///
-  /// Returns null when there is nothing new to learn: the reader failed, it
-  /// reported no columns, or it is the reader itself that called into the
-  /// host. The reader is the caller's code, so check [_disposed] after this
-  /// returns.
-  int? _readWidth() {
-    if (_readingColumns) {
-      return null;
-    }
-    _readingColumns = true;
-    try {
-      final columns = _readColumns();
-      return columns > 0 ? _capped(columns) : null;
-    } on Object catch (error) {
-      if (identical(error, _failure)) {
-        // The reader is passing on the failure of a printAbove it made,
-        // which has just stopped the host. Keeping it here would stop the
-        // host without a word to anyone.
-        rethrow;
-      }
-      // The sink's terminal can go away mid-run; keep the last known width.
-      return null;
-    } finally {
-      _readingColumns = false;
-    }
-  }
+  /// A resize notification can arrive after the terminal has already
+  /// changed, so every frame reads the width it is about to be shown at.
+  void _beginFrame() => _run(_sync);
 
-  void _presentFrame(Buffer frame) {
-    if (_disposed) {
-      return;
+  /// The end of a frame that completed. [painted] is null when nothing in
+  /// the tree needed painting.
+  void _endFrame(Buffer? painted) => _run(() {
+    if (painted != null) {
+      _row = encodeAnsiRow(readBufferRow(painted, 0), colors: _colors);
     }
-    // A resize notification can arrive after the terminal has already
-    // changed, so every frame checks the width it is about to be shown at.
-    final columns = _readWidth();
-    if (_disposed) {
-      // The reader ended the host, and the frame went with its renderer.
-      return;
-    }
-    if (columns != null) {
-      _adoptColumns(columns);
-    }
-    try {
-      if (_layoutWidth != _rowWidth(_columns)) {
-        // This frame was laid out for a width the terminal no longer has.
-        // Presenting is the last step of a frame, so the binding can be
-        // resized here, and that schedules the frame that replaces this one.
-        _resizeBinding();
-        return;
-      }
-      _row = encodeAnsiRow(readBufferRow(frame, 0), colors: _colors);
-      _rowLayoutWidth = _layoutWidth;
-      _show();
-    } on Object catch (error) {
-      _stopAfterFailure(error, releaseNow: true);
-      rethrow;
-    }
-  }
+    _show();
+  });
 
   StreamSubscription<void>? _watch(Stream<void> resizes) {
     try {
@@ -426,62 +470,25 @@ final class InlineHost implements Disposable {
     if (_disposed) {
       return;
     }
-    final columns = _readWidth();
-    if (_disposed) {
+    if (_binding.isWalkingTree) {
+      // A notification is a stream event, so only a synchronous stream in a
+      // test can deliver one here. The next operation reads the width.
       return;
     }
-    if (columns != null) {
-      _adoptColumns(columns);
-    }
-    if (!_resizesArePolls) {
-      // The notification is itself word that the terminal changed, even when
-      // it reads the width it had: it may have gone to another width and
-      // back, or changed height, and re-wrapped or cleared the line.
-      _shown = null;
-    }
-    try {
-      if (_layoutWidth != _rowWidth(_columns)) {
-        _resizeBinding();
-      } else {
-        // No new frame follows, so put the row back from what the host has.
-        // One and two columns share a one-cell row and land here too: only
-        // whether that cell may be shown has changed.
-        _show();
-      }
-    } on Object catch (error) {
-      _stopAfterFailure(error, releaseNow: true);
-      rethrow;
-    }
-  }
-
-  /// Lays the binding out for [_columns]. The resize schedules a frame, and
-  /// that frame paints even when the tree ends at a size it already had.
-  ///
-  /// Call this only where no frame is being drawn, or as the last step of
-  /// one: resizing drops the frame the renderer was lending out.
-  void _resizeBinding() {
-    final width = _rowWidth(_columns);
-    _binding.handleResize(width, 1);
-    _layoutWidth = width;
-  }
-
-  /// Resizes the binding on the next turn of the event loop.
-  void _resizeSoon() {
-    if (_resizeDeferred) {
-      return;
-    }
-    _resizeDeferred = true;
-    Timer.run(() {
-      _resizeDeferred = false;
-      if (_disposed || _layoutWidth == _rowWidth(_columns)) {
+    _run(() {
+      _sync();
+      if (_disposed) {
         return;
       }
-      try {
-        _resizeBinding();
-      } on Object catch (error) {
-        _stopAfterFailure(error, releaseNow: true);
-        rethrow;
+      if (!_resizesArePolls) {
+        // The notification is itself word that the terminal changed, even
+        // when it reads the width it had: it may have gone to another width
+        // and back, or changed height, and re-wrapped or cleared the line.
+        _shown = null;
       }
+      // One and two columns share a one-cell row, so the row may still be
+      // there to show when the width has changed.
+      _show();
     });
   }
 
@@ -490,33 +497,19 @@ final class InlineHost implements Disposable {
     _resizeSubscription = null;
   }
 
-  /// Ends the host after something it called threw, without going back to
-  /// the sink. The caller rethrows the failure, which stays the only one
+  /// Ends the host after something in an operation threw, without going
+  /// back to the sink. [_run] rethrows the failure, which stays the only one
   /// reported.
   ///
-  /// Pass [releaseNow] false while a build is in progress: the binding
-  /// cannot be torn down under it, so it is released on the next turn of the
-  /// event loop. The host is inert from this point either way.
-  void _stopAfterFailure(Object failure, {required bool releaseNow}) {
+  /// The teardown is immediate because no operation runs while the tree is
+  /// being walked: see [_checkNotWalkingTree].
+  void _stop() {
     if (_disposed) {
       // The caller, or one of its callbacks, has already ended the host.
       return;
     }
     _disposed = true;
-    _failure = failure;
     _quietly(_cancelResizeWatch);
-    if (releaseNow) {
-      _release();
-    } else {
-      Timer.run(_release);
-    }
-  }
-
-  void _release() {
-    if (_released) {
-      return;
-    }
-    _released = true;
     _quietly(_binding.dispose);
     _quietly(_renderer.dispose);
   }

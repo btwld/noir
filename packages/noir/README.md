@@ -382,9 +382,12 @@ Future<String> scan() => Future<String>.delayed(
 - Frames run from timers on the isolate that started the host. Keep that
   isolate idle: do long work in another isolate or in asynchronous steps.
 - `dispose` erases the row and stops the frame timer and the resize watcher.
-  Until then the host keeps the process alive. An animation callback may
-  call it; a `build` method must not. It does not throw when the row can no
-  longer be erased, so it is safe in a `finally` block.
+  Until then the host keeps the process alive. It does not throw when the row
+  can no longer be erased, so it is safe in a `finally` block.
+- A widget of the row may call `printAbove` and `dispose` from an animation
+  or ticker callback. While the row is being built, laid out, or painted,
+  which includes `build` and the `State` lifecycle methods, both throw a
+  `StateError` instead and leave the host running.
 - If the sink throws, the host stops for good. It cancels its timer and its
   resize watcher, does not write to that sink again, and lets the error
   surface once. `dispose` then does nothing.

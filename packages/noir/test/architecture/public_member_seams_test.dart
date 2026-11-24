@@ -857,6 +857,7 @@ const Map<_Owner, Set<String>> _internalMembers = <_Owner, Set<String>>{
     'handle',
   },
   _rendererOwner: {'debugCurrentBuffer', 'handle', 'bindings'},
+  (path: 'lib/src/app/tui_binding.dart', name: 'TuiBinding'): {'isWalkingTree'},
 };
 
 const Map<_Owner, Set<String>> _protectedMembers = <_Owner, Set<String>>{
