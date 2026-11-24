@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.0.8
+
+Adds `InlineHost`, which shows one live row of Noir widgets beside a
+program's own output, and fixes `dart build cli` on Intel Macs. The native
+ABI and bundled native artifacts are unchanged from 0.0.7. This remains an
+early 0.0.x release, not a 1.0 claim.
+
+### Added
+
+- `InlineHost.start` mounts a widget one row high and redraws it in place on
+  a sink the caller chooses, normally stderr, so a command-line program can
+  show progress while its result goes to stdout. `printAbove` writes a line
+  that stays in scrollback above the row, and `canDrawOn` reports whether a
+  sink is a terminal the host can use. The host never writes to stdout,
+  reads stdin, enters the alternate screen, hides the cursor, or handles an
+  interrupt signal. The row is one column narrower than the terminal, so it
+  never wraps. `example/inline_progress.dart` shows it in use.
+
+### Fixed
+
+- On macOS, `dart build cli` no longer fails on Intel (x64) with
+  `install_name_tool` reporting that the larger updated load commands do not
+  fit. The build hook now bundles its macOS copy of the library as
+  `macos-<arch>/libnoir.dylib`, so the install name becomes
+  `@rpath/lib/libnoir.dylib`, and the hook fails early with a clear message
+  if a rewrite would not fit. Flutter apps that hit the earlier failure
+  should run `flutter clean` once.
+- A frame whose ticker or animation callback disposed the binding now ends
+  instead of throwing `StateError: Renderer is disposed` from the frame
+  timer.
+- A resize that returns to the size the tree was last laid out at now
+  repaints, instead of leaving the renderer blank until a widget changed.
+
 ## 0.0.7
 
 Reorganizes Noir's internal source tree so that each layer depends only on

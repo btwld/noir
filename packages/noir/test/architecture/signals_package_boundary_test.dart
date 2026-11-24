@@ -340,6 +340,8 @@ dependencies:
       {'noir': '0.0.6', 'noir_signals': '0.0.2'},
       {'noir': '0.0.7', 'noir_signals': '0.0.2'},
       {'noir': '0.0.7', 'noir_signals': '0.0.3'},
+      {'noir': '0.0.8', 'noir_signals': '0.0.3'},
+      {'noir': '0.0.8', 'noir_signals': '0.0.4'},
     ]) {
       expect(
         _hostedCompanionConstraintsResolve(source, published),
