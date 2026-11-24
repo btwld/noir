@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.4
+
+Pairs this client with Noir 0.0.8. The driver API is unchanged from 0.0.3.
+
+### Changed
+
+- Requires `noir: ^0.0.8`, narrowed from `^0.0.7`, to name the Noir this
+  client is built and tested against. `^0.0.7` still admits 0.0.8; this
+  release states the version that was actually verified.
+
 ## 0.0.3
 
 Pairs this client with Noir 0.0.7. The driver API is unchanged from 0.0.2.
