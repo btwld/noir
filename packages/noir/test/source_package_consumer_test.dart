@@ -173,11 +173,14 @@ void main() {
     final bundledLibraries = builtBundle
         .listSync(recursive: true)
         .whereType<File>()
-        .where(
-          (file) =>
-              path.basename(file.path).contains('libopentui') ||
-              path.basename(file.path) == 'opentui.dll',
-        )
+        .where((file) {
+          final name = path.basename(file.path);
+          // macOS bundles the hook's libnoir.dylib copy; other platforms bundle
+          // the official library unchanged.
+          return Platform.isMacOS
+              ? name == 'libnoir.dylib'
+              : name.contains('libopentui') || name == 'opentui.dll';
+        })
         .toList();
     expect(bundledLibraries, isNotEmpty);
 

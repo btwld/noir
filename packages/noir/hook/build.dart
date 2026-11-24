@@ -51,10 +51,11 @@ Future<void> buildOpenTuiNativeAsset(
   }
 
   if (input.config.code.targetOS == OS.macOS) {
-    // `dart build` derives the bundled install name from this file's basename,
-    // so keep the canonical name and separate architectures by directory.
+    // `dart build` and Flutter derive the bundled file and install names from
+    // this basename, and bundle every package's code assets side by side, so
+    // use a Noir-specific name and separate architectures by directory.
     final bundleReadyLibrary = input.outputDirectoryShared.resolve(
-      'macos-${entry.arch}/libopentui.dylib',
+      'macos-${entry.arch}/libnoir.dylib',
     );
     await prepareMacOSBundleLibrary(library, bundleReadyLibrary);
     output.assets.code.add(
@@ -102,9 +103,11 @@ const macOSBundleInstallNamePrefix = '@rpath/lib/';
 /// linked without `-headerpad_max_install_names`. When `dart build` bundles a
 /// linked application, it rewrites the install name to
 /// [macOSBundleInstallNamePrefix] plus the basename of [destination] and then
-/// ad-hoc signs the copy. For `libopentui.dylib` that grows `LC_ID_DYLIB` from
-/// 48 to 56 bytes. `install_name_tool` also reserves 16 bytes for
-/// `LC_CODE_SIGNATURE` when the library has none (the x64 asset).
+/// ad-hoc signs the copy. For `libnoir.dylib` that grows `LC_ID_DYLIB` from
+/// 48 to 56 bytes. Flutter instead sets `@rpath/noir.framework/noir`, which is
+/// also 56 bytes, so the check below covers both. `install_name_tool` also
+/// reserves 16 bytes for `LC_CODE_SIGNATURE` when the library has none (the
+/// x64 asset).
 ///
 /// So this removes the optional 16-byte `LC_SOURCE_VERSION` command and, when
 /// it describes no data, the 16-byte `LC_FUNCTION_STARTS` command from a hook

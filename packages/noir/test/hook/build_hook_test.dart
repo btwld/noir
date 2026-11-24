@@ -112,7 +112,7 @@ void main() {
         final segments = code.file!.pathSegments;
         expect(segments.sublist(segments.length - 2), [
           'macos-${manifestEntry.arch}',
-          'libopentui.dylib',
+          'libnoir.dylib',
         ]);
         expect(
           sha256.convert(bundled.readAsBytesSync()),
@@ -124,20 +124,53 @@ void main() {
   });
 
   for (final (arch, minimumSpareBytes) in const [('x64', 8), ('arm64', 24)]) {
-    test('macOS $arch bundle copy fits the dart build install name with at '
-        'least $minimumSpareBytes spare bytes', () {
-      final bytes = File(
-        'native/macos/$arch/libopentui.dylib',
-      ).readAsBytesSync();
+    for (final (tool, installName) in const [
+      ('dart build', '@rpath/lib/libnoir.dylib'),
+      ('Flutter', '@rpath/noir.framework/noir'),
+    ]) {
+      test('macOS $arch bundle copy fits the $tool install name with at '
+          'least $minimumSpareBytes spare bytes', () {
+        final bytes = File(
+          'native/macos/$arch/libopentui.dylib',
+        ).readAsBytesSync();
+        hook.stripOptionalMacOSLoadCommands(bytes);
+
+        final headroom = hook.MacOSInstallNameHeadroom.of(
+          bytes,
+          installName: installName,
+        );
+        expect(headroom.margin, greaterThanOrEqualTo(minimumSpareBytes));
+      });
+    }
+  }
+
+  group('function-starts stripping', () {
+    test('an empty LC_FUNCTION_STARTS is removed', () {
+      final bytes = _machO(firstSectionOffset: 320, functionStartsDataSize: 0);
       hook.stripOptionalMacOSLoadCommands(bytes);
 
-      final headroom = hook.MacOSInstallNameHeadroom.of(
-        bytes,
-        installName: '@rpath/lib/libopentui.dylib',
-      );
-      expect(headroom.margin, greaterThanOrEqualTo(minimumSpareBytes));
+      expect(_findCommand(bytes, _lcFunctionStarts), isNull);
     });
-  }
+
+    test('an LC_FUNCTION_STARTS with data survives with its bytes', () {
+      final bytes = _machO(firstSectionOffset: 320, functionStartsDataSize: 8);
+      final data = ByteData.sublistView(bytes);
+      final before = _findCommand(bytes, _lcFunctionStarts)!;
+      final dataOffset = data.getUint32(before + 8, Endian.little);
+      final dataSize = data.getUint32(before + 12, Endian.little);
+      final tableBefore = bytes.sublist(dataOffset, dataOffset + dataSize);
+
+      hook.stripOptionalMacOSLoadCommands(bytes);
+
+      final after = _findCommand(bytes, _lcFunctionStarts);
+      expect(after, isNotNull);
+      expect(data.getUint32(after! + 4, Endian.little), 16);
+      expect(data.getUint32(after + 8, Endian.little), dataOffset);
+      expect(data.getUint32(after + 12, Endian.little), dataSize);
+      expect(bytes.sublist(dataOffset, dataOffset + dataSize), tableBefore);
+      expect(tableBefore, isNot(everyElement(0)));
+    });
+  });
 
   group('install-name headroom mirrors install_name_tool', () {
     test('an exact fit is allowed and reserves room for a signature', () {
@@ -146,7 +179,7 @@ void main() {
 
       final headroom = hook.MacOSInstallNameHeadroom.of(
         bytes,
-        installName: '@rpath/lib/libopentui.dylib',
+        installName: '@rpath/lib/libnoir.dylib',
       );
       expect(headroom.reservesCodeSignature, isTrue);
       expect(headroom.requiredBytes, 256);
@@ -160,7 +193,7 @@ void main() {
 
       final headroom = hook.MacOSInstallNameHeadroom.of(
         bytes,
-        installName: '@rpath/lib/libopentui.dylib',
+        installName: '@rpath/lib/libnoir.dylib',
       );
       expect(headroom.reservesCodeSignature, isFalse);
       expect(headroom.margin, 0);
@@ -326,13 +359,32 @@ void main() {
   });
 }
 
+const _lcFunctionStarts = 0x26;
+
+/// File offset of the first load command of [type] in [bytes], if any.
+int? _findCommand(Uint8List bytes, int type) {
+  final data = ByteData.sublistView(bytes);
+  var offset = 32;
+  for (var index = 0; index < data.getUint32(16, Endian.little); index++) {
+    if (data.getUint32(offset, Endian.little) == type) return offset;
+    offset += data.getUint32(offset + 4, Endian.little);
+  }
+  return null;
+}
+
 /// A minimal thin x86_64 Mach-O dylib whose first section starts at
 /// [firstSectionOffset]: `LC_ID_DYLIB` (48 bytes), one `LC_SEGMENT_64` with
 /// one section (152 bytes), `LC_SOURCE_VERSION` (16 bytes), and optionally
-/// `LC_CODE_SIGNATURE` (16 bytes).
-Uint8List _machO({required int firstSectionOffset, bool signed = false}) {
+/// `LC_FUNCTION_STARTS` (16 bytes, pointing at [functionStartsDataSize] bytes
+/// of table data after the section) and `LC_CODE_SIGNATURE` (16 bytes).
+Uint8List _machO({
+  required int firstSectionOffset,
+  bool signed = false,
+  int? functionStartsDataSize,
+}) {
   const installName = '@rpath/libx.dylib';
-  final bytes = Uint8List(firstSectionOffset + 16);
+  final functionStartsOffset = firstSectionOffset + 16;
+  final bytes = Uint8List(functionStartsOffset + (functionStartsDataSize ?? 0));
   final data = ByteData.sublistView(bytes);
   var offset = 32;
   var commandCount = 0;
@@ -358,6 +410,17 @@ Uint8List _machO({required int firstSectionOffset, bool signed = false}) {
 
   command(0x2A, 16);
   offset += 16;
+
+  if (functionStartsDataSize != null) {
+    command(_lcFunctionStarts, 16);
+    data
+      ..setUint32(offset + 8, functionStartsOffset, Endian.little)
+      ..setUint32(offset + 12, functionStartsDataSize, Endian.little);
+    for (var index = 0; index < functionStartsDataSize; index++) {
+      bytes[functionStartsOffset + index] = index + 1;
+    }
+    offset += 16;
+  }
 
   if (signed) {
     command(0x1D, 16);

@@ -366,14 +366,19 @@ package is incomplete or corrupt and the build fails.
 | Windows | `x64`, `arm64` |
 
 The bundled macOS x64 and arm64 libraries require macOS 13.0 or later.
-For linked macOS applications, `dart build` rewrites the dylib install name to
-`@rpath/lib/libopentui.dylib` for a relocatable bundle, then ad-hoc signs it.
-The official dylib has no load-command padding, so the build hook writes a
-temporary copy to `macos-<arch>/libopentui.dylib` in its shared output
-directory, removes the optional source-version load command and an empty
-function-starts load command from that copy, and checks that the rewrite will
-fit before Dart rewrites and signs it. The six tracked release assets remain
-byte-for-byte identical to the hashes in `native_manifest.json`.
+For linked macOS applications, the build hook writes a temporary copy of the
+library to `macos-<arch>/libnoir.dylib` in its shared output directory.
+`dart build` rewrites its install name to `@rpath/lib/libnoir.dylib`, and
+Flutter to `@rpath/noir.framework/noir`, then ad-hoc signs it. The official
+dylib has no load-command padding, so the hook removes the optional
+source-version load command and an empty function-starts load command from that
+copy, and checks that the rewrite will fit before Dart or Flutter rewrites and
+signs it. The six tracked release assets remain byte-for-byte identical to the
+hashes in `native_manifest.json`.
+
+Flutter macOS apps that failed to build with an earlier Noir version may keep
+the old framework beside the new one after an incremental rebuild. Run
+`flutter clean` once to remove the stale build output.
 
 Run the packaged diagnostic to check bundled native asset resolution without
 writing terminal controls:
