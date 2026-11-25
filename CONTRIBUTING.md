@@ -444,6 +444,12 @@ maintainer releases them with **Approve and run** on the pull request. Nothing
 needs pushing to it, and no extra credential exists to leak — the same rule
 that holds those runs is what stops this job from re-triggering itself.
 
+The job first waits until pub.dev serves the new version, because pub.dev
+lags the upload slightly and an early read would record the previous version.
+If the organization does not let GitHub Actions create pull requests, the job
+still pushes `chore/record-<tag>` and prints a warning with a link to open the
+pull request by hand; the release run stays green.
+
 ### When something fails
 
 A published version is permanent and a pushed release tag is a public
