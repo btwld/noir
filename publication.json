@@ -1,5 +1,5 @@
 {
-  "noir": "0.0.7",
-  "noir_driver": "0.0.3",
+  "noir": "0.0.8",
+  "noir_driver": "0.0.4",
   "noir_signals": "0.0.3"
 }
