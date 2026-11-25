@@ -326,6 +326,17 @@ jobs:
         timeout-minutes: 3
         run: dart pub get
 
+      # pub.dev serves a version a short while after the upload that created
+      # it returns. Recording before then reads the previous version and
+      # proposes a stale record, so wait the way `announce` does.
+      - name: Wait for pub.dev to serve the version
+        if: needs.publish.result == 'success'
+        timeout-minutes: 8
+        run: >-
+          dart run tool/release.dart published
+          "${{ needs.preflight.outputs.package }}" --timeout 300
+        working-directory: packages/noir
+
       # Reads pub.dev, never the manifests: a version that a release abandoned
       # halfway must not be labelled as available.
       - name: Record what pub.dev now serves
@@ -349,6 +360,10 @@ jobs:
       # with write access approves them from the pull request. That is one
       # click on a page a human is already reading, and it is also what stops
       # this job from triggering itself in a loop.
+      #
+      # Where the organization does not let GitHub Actions create pull
+      # requests, the branch is still pushed and the job prints a link to
+      # open the pull request by hand instead of failing the release run.
       - name: Open the publication record pull request
         if: steps.record.outputs.changed != ''
         env:
@@ -371,10 +386,13 @@ jobs:
             echo "::notice::pull request for $branch already open; updated it"
             exit 0
           fi
-          gh pr create --base main --head "$branch" \
+          if ! gh pr create --base main --head "$branch" \
             --title "chore(release): record $RECORDED on pub.dev" \
             --body "Recorded from pub.dev after $RELEASE_TAG published. \
           \`publication.json\` is a cache of the registry and \
           \`availability.ts\` is derived from it; both were regenerated, not \
-          hand-written."
+          hand-written."; then
+            compare="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/main...$branch?expand=1"
+            echo "::warning::could not open the record pull request; open it from $compare"
+          fi
 
