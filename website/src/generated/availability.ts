@@ -20,10 +20,10 @@ export const availability: {
   noir: {
     name: 'noir',
     manifest: '0.0.8',
-    published: '0.0.7',
+    published: '0.0.8',
     isPublished: true,
     installCommand: 'dart pub add noir',
-    label: 'Published version · 0.0.7',
+    label: 'Published version · 0.0.8',
   },
   driver: {
     name: 'noir_driver',
